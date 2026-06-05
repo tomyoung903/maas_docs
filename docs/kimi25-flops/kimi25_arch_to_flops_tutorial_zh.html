@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Kimi K2.5 架构到模型 FLOPs 拆解</title>
+  <style>
+:root {
+  --bg: #f7f3ea;
+  --paper: #fffdf7;
+  --ink: #20201d;
+  --muted: #6d685d;
+  --line: #ddd3bf;
+  --accent: #1f6f68;
+  --code: #173b3a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at 10% 0%, #fff7d9 0, transparent 30rem), var(--bg);
+  color: var(--ink);
+  font-family: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  line-height: 1.62;
+}
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+.paper {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 36px;
+  box-shadow: 0 24px 70px rgba(60, 45, 20, .13);
+}
+h1, h2, h3 {
+  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+  line-height: 1.18;
+}
+h1 { font-size: clamp(2rem, 4vw, 3.4rem); margin: 0 0 24px; }
+h2 { margin-top: 2.2rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+h3 { margin-top: 1.6rem; color: var(--accent); }
+a { color: var(--accent); font-weight: 700; }
+code, pre {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+pre {
+  background: #102321;
+  color: #e6fff8;
+  border-radius: 14px;
+  padding: 16px;
+  overflow: auto;
+}
+blockquote {
+  margin: 1rem 0;
+  padding: .85rem 1rem;
+  border-left: 5px solid var(--accent);
+  background: #edf6f3;
+  color: var(--code);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0;
+  font-size: .95rem;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+th { background: #efe5cf; text-align: left; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.card {
+  display: block;
+  padding: 18px;
+  min-height: 130px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fffaf0;
+  text-decoration: none;
+}
+.card strong { display: block; color: var(--ink); font-size: 1.08rem; margin-bottom: 8px; }
+.card span { color: var(--muted); font-weight: 400; }
+.cell {
+  margin: 1rem 0 1.4rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffaf0;
+}
+.cell.markdown { background: transparent; border-color: transparent; padding: 0; }
+.badge {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: .85rem;
+}
+</style>
+</head>
+<body>
+<main>
+<div class="paper">
+<h1>Kimi K2.5 架构到模型 FLOPs 拆解</h1>
+<p>这篇文档接在《模型 FLOPs 拆解教程》后面。上一篇讲的是通用框架：</p>
+<blockquote>model_FLOPs = linear_FLOPs + attention_FLOPs</blockquote>
+<p>这一篇只讲 Kimi K2.5：怎么从 Kimi 的模型结构出发，得到两个常数：</p>
+<ul><li>linear_FLOPs_per_forward_token = 61,023,322,112</li></ul>
+<ul><li>attention_FLOPs_per_attention_pair = 8,495,104</li></ul>
+<p>这两个常数一旦有了，任何 serving 请求都可以用下面的方式计算：</p>
+<blockquote>model_FLOPs = forward_token_count * linear_FLOPs_per_forward_token + attention_pair_count * attention_FLOPs_per_attention_pair</blockquote>
+<p>本文先不考虑 TP、通信、内存带宽、量化吞吐差异、softmax、RMSNorm、采样和 lm_head。这里算的是一个单一逻辑模型上的主要矩阵乘 FLOPs，乘加按 2 FLOPs 计。</p>
+<h2>1. Kimi K2.5 的核心结构</h2>
+<p>Kimi K2.5 的 text tower 可以先按一个 transformer block 来理解。</p>
+<p>每个 token 进入一层时，主要会经过两大块：</p>
+<ol><li>MLA attention 相关计算。</li></ol>
+<ol><li>MLP / MoE feed-forward 相关计算。</li></ol>
+<p>Kimi K2.5 一共有：</p>
+<ul><li>L = 61 层</li></ul>
+<ul><li>hidden size H = 7168</li></ul>
+<ul><li>attention heads = 64</li></ul>
+<ul><li>第 0 层是 dense MLP</li></ul>
+<ul><li>第 1 到 60 层是 MoE</li></ul>
+<ul><li>MoE 有 384 个 routed experts</li></ul>
+<ul><li>每个 token 选择 topk = 8 个 routed experts</li></ul>
+<ul><li>还有 shared_experts = 1 个共享 expert</li></ul>
+<ul><li>所以每个 token 实际运行 active_experts = 9 个 experts</li></ul>
+<p>最重要的直觉是：Kimi 虽然有 384 个 routed experts，但每个 token 不会跑完 384 个 expert MLP。它只跑 8 个 routed experts 加 1 个 shared expert。这就是 sparse-MoE 的核心节省。</p>
+<h2>2. 为什么先拆成 linear 和 attention scan</h2>
+<p>Kimi 的 FLOPs 也先拆成两类：</p>
+<blockquote>model_FLOPs = linear_FLOPs + attention_FLOPs</blockquote>
+<p>linear_FLOPs 是每个真正 forward 的 token 都要付一次的模型层计算。</p>
+<p>attention_FLOPs 是 query token 回看上下文时产生的 attention scan 计算。</p>
+<p>这两个东西必须分开，因为它们增长方式不同：</p>
+<ul><li>linear_FLOPs 随 forward_token_count 近似线性增长。</li></ul>
+<ul><li>attention_FLOPs 随 attention_pair_count 增长。</li></ul>
+<ul><li>cached prompt tokens 通常不再付完整 linear FLOPs。</li></ul>
+<ul><li>cached prompt tokens 仍然在上下文里，所以可能继续贡献 attention pairs。</li></ul>
+<p>所以 Kimi 的 serving FLOPs 可以写成：</p>
+<blockquote>Kimi_model_FLOPs = forward_token_count * 61,023,322,112 + attention_pair_count * 8,495,104</blockquote>
+<p>下面解释这两个常数怎么从架构算出来。</p>
+<h2>3. Kimi 的 MLA attention 投影部分</h2>
+<p>Kimi 使用 MLA。MLA 的一个核心目的，是把 KV cache 压到 latent 维度里，而不是为每个 head 存完整 K/V。</p>
+<p>本文使用的 Kimi MLA 维度是：</p>
+<ul><li>q_lora = 1536</li></ul>
+<ul><li>kv_lora = 512</li></ul>
+<ul><li>qk_nope = 128</li></ul>
+<ul><li>qk_rope = 64</li></ul>
+<ul><li>qk_head = qk_nope + qk_rope = 192</li></ul>
+<ul><li>v_head = 128</li></ul>
+<ul><li>heads = 64</li></ul>
+<p>对一个 forward token，在一层 attention 里，投影部分包括：</p>
+<ul><li>qkv_a</li></ul>
+<ul><li>q_b</li></ul>
+<ul><li>W_KC</li></ul>
+<ul><li>W_VC</li></ul>
+<ul><li>o_proj</li></ul>
+<p>这些都是每个 forward token 都要做的矩阵乘，所以它们属于 linear_FLOPs，而不是 attention_FLOPs。</p>
+<h3>3.1 qkv_a</h3>
+<p>qkv_a 从 hidden state 一次性投影出 query latent、KV latent 和 key-side RoPE 分支：</p>
+<blockquote>qkv_a = 2 * H * (q_lora + kv_lora + qk_rope)</blockquote>
+<p>代入 Kimi 数值：</p>
+<blockquote>qkv_a = 2 * 7168 * (1536 + 512 + 64) = 30,277,632</blockquote>
+<p>这里的三个输出分别是：</p>
+<ul><li>q_lora：query 的低秩 latent</li></ul>
+<ul><li>kv_lora：KV cache 的 latent content</li></ul>
+<ul><li>qk_rope：key-side positional branch</li></ul>
+<h3>3.2 q_b</h3>
+<p>q_b 把 query latent 展开成所有 head 的 query：</p>
+<blockquote>q_b = 2 * q_lora * (heads * qk_head)</blockquote>
+<p>代入 Kimi 数值：</p>
+<blockquote>q_b = 2 * 1536 * (64 * 192) = 37,748,736</blockquote>
+<p>这里 qk_head = 192，是 qk_nope = 128 和 qk_rope = 64 拼起来。</p>
+<h3>3.3 W_KC</h3>
+<p>W_KC 是 absorbed MLA 里的 content-key 相关投影。</p>
+<p>直觉上，普通写法会把 kv_lora = 512 展开成每个 head 的 content key，维度是 qk_nope = 128。SGLang 的 absorbed MLA 不需要把这些 full key 全部物化到 cache 里，而是把这部分矩阵吸收到 query 侧。</p>
+<p>FLOPs 记账上：</p>
+<blockquote>W_KC = 2 * heads * qk_nope * kv_lora</blockquote>
+<p>代入 Kimi 数值：</p>
+<blockquote>W_KC = 2 * 64 * 128 * 512 = 8,388,608</blockquote>
+<p>注意：这个 FLOP 数和“显式展开 content key”的算术量等价，但 absorbed 的收益主要是 runtime memory traffic 和 KV cache 形态更好，不是这一个投影本身的 FLOP 数变少。</p>
+<h3>3.4 W_VC</h3>
+<p>W_VC 是 absorbed MLA 里的 value 相关投影。</p>
+<p>attention scan 先在 kv_lora = 512 的 latent 空间里累加 value，再用 W_VC 映射到每个 head 的 v_head = 128。</p>
+<p>FLOPs 记账上：</p>
+<blockquote>W_VC = 2 * heads * kv_lora * v_head</blockquote>
+<p>代入 Kimi 数值：</p>
+<blockquote>W_VC = 2 * 64 * 512 * 128 = 8,388,608</blockquote>
+<h3>3.5 o_proj</h3>
+<p>o_proj 把所有 heads 的 attention 输出投影回 hidden size：</p>
+<blockquote>o_proj = 2 * (heads * v_head) * H</blockquote>
+<p>代入 Kimi 数值：</p>
+<blockquote>o_proj = 2 * (64 * 128) * 7168 = 117,440,512</blockquote>
+<h3>3.6 attention projection per layer</h3>
+<p>所以每层 attention 投影部分是：</p>
+<blockquote>attention_projection_per_layer = qkv_a + q_b + W_KC + W_VC + o_proj</blockquote>
+<p>代入数值：</p>
+<blockquote>attention_projection_per_layer = 30,277,632 + 37,748,736 + 8,388,608 + 8,388,608 + 117,440,512 = 202,244,096</blockquote>
+<p>这个 202,244,096 是每层、每个 forward token 的 attention projection FLOPs。它还不是 attention scan FLOPs。</p>
+<h2>4. Kimi 的 MLP / MoE / router 部分</h2>
+<p>Kimi 的 feed-forward 结构分两种：</p>
+<ul><li>第 0 层是 dense SwiGLU MLP。</li></ul>
+<ul><li>第 1 到 60 层是 sparse MoE。</li></ul>
+<h3>4.1 Dense MLP</h3>
+<p>Dense SwiGLU MLP 有 gate、up、down 三个主要矩阵乘：</p>
+<blockquote>dense_mlp_layer = 6 * H * dense_intermediate</blockquote>
+<p>Kimi 的 dense_intermediate = 18432：</p>
+<blockquote>dense_mlp_layer = 6 * 7168 * 18432 = 792,723,456</blockquote>
+<p>这一项只出现 1 层。</p>
+<h3>4.2 Router</h3>
+<p>每个 MoE layer 先用 router 给 384 个 routed experts 打分：</p>
+<blockquote>router_per_moe_layer = 2 * H * routed_experts</blockquote>
+<p>代入 Kimi 数值：</p>
+<blockquote>router_per_moe_layer = 2 * 7168 * 384 = 5,505,024</blockquote>
+<p>router 会看所有 384 个 routed experts，但这只是一个小矩阵乘，不等于跑 384 个 expert MLP。</p>
+<h3>4.3 Active MoE experts</h3>
+<p>一个 expert 本身也是 SwiGLU MLP：</p>
+<blockquote>one_expert = 6 * H * moe_intermediate</blockquote>
+<p>Kimi 的 moe_intermediate = 2048：</p>
+<blockquote>one_expert = 6 * 7168 * 2048 = 88,080,384</blockquote>
+<p>每个 token 实际跑：</p>
+<blockquote>active_experts = topk + shared_experts = 8 + 1 = 9</blockquote>
+<p>所以每个 MoE layer 的 active expert FLOPs 是：</p>
+<blockquote>active_moe_layer = active_experts * one_expert</blockquote>
+<p>代入数值：</p>
+<blockquote>active_moe_layer = 9 * 88,080,384 = 792,723,456</blockquote>
+<p>注意这里没有乘 384。384 是候选 routed experts 数量，不是每个 token 实际运行的 expert 数量。</p>
+<h2>5. Kimi 的 linear_FLOPs_per_forward_token</h2>
+<p>现在把每个 forward token 的所有 linear 部分加起来。</p>
+<p>Kimi 有 61 层 attention projection：</p>
+<blockquote>61 * attention_projection_per_layer = 61 * 202,244,096 = 12,336,889,856</blockquote>
+<p>Kimi 有 1 层 dense MLP：</p>
+<blockquote>1 * dense_mlp_layer = 792,723,456</blockquote>
+<p>Kimi 有 60 层 active MoE：</p>
+<blockquote>60 * active_moe_layer = 60 * 792,723,456 = 47,563,407,360</blockquote>
+<p>Kimi 有 60 层 MoE router：</p>
+<blockquote>60 * router_per_moe_layer = 60 * 5,505,024 = 330,301,440</blockquote>
+<p>所以：</p>
+<blockquote>linear_FLOPs_per_forward_token = 12,336,889,856 + 792,723,456 + 47,563,407,360 + 330,301,440</blockquote>
+<p>最终得到：</p>
+<blockquote>linear_FLOPs_per_forward_token = 61,023,322,112</blockquote>
+<p>这个数的意思是：一个 token 真正跑一次 Kimi text tower forward 时，大约要付 61.0B 的主要线性层 FLOPs。</p>
+<h2>6. Kimi 的 attention scan FLOPs</h2>
+<p>上面算的是每个 forward token 都要做的 projection / MLP / MoE 工作。</p>
+<p>但 attention 还有另一部分：query token 要回看上下文。</p>
+<p>我们把“一个 query token 看一个 context token”叫做一个 attention pair。</p>
+<p>Kimi absorbed MLA 的 scan 对每个 attention pair、每层、所有 heads 做三类主要计算：</p>
+<ol><li>content QK：latent content query 和 cached latent content 做 dot。</li></ol>
+<ol><li>RoPE QK：query RoPE branch 和 key RoPE branch 做 dot。</li></ol>
+<ol><li>AV latent accumulation：用 attention weight 累加 latent value。</li></ol>
+<p>对于每层：</p>
+<blockquote>content_qk_per_layer = heads * 2 * kv_lora</blockquote>
+<blockquote>rope_qk_per_layer = heads * 2 * qk_rope</blockquote>
+<blockquote>av_latent_per_layer = heads * 2 * kv_lora</blockquote>
+<p>代入 Kimi 数值：</p>
+<blockquote>content_qk_per_layer = 64 * 2 * 512 = 65,536</blockquote>
+<blockquote>rope_qk_per_layer = 64 * 2 * 64 = 8,192</blockquote>
+<blockquote>av_latent_per_layer = 64 * 2 * 512 = 65,536</blockquote>
+<p>所以：</p>
+<blockquote>attention_scan_FLOPs_per_pair_per_layer = 65,536 + 8,192 + 65,536 = 139,264</blockquote>
+<p>Kimi 有 61 层：</p>
+<blockquote>attention_FLOPs_per_attention_pair = 61 * 139,264 = 8,495,104</blockquote>
+<p>这个数的意思是：一个 query token 多看一个 context token，就要多付约 8.5M 的 Kimi attention scan FLOPs。</p>
+<h2>7. 为什么 qk_nope 和 v_head 不在 scan 常数里</h2>
+<p>这点容易混淆。</p>
+<p>qk_nope = 128 不直接出现在 attention scan constant 里，是因为 absorbed MLA 已经把 no-position query 通过 W_KC 映射到了 kv_lora = 512 的 latent content 空间。W_KC 这个投影已经算在 linear_FLOPs 里。</p>
+<p>v_head = 128 也不直接出现在 attention scan constant 里，是因为 scan 先累加 kv_lora = 512 的 latent value。后续通过 W_VC 映射到 v_head = 128。W_VC 也已经算在 linear_FLOPs 里。</p>
+<p>所以 scan constant 里看到的是：</p>
+<blockquote>2 * heads * (2 * kv_lora + qk_rope)</blockquote>
+<p>也就是：</p>
+<blockquote>2 * 64 * (2 * 512 + 64) = 139,264 per layer</blockquote>
+<h2>8. 回到 serving request</h2>
+<p>有了这两个 Kimi 常数后，serving 请求的模型 FLOPs 就可以写成：</p>
+<blockquote>Kimi_model_FLOPs = forward_token_count * 61,023,322,112 + attention_pair_count * 8,495,104</blockquote>
+<p>其中：</p>
+<ul><li>forward_token_count = uncached_prefill_tokens + decode_forward_tokens</li></ul>
+<ul><li>attention_pair_count = prefill_attention_pairs + decode_attention_pairs</li></ul>
+<p>cached prompt tokens 的处理方式是：</p>
+<ul><li>cached prompt tokens 通常不再重复跑完整模型，所以不重复计入 forward_token_count。</li></ul>
+<ul><li>cached prompt tokens 仍然在上下文里，所以可能继续计入 attention_pair_count。</li></ul>
+<p>这就是为什么实际 serving 效率分析里，不能只看 input tokens 和 output tokens。要进一步拆成 uncached prefill、cached prefix、decode forward 和 attention pairs。</p>
+<h2>9. 关键公式汇总</h2>
+<ul><li>model_FLOPs = linear_FLOPs + attention_FLOPs</li></ul>
+<p>  模型 FLOPs 先拆成每个 forward token 固定要付的 linear 部分，以及随上下文长度增长的 attention scan 部分。</p>
+<ul><li>linear_FLOPs = forward_token_count * linear_FLOPs_per_forward_token</li></ul>
+<p>  Kimi 的 linear 常数是 61,023,322,112。</p>
+<ul><li>attention_FLOPs = attention_pair_count * attention_FLOPs_per_attention_pair</li></ul>
+<p>  Kimi 的 attention pair 常数是 8,495,104。</p>
+<ul><li>linear_FLOPs_per_forward_token = 61 * attention_projection_per_layer + 1 * dense_mlp_layer + 60 * active_moe_layer + 60 * router_per_moe_layer</li></ul>
+<p>  这条公式把 Kimi 的 attention projection、dense MLP、MoE experts 和 router 合在一起。</p>
+<ul><li>attention_projection_per_layer = qkv_a + q_b + W_KC + W_VC + o_proj</li></ul>
+<p>  这是 Kimi MLA 中每层、每个 forward token 的 projection 部分。</p>
+<ul><li>attention_FLOPs_per_attention_pair = 61 * 2 * heads * (2 * kv_lora + qk_rope)</li></ul>
+<p>  这是 Kimi absorbed MLA 中每个 attention pair 的 scan 部分。</p>
+<h2>10. 来源和边界</h2>
+<p>本地推导来源：</p>
+<ul><li><code>z_local/benchserving/mfu_metrics/kimi25_linear_flops_constant.ipynb</code></li></ul>
+<ul><li><code>z_local/benchserving/mfu_metrics/kimi25_attention_scan_flops_constant.ipynb</code></li></ul>
+<ul><li><code>z_local/benchserving/mfu_metrics/kimi25_mlp_moe_router_equations.md</code></li></ul>
+<ul><li><code>z_local/benchserving/mfu_metrics/kimi25_full_model_architecture.html</code></li></ul>
+<p>代码锚点：</p>
+<ul><li><code>python/sglang/srt/models/deepseek_v2.py</code></li></ul>
+<ul><li><code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py</code></li></ul>
+<p>本文没有计算：</p>
+<ul><li>softmax、mask、scale、RoPE elementwise、RMSNorm</li></ul>
+<ul><li>sampling、tokenizer、HTTP/gateway 开销</li></ul>
+<ul><li>TP 通信和 all-reduce</li></ul>
+<ul><li>KV cache 读写的 memory bandwidth</li></ul>
+<ul><li>W4A16 / BF16 / FP8 等不同硬件吞吐口径</li></ul>
+<ul><li>lm_head</li></ul>
+<p>所以本文给的是“模型主要矩阵乘 FLOPs”的理论基准，不是完整端到端 latency 模型。</p>
+</div>
+</main>
+</body>
+</html>

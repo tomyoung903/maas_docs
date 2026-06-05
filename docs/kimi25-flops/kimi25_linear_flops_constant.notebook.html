@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Kimi K2.5 Linear FLOPs Notebook</title>
+  <style>
+:root {
+  --bg: #f7f3ea;
+  --paper: #fffdf7;
+  --ink: #20201d;
+  --muted: #6d685d;
+  --line: #ddd3bf;
+  --accent: #1f6f68;
+  --code: #173b3a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at 10% 0%, #fff7d9 0, transparent 30rem), var(--bg);
+  color: var(--ink);
+  font-family: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  line-height: 1.62;
+}
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+.paper {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 36px;
+  box-shadow: 0 24px 70px rgba(60, 45, 20, .13);
+}
+h1, h2, h3 {
+  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+  line-height: 1.18;
+}
+h1 { font-size: clamp(2rem, 4vw, 3.4rem); margin: 0 0 24px; }
+h2 { margin-top: 2.2rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+h3 { margin-top: 1.6rem; color: var(--accent); }
+a { color: var(--accent); font-weight: 700; }
+code, pre {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+pre {
+  background: #102321;
+  color: #e6fff8;
+  border-radius: 14px;
+  padding: 16px;
+  overflow: auto;
+}
+blockquote {
+  margin: 1rem 0;
+  padding: .85rem 1rem;
+  border-left: 5px solid var(--accent);
+  background: #edf6f3;
+  color: var(--code);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0;
+  font-size: .95rem;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+th { background: #efe5cf; text-align: left; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.card {
+  display: block;
+  padding: 18px;
+  min-height: 130px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fffaf0;
+  text-decoration: none;
+}
+.card strong { display: block; color: var(--ink); font-size: 1.08rem; margin-bottom: 8px; }
+.card span { color: var(--muted); font-weight: 400; }
+.cell {
+  margin: 1rem 0 1.4rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffaf0;
+}
+.cell.markdown { background: transparent; border-color: transparent; padding: 0; }
+.badge {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: .85rem;
+}
+</style>
+</head>
+<body>
+<main>
+<div class="paper">
+<h1>Kimi K2.5 Linear FLOPs Notebook</h1>
+<p><span class="badge">Rendered notebook view</span></p>
+<section class="cell markdown"><h1>Kimi K2.5 Linear FLOPs Constant</h1>
+<p>This notebook converts <code>kimi25_linear_flops_constant.html</code> into a block-by-block calculation notebook.</p>
+<p>Target result:</p>
+<p><code>linear_flops_per_token = 61,023,322,112</code></p>
+<p>Scope contract: single giant GPU, no parallelism, multiply-add counted as 2 FLOPs, Kimi K2.5 active transformer-block math. Router is included. Attention scan, softmax, RMSNorm, RoPE elementwise work, sampling, communication, and <code>lm_head</code> are excluded.</p></section>
+<section class="cell markdown"><h2>1. Model constants</h2>
+<p>These names intentionally match the HTML pages and the full-model architecture map.</p></section>
+<section class="cell"><p><span class="badge">Code cell 3</span></p><pre><code>H = 7168
+L = 61
+num_attention_heads = 64
+heads = num_attention_heads
+
+q_lora = 1536
+kv_lora = 512
+qk_nope = 128
+qk_rope = 64
+qk_head = qk_nope + qk_rope
+v_head = 128
+
+dense_intermediate = 18432
+moe_intermediate = 2048
+dense_layers = 1
+moe_layers = 60
+routed_experts = 384
+topk = 8
+shared_experts = 1
+active_experts = topk + shared_experts
+
+assert heads == 64
+assert qk_head == 192
+assert dense_layers + moe_layers == L
+assert active_experts == 9
+
+constants = {
+    &#x27;H&#x27;: H,
+    &#x27;L&#x27;: L,
+    &#x27;heads&#x27;: heads,
+    &#x27;q_lora&#x27;: q_lora,
+    &#x27;kv_lora&#x27;: kv_lora,
+    &#x27;qk_nope&#x27;: qk_nope,
+    &#x27;qk_rope&#x27;: qk_rope,
+    &#x27;qk_head&#x27;: qk_head,
+    &#x27;v_head&#x27;: v_head,
+    &#x27;dense_intermediate&#x27;: dense_intermediate,
+    &#x27;moe_intermediate&#x27;: moe_intermediate,
+    &#x27;routed_experts&#x27;: routed_experts,
+    &#x27;active_experts&#x27;: active_experts,
+}
+constants</code></pre></section>
+<section class="cell markdown"><h2>2. Attention projection FLOPs per layer</h2>
+<p>This is still part of the **per-token linear FLOPs** constant because it is projection work done once per forward token.</p>
+<p>Components:</p>
+<ul><li><code>qkv_a</code>: one full projection on the single giant GPU.</li></ul>
+<ul><li><code>q_b</code>: all 64 heads are included.</li></ul>
+<ul><li>absorbed <code>W_KC</code>: maps the <code>qk_nope=128</code> query side into latent <code>kv_lora=512</code> space before scan.</li></ul>
+<ul><li>absorbed <code>W_VC</code>: maps latent attention output back toward <code>v_head=128</code> after scan.</li></ul>
+<ul><li><code>o_proj</code>: all attention-output dimensions are included.</li></ul></section>
+<section class="cell markdown"><h3>2.1 Parse the article equations and link them to our FLOP equations</h3>
+<p>The screenshot from the Zhihu article is equation (37)-(47). It is describing MLA dataflow, not FLOP counting. Below is the same flow parsed into our variable names.</p>
+<h3># Article equations, translated</h3>
+<table><tr><th>Article eq</th><th>Article formula</th><th>Meaning</th><th>Kimi variable in this notebook</th><th>FLOP term that counts the projection</th></tr>
+<tr><td>(37)</td><td><code>c_t^Q = W^DQ h_t</code></td><td>Compress hidden state into a query latent.</td><td><code>q_lora = 1536</code></td><td>Part of <code>qkv_a = 2 * H * (...)</code></td></tr>
+<tr><td>(38)</td><td><code>[q^C_{t,1}, ..., q^C_{t,n_h}] = q_t^C = W^UQ c_t^Q</code></td><td>Expand query latent into per-head **content/no-RoPE query**.</td><td><code>heads * qk_nope = 64 * 128</code></td><td>Content part of <code>q_b = 2 * q_lora * (heads * qk_head)</code></td></tr>
+<tr><td>(39)</td><td><code>[q^R_{t,1}, ..., q^R_{t,n_h}] = q_t^R = RoPE(W^QR c_t^Q)</code></td><td>Expand query latent into per-head **RoPE query** and apply RoPE.</td><td><code>heads * qk_rope = 64 * 64</code></td><td>RoPE part of <code>q_b = 2 * q_lora * (heads * qk_head)</code>; RoPE elementwise op itself is not counted</td></tr>
+<tr><td>(40)</td><td><code>q_{t,i} = [q^C_{t,i}; q^R_{t,i}]</code></td><td>Concatenate content query and RoPE query for head <code>i</code>.</td><td><code>qk_head = qk_nope + qk_rope = 192</code></td><td>No matmul here; this explains why <code>q_b</code> outputs <code>heads * qk_head</code></td></tr>
+<tr><td>(41)</td><td><code>c_t^KV = W^DKV h_t</code></td><td>Compress hidden state into latent KV cache vector.</td><td><code>kv_lora = 512</code></td><td>Part of <code>qkv_a = 2 * H * (...)</code></td></tr>
+<tr><td>(42)</td><td><code>[k^C_{t,1}, ..., k^C_{t,n_h}] = k_t^C = W^UK c_t^KV</code></td><td>Expand latent KV into per-head content keys. With matrix absorption, SGLang does not need to materialize/cache these full keys.</td><td><code>qk_nope = 128</code>, <code>kv_lora = 512</code></td><td>Counted as absorbed <code>W_KC = 2 * heads * qk_nope * kv_lora</code></td></tr>
+<tr><td>(43)</td><td><code>k_t^R = RoPE(W^KR h_t)</code></td><td>Create the small shared RoPE key branch directly from hidden state.</td><td><code>qk_rope = 64</code></td><td>Part of <code>qkv_a = 2 * H * (...)</code>; RoPE elementwise op itself is not counted</td></tr>
+<tr><td>(44)</td><td><code>k_{t,i} = [k^C_{t,i}; k_t^R]</code></td><td>Concatenate per-head content key and shared RoPE key.</td><td>key dimension would be <code>qk_nope + qk_rope</code></td><td>No separate matmul; this explains the attention score has content part plus RoPE part</td></tr>
+<tr><td>(45)</td><td><code>[v^C_{t,1}, ..., v^C_{t,n_h}] = v_t^C = W^UV c_t^KV</code></td><td>Expand latent KV into per-head values. With absorption, SGLang can accumulate latent values then project afterward.</td><td><code>kv_lora = 512</code>, <code>v_head = 128</code></td><td>Counted as absorbed <code>W_VC = 2 * heads * kv_lora * v_head</code></td></tr>
+<tr><td>(46)</td><td><code>o_{t,i} = sum_j Softmax_i(q^T_{t,i} k_{j,i} / sqrt(d_h + d_h^R)) v^C_{j,i}</code></td><td>Actual attention scan for head <code>i</code>: QK scores and AV accumulation over context.</td><td><code>kv_lora</code>, <code>qk_rope</code>, <code>heads</code></td><td>**Not** in this linear notebook; counted in <code>attention_scan_flops_per_pair</code> in the pair notebook</td></tr>
+<tr><td>(47)</td><td><code>u_t = W^O [o_{t,1}; ...; o_{t,n_h}]</code></td><td>Project concatenated head outputs back to hidden size.</td><td><code>heads * v_head -&gt; H</code></td><td><code>o_proj = 2 * (heads * v_head) * H</code></td></tr></table>
+<h3># Now the notebook equations become easier</h3>
+<p><code>qkv_a = 2 * H * (q_lora + kv_lora + qk_rope)</code></p>
+<p>This combines article eq (37), eq (41), and eq (43): from <code>h_t[H]</code>, produce query latent <code>c_t^Q[q_lora]</code>, KV latent <code>c_t^KV[kv_lora]</code>, and RoPE key branch <code>k_t^R[qk_rope]</code>.</p>
+<p><code>q_b = 2 * q_lora * (heads * qk_head)</code></p>
+<p>This combines article eq (38)-(40): expand <code>c_t^Q[q_lora]</code> into all per-head query vectors, where each head has <code>qk_nope + qk_rope = qk_head</code>.</p>
+<p><code>W_KC = 2 * heads * qk_nope * kv_lora</code></p>
+<p>This corresponds to article eq (42), but in absorbed form. Instead of materializing all <code>k^C_{t,i}</code>, SGLang absorbs the key expansion into the query side, so the scan can compare a <code>512</code>-dim absorbed query with cached <code>c_j^KV[512]</code>.</p>
+<p><code>W_VC = 2 * heads * kv_lora * v_head</code></p>
+<p>This corresponds to article eq (45), also in absorbed form. Instead of materializing full per-head values first, the scan accumulates latent <code>c_j^KV[512]</code>, then projects toward <code>v_head=128</code>.</p>
+<p><code>o_proj = 2 * (heads * v_head) * H</code></p>
+<p>This is article eq (47): after attention produces all head outputs, concatenate them and project back to hidden size <code>H</code>.</p>
+<p>The key mental split: article eq (46) is the attention scan over context and belongs to the separate pair notebook. The equations in this cell count only the per-token projection matmuls around MLA.</p>
+<p>Article source: https://zhuanlan.zhihu.com/p/16730036197</p></section>
+<section class="cell"><p><span class="badge">Code cell 6</span></p><pre><code># Article link: hidden h_t is projected into MLA latent pieces.
+# Kimi fuses query latent q_lora, KV latent c_t^KV (kv_lora), and small RoPE key branch.
+qkv_a = 2 * H * (q_lora + kv_lora + qk_rope)
+
+# Article link: Q also uses a low-rank path, then expands to per-head query dimensions.
+q_b = 2 * q_lora * (heads * qk_head)
+
+# Article link: matrix absorption for the content/no-RoPE K path.
+# Instead of materializing full k_j^C, compare absorbed q_content[512] with cached c_j^KV[512].
+W_KC = 2 * heads * qk_nope * kv_lora
+
+# Article link: V expansion is also absorbed; cache latent c_j^KV, project after latent AV accumulation.
+W_VC = 2 * heads * kv_lora * v_head
+
+# Standard attention output projection back to hidden size H.
+o_proj = 2 * (heads * v_head) * H
+
+attention_projection_per_layer = qkv_a + q_b + W_KC + W_VC + o_proj
+
+assert qkv_a == 30_277_632
+assert q_b == 37_748_736
+assert W_KC == 8_388_608
+assert W_VC == 8_388_608
+assert o_proj == 117_440_512
+assert attention_projection_per_layer == 202_244_096
+
+{
+    &#x27;qkv_a&#x27;: qkv_a,
+    &#x27;q_b&#x27;: q_b,
+    &#x27;W_KC&#x27;: W_KC,
+    &#x27;W_VC&#x27;: W_VC,
+    &#x27;o_proj&#x27;: o_proj,
+    &#x27;attention_projection_per_layer&#x27;: attention_projection_per_layer,
+}</code></pre></section>
+<section class="cell markdown"><h2>3. <code>kv_b_proj</code> vs absorbed <code>W_KC/W_VC</code>: equivalence check</h2>
+<p>Important distinction: this section is an **accounting equivalence**, not a claim that the optimized absorbed path literally runs one fused <code>kv_b_proj</code> matmul at inference time.</p>
+<p>The model class defines <code>kv_b_proj</code> with output shape:</p>
+<p><code>kv_lora -&gt; heads * (qk_nope + v_head)</code></p>
+<p>Conceptually, that is the article&#x27;s key/value expansion from latent <code>c_t^KV</code> into per-head content keys and values. But in SGLang&#x27;s absorbed MLA forward path, the useful pieces are exposed and executed as two separate absorbed weights:</p>
+<ul><li><code>w_kc</code>: used on the query side as <code>q_nope @ w_kc</code>, corresponding to the content-key part.</li></ul>
+<ul><li><code>w_vc</code>: used after latent attention accumulation as <code>attn_output @ w_vc</code>, corresponding to the value part.</li></ul>
+<p>So the FLOPs should be identical as a bookkeeping check:</p>
+<p><code>2 * kv_lora * (heads * (qk_nope + v_head)) == W_KC + W_VC</code></p>
+<p>Read this as: the full conceptual <code>kv_b_proj</code> has the same arithmetic size as the two absorbed pieces. Do **not** read it as: the absorbed runtime path first computes full <code>kv_b_proj</code> and then splits it.</p></section>
+<section class="cell"><p><span class="badge">Code cell 8</span></p><pre><code>kv_b_equivalent = 2 * kv_lora * (heads * (qk_nope + v_head))
+absorbed_split_equivalent = W_KC + W_VC
+
+assert kv_b_equivalent == 16_777_216
+assert absorbed_split_equivalent == 16_777_216
+assert kv_b_equivalent == absorbed_split_equivalent
+
+{
+    &#x27;kv_b_equivalent&#x27;: kv_b_equivalent,
+    &#x27;W_KC_plus_W_VC&#x27;: absorbed_split_equivalent,
+}</code></pre></section>
+<section class="cell markdown"><h2>4. MLP, MoE, and router FLOPs</h2>
+<p>SwiGLU has gate, up, and down projections, so the dense matmul cost is <code>6 * hidden * intermediate</code>.</p>
+<p>For Kimi K2.5:</p>
+<ul><li>Layer 0 is dense: <code>dense_layers = 1</code>.</li></ul>
+<ul><li>Layers 1-60 are MoE: <code>moe_layers = 60</code>.</li></ul>
+<ul><li>Each token runs <code>topk=8</code> routed experts plus <code>shared_experts=1</code>, so <code>active_experts=9</code>.</li></ul>
+<ul><li>Router scores all <code>routed_experts=384</code> routed experts.</li></ul></section>
+<section class="cell markdown"><h3>4.1 Raw equations for Dense MLP, MoE, and router</h3>
+<p>We do not have a Zhihu-style equation screenshot for this part in the current notes. The closest existing visual explanation is <code>kimi25_full_model_architecture.html</code>, section <code>Zoom-In: MoE Variables</code>, which shows router -&gt; top-k routed experts -&gt; shared expert -&gt; expert MLP. Below is the same idea written as raw equations.</p>
+<h3># Dense layer 0: ordinary SwiGLU MLP</h3>
+<p>For layer 0, Kimi uses a dense SwiGLU MLP, not MoE:</p>
+<pre><code>g_t = x_t W_gate              # [H] -&gt; [dense_intermediate]
+u_t = x_t W_up                # [H] -&gt; [dense_intermediate]
+m_t = silu(g_t) ⊙ u_t         # elementwise, ignored in this FLOP count
+y_t = m_t W_down              # [dense_intermediate] -&gt; [H]</code></pre>
+<p>Matmul FLOPs:</p>
+<pre><code>dense_mlp_layer
+= 2*H*dense_intermediate      # gate
++ 2*H*dense_intermediate      # up
++ 2*dense_intermediate*H      # down
+= 6*H*dense_intermediate</code></pre>
+<h3># MoE layers 1-60: router plus active experts</h3>
+<p>For each MoE layer, the router first scores all routed experts:</p>
+<pre><code>router_logits_t = x_t W_router        # [H] -&gt; [routed_experts]
+selected_t = topk(router_logits_t, k=8)</code></pre>
+<p>Router matmul FLOPs:</p>
+<pre><code>router_per_moe_layer = 2*H*routed_experts</code></pre>
+<p>Then only the active experts run. For Kimi K2.5:</p>
+<pre><code>topk = 8
+shared_experts = 1
+active_experts = topk + shared_experts = 9</code></pre>
+<p>For one active expert <code>e</code>, the expert is also a SwiGLU MLP:</p>
+<pre><code>g_{t,e} = x_t W_gate,e           # [H] -&gt; [moe_intermediate]
+u_{t,e} = x_t W_up,e             # [H] -&gt; [moe_intermediate]
+m_{t,e} = silu(g_{t,e}) ⊙ u_{t,e}
+y_{t,e} = m_{t,e} W_down,e       # [moe_intermediate] -&gt; [H]</code></pre>
+<p>One expert matmul FLOPs:</p>
+<pre><code>one_expert = 6*H*moe_intermediate</code></pre>
+<p>All active expert FLOPs for one token in one MoE layer:</p>
+<pre><code>active_moe_layer = active_experts * 6*H*moe_intermediate</code></pre>
+<h3># Why this does not count all 384 experts</h3>
+<p>The router scores all <code>routed_experts=384</code>, but it does **not** run all 384 expert MLPs. It runs only <code>topk=8</code> routed experts plus <code>shared_experts=1</code>. That is the core sparse-MoE saving.</p>
+<h3># Link to the notebook formulas</h3>
+<table><tr><th>Notebook formula</th><th>Raw-equation meaning</th></tr>
+<tr><td><code>dense_mlp_layer = 6 * H * dense_intermediate</code></td><td>Layer 0 dense SwiGLU: gate + up + down.</td></tr>
+<tr><td><code>active_moe_layer = 6 * H * moe_intermediate * active_experts</code></td><td>MoE layers: only 9 active expert SwiGLU MLPs run per token.</td></tr>
+<tr><td><code>router_per_moe_layer = 2 * H * routed_experts</code></td><td>Router scores all 384 routed experts before top-k selection.</td></tr></table></section>
+<section class="cell"><p><span class="badge">Code cell 11</span></p><pre><code>dense_mlp_layer = 6 * H * dense_intermediate
+active_moe_layer = 6 * H * moe_intermediate * active_experts
+router_per_moe_layer = 2 * H * routed_experts
+
+assert dense_mlp_layer == 792_723_456
+assert active_moe_layer == 792_723_456
+assert router_per_moe_layer == 5_505_024
+
+{
+    &#x27;dense_mlp_layer&#x27;: dense_mlp_layer,
+    &#x27;active_moe_layer&#x27;: active_moe_layer,
+    &#x27;router_per_moe_layer&#x27;: router_per_moe_layer,
+}</code></pre></section>
+<section class="cell markdown"><h2>5. Final sum</h2>
+<p>The final constant is a sum over all text layers:</p>
+<p><code>61 * attention_projection_per_layer + 1 * dense_mlp_layer + 60 * active_moe_layer + 60 * router_per_moe_layer</code></p></section>
+<section class="cell"><p><span class="badge">Code cell 13</span></p><pre><code>attention_projection_total = L * attention_projection_per_layer
+dense_mlp_total = dense_layers * dense_mlp_layer
+active_moe_total = moe_layers * active_moe_layer
+router_total = moe_layers * router_per_moe_layer
+
+linear_flops_per_token = (
+    attention_projection_total
+    + dense_mlp_total
+    + active_moe_total
+    + router_total
+)
+
+assert attention_projection_total == 12_336_889_856
+assert dense_mlp_total == 792_723_456
+assert active_moe_total == 47_563_407_360
+assert router_total == 330_301_440
+assert linear_flops_per_token == 61_023_322_112
+
+{
+    &#x27;attention_projection_total&#x27;: attention_projection_total,
+    &#x27;dense_mlp_total&#x27;: dense_mlp_total,
+    &#x27;active_moe_total&#x27;: active_moe_total,
+    &#x27;router_total&#x27;: router_total,
+    &#x27;linear_flops_per_token&#x27;: linear_flops_per_token,
+}</code></pre></section>
+<section class="cell markdown"><h2>6. What this constant does not include</h2>
+<p>Excluded from this constant:</p>
+<ul><li>Attention scan over context. That is counted by <code>attention_scan_flops_per_pair</code> in the pair notebook.</li></ul>
+<ul><li>RMSNorm, RoPE elementwise rotation, softmax, top-k selection, and sampling.</li></ul>
+<ul><li>Communication and memory-transfer cost.</li></ul>
+<ul><li><code>lm_head</code>.</li></ul>
+<ul><li>Quantized bit-operation throughput or byte traffic. This is a logical BF16-equivalent multiply-add FLOP count.</li></ul></section>
+<section class="cell markdown"><h2>7. Source anchors</h2>
+<ul><li>HTML source converted from: <code>z_local/benchserving/mfu_metrics/kimi25_linear_flops_constant.html</code>.</li></ul>
+<ul><li>Public config source: <code>moonshotai/Kimi-K2.5/config.json</code>.</li></ul>
+<ul><li>Local model source: <code>python/sglang/srt/models/deepseek_v2.py</code> for <code>qkv_a</code>, <code>q_b</code>, <code>kv_b_proj</code>, <code>o_proj</code>, MoE, and router construction.</li></ul>
+<ul><li>Local absorbed MLA source: <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py</code> for <code>W_KC</code> and <code>W_VC</code> behavior.</li></ul></section>
+</div>
+</main>
+</body>
+</html>

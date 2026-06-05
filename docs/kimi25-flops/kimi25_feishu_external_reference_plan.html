@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Kimi K2.5 Feishu External Reference Plan</title>
+  <style>
+:root {
+  --bg: #f7f3ea;
+  --paper: #fffdf7;
+  --ink: #20201d;
+  --muted: #6d685d;
+  --line: #ddd3bf;
+  --accent: #1f6f68;
+  --code: #173b3a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at 10% 0%, #fff7d9 0, transparent 30rem), var(--bg);
+  color: var(--ink);
+  font-family: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  line-height: 1.62;
+}
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+.paper {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 36px;
+  box-shadow: 0 24px 70px rgba(60, 45, 20, .13);
+}
+h1, h2, h3 {
+  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+  line-height: 1.18;
+}
+h1 { font-size: clamp(2rem, 4vw, 3.4rem); margin: 0 0 24px; }
+h2 { margin-top: 2.2rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+h3 { margin-top: 1.6rem; color: var(--accent); }
+a { color: var(--accent); font-weight: 700; }
+code, pre {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+pre {
+  background: #102321;
+  color: #e6fff8;
+  border-radius: 14px;
+  padding: 16px;
+  overflow: auto;
+}
+blockquote {
+  margin: 1rem 0;
+  padding: .85rem 1rem;
+  border-left: 5px solid var(--accent);
+  background: #edf6f3;
+  color: var(--code);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0;
+  font-size: .95rem;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+th { background: #efe5cf; text-align: left; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.card {
+  display: block;
+  padding: 18px;
+  min-height: 130px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fffaf0;
+  text-decoration: none;
+}
+.card strong { display: block; color: var(--ink); font-size: 1.08rem; margin-bottom: 8px; }
+.card span { color: var(--muted); font-weight: 400; }
+.cell {
+  margin: 1rem 0 1.4rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffaf0;
+}
+.cell.markdown { background: transparent; border-color: transparent; padding: 0; }
+.badge {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: .85rem;
+}
+</style>
+</head>
+<body>
+<main>
+<div class="paper">
+<h1>Kimi K2.5 Feishu External Reference Plan</h1>
+<h2>Goal</h2>
+<p>The current Feishu doc is mathematically useful, but too abstract for readers who do not already understand MLA, absorbed attention, SwiGLU, MoE, and attention-pair accounting.</p>
+<p>We should turn it into a learning path:</p>
+<ol><li>Keep the Feishu doc as the narrative spine.</li></ol>
+<ol><li>Host the detailed HTML and notebook artifacts at stable HTTPS URLs.</li></ol>
+<ol><li>Insert those URLs into Feishu as preview/card blocks near the relevant sections.</li></ol>
+<ol><li>Let readers open the visual explanations or executable notebooks only when they need more depth.</li></ol>
+<h2>Existing Artifacts To Link</h2>
+<table><tr><th>Artifact</th><th>Purpose</th><th>Current local path</th></tr>
+<tr><td>Full architecture visual</td><td>First stop for readers who need the overall Kimi block picture.</td><td><code>z_local/benchserving/mfu_metrics/kimi25_full_model_architecture.html</code></td></tr>
+<tr><td>MLA attention tutorial</td><td>Explains content/nope, RoPE, absorbed W_KC/W_VC, and actual attention scores.</td><td><code>z_local/benchserving/mfu_metrics/kimi25_mla_attention_tutorial.html</code></td></tr>
+<tr><td>Linear FLOPs page</td><td>Visual explanation for <code>linear_FLOPs_per_forward_token</code>.</td><td><code>z_local/benchserving/mfu_metrics/kimi25_linear_flops_constant.html</code></td></tr>
+<tr><td>Attention scan FLOPs page</td><td>Visual explanation for <code>attention_FLOPs_per_attention_pair</code>.</td><td><code>z_local/benchserving/mfu_metrics/kimi25_attention_scan_flops_constant.html</code></td></tr>
+<tr><td>Linear FLOPs notebook</td><td>Executable verification of the linear constant.</td><td><code>z_local/benchserving/mfu_metrics/kimi25_linear_flops_constant.ipynb</code></td></tr>
+<tr><td>Attention scan notebook</td><td>Executable verification of the attention pair constant.</td><td><code>z_local/benchserving/mfu_metrics/kimi25_attention_scan_flops_constant.ipynb</code></td></tr>
+<tr><td>MLP/MoE/router equations</td><td>Equation-focused explanation for SwiGLU and sparse-MoE.</td><td><code>z_local/benchserving/mfu_metrics/kimi25_mlp_moe_router_equations.md</code></td></tr></table>
+<h2>Recommended Hosting Solution</h2>
+<p>Use a small internal static-site host.</p>
+<p>The cleanest version is:</p>
+<pre><code>https://docs-internal.luchentech.com/maas/kimi25-flops/</code></pre>
+<p>with files like:</p>
+<pre><code>/maas/kimi25-flops/index.html
+/maas/kimi25-flops/kimi25_full_model_architecture.html
+/maas/kimi25-flops/kimi25_mla_attention_tutorial.html
+/maas/kimi25-flops/kimi25_linear_flops_constant.html
+/maas/kimi25-flops/kimi25_attention_scan_flops_constant.html
+/maas/kimi25-flops/kimi25_linear_flops_constant.ipynb
+/maas/kimi25-flops/kimi25_attention_scan_flops_constant.ipynb
+/maas/kimi25-flops/kimi25_linear_flops_constant.notebook.html
+/maas/kimi25-flops/kimi25_attention_scan_flops_constant.notebook.html</code></pre>
+<p>The <code>.notebook.html</code> files should be generated from the notebooks with <code>jupyter nbconvert --to html</code>, because most readers will not want to download and run <code>.ipynb</code> files just to understand the calculation.</p>
+<h2>Why This Is Better Than Only Attaching Files In Feishu</h2>
+<p>Feishu links can display as link/title/card/preview views. If the URL points to a stable HTTPS page, Feishu can show a usable preview or card in the doc.</p>
+<p>That gives us:</p>
+<ul><li>one Feishu doc as the main narrative;</li></ul>
+<ul><li>inline previews/cards for visual material;</li></ul>
+<ul><li>stable URLs for teammates to share;</li></ul>
+<ul><li>source files still preserved in the repo;</li></ul>
+<ul><li>no need to paste huge diagrams or notebooks directly into Feishu.</li></ul>
+<h2>Relation To The Existing <code>ntfy</code> Pattern In <code>~/armory</code></h2>
+<p>The <code>ntfy</code> setup in <code>~/armory</code> is useful as an operational pattern:</p>
+<ul><li>config lives in <code>~/armory/.shared/noti_ntfy.env</code>;</li></ul>
+<ul><li>scripts read the service endpoint from env vars;</li></ul>
+<ul><li>a small service is managed separately from the repo content.</li></ul>
+<p>For this Kimi docs case, we should reuse the same philosophy, not the same app:</p>
+<ul><li>define one env/config value like <code>MAAS_DOCS_BASE_URL</code>;</li></ul>
+<ul><li>publish static files to a small internal docs service;</li></ul>
+<ul><li>generate Feishu links from that base URL;</li></ul>
+<ul><li>keep source artifacts in <code>z_local</code>.</li></ul>
+<h2>Hosting Options</h2>
+<h3>Option A: Internal static docs service</h3>
+<p>Run Nginx or Caddy on a small internal VM.</p>
+<p>Example shape:</p>
+<pre><code>/srv/maas-docs/kimi25-flops/</code></pre>
+<p>Pros:</p>
+<ul><li>simplest runtime;</li></ul>
+<ul><li>static HTML and notebook HTML load fast;</li></ul>
+<ul><li>easy to add basic auth or company network restrictions;</li></ul>
+<ul><li>good enough for internal learning material.</li></ul>
+<p>Cons:</p>
+<ul><li>someone owns the VM and HTTPS config.</li></ul>
+<p>This is my recommended first implementation.</p>
+<h3>Option B: Kubernetes static-site Deployment</h3>
+<p>Build a tiny Nginx image or ConfigMap-backed static site and expose it through an internal Ingress.</p>
+<p>Pros:</p>
+<ul><li>fits our existing Kubernetes operations;</li></ul>
+<ul><li>easy to version by image tag;</li></ul>
+<ul><li>can use existing ingress/auth patterns.</li></ul>
+<p>Cons:</p>
+<ul><li>more operational overhead than a VM static folder;</li></ul>
+<ul><li>ConfigMap size may be annoying if artifacts grow.</li></ul>
+<p>Use this if we want the site managed like production infra.</p>
+<h3>Option C: GitLab Pages or object storage</h3>
+<p>If internal GitLab Pages or object storage with HTTPS exists, publish the artifact directory there.</p>
+<p>Pros:</p>
+<ul><li>very low maintenance;</li></ul>
+<ul><li>versioning is easy;</li></ul>
+<ul><li>source and published artifacts can be tied to commits.</li></ul>
+<p>Cons:</p>
+<ul><li>depends on whether the feature is available internally;</li></ul>
+<ul><li>access control may be less convenient.</li></ul>
+<p>Use this if the platform already exists.</p>
+<h3>Option D: Feishu file attachments only</h3>
+<p>Upload HTML/notebook files as Feishu attachments.</p>
+<p>Pros:</p>
+<ul><li>fastest manual fallback.</li></ul>
+<p>Cons:</p>
+<ul><li>weak inline experience;</li></ul>
+<ul><li>hard to update;</li></ul>
+<ul><li>not good for interactive HTML previews.</li></ul>
+<p>Use only as a temporary fallback.</p>
+<h2>How To Insert References Into The Feishu Doc</h2>
+<p>Add a short reference block after each conceptual section.</p>
+<h3>After section 1: Kimi core structure</h3>
+<p>Add:</p>
+<pre><code>辅助阅读：Kimi K2.5 full model architecture map
+&lt;hosted URL&gt;/kimi25_full_model_architecture.html</code></pre>
+<p>Display as Feishu Preview View or Card View.</p>
+<h3>After section 3: MLA attention projection</h3>
+<p>Add:</p>
+<pre><code>辅助阅读：MLA attention tutorial
+&lt;hosted URL&gt;/kimi25_mla_attention_tutorial.html</code></pre>
+<p>Display as Preview View if Feishu accepts the page.</p>
+<h3>After section 5: linear FLOPs constant</h3>
+<p>Add:</p>
+<pre><code>可视化推导：Kimi linear FLOPs constant
+&lt;hosted URL&gt;/kimi25_linear_flops_constant.html
+
+可执行校验：linear FLOPs notebook
+&lt;hosted URL&gt;/kimi25_linear_flops_constant.notebook.html</code></pre>
+<h3>After section 6: attention scan FLOPs</h3>
+<p>Add:</p>
+<pre><code>可视化推导：Kimi attention scan FLOPs constant
+&lt;hosted URL&gt;/kimi25_attention_scan_flops_constant.html
+
+可执行校验：attention scan notebook
+&lt;hosted URL&gt;/kimi25_attention_scan_flops_constant.notebook.html</code></pre>
+<h3>After section 4: MLP / MoE / router</h3>
+<p>Add:</p>
+<pre><code>公式补充：SwiGLU、MoE router、active experts
+&lt;hosted URL&gt;/kimi25_mlp_moe_router_equations.html</code></pre>
+<p>The <code>.md</code> source should be rendered to HTML before hosting.</p>
+<h2>Implementation Steps</h2>
+<ol><li>Create a publish directory:</li></ol>
+<pre><code>mkdir -p z_local/benchserving/mfu_metrics/publish/kimi25-flops</code></pre>
+<ol><li>Copy the existing HTML files into it.</li></ol>
+<ol><li>Convert notebooks to rendered HTML:</li></ol>
+<pre><code>jupyter nbconvert --to html \
+  z_local/benchserving/mfu_metrics/kimi25_linear_flops_constant.ipynb \
+  --output kimi25_linear_flops_constant.notebook.html \
+  --output-dir z_local/benchserving/mfu_metrics/publish/kimi25-flops
+
+jupyter nbconvert --to html \
+  z_local/benchserving/mfu_metrics/kimi25_attention_scan_flops_constant.ipynb \
+  --output kimi25_attention_scan_flops_constant.notebook.html \
+  --output-dir z_local/benchserving/mfu_metrics/publish/kimi25-flops</code></pre>
+<ol><li>Render the MoE Markdown to HTML.</li></ol>
+<ol><li>Add an <code>index.html</code> landing page that explains the reading order.</li></ol>
+<ol><li>Upload/sync the directory to the static host.</li></ol>
+<ol><li>Add Feishu URL preview/card blocks into the doc:</li></ol>
+<pre><code>https://n4fyd3ptax.feishu.cn/docx/DzMIdvX7soohRgxPfjwcYKdTndd</code></pre>
+<h2>Feishu API Notes</h2>
+<p>The manual path is simple: paste URLs into Feishu and choose Link View, Title View, Card View, or Preview View.</p>
+<p>The API path may be possible with Docx blocks:</p>
+<ul><li>link previews are supported by Feishu Docs;</li></ul>
+<ul><li>the Docx block model includes an iframe / embedded block type;</li></ul>
+<ul><li>actual behavior still needs a small probe against our hosted URL, because generic external websites may be restricted by Feishu or by the target page&#x27;s headers.</li></ul>
+<p>For reliability, start with hosted URLs plus manual Preview/Card selection. Then automate iframe/link-preview insertion only after a probe works.</p>
+</div>
+</main>
+</body>
+</html>

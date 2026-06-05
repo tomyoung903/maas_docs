@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Kimi K2.5 MLP, MoE, and Router Equations</title>
+  <style>
+:root {
+  --bg: #f7f3ea;
+  --paper: #fffdf7;
+  --ink: #20201d;
+  --muted: #6d685d;
+  --line: #ddd3bf;
+  --accent: #1f6f68;
+  --code: #173b3a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at 10% 0%, #fff7d9 0, transparent 30rem), var(--bg);
+  color: var(--ink);
+  font-family: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  line-height: 1.62;
+}
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+.paper {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 36px;
+  box-shadow: 0 24px 70px rgba(60, 45, 20, .13);
+}
+h1, h2, h3 {
+  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+  line-height: 1.18;
+}
+h1 { font-size: clamp(2rem, 4vw, 3.4rem); margin: 0 0 24px; }
+h2 { margin-top: 2.2rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+h3 { margin-top: 1.6rem; color: var(--accent); }
+a { color: var(--accent); font-weight: 700; }
+code, pre {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+pre {
+  background: #102321;
+  color: #e6fff8;
+  border-radius: 14px;
+  padding: 16px;
+  overflow: auto;
+}
+blockquote {
+  margin: 1rem 0;
+  padding: .85rem 1rem;
+  border-left: 5px solid var(--accent);
+  background: #edf6f3;
+  color: var(--code);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0;
+  font-size: .95rem;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+th { background: #efe5cf; text-align: left; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.card {
+  display: block;
+  padding: 18px;
+  min-height: 130px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fffaf0;
+  text-decoration: none;
+}
+.card strong { display: block; color: var(--ink); font-size: 1.08rem; margin-bottom: 8px; }
+.card span { color: var(--muted); font-weight: 400; }
+.cell {
+  margin: 1rem 0 1.4rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffaf0;
+}
+.cell.markdown { background: transparent; border-color: transparent; padding: 0; }
+.badge {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--muted);
+  font-size: .85rem;
+}
+</style>
+</head>
+<body>
+<main>
+<div class="paper">
+<h1>Kimi K2.5 MLP, MoE, and Router FLOP Equations</h1>
+<p>This note is the equation-style companion to section <code>4.1 Raw equations for Dense MLP, MoE, and router</code> in <code>kimi25_linear_flops_constant.ipynb</code>.</p>
+<p>The goal is to separate three ideas:</p>
+<ol><li>The first transformer layer uses a normal dense SwiGLU MLP.</li></ol>
+<ol><li>The remaining MoE layers use a router to choose experts.</li></ol>
+<ol><li>Only the selected experts run their MLPs, which is the sparse-MoE saving.</li></ol>
+<h2>Variables</h2>
+<table><tr><th>Symbol</th><th>Meaning</th><th>Kimi K2.5 value</th></tr>
+<tr><td><code>H</code></td><td>hidden size</td><td><code>7168</code></td></tr>
+<tr><td><code>dense_intermediate</code></td><td>dense MLP intermediate width</td><td><code>18432</code></td></tr>
+<tr><td><code>moe_intermediate</code></td><td>each expert&#x27;s intermediate width</td><td><code>2048</code></td></tr>
+<tr><td><code>routed_experts</code></td><td>number of candidate routed experts</td><td><code>384</code></td></tr>
+<tr><td><code>topk</code></td><td>routed experts selected per token</td><td><code>8</code></td></tr>
+<tr><td><code>shared_experts</code></td><td>always-on shared experts</td><td><code>1</code></td></tr>
+<tr><td><code>active_experts</code></td><td>experts that actually run per token</td><td><code>topk + shared_experts = 9</code></td></tr></table>
+<p>Throughout this note, one matrix multiply from shape <code>[a] -&gt; [b]</code> costs:</p>
+<p>$$ 2ab $$</p>
+<p>The factor <code>2</code> is multiply plus add.</p>
+<h2>1. Dense Layer 0: Ordinary SwiGLU MLP</h2>
+<p>Layer 0 is not MoE. It uses a dense SwiGLU MLP.</p>
+<p>For token hidden state:</p>
+<p>$$ x_t \in \mathbb{R}^{H} $$</p>
+<p>the dense MLP computes:</p>
+<p>$$ g_t = x_t W_{\text{gate}} $$</p>
+<p>$$ u_t = x_t W_{\text{up}} $$</p>
+<p>$$ m_t = \operatorname{silu}(g_t) \odot u_t $$</p>
+<p>$$ y_t = m_t W_{\text{down}} $$</p>
+<p>where:</p>
+<p>$$ W_{\text{gate}} \in \mathbb{R}^{H \times dense\_intermediate} $$</p>
+<p>$$ W_{\text{up}} \in \mathbb{R}^{H \times dense\_intermediate} $$</p>
+<p>$$ W_{\text{down}} \in \mathbb{R}^{dense\_intermediate \times H} $$</p>
+<p>So the matmul FLOPs are:</p>
+<p>$$ dense\_mlp\_layer = 2H \cdot dense\_intermediate + 2H \cdot dense\_intermediate + 2dense\_intermediate \cdot H $$</p>
+<p>Therefore:</p>
+<p>$$ dense\_mlp\_layer = 6H \cdot dense\_intermediate $$</p>
+<p>For Kimi K2.5:</p>
+<p>$$ dense\_mlp\_layer = 6 \cdot 7168 \cdot 18432 = 792{,}723{,}456 $$</p>
+<h2>2. MoE Router: Score All Routed Experts</h2>
+<p>In each MoE layer, the router first scores all candidate routed experts:</p>
+<p>$$ router\_logits_t = x_t W_{\text{router}} $$</p>
+<p>where:</p>
+<p>$$ W_{\text{router}} \in \mathbb{R}^{H \times routed\_experts} $$</p>
+<p>Then the model chooses the top routed experts:</p>
+<p>$$ selected_t = \operatorname{topk}(router\_logits_t, k=8) $$</p>
+<p>The router matmul FLOPs are:</p>
+<p>$$ router\_per\_moe\_layer = 2H \cdot routed\_experts $$</p>
+<p>For Kimi K2.5:</p>
+<p>$$ router\_per\_moe\_layer = 2 \cdot 7168 \cdot 384 = 5{,}505{,}024 $$</p>
+<p>The router scores all 384 routed experts, but scoring is much cheaper than running all expert MLPs.</p>
+<h2>3. One Active Expert: SwiGLU MLP</h2>
+<p>For one selected expert <code>e</code>, the expert itself is also a SwiGLU MLP:</p>
+<p>$$ g_{t,e} = x_t W_{\text{gate},e} $$</p>
+<p>$$ u_{t,e} = x_t W_{\text{up},e} $$</p>
+<p>$$ m_{t,e} = \operatorname{silu}(g_{t,e}) \odot u_{t,e} $$</p>
+<p>$$ y_{t,e} = m_{t,e} W_{\text{down},e} $$</p>
+<p>where:</p>
+<p>$$ W_{\text{gate},e} \in \mathbb{R}^{H \times moe\_intermediate} $$</p>
+<p>$$ W_{\text{up},e} \in \mathbb{R}^{H \times moe\_intermediate} $$</p>
+<p>$$ W_{\text{down},e} \in \mathbb{R}^{moe\_intermediate \times H} $$</p>
+<p>The FLOPs for one active expert are:</p>
+<p>$$ one\_expert = 2H \cdot moe\_intermediate + 2H \cdot moe\_intermediate + 2moe\_intermediate \cdot H $$</p>
+<p>Therefore:</p>
+<p>$$ one\_expert = 6H \cdot moe\_intermediate $$</p>
+<p>For Kimi K2.5:</p>
+<p>$$ one\_expert = 6 \cdot 7168 \cdot 2048 = 88{,}080{,}384 $$</p>
+<h2>4. Active Experts Per Token</h2>
+<p>Kimi K2.5 uses:</p>
+<p>$$ topk = 8 $$</p>
+<p>$$ shared\_experts = 1 $$</p>
+<p>So the number of experts that actually run per token is:</p>
+<p>$$ active\_experts = topk + shared\_experts = 9 $$</p>
+<p>The active expert FLOPs for one token in one MoE layer are:</p>
+<p>$$ active\_moe\_layer = active\_experts \cdot one\_expert $$</p>
+<p>Substitute the expert formula:</p>
+<p>$$ active\_moe\_layer = active\_experts \cdot 6H \cdot moe\_intermediate $$</p>
+<p>For Kimi K2.5:</p>
+<p>$$ active\_moe\_layer = 9 \cdot 6 \cdot 7168 \cdot 2048 = 792{,}723{,}456 $$</p>
+<h2>5. Why This Does Not Count All 384 Experts</h2>
+<p>The router computes:</p>
+<p>$$ router\_logits_t \in \mathbb{R}^{384} $$</p>
+<p>but the model does not run:</p>
+<p>$$ 384 \cdot one\_expert $$</p>
+<p>Instead, it runs:</p>
+<p>$$ 9 \cdot one\_expert $$</p>
+<p>That is the core sparse-MoE saving:</p>
+<p>$$ \frac{9}{384} = 2.34\% $$</p>
+<p>So each MoE layer pays a small router cost plus the cost of 9 active experts, not 384 full experts.</p>
+<h2>6. Notebook Formula Mapping</h2>
+<table><tr><th>Notebook formula</th><th>Raw-equation meaning</th></tr>
+<tr><td><code>dense_mlp_layer = 6 * H * dense_intermediate</code></td><td>Layer 0 dense SwiGLU: gate + up + down.</td></tr>
+<tr><td><code>router_per_moe_layer = 2 * H * routed_experts</code></td><td>Router scores all 384 routed experts before top-k selection.</td></tr>
+<tr><td><code>one_expert = 6 * H * moe_intermediate</code></td><td>One selected expert&#x27;s SwiGLU MLP.</td></tr>
+<tr><td><code>active_moe_layer = active_experts * one_expert</code></td><td>The 8 routed experts plus 1 shared expert that actually run.</td></tr></table>
+</div>
+</main>
+</body>
+</html>

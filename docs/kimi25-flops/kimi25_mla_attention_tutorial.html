@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kimi K2.5 MLA Attention Tutorial</title>
+  <style>
+    :root {
+      --bg: #111318;
+      --paper: #f3ead8;
+      --panel: rgba(250, 245, 233, 0.94);
+      --ink: #17191d;
+      --muted: #62645f;
+      --line: rgba(23, 25, 29, 0.18);
+      --blue: #285e8c;
+      --cyan: #17766f;
+      --amber: #b87328;
+      --red: #a1463d;
+      --green: #5d7832;
+      --violet: #66558c;
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.26);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(40, 94, 140, 0.40), transparent 30rem),
+        radial-gradient(circle at 86% 12%, rgba(184, 115, 40, 0.32), transparent 30rem),
+        linear-gradient(135deg, #101318, #1d211c);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    }
+
+    main {
+      width: min(1240px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0 58px;
+    }
+
+    header {
+      color: var(--paper);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(36px, 5vw, 70px);
+      line-height: 0.92;
+      letter-spacing: -0.055em;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      letter-spacing: -0.035em;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 16px;
+    }
+
+    code, .mono {
+      font-family: "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.94em;
+    }
+
+    a {
+      color: #bfe4ff;
+      text-underline-offset: 3px;
+    }
+
+    .lede {
+      color: rgba(243, 234, 216, 0.80);
+      max-width: 820px;
+      font-size: 18px;
+    }
+
+    .contract {
+      border: 1px solid rgba(243, 234, 216, 0.22);
+      background: rgba(243, 234, 216, 0.08);
+      border-radius: 22px;
+      padding: 16px;
+    }
+
+    .contract strong {
+      display: block;
+      color: var(--paper);
+      margin-bottom: 6px;
+    }
+
+    .contract p {
+      color: rgba(243, 234, 216, 0.78);
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid rgba(243, 234, 216, 0.20);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      margin-top: 20px;
+      padding: 22px;
+      overflow: hidden;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .grid3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: rgba(255, 251, 243, 0.76);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .callout {
+      margin-top: 12px;
+      border-left: 5px solid var(--amber);
+      background: rgba(184, 115, 40, 0.12);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .formula {
+      white-space: pre-wrap;
+      font-family: "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #1c1d1a;
+      background: rgba(255, 251, 243, 0.82);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(255, 251, 243, 0.72);
+      font-family: "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .box {
+      fill: rgba(255, 251, 243, 0.90);
+      stroke: rgba(23, 25, 29, 0.30);
+      stroke-width: 1.4;
+    }
+
+    .blue { fill: rgba(40, 94, 140, 0.16); stroke: var(--blue); }
+    .cyan { fill: rgba(23, 118, 111, 0.15); stroke: var(--cyan); }
+    .amber { fill: rgba(184, 115, 40, 0.17); stroke: var(--amber); }
+    .red { fill: rgba(161, 70, 61, 0.15); stroke: var(--red); }
+    .green { fill: rgba(93, 120, 50, 0.15); stroke: var(--green); }
+    .violet { fill: rgba(102, 85, 140, 0.15); stroke: var(--violet); }
+    .darkbox { fill: rgba(23, 25, 29, 0.90); stroke: rgba(23, 25, 29, 0.92); }
+
+    .label {
+      font-family: "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 13.5px;
+      fill: var(--ink);
+    }
+
+    .small {
+      font-size: 11.5px;
+      fill: var(--muted);
+    }
+
+    .white {
+      fill: var(--paper);
+    }
+
+    .arrow {
+      stroke: rgba(23, 25, 29, 0.50);
+      stroke-width: 1.7;
+      fill: none;
+      marker-end: url(#arrow);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-family: "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 12.8px;
+    }
+
+    th, td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(23, 25, 29, 0.055);
+      color: var(--ink);
+    }
+
+    footer {
+      color: rgba(243, 234, 216, 0.72);
+      line-height: 1.55;
+      margin-top: 22px;
+      font-size: 14px;
+    }
+
+    footer code {
+      color: var(--paper);
+    }
+
+    @media (max-width: 920px) {
+      header, .grid2, .grid3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>MLA Attention, From Zero To Kimi TP=8</h1>
+      <p class="lede">This page deliberately slows down the explanation. First: normal attention. Second: why MLA exists. Third: Kimi K2.5 MLA as one logical model. Last: how TP=8 maps that logical model onto GPUs.</p>
+    </div>
+    <div class="contract">
+      <strong>Scope</strong>
+      <p>This is only about MLA attention and TP=8. Sections 1-6 use global 64-head shapes. Section 7 converts those shapes to per-rank execution. MoE is intentionally left out except where it touches the hidden stream before/after attention.</p>
+    </div>
+  </header>
+
+  <section>
+    <h2>1. Background: Normal Attention</h2>
+    <div class="grid2">
+      <div>
+        <p>In normal attention, every token creates a query <span class="mono">Q</span>, a key <span class="mono">K</span>, and a value <span class="mono">V</span>. The query asks: "which previous tokens should I read?" Keys are addresses. Values are the content to read.</p>
+        <div class="formula">For one head, one query token i:
+
+q_i = hidden_i x W_Q
+k_j = hidden_j x W_K      for every cached token j
+v_j = hidden_j x W_V      for every cached token j
+
+score_ij = dot(q_i, k_j) / sqrt(d_head)
+score_ij += causal_mask(i, j)
+
+p_ij = softmax(score_i over all j)
+out_i = sum_j p_ij * v_j</div>
+        <div class="callout">
+          <p><b>Softmax is simple:</b> for a fixed query token and fixed head, it turns all context scores into probabilities that sum to 1. High score means "read more from that old token".</p>
+        </div>
+      </div>
+
+      <svg viewBox="0 0 760 440" role="img" aria-label="Normal attention flow">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(23,25,29,0.55)"></path>
+          </marker>
+        </defs>
+        <rect x="30" y="48" width="132" height="58" rx="16" class="box green"></rect>
+        <text x="96" y="72" text-anchor="middle" class="label">hidden_i</text>
+        <text x="96" y="92" text-anchor="middle" class="small">current token</text>
+
+        <path d="M 162 77 H 212" class="arrow"></path>
+        <rect x="214" y="32" width="122" height="44" rx="12" class="box blue"></rect>
+        <text x="275" y="59" text-anchor="middle" class="label">W_Q -> q</text>
+        <rect x="214" y="92" width="122" height="44" rx="12" class="box cyan"></rect>
+        <text x="275" y="119" text-anchor="middle" class="label">W_K -> k</text>
+        <rect x="214" y="152" width="122" height="44" rx="12" class="box amber"></rect>
+        <text x="275" y="179" text-anchor="middle" class="label">W_V -> v</text>
+
+        <rect x="450" y="36" width="250" height="84" rx="18" class="box red"></rect>
+        <text x="575" y="68" text-anchor="middle" class="label">scores = q dot k</text>
+        <text x="575" y="92" text-anchor="middle" class="small">one score per previous token</text>
+
+        <path d="M 336 54 C 390 54, 398 56, 450 68" class="arrow"></path>
+        <path d="M 336 114 C 392 114, 400 104, 450 90" class="arrow"></path>
+
+        <rect x="450" y="162" width="250" height="74" rx="18" class="box amber"></rect>
+        <text x="575" y="191" text-anchor="middle" class="label">softmax</text>
+        <text x="575" y="213" text-anchor="middle" class="small">probabilities over context</text>
+        <path d="M 575 120 V 162" class="arrow"></path>
+
+        <rect x="450" y="282" width="250" height="74" rx="18" class="box green"></rect>
+        <text x="575" y="311" text-anchor="middle" class="label">weighted sum of V</text>
+        <text x="575" y="333" text-anchor="middle" class="small">out = sum p_j v_j</text>
+        <path d="M 575 236 V 282" class="arrow"></path>
+        <path d="M 336 174 C 388 238, 395 304, 450 318" class="arrow"></path>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Why MLA Exists</h2>
+    <div class="grid3">
+      <div class="card">
+        <h3>The KV-cache problem</h3>
+        <p>Decode repeatedly scans all cached keys/values. If each token stores full per-head K and V, the cache is huge and memory bandwidth becomes the bottleneck.</p>
+      </div>
+      <div class="card">
+        <h3>MLA idea</h3>
+        <p>Store a compressed latent vector instead of full K/V. Later, use learned projections to get the same useful attention computation from this smaller cache.</p>
+      </div>
+      <div class="card">
+        <h3>Kimi shape</h3>
+        <p>Kimi stores normalized latent <span class="mono">c/k_nope[512]</span> plus RoPE-applied <span class="mono">k_rope[64]</span> per token, rather than full per-head K/V for every head.</p>
+      </div>
+    </div>
+
+    <div class="formula">Normal cache, conceptual:
+  for each old token j:
+    K_j: [num_heads, d_key]
+    V_j: [num_heads, d_value]
+
+MLA cache, Kimi-style:
+  for each old token j:
+    c_j / k_nope_j: [512]   # normalized compressed content latent
+    k_rope_j:       [64]    # RoPE-applied position key
+
+MLA saves cache/memory traffic because c_j is shared across heads and reused through learned head-specific transforms.</div>
+  </section>
+
+  <section>
+    <h2>3. Kimi MLA: What Is Stored And What Is Rebuilt?</h2>
+    <div class="grid2">
+      <div>
+        <p>Ignore tensor parallelism for now. Think of one logical Kimi attention layer. In SGLang, <span class="mono">qkv_a</span> is a fused projection: the Moonshot reference model has separate <span class="mono">q_a_proj</span> and <span class="mono">kv_a_proj_with_mqa</span>, while SGLang fuses them for serving. The raw KV content is normalized before it is used as the cached latent <span class="mono">c_j</span>, which SGLang often calls <span class="mono">k_nope</span>.</p>
+        <div class="formula">Kimi K2.5 dimensions:
+
+hidden = 7168
+q_lora_rank = 1536
+kv_lora_rank = 512
+qk_nope_head_dim = 128
+qk_rope_head_dim = 64
+v_head_dim = 128
+num_heads = 64
+
+SGLang fused qkv_a:
+  hidden[7168] -> q_lora_raw[1536] + kv_content_raw[512] + k_pe_raw[64]
+  total output = 2112
+
+Content path, used in the next section:
+  q_lora = RMSNorm(q_lora_raw)                # [1536]
+  c_j / k_nope_j = RMSNorm(kv_content_raw)    # [512]
+
+q_b, after q_lora normalization:
+  q_lora[1536] -> 64 heads x (q_nope[128] + q_pe_raw[64])
+  global query output before RoPE = 64 x 192 = 12288
+
+Position path, parked until section 5:
+  q_pe_raw_h -> RoPE(position_i) -> q_rope_h  # [64], query-side position
+  k_pe_raw_j -> RoPE(position_j) -> k_rope_j  # [64], cached key-side position
+
+qk_nope means "query/key dimensions with no positional encoding".
+qk_rope_head_dim is the shared dimension name: both q_rope and k_rope are length 64.
+
+Important:
+  q_rope comes from q_lora -> q_b -> q_pe_raw -> RoPE. It is query-side and per head.
+  k_rope comes from qkv_a -> k_pe_raw -> RoPE. It is key-side, cached, and shared across heads.
+  the 128-d key-side no-RoPE vector can be rebuilt from c_j through kv_b_proj/w_kc, but absorbed MLA does not cache or materialize it.</div>
+        <div class="callout">
+          <p><b>Naming trap:</b> <span class="mono">qk_rope_head_dim=64</span> is a dimension setting, not a tensor source. The actual query vector is <span class="mono">q_rope</span>; the actual cached key vector is <span class="mono">k_rope</span>. Also do not confuse SGLang's cached <span class="mono">k_nope[512]</span> latent with <span class="mono">qk_nope_head_dim=128</span>. They meet only through the absorbed score computation.</p>
+        </div>
+      </div>
+
+      <svg viewBox="0 0 780 430" role="img" aria-label="Kimi MLA stored tensors">
+        <rect x="24" y="44" width="142" height="58" rx="16" class="box green"></rect>
+        <text x="95" y="68" text-anchor="middle" class="label">hidden</text>
+        <text x="95" y="88" text-anchor="middle" class="small">[7168]</text>
+
+        <path d="M 166 73 H 218" class="arrow"></path>
+        <rect x="220" y="28" width="188" height="90" rx="20" class="box cyan"></rect>
+        <text x="314" y="62" text-anchor="middle" class="label">qkv_a</text>
+        <text x="314" y="86" text-anchor="middle" class="small">low-rank projection</text>
+
+        <path d="M 408 73 H 456" class="arrow"></path>
+        <rect x="458" y="22" width="284" height="54" rx="15" class="box blue"></rect>
+        <text x="600" y="45" text-anchor="middle" class="label">q_lora [1536]</text>
+        <text x="600" y="64" text-anchor="middle" class="small">not cached; used for current query</text>
+
+        <path d="M 458 49 C 414 49, 398 96, 458 258" class="arrow"></path>
+        <rect x="458" y="250" width="284" height="72" rx="15" class="box blue"></rect>
+        <text x="600" y="276" text-anchor="middle" class="label">q_b output</text>
+        <text x="600" y="297" text-anchor="middle" class="small">64 heads x (q_nope 128 + q_pe_raw 64)</text>
+        <text x="600" y="316" text-anchor="middle" class="small">q_pe_raw is parked until position section</text>
+
+        <rect x="458" y="98" width="284" height="54" rx="15" class="box cyan"></rect>
+        <text x="600" y="121" text-anchor="middle" class="label">kv_content_raw [512]</text>
+        <text x="600" y="140" text-anchor="middle" class="small">RMSNorm -> c / k_nope cache</text>
+
+        <rect x="458" y="174" width="284" height="54" rx="15" class="box violet"></rect>
+        <text x="600" y="197" text-anchor="middle" class="label">k_pe_raw [64]</text>
+        <text x="600" y="216" text-anchor="middle" class="small">position slice for section 5</text>
+
+        <path d="M 600 228 V 346" class="arrow"></path>
+        <rect x="418" y="348" width="364" height="58" rx="18" class="darkbox"></rect>
+        <text x="600" y="372" text-anchor="middle" class="label white">KV cache per old token</text>
+        <text x="600" y="392" text-anchor="middle" class="small white">store c/k_nope[512] + k_rope[64], not full per-head K/V</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. MLA Without Position: Content-Only Attention</h2>
+    <div class="grid2">
+      <div>
+        <p>First remove positional embeddings from the mental model. Then MLA is just this: each old token stores a small content latent <span class="mono">c_j/k_nope_j[512]</span>. For the current token, each head builds a content query that can dot that latent. This gives one content score per old token.</p>
+        <div class="formula">For one logical attention head h, ignoring position:
+
+q_lora_raw = qkv_a(hidden_i).q_lora_raw      # [1536]
+q_lora = RMSNorm(q_lora_raw)                 # [1536]
+q_all_raw = q_b(q_lora)                      # [64 heads, 192]
+q_h_raw = q_all_raw[h]                       # [192]
+q_nope_h, _ = split(q_h_raw, [128, 64])      # ignore the 64-d position slice for now
+
+For old token j in context:
+  c_j / k_nope_j = cached normalized latent [512]
+
+Absorbed content-only MLA:
+  q_content_h = q_nope_h x W_KC_h            # [512], W_KC_h comes from kv_b_proj/w_kc
+  score_content_j = dot(q_content_h, c_j/k_nope_j)
+  score_j = score_content_j * scale
+
+Then:
+  prob_j = softmax(score_j over all context positions j)
+  latent_out_h = sum_j prob_j * c_j/k_nope_j # [512]</div>
+        <div class="callout">
+          <p><b>Mental model before position:</b> the head asks, "which old token has content that matches my current content query?" It does not yet know whether an old token is near, far, earlier, or later. That positional information is added as a second score term in the next section.</p>
+        </div>
+      </div>
+
+      <svg viewBox="0 0 820 620" role="img" aria-label="Content-only MLA score aligned with equations">
+        <rect x="36" y="26" width="180" height="56" rx="16" class="box green"></rect>
+        <text x="126" y="49" text-anchor="middle" class="label">hidden_i</text>
+        <text x="126" y="68" text-anchor="middle" class="small">current token</text>
+
+        <path d="M 216 54 H 264" class="arrow"></path>
+        <rect x="266" y="26" width="188" height="56" rx="16" class="box cyan"></rect>
+        <text x="360" y="49" text-anchor="middle" class="label">qkv_a</text>
+        <text x="360" y="68" text-anchor="middle" class="small">take q_lora_raw [1536]</text>
+
+        <path d="M 454 54 H 502" class="arrow"></path>
+        <rect x="504" y="26" width="236" height="56" rx="16" class="box blue"></rect>
+        <text x="622" y="49" text-anchor="middle" class="label">RMSNorm</text>
+        <text x="622" y="68" text-anchor="middle" class="small">q_lora_raw -> q_lora [1536]</text>
+
+        <path d="M 622 82 V 120" class="arrow"></path>
+        <rect x="504" y="122" width="236" height="58" rx="16" class="box blue"></rect>
+        <text x="622" y="146" text-anchor="middle" class="label">q_b(q_lora)</text>
+        <text x="622" y="166" text-anchor="middle" class="small">64 heads x 192</text>
+
+        <path d="M 504 151 H 454" class="arrow"></path>
+        <rect x="246" y="122" width="208" height="58" rx="16" class="box blue"></rect>
+        <text x="350" y="146" text-anchor="middle" class="label">select head h</text>
+        <text x="350" y="166" text-anchor="middle" class="small">q_h_raw [192]</text>
+
+        <path d="M 246 151 H 198" class="arrow"></path>
+        <rect x="36" y="122" width="162" height="58" rx="16" class="box blue"></rect>
+        <text x="117" y="146" text-anchor="middle" class="label">split</text>
+        <text x="117" y="166" text-anchor="middle" class="small">q_nope_h [128]</text>
+
+        <path d="M 117 180 V 224" class="arrow"></path>
+        <rect x="36" y="226" width="180" height="58" rx="16" class="box cyan"></rect>
+        <text x="126" y="250" text-anchor="middle" class="label">x W_KC_h</text>
+        <text x="126" y="270" text-anchor="middle" class="small">128 -> q_content [512]</text>
+
+        <rect x="504" y="226" width="236" height="58" rx="16" class="box cyan"></rect>
+        <text x="622" y="250" text-anchor="middle" class="label">cached old token j</text>
+        <text x="622" y="270" text-anchor="middle" class="small">c_j / k_nope_j [512]</text>
+
+        <path d="M 216 255 H 298" class="arrow"></path>
+        <path d="M 504 255 H 422" class="arrow"></path>
+        <rect x="300" y="226" width="120" height="58" rx="16" class="box red"></rect>
+        <text x="360" y="250" text-anchor="middle" class="label">dot</text>
+        <text x="360" y="270" text-anchor="middle" class="small">content score</text>
+
+        <path d="M 360 284 V 324" class="arrow"></path>
+        <rect x="270" y="326" width="180" height="58" rx="16" class="box red"></rect>
+        <text x="360" y="350" text-anchor="middle" class="label">multiply scale</text>
+        <text x="360" y="370" text-anchor="middle" class="small">score_j</text>
+
+        <path d="M 360 384 V 424" class="arrow"></path>
+        <rect x="270" y="426" width="180" height="58" rx="16" class="box green"></rect>
+        <text x="360" y="450" text-anchor="middle" class="label">softmax over j</text>
+        <text x="360" y="470" text-anchor="middle" class="small">prob_j</text>
+
+        <path d="M 450 455 H 502" class="arrow"></path>
+        <rect x="504" y="426" width="236" height="58" rx="16" class="box green"></rect>
+        <text x="622" y="450" text-anchor="middle" class="label">weighted sum</text>
+        <text x="622" y="470" text-anchor="middle" class="small">sum_j prob_j * c_j/k_nope_j</text>
+
+        <path d="M 622 484 V 524" class="arrow"></path>
+        <rect x="504" y="526" width="236" height="58" rx="16" class="box green"></rect>
+        <text x="622" y="550" text-anchor="middle" class="label">latent_out_h [512]</text>
+        <text x="622" y="570" text-anchor="middle" class="small">input to value projection</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. Add Position: RoPE Contribution</h2>
+    <div class="grid2">
+      <div>
+        <p>Now add positional embeddings back. Kimi keeps the content score from section 4, then adds a separate positional score. The query-side position vector <span class="mono">q_rope_h</span> comes from <span class="mono">q_lora -> q_b -> RoPE</span>. The key-side position vector <span class="mono">k_rope_j</span> comes from <span class="mono">qkv_a -> RoPE</span> and is cached with the old token. Both are length 64.</p>
+        <div class="formula">Continue from the content-only score:
+
+score_content_j = dot(q_content_h, c_j/k_nope_j)
+
+Now add position:
+  _, q_pe_raw_h = split(q_h_raw, [128, 64])
+  q_rope_h = RoPE(q_pe_raw_h, position_i)    # current-token position query
+
+For old token j in context:
+  k_rope_j = cached RoPE(k_pe_raw_j, position_j)
+
+Position term:
+  score_pos_j = dot(q_rope_h, k_rope_j)
+
+Full MLA score:
+  score_j = (score_content_j + score_pos_j) * scale
+  score_j += causal_mask(i, j)
+
+Then:
+  prob_j = softmax(score_j over all context positions j)</div>
+        <div class="callout">
+          <p><b>Why separated this way:</b> content says "what old token looks relevant?" Position says "where is that old token relative to this query?" MLA keeps these as two additive score terms, which is why the content compression can be understood before RoPE.</p>
+        </div>
+      </div>
+
+      <svg viewBox="0 0 790 520" role="img" aria-label="Kimi MLA score calculation">
+        <rect x="24" y="34" width="160" height="56" rx="16" class="box blue"></rect>
+        <text x="104" y="57" text-anchor="middle" class="label">q_nope_h [128]</text>
+        <text x="104" y="76" text-anchor="middle" class="small">content query</text>
+
+        <path d="M 184 62 H 212" class="arrow"></path>
+        <rect x="214" y="34" width="160" height="56" rx="16" class="box cyan"></rect>
+        <text x="294" y="57" text-anchor="middle" class="label">x W_KC_h</text>
+        <text x="294" y="76" text-anchor="middle" class="small">128 to 512</text>
+
+        <path d="M 374 62 H 402" class="arrow"></path>
+        <rect x="404" y="34" width="170" height="56" rx="16" class="box cyan"></rect>
+        <text x="489" y="57" text-anchor="middle" class="label">q_content_h</text>
+        <text x="489" y="76" text-anchor="middle" class="small">[512]</text>
+
+        <rect x="404" y="112" width="170" height="56" rx="16" class="box cyan"></rect>
+        <text x="489" y="135" text-anchor="middle" class="label">c_j / k_nope_j</text>
+        <text x="489" y="154" text-anchor="middle" class="small">cached [512]</text>
+
+        <path d="M 574 62 H 602" class="arrow"></path>
+        <path d="M 574 140 C 592 140, 596 112, 602 84" class="arrow"></path>
+        <rect x="604" y="48" width="162" height="76" rx="18" class="box red"></rect>
+        <text x="685" y="78" text-anchor="middle" class="label">content score</text>
+        <text x="685" y="101" text-anchor="middle" class="small">dot(q_content, c)</text>
+
+        <rect x="24" y="224" width="160" height="56" rx="16" class="box violet"></rect>
+        <text x="104" y="247" text-anchor="middle" class="label">q_pe_raw_h</text>
+        <text x="104" y="266" text-anchor="middle" class="small">from q_b [64]</text>
+
+        <path d="M 184 252 H 212" class="arrow"></path>
+        <rect x="214" y="224" width="160" height="56" rx="16" class="box violet"></rect>
+        <text x="294" y="247" text-anchor="middle" class="label">RoPE(pos_i)</text>
+        <text x="294" y="266" text-anchor="middle" class="small">current token</text>
+
+        <path d="M 374 252 H 402" class="arrow"></path>
+        <rect x="404" y="224" width="170" height="56" rx="16" class="box violet"></rect>
+        <text x="489" y="247" text-anchor="middle" class="label">q_rope_h [64]</text>
+        <text x="489" y="266" text-anchor="middle" class="small">position query</text>
+
+        <rect x="24" y="334" width="160" height="56" rx="16" class="box violet"></rect>
+        <text x="104" y="357" text-anchor="middle" class="label">k_pe_raw_j</text>
+        <text x="104" y="376" text-anchor="middle" class="small">from qkv_a [64]</text>
+
+        <path d="M 184 362 H 212" class="arrow"></path>
+        <rect x="214" y="334" width="160" height="56" rx="16" class="box violet"></rect>
+        <text x="294" y="357" text-anchor="middle" class="label">RoPE(pos_j)</text>
+        <text x="294" y="376" text-anchor="middle" class="small">old token</text>
+
+        <path d="M 374 362 H 402" class="arrow"></path>
+        <rect x="404" y="334" width="170" height="56" rx="16" class="box violet"></rect>
+        <text x="489" y="357" text-anchor="middle" class="label">k_rope_j [64]</text>
+        <text x="489" y="376" text-anchor="middle" class="small">cached position key</text>
+
+        <path d="M 574 252 C 600 252, 600 290, 606 312" class="arrow"></path>
+        <path d="M 574 362 H 602" class="arrow"></path>
+        <rect x="604" y="306" width="162" height="76" rx="18" class="box red"></rect>
+        <text x="685" y="336" text-anchor="middle" class="label">position score</text>
+        <text x="685" y="359" text-anchor="middle" class="small">dot(q_rope, k_rope)</text>
+
+        <path d="M 685 124 C 630 220, 470 386, 398 430" class="arrow"></path>
+        <path d="M 604 344 C 548 374, 470 408, 398 430" class="arrow"></path>
+        <rect x="272" y="420" width="170" height="62" rx="18" class="box amber"></rect>
+        <text x="357" y="445" text-anchor="middle" class="label">sum + scale</text>
+        <text x="357" y="466" text-anchor="middle" class="small">then causal mask</text>
+
+        <path d="M 442 451 H 492" class="arrow"></path>
+        <rect x="494" y="420" width="122" height="62" rx="18" class="box green"></rect>
+        <text x="555" y="445" text-anchor="middle" class="label">softmax</text>
+        <text x="555" y="466" text-anchor="middle" class="small">over context</text>
+
+        <path d="M 616 451 H 648" class="arrow"></path>
+        <rect x="650" y="420" width="120" height="62" rx="18" class="box green"></rect>
+        <text x="710" y="445" text-anchor="middle" class="label">latent out</text>
+        <text x="710" y="466" text-anchor="middle" class="small">sum p_j * c_j</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>6. After Softmax: How Values Are Produced</h2>
+    <div class="grid2">
+      <div>
+        <p>In normal attention, softmax probabilities multiply full <span class="mono">V_j</span>. In absorbed MLA, probabilities multiply the cached latent <span class="mono">c_j / k_nope_j</span>, producing a latent output. Then the value half of <span class="mono">kv_b_proj</span>, called <span class="mono">w_vc</span> in SGLang, converts that latent output into the real per-head value vector.</p>
+        <div class="formula">After softmax:
+
+latent_out_h = sum_j prob_j * c_j/k_nope_j    # [512]
+value_out_h  = latent_out_h x W_VC_h          # [128]
+
+For the logical 64-head model:
+  64 heads x 128 = 8192 attention dims
+
+Then:
+  attn = concat(value_out_h for 64 heads)      # [8192]
+  final_attn_output = attn x W_O               # [7168]</div>
+      </div>
+
+      <svg viewBox="0 0 780 410" role="img" aria-label="MLA value and output projection">
+        <rect x="34" y="46" width="194" height="60" rx="16" class="box green"></rect>
+        <text x="131" y="70" text-anchor="middle" class="label">latent_out_h</text>
+        <text x="131" y="90" text-anchor="middle" class="small">sum prob_j x c/k_nope = [512]</text>
+
+        <path d="M 228 76 H 286" class="arrow"></path>
+        <rect x="288" y="46" width="180" height="60" rx="16" class="box blue"></rect>
+        <text x="378" y="70" text-anchor="middle" class="label">x W_VC_h</text>
+        <text x="378" y="90" text-anchor="middle" class="small">512 -> 128</text>
+
+        <path d="M 468 76 H 526" class="arrow"></path>
+        <rect x="528" y="46" width="204" height="60" rx="16" class="box blue"></rect>
+        <text x="630" y="70" text-anchor="middle" class="label">value_out_h</text>
+        <text x="630" y="90" text-anchor="middle" class="small">one head [128]</text>
+
+        <rect x="62" y="174" width="650" height="64" rx="18" class="box cyan"></rect>
+        <text x="387" y="199" text-anchor="middle" class="label">concat 64 logical heads</text>
+        <text x="387" y="220" text-anchor="middle" class="small">64 x 128 = 8192 attention dims</text>
+
+        <path d="M 630 106 C 628 150, 526 176, 506 184" class="arrow"></path>
+
+        <path d="M 387 238 V 278" class="arrow"></path>
+        <rect x="178" y="280" width="418" height="64" rx="18" class="box amber"></rect>
+        <text x="387" y="305" text-anchor="middle" class="label">output projection W_O</text>
+        <text x="387" y="326" text-anchor="middle" class="small">8192 -> hidden [7168]</text>
+
+        <path d="M 596 312 H 648" class="arrow"></path>
+        <rect x="650" y="280" width="104" height="64" rx="18" class="box amber"></rect>
+        <text x="702" y="305" text-anchor="middle" class="label">final</text>
+        <text x="702" y="326" text-anchor="middle" class="label">hidden</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>7. MLA With TP=8 In Kimi K2.5</h2>
+    <p>The easiest way to think about TP is: each GPU owns 8 heads. Softmax is local per head, so each GPU computes complete softmaxes for its 8 heads. There is no cross-GPU softmax. In the non-DP-attention setup, the 512+64 KV cache state is duplicated across TP ranks; the head-specific query/value work is sharded by heads.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Global Kimi shape</th>
+          <th>Per GPU at TP=8</th>
+          <th>Communication?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="mono">qkv_a</span></td>
+          <td><span class="mono">7168 -> 2112</span></td>
+          <td>replicated full projection</td>
+          <td>No TP communication for the projection itself.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">q_b</span></td>
+          <td><span class="mono">1536 -> 64 x 192</span></td>
+          <td><span class="mono">1536 -> 8 x 192</span></td>
+          <td>No. Each rank computes its local heads.</td>
+        </tr>
+        <tr>
+          <td>KV cache</td>
+          <td><span class="mono">c/k_nope[512] + k_rope[64]</span> per token</td>
+          <td>duplicated on each TP rank, then read by local heads</td>
+          <td>No communication during the attention scan.</td>
+        </tr>
+        <tr>
+          <td>Scores</td>
+          <td><span class="mono">[query, 64 heads, context]</span></td>
+          <td><span class="mono">[query, 8 heads, context]</span></td>
+          <td>No. Softmax is independent per head.</td>
+        </tr>
+        <tr>
+          <td>Value output</td>
+          <td><span class="mono">64 x 128</span></td>
+          <td><span class="mono">8 x 128 = 1024</span></td>
+          <td>No, still local.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">o_proj</span></td>
+          <td><span class="mono">8192 -> 7168</span></td>
+          <td><span class="mono">1024 -> partial 7168</span></td>
+          <td>No inside Kimi attention. SGLang sets <span class="mono">reduce_results=False</span>, so this returns a partial hidden vector.</td>
+        </tr>
+        <tr>
+          <td>post-attention communicator</td>
+          <td>sum TP partial hidden vectors</td>
+          <td>partial <span class="mono">7168</span> -> full <span class="mono">7168</span></td>
+          <td>Yes. The all-reduce is deferred until after attention output projection.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <p><b>Mental model:</b> GPU0 does heads 0-7 all the way through score, softmax, and value. GPU1 does heads 8-15. This continues through GPU7. Each rank reads the duplicated latent cache for its local heads. Only after local head outputs are projected back to partial hidden space do ranks need to combine.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>8. Why The Decode KV Scan Still Exists</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>MLA reduces cache size</h3>
+        <p>Instead of reading full K and V for every head, Kimi reads the latent cache <span class="mono">c/k_nope[512]</span> and RoPE key <span class="mono">k_rope[64]</span>. This is much smaller.</p>
+      </div>
+      <div class="card">
+        <h3>But attention still scans context</h3>
+        <p>For every generated token, each local head still needs one score per cached position. That is why decode remains KV-cache-sensitive.</p>
+      </div>
+    </div>
+    <div class="formula">Decode for one sequence with context length S:
+
+For each local head h:
+  for j in 0..S-1:
+    score_j = dot(q_content_h, c_j/k_nope_j) + dot(q_rope_h, k_rope_j)
+
+Then softmax over S positions and weighted sum over c_j/k_nope_j.
+
+MLA makes each j cheaper, but it does not remove the loop over j.</div>
+  </section>
+
+  <footer>
+    Local source anchors used: <code>python/sglang/srt/models/deepseek_v2.py</code> for Kimi/DeepSeek MLA module shapes, <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py</code> for SGLang's absorbed MLA flow, and <code>python/sglang/srt/layers/communicator.py</code> for the deferred all-reduce. Public references:
+    <a href="https://huggingface.co/moonshotai/Kimi-K2.5/blob/main/config.json">Kimi K2.5 config</a>,
+    <a href="https://huggingface.co/moonshotai/Kimi-K2.5/blob/main/modeling_deepseek.py">Moonshot reference MLA code</a>,
+    <a href="https://arxiv.org/html/2405.04434">DeepSeek-V2 MLA paper</a>,
+    <a href="https://github.com/sgl-project/sglang/blob/main/docs/basic_usage/deepseek_v3.md">SGLang DeepSeek-V3 serving notes</a>.
+  </footer>
+</main>
+</body>
+</html>

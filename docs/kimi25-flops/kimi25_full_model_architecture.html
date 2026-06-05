@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kimi K2.5 Full Model Architecture Map</title>
+  <style>
+    :root {
+      --bg: #11161a;
+      --paper: #f4ead7;
+      --panel: rgba(253, 248, 236, 0.94);
+      --ink: #181b1f;
+      --muted: #626a64;
+      --line: rgba(24, 27, 31, 0.18);
+      --blue: #2a607d;
+      --blue-soft: #dcecf3;
+      --green: #587735;
+      --green-soft: #e5efd6;
+      --amber: #ad6b2f;
+      --amber-soft: #f4dfc8;
+      --red: #9b493f;
+      --red-soft: #efd8d4;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.20);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 2%, rgba(42, 96, 125, 0.42), transparent 31rem),
+        radial-gradient(circle at 90% 10%, rgba(173, 107, 47, 0.32), transparent 34rem),
+        linear-gradient(135deg, var(--bg), #18231f);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    }
+
+    main {
+      width: min(1320px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0 58px;
+    }
+
+    header {
+      color: var(--paper);
+      display: grid;
+      grid-template-columns: 1.18fr 0.82fr;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      max-width: 960px;
+      font-size: clamp(38px, 5vw, 76px);
+      line-height: 0.94;
+      letter-spacing: -0.06em;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      letter-spacing: -0.035em;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      letter-spacing: -0.015em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 16px;
+    }
+
+    a {
+      color: #1d5876;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(29, 88, 118, 0.32);
+    }
+
+    svg a {
+      border-bottom: 0;
+    }
+
+    code, .mono {
+      font-family: "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.93em;
+    }
+
+    .lede {
+      color: rgba(244, 234, 215, 0.82);
+      max-width: 920px;
+      font-size: 18px;
+    }
+
+    .contract {
+      border: 1px solid rgba(244, 234, 215, 0.24);
+      background: rgba(244, 234, 215, 0.08);
+      border-radius: 22px;
+      padding: 16px;
+    }
+
+    .contract strong {
+      display: block;
+      color: var(--paper);
+      margin-bottom: 6px;
+    }
+
+    .contract p {
+      color: rgba(244, 234, 215, 0.78);
+    }
+
+    section {
+      margin-top: 20px;
+      background: var(--panel);
+      border: 1px solid rgba(244, 234, 215, 0.20);
+      border-radius: 28px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 244, 0.76);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .value {
+      margin-top: 7px;
+      color: var(--ink);
+      font: 800 23px/1.1 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+
+    .sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .source-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .source-grid .card {
+      min-height: 150px;
+    }
+
+    .nav-rail {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 20px;
+      padding: 10px;
+      border: 1px solid rgba(244, 234, 215, 0.24);
+      border-radius: 18px;
+      background: rgba(244, 234, 215, 0.08);
+    }
+
+    .nav-rail a {
+      border: 1px solid rgba(244, 234, 215, 0.26);
+      border-radius: 999px;
+      padding: 8px 11px;
+      color: rgba(244, 234, 215, 0.86);
+      background: rgba(244, 234, 215, 0.06);
+      font: 700 13px/1 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+
+    section[id], tr[id] {
+      scroll-margin-top: 20px;
+    }
+
+    .source-grid strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .architecture {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 16px;
+      background:
+        linear-gradient(120deg, rgba(42, 96, 125, 0.10), transparent 38%),
+        linear-gradient(300deg, rgba(173, 107, 47, 0.12), transparent 44%),
+        rgba(255, 252, 244, 0.78);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 18px;
+    }
+
+    .svg-title {
+      font: 800 20px/1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      fill: #181b1f;
+    }
+
+    .svg-label {
+      font: 700 13px/1 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      fill: #202428;
+    }
+
+    .svg-small {
+      font: 500 11px/1.25 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      fill: #4f5855;
+    }
+
+    .box {
+      rx: 16;
+      ry: 16;
+      stroke: rgba(24, 27, 31, 0.22);
+      stroke-width: 1.2;
+      fill: rgba(255, 255, 250, 0.90);
+    }
+
+    .box-text { fill: rgba(42, 96, 125, 0.15); }
+    .box-vision { fill: rgba(173, 107, 47, 0.17); }
+    .box-block { fill: rgba(229, 239, 214, 0.88); stroke: rgba(88, 119, 53, 0.55); }
+    .box-scan { fill: rgba(244, 223, 200, 0.78); stroke: rgba(173, 107, 47, 0.55); }
+    .box-excluded { fill: rgba(239, 216, 212, 0.72); stroke: rgba(155, 73, 63, 0.46); stroke-dasharray: 7 5; }
+
+    .arrow {
+      stroke: #ad6b2f;
+      stroke-width: 2.4;
+      fill: none;
+      marker-end: url(#arrow);
+    }
+
+    .arrow-soft {
+      stroke: rgba(173, 107, 47, 0.48);
+      stroke-width: 2;
+      fill: none;
+      marker-end: url(#arrowSoft);
+    }
+
+    .zoom-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .zoom-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 15px;
+      background: rgba(255, 252, 244, 0.76);
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .block-flow {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 14px;
+      background: rgba(255, 252, 244, 0.76);
+    }
+
+    .block-flow-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      align-items: center;
+    }
+
+    .block-step {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 10px;
+      min-height: 96px;
+      background: rgba(255, 255, 250, 0.88);
+      text-align: center;
+    }
+
+    .block-step.norm { background: rgba(220, 236, 243, 0.70); }
+    .block-step.attn { background: rgba(244, 223, 200, 0.78); }
+    .block-step.mlp { background: rgba(229, 239, 214, 0.86); }
+    .block-step.add { background: rgba(239, 216, 212, 0.52); border-style: dashed; }
+
+    .block-step strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: var(--ink);
+    }
+
+    .block-step span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .block-arrow {
+      color: var(--amber);
+      text-align: center;
+      font: 900 22px/1 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+
+    .mini-node {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255, 255, 250, 0.82);
+      min-height: 120px;
+    }
+
+    .mini-node.focus {
+      background: linear-gradient(180deg, rgba(229, 239, 214, 0.88), rgba(255, 255, 250, 0.88));
+      border-color: rgba(88, 119, 53, 0.52);
+    }
+
+    .mini-node.scan {
+      background: linear-gradient(180deg, rgba(244, 223, 200, 0.88), rgba(255, 255, 250, 0.88));
+      border-color: rgba(173, 107, 47, 0.52);
+    }
+
+    .mini-node.excluded {
+      background: rgba(239, 216, 212, 0.46);
+      border-style: dashed;
+      border-color: rgba(155, 73, 63, 0.46);
+    }
+
+    .mini-node strong {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--ink);
+    }
+
+    .mini-node span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.42;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(255, 252, 244, 0.76);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(24, 27, 31, 0.20);
+    }
+
+    .expert-grid {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 5px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 252, 244, 0.76);
+    }
+
+    .expert-tile {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      background: rgba(24, 27, 31, 0.10);
+      border: 1px solid rgba(24, 27, 31, 0.10);
+    }
+
+    .expert-tile.route {
+      background: rgba(88, 119, 53, 0.70);
+      border-color: rgba(88, 119, 53, 0.90);
+    }
+
+    .expert-tile.shared {
+      background: rgba(173, 107, 47, 0.76);
+      border-color: rgba(173, 107, 47, 0.92);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 252, 244, 0.76);
+    }
+
+    th, td {
+      text-align: right;
+      vertical-align: top;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      line-height: 1.42;
+    }
+
+    th {
+      background: rgba(24, 27, 31, 0.06);
+      color: #333940;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    th:first-child, td:first-child { text-align: left; }
+
+    pre {
+      white-space: pre-wrap;
+      margin: 14px 0 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 252, 244, 0.76);
+      color: #202428;
+      font: 13px/1.55 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      overflow-x: auto;
+    }
+
+    .note {
+      margin-top: 14px;
+      border-left: 5px solid var(--blue);
+      background: rgba(42, 96, 125, 0.10);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .warning {
+      margin-top: 14px;
+      border-left: 5px solid var(--red);
+      background: rgba(155, 73, 63, 0.10);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    @media (max-width: 980px) {
+      header, .cards, .source-grid, .zoom-grid, .flow-row, .block-flow-grid { grid-template-columns: 1fr; }
+      .block-arrow { transform: rotate(90deg); }
+      .expert-grid { grid-template-columns: repeat(8, 1fr); }
+      main { width: min(100vw - 20px, 1320px); padding-top: 22px; }
+      section { padding: 16px; border-radius: 22px; }
+      table { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Kimi K2.5 Full Model Architecture Map</h1>
+      <p class="lede">A multiscale HTML visualization of the whole K2.5 serving model: multimodal wrapper, repeated text tower, MLA attention path, MoE path, and the exact variable names used by the two FLOPs constant pages. Diagram labels link to the shared variable dictionary.</p>
+    </div>
+    <div class="contract">
+      <strong>How to read this page</strong>
+      <p>Read top down: first the full model dataflow, then the repeated Kimi block, then the two compute views that connect to <code>linear_flops_per_token</code> and <code>attention_scan_flops_per_pair</code>.</p>
+    </div>
+  </header>
+
+  <nav class="nav-rail" aria-label="Architecture navigation">
+    <a href="#pattern">common pattern</a>
+    <a href="#dataflow">Level 0 dataflow</a>
+    <a href="#block">text block</a>
+    <a href="#mla">MLA variables</a>
+    <a href="#moe">MoE variables</a>
+    <a href="#inference">prefill/decode</a>
+    <a href="#vars">variable dictionary</a>
+    <a href="#sources">sources</a>
+  </nav>
+
+  <section>
+    <div class="cards">
+      <div class="card">
+        <div class="label">Text Tower</div>
+        <div class="value"><a href="#var-L">L=61</a></div>
+        <div class="sub">1 dense layer + 60 MoE layers</div>
+      </div>
+      <div class="card">
+        <div class="label">Hidden Size</div>
+        <div class="value"><a href="#var-H">H=7168</a></div>
+        <div class="sub">main text hidden dimension</div>
+      </div>
+      <div class="card">
+        <div class="label">Attention</div>
+        <div class="value">MLA</div>
+        <div class="sub"><a href="#var-heads">heads=64</a>, no model parallelism in this tutorial baseline</div>
+      </div>
+      <div class="card">
+        <div class="label">MoE</div>
+        <div class="value">384 -> 9</div>
+        <div class="sub"><a href="#var-topk">top-8</a> routed + <a href="#var-shared_experts">1 shared</a> expert</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pattern">
+    <h2>1. Common HTML Visualization Pattern</h2>
+    <p>The common pattern is a multiscale block-and-flow diagram. The page starts with a whole-model overview, then lets the reader zoom into the repeated transformer block, then zoom again into attention heads, MoE experts, and formulas. That is the pattern used here. Transformer Explainer motivates overview-to-detail transitions; BertViz motivates multi-granularity transformer attention views.</p>
+    <div class="source-grid">
+      <div class="card">
+        <strong>Overview plus zoom</strong>
+        <p>Transformer Explainer describes a model overview with transitions across abstraction levels of math operations and structures.</p>
+        <p class="sub"><a href="https://arxiv.org/abs/2408.04619">arXiv:2408.04619</a></p>
+      </div>
+      <div class="card">
+        <strong>Multiple granularities</strong>
+        <p>BertViz motivates model-level, head-level, and neuron-level views for transformer attention.</p>
+        <p class="sub"><a href="https://arxiv.org/abs/1904.02679">arXiv:1904.02679</a></p>
+      </div>
+      <div class="card">
+        <strong>MLA plus MoE split</strong>
+        <p>DeepSeek-V2 frames MLA as KV-cache compression and DeepSeekMoE as sparse computation. Kimi's text tower follows this family.</p>
+        <p class="sub"><a href="https://arxiv.org/abs/2405.04434">arXiv:2405.04434</a></p>
+      </div>
+      <div class="card">
+        <strong>Kimi K2.5 specs</strong>
+        <p>The Kimi model card/config provide 61 layers, 7168 hidden size, 64 heads, 384 experts, 8 selected routed experts, 1 shared expert, MoonViT, and MLA.</p>
+        <p class="sub"><a href="https://huggingface.co/moonshotai/Kimi-K2.5">moonshotai/Kimi-K2.5</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="dataflow">
+    <h2>2. Full Kimi K2.5 Dataflow</h2>
+    <div class="architecture">
+      <svg viewBox="0 0 1220 590" role="img" aria-label="Kimi K2.5 full model architecture dataflow">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ad6b2f"></path>
+          </marker>
+          <marker id="arrowSoft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(173, 107, 47, 0.48)"></path>
+          </marker>
+        </defs>
+
+        <text x="36" y="42" class="svg-title">Level 0: whole model wrapper</text>
+        <text x="36" y="67" class="svg-small">This level is useful for deployment reasoning: what enters the model, what is outside the text-tower FLOP constants, and where the repeated transformer stack begins.</text>
+
+        <rect x="40" y="105" width="210" height="110" class="box box-text"></rect>
+        <text x="60" y="135" class="svg-label">Text tokens</text>
+        <text x="60" y="160" class="svg-small">token ids -> embeddings</text>
+        <text x="60" y="183" class="svg-small">hidden[H], shape [T,H]</text>
+        <a href="#var-H"><text x="60" y="201" class="svg-small">H = 7168</text></a>
+
+        <rect x="40" y="275" width="210" height="125" class="box box-vision"></rect>
+        <text x="60" y="305" class="svg-label">Image/video input</text>
+        <text x="60" y="330" class="svg-small">vision_tower = MoonViT</text>
+        <text x="60" y="353" class="svg-small">mm_projector</text>
+        <text x="60" y="376" class="svg-small">visual tokens -> hidden[H]</text>
+
+        <path d="M250 160 C290 160 298 160 330 160" class="arrow"></path>
+        <path d="M250 337 C295 337 300 230 330 210" class="arrow-soft"></path>
+
+        <rect x="330" y="115" width="190" height="120" class="box"></rect>
+        <text x="350" y="145" class="svg-label">Token sequence</text>
+        <text x="350" y="170" class="svg-small">text + optional visual tokens</text>
+        <text x="350" y="193" class="svg-small">context length <= 262144</text>
+        <text x="350" y="216" class="svg-small">shape: [T, H]</text>
+
+        <path d="M520 176 C560 176 570 176 610 176" class="arrow"></path>
+
+        <rect x="610" y="88" width="345" height="265" class="box box-block"></rect>
+        <text x="635" y="120" class="svg-label">KimiDecoderLayer x L=61</text>
+        <text x="635" y="145" class="svg-small">Layer 0: dense MLP, dense_intermediate=18432</text>
+        <text x="635" y="168" class="svg-small">Layers 1-60: MoE, moe_intermediate=2048</text>
+        <text x="635" y="191" class="svg-small">Each block: residual + RMSNorm -> MLA -> RMSNorm -> MLP/MoE</text>
+
+        <rect x="635" y="218" width="145" height="86" class="box box-scan"></rect>
+        <text x="653" y="246" class="svg-label">MLA</text>
+        <a href="#var-q_lora"><text x="653" y="269" class="svg-small">q_lora=1536</text></a>
+        <a href="#var-kv_lora"><text x="653" y="287" class="svg-small">kv_lora=512</text></a>
+
+        <rect x="800" y="218" width="145" height="86" class="box box-block"></rect>
+        <text x="818" y="246" class="svg-label">MoE / MLP</text>
+        <a href="#var-routed_experts"><text x="818" y="269" class="svg-small">routed_experts=384</text></a>
+        <a href="#var-active_experts"><text x="818" y="287" class="svg-small">active_experts=9</text></a>
+
+        <path d="M955 176 C980 176 985 176 1008 176" class="arrow"></path>
+
+        <rect x="1008" y="116" width="82" height="120" class="box box-excluded"></rect>
+        <text x="1023" y="146" class="svg-label">norm</text>
+        <text x="1023" y="171" class="svg-small">final</text>
+        <text x="1023" y="194" class="svg-small">RMSNorm</text>
+
+        <path d="M1090 176 C1110 176 1115 176 1134 176" class="arrow-soft"></path>
+
+        <rect x="1134" y="116" width="70" height="120" class="box box-excluded"></rect>
+        <text x="1148" y="146" class="svg-label">lm</text>
+        <text x="1148" y="164" class="svg-label">head</text>
+        <text x="1148" y="190" class="svg-small">logits</text>
+        <text x="1148" y="211" class="svg-small">excluded</text>
+
+        <text x="40" y="466" class="svg-title">Legend</text>
+        <rect x="40" y="492" width="26" height="18" class="box box-block"></rect>
+        <text x="75" y="506" class="svg-small">green = per-token linear-token FLOPs page</text>
+        <rect x="365" y="492" width="26" height="18" class="box box-scan"></rect>
+        <text x="400" y="506" class="svg-small">amber = attention pair-scan FLOPs page</text>
+        <rect x="685" y="492" width="26" height="18" class="box box-excluded"></rect>
+        <text x="720" y="506" class="svg-small">red dashed = real model component excluded from these two constants</text>
+      </svg>
+    </div>
+    <div class="note">
+      <p>The two FLOP pages are text-tower serving math. They do not try to charge image/video preprocessing, MoonViT, <code>mm_projector</code>, final norm, final <code>lm_head</code>, sampling, communication, or byte traffic. Clickable diagram labels jump to the variable dictionary.</p>
+    </div>
+  </section>
+
+  <section id="block">
+    <h2>3. Zoom-In: One Kimi Text Block</h2>
+    <p>This is the repeated unit that creates almost all per-token compute. The variable names below are intentionally the same as the two FLOPs pages.</p>
+    <div class="block-flow">
+      <div class="block-flow-grid">
+        <div class="block-step">
+          <strong>x</strong>
+          <span>[T,H]</span>
+          <span>residual stream</span>
+        </div>
+        <div class="block-arrow">-></div>
+        <div class="block-step norm">
+          <strong>RMSNorm</strong>
+          <span>not charged in constants</span>
+        </div>
+        <div class="block-step attn">
+          <strong>MLA</strong>
+          <span>projections + scan</span>
+          <span>linear + pair constants</span>
+        </div>
+        <div class="block-step add">
+          <strong>+ residual</strong>
+          <span>x + attention</span>
+        </div>
+        <div class="block-step norm">
+          <strong>RMSNorm</strong>
+          <span>pre-MLP/MoE</span>
+        </div>
+        <div class="block-step mlp">
+          <strong>MLP / MoE</strong>
+          <span>dense layer 0</span>
+          <span>MoE layers 1-60</span>
+        </div>
+      </div>
+      <div class="note">
+        <p>The residual adds and RMSNorms are drawn because they are architecturally important, but they are intentionally excluded from <code>linear_flops_per_token</code>.</p>
+      </div>
+    </div>
+    <div class="flow-row">
+      <div class="mini-node">
+        <strong>Block input</strong>
+        <span class="mono">hidden[H] = [T,7168]</span>
+        <span><code>H = 7168</code>. Residual stream entering one of <code>L = 61</code> text blocks.</span>
+      </div>
+      <div class="mini-node focus">
+        <strong>MLA projections</strong>
+        <span class="mono">qkv_a -> q_lora + kv_lora + qk_rope-key branch</span>
+        <span><code>q_lora=1536</code>, <code>kv_lora=512</code>, <code>qk_rope=64</code>.</span>
+      </div>
+      <div class="mini-node scan">
+        <strong>MLA attention scan</strong>
+        <span class="mono">Content QK + RoPE QK + AV latent</span>
+        <span>Uses all <code>heads=64</code>. The cached content vector is normalized <code>k_nope/c_j[512]</code>. Pair cost is <code>attention_scan_flops_per_pair</code>.</span>
+      </div>
+      <div class="mini-node focus">
+        <strong>MLP or MoE</strong>
+        <span class="mono">dense layer 0, MoE layers 1-60</span>
+        <span><code>dense_intermediate=18432</code>, <code>moe_intermediate=2048</code>, <code>active_experts=9</code>.</span>
+      </div>
+      <div class="mini-node">
+        <strong>Block output</strong>
+        <span class="mono">hidden[H] = [T,7168]</span>
+        <span>Returns to the residual stream and feeds the next block.</span>
+      </div>
+    </div>
+    <pre>linear_flops_per_token =
+  61 * attention_projection_per_layer
+  + 1 * dense_mlp_layer
+  + 60 * active_moe_layer
+  + 60 * router_per_moe_layer
+  = 61,023,322,112</pre>
+  </section>
+
+  <section id="mla">
+    <h2>4. Zoom-In: MLA Variables</h2>
+    <div class="zoom-grid">
+      <div class="zoom-card">
+        <h3>Projection side, charged by the linear page</h3>
+        <table>
+          <thead>
+            <tr><th>Variable</th><th>Value</th><th>Role in the drawing</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>q_lora</code></td><td>1,536</td><td>query low-rank latent output of <code>qkv_a</code></td></tr>
+            <tr><td><code>kv_lora</code></td><td>512</td><td>latent KV dimension. The scan uses normalized <code>k_nope/c_j[512]</code>, not an unnormalized raw latent.</td></tr>
+            <tr><td><code>qk_nope</code></td><td>128</td><td>per-head no-position query dimension before <code>W_KC</code> absorption</td></tr>
+            <tr><td><code>qk_rope</code></td><td>64</td><td>per-head position/RoPE dimension</td></tr>
+            <tr><td><code>qk_head</code></td><td>192</td><td><code>qk_nope + qk_rope</code></td></tr>
+            <tr><td><code>v_head</code></td><td>128</td><td>per-head value/output dimension after <code>W_VC</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="zoom-card">
+        <h3>Scan side, charged by the pair page</h3>
+        <table>
+          <thead>
+            <tr><th>Scan part</th><th>Formula</th><th>FLOPs/layer/GPU</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Content QK</td><td><code>heads * 2 * kv_lora</code><br><span class="sub"><code>q_content[512] dot c_j[512]</code></span></td><td>65,536</td></tr>
+            <tr><td>RoPE QK</td><td><code>heads * 2 * qk_rope</code></td><td>8,192</td></tr>
+            <tr><td>AV latent</td><td><code>heads * 2 * kv_lora</code><br><span class="sub"><code>attention_weight * c_j[512]</code></span></td><td>65,536</td></tr>
+            <tr><td><strong>Total</strong></td><td><code>2 * heads * (2 * kv_lora + qk_rope)</code></td><td><strong>139,264</strong></td></tr>
+          </tbody>
+        </table>
+        <pre>attention_scan_flops_per_pair =
+  L * attention_scan_flops_per_pair_per_layer
+
+attention_scan_flops_per_pair_per_layer =
+  2 * heads * (kv_lora + qk_rope + kv_lora)
+
+attention_scan_flops_per_pair =
+  61 * 139,264
+  = 8,495,104</pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="moe">
+    <h2>5. Zoom-In: MoE Variables</h2>
+    <p>The MoE picture should show sparsity clearly: the router scores all routed experts, but only a small active set runs for each token.</p>
+    <div class="flow-row">
+      <div class="mini-node">
+        <strong>Router gate</strong>
+        <span class="mono">hidden[H] -> routed_experts</span>
+        <span><code>routed_experts=384</code>. Router score matmul is included in the linear constant.</span>
+      </div>
+      <div class="mini-node focus">
+        <strong>Top-k routed</strong>
+        <span class="mono">topk = 8</span>
+        <span>Only 8 routed experts are selected by the router for the token.</span>
+      </div>
+      <div class="mini-node focus">
+        <strong>Shared expert</strong>
+        <span class="mono">shared_experts = 1</span>
+        <span>Always-on shared path, not router-selected. In the FLOP accounting, <code>active_experts=9</code>.</span>
+      </div>
+      <div class="mini-node">
+        <strong>Expert MLP shape</strong>
+        <span class="mono">H -> moe_intermediate -> H</span>
+        <span><code>moe_intermediate=2048</code>, SwiGLU gate/up/down projections.</span>
+      </div>
+      <div class="mini-node excluded">
+        <strong>Not all 384 run</strong>
+        <span class="mono">dense-MoE would be wrong</span>
+        <span>Counting every expert would wildly overstate active inference FLOPs.</span>
+      </div>
+    </div>
+    <div class="expert-grid" aria-label="Sparse MoE expert selection sketch">
+      <div class="expert-tile route"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile route"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile route"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile route"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile shared"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile route"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile route"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile route"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile route"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+      <div class="expert-tile"></div>
+    </div>
+    <div class="legend">
+      <span class="pill"><span class="dot" style="background: rgba(24, 27, 31, 0.10);"></span>inactive routed expert tile, representing the 384-expert pool</span>
+      <span class="pill"><span class="dot" style="background: rgba(88, 119, 53, 0.70);"></span>8 router-selected routed experts</span>
+      <span class="pill"><span class="dot" style="background: rgba(173, 107, 47, 0.76);"></span>1 always-on shared expert</span>
+    </div>
+    <pre>active_moe_layer =
+  6 * H * moe_intermediate * active_experts
+  = 6 * 7168 * 2048 * 9
+  = 792,723,456 FLOPs/token</pre>
+  </section>
+
+  <section id="inference">
+    <h2>6. Worked Serving Walkthrough: Prefill Then Decode</h2>
+    <p>This section connects the architecture picture to serving mechanics. The same block is used in prefill and decode, but the attention-pair count changes because decode reads the accumulated KV cache one new token at a time.</p>
+    <div class="flow-row">
+      <div class="mini-node focus">
+        <strong>Prefill token</strong>
+        <span class="mono">uncached prompt token</span>
+        <span>Pays <code>linear_flops_per_token</code> and writes normalized <code>k_nope/c_j[512]</code> plus RoPE key into the cache.</span>
+      </div>
+      <div class="mini-node scan">
+        <strong>Prefill scan</strong>
+        <span class="mono">causal mask</span>
+        <span>Each prompt query attends only to earlier positions. Pair count is triangular over the uncached span plus cached-prefix interactions.</span>
+      </div>
+      <div class="mini-node focus">
+        <strong>Decode token</strong>
+        <span class="mono">one generated step</span>
+        <span>Pays one linear-token cost for the new token.</span>
+      </div>
+      <div class="mini-node scan">
+        <strong>KV cache read</strong>
+        <span class="mono">query x prior context</span>
+        <span>Pays <code>attention_scan_flops_per_pair</code> for each prior context position read by each layer.</span>
+      </div>
+      <div class="mini-node excluded">
+        <strong>Logits + sampling</strong>
+        <span class="mono">lm_head -> next token</span>
+        <span>Drawn as part of the loop, but excluded from the two constants.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="vars">
+    <h2>7. Variable Dictionary Shared With The Two FLOPs Pages</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Variable name used here</th>
+          <th>Value</th>
+          <th>Config or serving source</th>
+          <th>Which page depends on it</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="var-H"><td><code>H</code></td><td>7,168</td><td><code>hidden_size</code></td><td>linear, attention setup, MoE</td></tr>
+        <tr id="var-L"><td><code>L</code></td><td>61</td><td><code>num_hidden_layers</code></td><td>both constants</td></tr>
+        <tr id="var-heads"><td><code>heads</code></td><td>64</td><td><code>num_attention_heads</code></td><td>both constants</td></tr>
+        <tr id="var-q_lora"><td><code>q_lora</code></td><td>1,536</td><td><code>q_lora_rank</code></td><td>linear projection</td></tr>
+        <tr id="var-kv_lora"><td><code>kv_lora</code></td><td>512</td><td><code>kv_lora_rank</code></td><td>linear projection and attention scan</td></tr>
+        <tr id="var-qk_nope"><td><code>qk_nope</code></td><td>128</td><td><code>qk_nope_head_dim</code></td><td>linear absorption through <code>W_KC</code></td></tr>
+        <tr id="var-qk_rope"><td><code>qk_rope</code></td><td>64</td><td><code>qk_rope_head_dim</code></td><td>linear projection and attention scan</td></tr>
+        <tr id="var-qk_head"><td><code>qk_head</code></td><td>192</td><td><code>qk_nope + qk_rope</code></td><td>linear <code>q_b</code> projection</td></tr>
+        <tr id="var-v_head"><td><code>v_head</code></td><td>128</td><td>served attention value head dimension</td><td>linear <code>W_VC</code>/<code>o_proj</code></td></tr>
+        <tr id="var-dense_intermediate"><td><code>dense_intermediate</code></td><td>18,432</td><td><code>intermediate_size</code></td><td>dense layer 0 linear work</td></tr>
+        <tr id="var-moe_intermediate"><td><code>moe_intermediate</code></td><td>2,048</td><td><code>moe_intermediate_size</code></td><td>MoE linear work</td></tr>
+        <tr id="var-routed_experts"><td><code>routed_experts</code></td><td>384</td><td><code>n_routed_experts</code></td><td>router linear work</td></tr>
+        <tr id="var-topk"><td><code>topk</code></td><td>8</td><td><code>num_experts_per_tok</code></td><td>MoE active work</td></tr>
+        <tr id="var-shared_experts"><td><code>shared_experts</code></td><td>1</td><td><code>n_shared_experts</code></td><td>MoE active work</td></tr>
+        <tr id="var-active_experts"><td><code>active_experts</code></td><td>9</td><td><code>topk + shared_experts</code></td><td>MoE active work</td></tr>
+        <tr id="var-linear_flops_per_token"><td><code>linear_flops_per_token</code></td><td>61,023,322,112</td><td>derived in linear page</td><td>request FLOP accounting</td></tr>
+        <tr id="var-attention_scan_flops_per_pair"><td><code>attention_scan_flops_per_pair</code></td><td>8,495,104</td><td>derived in attention scan page</td><td>request FLOP accounting</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="sources">
+    <h2>8. Source Anchors</h2>
+    <p>
+      Web sources: <a href="https://arxiv.org/abs/2408.04619">Transformer Explainer</a> for overview-to-detail interactive visualization,
+      <a href="https://arxiv.org/abs/1904.02679">BertViz</a> for multiscale transformer attention views,
+      <a href="https://arxiv.org/abs/2405.04434">DeepSeek-V2</a> for MLA plus sparse MoE framing,
+      and <a href="https://huggingface.co/moonshotai/Kimi-K2.5">moonshotai/Kimi-K2.5</a> for Kimi model facts.
+      Local sources: <code>python/sglang/srt/models/kimi_k25.py</code> for <code>vision_tower</code>, <code>mm_projector</code>, and <code>language_model</code>,
+      <code>python/sglang/srt/models/deepseek_v2.py</code> for text tower MLA/MoE construction,
+      and the two existing constant pages for FLOP formulas.
+    </p>
+    <div class="warning">
+      <p><strong>Audit warning.</strong> This diagram is a serving-oriented architecture map, not a complete kernel or memory-bandwidth model. It intentionally keeps the FLOP constants aligned with the two existing pages, so excluded components are drawn but not charged.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>

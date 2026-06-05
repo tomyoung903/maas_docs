@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kimi K2.5 Linear FLOPs Constant</title>
+  <style>
+    :root {
+      --bg: #11161a;
+      --paper: #f4ead7;
+      --panel: rgba(253, 248, 236, 0.94);
+      --ink: #181b1f;
+      --muted: #626a64;
+      --line: rgba(24, 27, 31, 0.18);
+      --blue: #2a607d;
+      --blue-soft: #dcecf3;
+      --green: #587735;
+      --green-soft: #e5efd6;
+      --amber: #ad6b2f;
+      --amber-soft: #f4dfc8;
+      --red: #9b493f;
+      --red-soft: #efd8d4;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.20);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(42, 96, 125, 0.40), transparent 30rem),
+        radial-gradient(circle at 88% 8%, rgba(173, 107, 47, 0.30), transparent 32rem),
+        linear-gradient(135deg, var(--bg), #18231f);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    }
+
+    main {
+      width: min(1280px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0 58px;
+    }
+
+    header {
+      color: var(--paper);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      max-width: 920px;
+      font-size: clamp(36px, 5vw, 70px);
+      line-height: 0.94;
+      letter-spacing: -0.055em;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      letter-spacing: -0.035em;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      letter-spacing: -0.015em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 16px;
+    }
+
+    code, .mono {
+      font-family: "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.93em;
+    }
+
+    .lede {
+      color: rgba(244, 234, 215, 0.82);
+      max-width: 920px;
+      font-size: 18px;
+    }
+
+    .contract {
+      border: 1px solid rgba(244, 234, 215, 0.24);
+      background: rgba(244, 234, 215, 0.08);
+      border-radius: 22px;
+      padding: 16px;
+    }
+
+    .contract strong {
+      display: block;
+      color: var(--paper);
+      margin-bottom: 6px;
+    }
+
+    .contract p {
+      color: rgba(244, 234, 215, 0.78);
+    }
+
+    section {
+      margin-top: 20px;
+      background: var(--panel);
+      border: 1px solid rgba(244, 234, 215, 0.20);
+      border-radius: 28px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 244, 0.76);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .value {
+      margin-top: 7px;
+      color: var(--ink);
+      font: 800 23px/1.1 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+
+    .sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 252, 244, 0.76);
+    }
+
+    th, td {
+      text-align: right;
+      vertical-align: top;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      line-height: 1.42;
+    }
+
+    th {
+      background: rgba(24, 27, 31, 0.06);
+      color: #333940;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    th:first-child, td:first-child { text-align: left; }
+
+    pre {
+      white-space: pre-wrap;
+      margin: 14px 0 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 252, 244, 0.76);
+      color: #202428;
+      font: 13px/1.55 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+      overflow-x: auto;
+    }
+
+    .note {
+      margin-top: 14px;
+      border-left: 5px solid var(--blue);
+      background: rgba(42, 96, 125, 0.10);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .warning {
+      margin-top: 14px;
+      border-left: 5px solid var(--red);
+      background: rgba(155, 73, 63, 0.10);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .diagram {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 16px;
+      background:
+        linear-gradient(120deg, rgba(42, 96, 125, 0.10), transparent 36%),
+        linear-gradient(300deg, rgba(88, 119, 53, 0.12), transparent 40%),
+        rgba(255, 252, 244, 0.78);
+    }
+
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: 0.85fr 34px 1.55fr 34px 1.2fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .diagram-node {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 13px;
+      background: rgba(255, 255, 250, 0.86);
+      min-height: 92px;
+    }
+
+    .diagram-node strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+      font-size: 17px;
+    }
+
+    .diagram-node span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.42;
+    }
+
+    .diagram-node .mono {
+      color: #202428;
+      font-size: 13px;
+    }
+
+    .diagram-node.focus {
+      border-color: rgba(88, 119, 53, 0.55);
+      background: linear-gradient(180deg, rgba(229, 239, 214, 0.90), rgba(255, 255, 250, 0.88));
+    }
+
+    .diagram-node.muted {
+      border-style: dashed;
+      background: rgba(244, 223, 200, 0.44);
+    }
+
+    .diagram-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--amber);
+      font: 900 24px/1 "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+
+    .block-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .block-grid .diagram-node {
+      min-height: 112px;
+    }
+
+    .diagram-caption {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 920px) {
+      header, .cards, .diagram-grid, .block-grid { grid-template-columns: 1fr; }
+      .diagram-arrow { transform: rotate(90deg); min-height: 28px; }
+      main { width: min(100vw - 20px, 1280px); padding-top: 22px; }
+      section { padding: 16px; border-radius: 22px; }
+      table { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Kimi K2.5 Linear FLOPs Constant</h1>
+      <p class="lede">This page justifies the no-parallelism baseline constant: <code>61,023,322,112 FLOPs per forward token</code>.</p>
+    </div>
+    <div class="contract">
+      <strong>Scope contract</strong>
+      <p>Single giant GPU, no parallelism, multiply-add counted as 2 FLOPs, Kimi K2.5 active transformer-block math. Router is included. Attention scan, softmax, RMSNorm, RoPE elementwise work, sampling, communication, and <code>lm_head</code> are excluded.</p>
+    </div>
+  </header>
+
+  <section>
+    <div class="cards">
+      <div class="card">
+        <div class="label">Final Constant</div>
+        <div class="value">61,023,322,112</div>
+        <div class="sub">FLOPs / forward token</div>
+      </div>
+      <div class="card">
+        <div class="label">Model</div>
+        <div class="value">61 layers</div>
+        <div class="sub">1 dense MLP layer + 60 MoE layers</div>
+      </div>
+      <div class="card">
+        <div class="label">Parallelism</div>
+        <div class="value">none</div>
+        <div class="sub">all 64 heads live on one giant GPU</div>
+      </div>
+      <div class="card">
+        <div class="label">MoE Active</div>
+        <div class="value">top8 + 1</div>
+        <div class="sub">9 active experts, not all 384</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Architecture Diagram: Where Linear FLOPs Live</h2>
+    <p>For this constant, imagine one forward token flowing through the Kimi K2.5 text transformer. The diagram highlights matmul work charged once per uncached prompt token or output token. It deliberately excludes the context-length attention scan, which is counted by the separate pair-based constant.</p>
+    <div class="diagram">
+      <div class="diagram-grid">
+        <div class="diagram-node">
+          <strong>Forward token</strong>
+          <span class="mono">hidden[7168]</span>
+          <span>One uncached prompt token or one decode/output token enters every transformer block.</span>
+        </div>
+        <div class="diagram-arrow">-></div>
+        <div class="diagram-node focus">
+          <strong>61 transformer blocks</strong>
+          <span>Each block has MLA attention projections plus a feed-forward path.</span>
+          <div class="block-grid">
+            <div class="diagram-node focus">
+              <strong>MLA projection side</strong>
+              <span class="mono">qkv_a, q_b, W_KC, W_VC, o_proj</span>
+              <span>Charged as <span class="mono">202,244,096</span> FLOPs/layer.</span>
+            </div>
+            <div class="diagram-node focus">
+              <strong>Feed-forward side</strong>
+              <span class="mono">dense MLP or router + active MoE</span>
+              <span>Layer 0 uses dense MLP. Layers 1-60 use top-8 routed experts plus one shared expert.</span>
+            </div>
+          </div>
+        </div>
+        <div class="diagram-arrow">-></div>
+        <div class="diagram-node muted">
+          <strong>Not counted here</strong>
+          <span class="mono">QK/AV scan over context</span>
+          <span>Those FLOPs scale with attention pairs and use the other constant: <span class="mono">8,495,104</span> FLOPs/pair.</span>
+        </div>
+      </div>
+      <p class="diagram-caption">Mental model: linear FLOPs are mostly per-token matrix multiplications inside each block; attention-scan FLOPs are per query-context pair and grow with prompt/cache length.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>1. Model Constants</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Value</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>H</code></td><td>7,168</td><td>hidden size</td></tr>
+        <tr><td><code>L</code></td><td>61</td><td>transformer layers</td></tr>
+        <tr><td><code>heads</code></td><td>64</td><td>all attention heads on the single giant GPU</td></tr>
+        <tr><td><code>q_lora</code></td><td>1,536</td><td>query low-rank latent dimension</td></tr>
+        <tr><td><code>kv_lora</code></td><td>512</td><td>MLA latent KV dimension</td></tr>
+        <tr><td><code>qk_nope</code></td><td>128</td><td>content/no-position query dimension per head</td></tr>
+        <tr><td><code>qk_rope</code></td><td>64</td><td>RoPE query/key dimension per head</td></tr>
+        <tr><td><code>qk_head</code></td><td>192</td><td><code>qk_nope + qk_rope</code></td></tr>
+        <tr><td><code>v_head</code></td><td>128</td><td>value/output dimension per head</td></tr>
+        <tr><td><code>dense_intermediate</code></td><td>18,432</td><td>dense layer-0 SwiGLU intermediate</td></tr>
+        <tr><td><code>moe_intermediate</code></td><td>2,048</td><td>per-expert SwiGLU intermediate</td></tr>
+        <tr><td><code>active_experts</code></td><td>9</td><td><code>8 routed + 1 shared</code></td></tr>
+        <tr><td><code>routed_experts</code></td><td>384</td><td>router scores per token per MoE layer</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>2. Attention Projection FLOPs Per Layer</h2>
+    <p>Kimi's served MLA path uses <code>qkv_a</code>, all-head <code>q_b</code>, absorbed <code>W_KC</code> and <code>W_VC</code>, and <code>o_proj</code>. In this baseline all heads are on one giant GPU.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Formula</th>
+          <th>FLOPs</th>
+          <th>Ownership</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>qkv_a</code></td>
+          <td><code>2 * 7168 * (1536 + 512 + 64)</code></td>
+          <td>30,277,632</td>
+          <td>One copy on the single giant GPU.</td>
+        </tr>
+        <tr>
+          <td><code>q_b</code></td>
+          <td><code>2 * 1536 * (64 * 192)</code></td>
+          <td>37,748,736</td>
+          <td>All 64 heads are included.</td>
+        </tr>
+        <tr>
+          <td>absorbed <code>W_KC</code></td>
+          <td><code>2 * 64 * 128 * 512</code></td>
+          <td>8,388,608</td>
+          <td>Across all heads, maps content query into latent KV space.</td>
+        </tr>
+        <tr>
+          <td>absorbed <code>W_VC</code></td>
+          <td><code>2 * 64 * 512 * 128</code></td>
+          <td>8,388,608</td>
+          <td>Across all heads, maps latent attention output back to value-head space.</td>
+        </tr>
+        <tr>
+          <td><code>o_proj</code></td>
+          <td><code>2 * (64 * 128) * 7168</code></td>
+          <td>117,440,512</td>
+          <td>All attention-output dimensions are included.</td>
+        </tr>
+        <tr>
+          <td><strong>Total</strong></td>
+          <td>sum above</td>
+          <td><strong>202,244,096</strong></td>
+          <td>Per layer, per token.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <p><strong>Why no separate <code>kv_b</code> row?</strong> The code defines <code>kv_b_proj</code> over the heads. In the absorbed MLA path, that same <code>kv_b</code> weight is algebraically split into <code>W_KC</code> for content-score absorption and <code>W_VC</code> for value-output absorption. The combined FLOPs are identical: <code>2 * 512 * (64 * (128 + 128)) = 16,777,216</code>, which equals <code>8,388,608 + 8,388,608</code>. We show the split form because it matches the runtime mental model: one part moves the query into latent KV space before the scan, and the other maps the latent attention output back afterward.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. MLP, MoE, and Router FLOPs</h2>
+    <p>A SwiGLU MLP has gate, up, and down projections, so its dense matmul cost is <code>6 * hidden * intermediate</code>. With no parallelism, the full dense and expert intermediate dimensions are on the single giant GPU.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Formula</th>
+          <th>FLOPs</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Dense MLP layer</td>
+          <td><code>6 * 7168 * 18432</code></td>
+          <td>792,723,456</td>
+          <td>Only layer 0 is dense because <code>first_k_dense_replace=1</code>.</td>
+        </tr>
+        <tr>
+          <td>Active MoE layer</td>
+          <td><code>6 * 7168 * 2048 * 9</code></td>
+          <td>792,723,456</td>
+          <td>Each token runs top-8 routed experts plus 1 shared expert.</td>
+        </tr>
+        <tr>
+          <td>Router per MoE layer</td>
+          <td><code>2 * 7168 * 384</code></td>
+          <td>5,505,024</td>
+          <td>Router scores all 384 routed experts.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <p>The dense MLP and active MoE layer happen to have the same FLOPs because <code>18,432 = 2,048 * 9</code>. This equality is not a general law; it is specific to Kimi K2.5's dimensions and top-8 + 1 shared expert choice.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Final Sum</h2>
+<pre>linear_flops_per_token =
+  61 * attention_projection_per_layer
+  + 1 * dense_mlp_layer
+  + 60 * active_moe_layer
+  + 60 * router_per_moe_layer
+
+= 61 * 202,244,096
+  + 1 * 792,723,456
+  + 60 * 792,723,456
+  + 60 * 5,505,024
+
+= 12,336,889,856
+  + 792,723,456
+  + 47,563,407,360
+  + 330,301,440
+
+= 61,023,322,112 FLOPs/token</pre>
+  </section>
+
+  <section>
+    <h2>5. What This Constant Does Not Include</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Excluded</th>
+          <th>Why excluded here</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Attention scan</td><td>Separated into the pair-based constant <code>8,495,104 FLOPs/context-pair</code>.</td></tr>
+        <tr><td>RMSNorm, RoPE, softmax, top-k, sampling</td><td>Smaller non-matmul operations; not included in this theoretical model-FLOP constant.</td></tr>
+        <tr><td>Communication</td><td>All-reduce/all-to-all affects runtime, not this model arithmetic count.</td></tr>
+        <tr><td><code>lm_head</code></td><td>Excluded to keep the constant focused on transformer-block active FLOPs.</td></tr>
+        <tr><td>Quantized bit-ops</td><td>The count is BF16-equivalent logical multiply-add FLOPs, not W4A16 kernel throughput or byte traffic.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>6. Source Anchors</h2>
+    <p>
+      Public config source: <code>moonshotai/Kimi-K2.5/config.json</code>.
+      Local code anchors: <code>python/sglang/srt/models/deepseek_v2.py</code> for <code>qkv_a</code>, <code>q_b</code>, <code>o_proj</code>, MoE layer rule, and router gate.
+      Local calculator anchor: <code>z_local/benchserving/mfu_metrics/calc_kimi25_lifa_mfu_memory.py</code>.
+    </p>
+    <div class="warning">
+      <p><strong>Audit warning.</strong> If we reintroduce model parallelism, expert parallel mode, shared-expert fusion assumptions, or include <code>lm_head</code>/softmax/communication, this constant must be recomputed.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>
