@@ -231,7 +231,7 @@ caption {
     <li class="sub"><a href="#raw-mlp-moe-equations">Raw MLP/MoE equations</a></li>
     <li><a href="#final-sum">Final sum</a></li>
     <li><a href="#excluded">What this constant does not include</a></li>
-    <li><a href="#sources">Source anchors</a></li>
+    <li><a href="#accuracy-claims">Accuracy claims</a></li>
   </ol>
 </nav>
 <section class="cell markdown"><h2 id="overview">Overview</h2>
@@ -524,14 +524,8 @@ assert linear_flops_per_token == 61_023_322_112
 <li><code>lm_head</code>. If full logits are computed for a token, add <code>2 * H * vocab_size</code> for that token separately.</li>
 <li>Quantized bit-operation throughput or byte traffic. This is a logical BF16-equivalent multiply-add FLOP count.</li>
 </ul></section>
-<section class="cell markdown"><h2 id="sources">6. Source anchors</h2>
-<ul>
-<li>Public config source: <code>moonshotai/Kimi-K2.5/config.json</code>, especially <code>text_config.hidden_size</code>, <code>text_config.num_hidden_layers</code>, <code>text_config.num_attention_heads</code>, <code>text_config.q_lora_rank</code>, <code>text_config.kv_lora_rank</code>, <code>text_config.qk_nope_head_dim</code>, <code>text_config.qk_rope_head_dim</code>, <code>text_config.v_head_dim</code>, <code>text_config.intermediate_size</code>, <code>text_config.moe_intermediate_size</code>, <code>text_config.n_routed_experts</code>, and <code>text_config.num_experts_per_tok</code>.</li>
-<li>SGLang attention projections: <code>python/sglang/srt/models/deepseek_v2.py:1133</code> for <code>fused_qkv_a_proj_with_mqa</code> and <code>python/sglang/srt/models/deepseek_v2.py:1141</code> for <code>q_b_proj</code>.</li>
-<li>SGLang MoE construction: <code>python/sglang/srt/models/deepseek_v2.py:396</code> for routed plus fused shared expert construction and <code>top_k=config.num_experts_per_tok + self.num_fused_shared_experts</code>.</li>
-<li>SGLang absorbed MLA behavior: <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:291</code> for <code>q_nope @ w_kc</code> and <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:448</code> for applying <code>w_vc</code> after latent attention output.</li>
-<li>Secondary MLA explainer: <a href="https://zhuanlan.zhihu.com/p/16730036197">deepseek技术解读(1)-彻底理解MLA（Multi-Head Latent Attention）</a>, section <strong>4.2. MLA原理解读</strong>. Use it as a conceptual article-equation bridge, not as the authoritative Kimi/SGLang source.</li>
-</ul></section>
+<section class="cell markdown"><h2 id="accuracy-claims">6. Accuracy claims</h2>
+<p>Tom reviewed this AI-generated article and found it to be accurate. If you spot any problem, please share back to Tom.</p></section>
 </div>
 </main>
 </body>
