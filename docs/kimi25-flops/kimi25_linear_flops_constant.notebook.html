@@ -227,7 +227,6 @@ caption {
     <li><a href="#attention-projection">Attention projection FLOPs per layer</a></li>
     <li class="sub"><a href="#article-equations">Article equations mapped to calculation variables</a></li>
     <li class="sub"><a href="#projection-equations">Projection equations</a></li>
-    <li><a href="#kv-b-equivalence">KV projection equivalence check</a></li>
     <li><a href="#mlp-moe-router">MLP, MoE, and router FLOPs</a></li>
     <li class="sub"><a href="#raw-mlp-moe-equations">Raw MLP/MoE equations</a></li>
     <li><a href="#final-sum">Final sum</a></li>
@@ -400,38 +399,7 @@ assert attention_projection_per_layer == 202_244_096
 <tr><td><strong>Total</strong></td><td><code>qkv_a + q_b + W_KC + W_VC + o_proj</code></td><td><code>202,244,096</code></td></tr>
 </tbody>
 </table></div></section>
-<section class="cell markdown"><h2 id="kv-b-equivalence">3. <code>kv_b_proj</code> vs absorbed <code>W_KC/W_VC</code>: equivalence check</h2>
-<p>Important distinction: this section is an <strong>accounting equivalence</strong>, not a claim that the optimized absorbed path literally runs one fused <code>kv_b_proj</code> matmul at inference time.</p>
-<p>The model class defines <code>kv_b_proj</code> with output shape:</p>
-<p><code>kv_lora -&gt; heads * (qk_nope + v_head)</code></p>
-<p>Conceptually, that is the article&#x27;s key/value expansion from latent <code>c_t^KV</code> into per-head content keys and values. But in SGLang&#x27;s absorbed MLA forward path, the useful pieces are exposed and executed as two separate absorbed weights:</p>
-<ul>
-<li><code>w_kc</code>: used on the query side as <code>q_nope @ w_kc</code>, corresponding to the content-key part.</li>
-<li><code>w_vc</code>: used after latent attention accumulation as <code>attn_output @ w_vc</code>, corresponding to the value part.</li>
-</ul>
-<p>So the FLOPs should be identical as a bookkeeping check:</p>
-<p><code>2 * kv_lora * (heads * (qk_nope + v_head)) == W_KC + W_VC</code></p>
-<p>Read this as: the full conceptual <code>kv_b_proj</code> has the same arithmetic size as the two absorbed pieces. Do <strong>not</strong> read it as: the absorbed runtime path first computes full <code>kv_b_proj</code> and then splits it.</p></section>
-<section class="cell"><p><span class="badge">Calculation</span></p><pre><code>kv_b_equivalent = 2 * kv_lora * (heads * (qk_nope + v_head))
-absorbed_split_equivalent = W_KC + W_VC
-
-assert kv_b_equivalent == 16_777_216
-assert absorbed_split_equivalent == 16_777_216
-assert kv_b_equivalent == absorbed_split_equivalent
-
-{
-    &#x27;kv_b_equivalent&#x27;: kv_b_equivalent,
-    &#x27;W_KC_plus_W_VC&#x27;: absorbed_split_equivalent,
-}</code></pre>
-<div class="table-wrap"><table class="result-table">
-<caption>KV expansion accounting equivalence</caption>
-<thead><tr><th scope="col">View</th><th scope="col">Formula</th><th scope="col">FLOPs</th></tr></thead>
-<tbody>
-<tr><td>Conceptual full <code>kv_b_proj</code></td><td><code>2 * 512 * (64 * (128 + 128))</code></td><td><code>16,777,216</code></td></tr>
-<tr><td>Absorbed split</td><td><code>W_KC + W_VC</code></td><td><code>16,777,216</code></td></tr>
-</tbody>
-</table></div></section>
-<section class="cell markdown"><h2 id="mlp-moe-router">4. MLP, MoE, and router FLOPs</h2>
+<section class="cell markdown"><h2 id="mlp-moe-router">3. MLP, MoE, and router FLOPs</h2>
 <p>SwiGLU has gate, up, and down projections, so the dense matmul cost is <code>6 * hidden * intermediate</code>.</p>
 <p>For Kimi K2.5:</p>
 <ul>
@@ -440,7 +408,7 @@ assert kv_b_equivalent == absorbed_split_equivalent
 <li>Each token runs <code>topk=8</code> routed experts plus <code>shared_experts=1</code>, so <code>active_experts=9</code>.</li>
 <li>Router scores all <code>routed_experts=384</code> routed experts.</li>
 </ul></section>
-<section class="cell markdown"><h3 id="raw-mlp-moe-equations">4.1 Raw equations for Dense MLP, MoE, and router</h3>
+<section class="cell markdown"><h3 id="raw-mlp-moe-equations">3.1 Raw equations for Dense MLP, MoE, and router</h3>
 <p>The feed-forward side is easiest to read as raw equations: dense SwiGLU for layer 0, then router plus active experts for MoE layers 1-60.</p>
 <h3>Dense layer 0: ordinary SwiGLU MLP</h3>
 <p>For layer 0, Kimi uses a dense SwiGLU MLP, not MoE:</p>
@@ -507,7 +475,7 @@ assert router_per_moe_layer == 5_505_024
 <tr><td><code>router_per_moe_layer</code></td><td><code>2 * 7168 * 384</code></td><td><code>5,505,024</code></td></tr>
 </tbody>
 </table></div></section>
-<section class="cell markdown"><h2 id="final-sum">5. Final sum</h2>
+<section class="cell markdown"><h2 id="final-sum">4. Final sum</h2>
 <p>The final constant is a sum over all text layers:</p>
 <p><code>61 * attention_projection_per_layer + 1 * dense_mlp_layer + 60 * active_moe_layer + 60 * router_per_moe_layer</code></p></section>
 <section class="cell"><p><span class="badge">Calculation</span></p><pre><code>attention_projection_total = L * attention_projection_per_layer
@@ -546,7 +514,7 @@ assert linear_flops_per_token == 61_023_322_112
 <tr><td><strong><code>linear_flops_per_token</code></strong></td><td><strong><code>61,023,322,112</code></strong></td></tr>
 </tbody>
 </table></div></section>
-<section class="cell markdown"><h2 id="excluded">6. What this constant does not include</h2>
+<section class="cell markdown"><h2 id="excluded">5. What this constant does not include</h2>
 <p>Excluded from this constant:</p>
 <ul>
 <li>Attention scan over context. That is counted by <code>attention_scan_flops_per_pair</code> in the separate attention-pair page.</li>
@@ -556,10 +524,10 @@ assert linear_flops_per_token == 61_023_322_112
 <li><code>lm_head</code>. If full logits are computed for a token, add <code>2 * H * vocab_size</code> for that token separately.</li>
 <li>Quantized bit-operation throughput or byte traffic. This is a logical BF16-equivalent multiply-add FLOP count.</li>
 </ul></section>
-<section class="cell markdown"><h2 id="sources">7. Source anchors</h2>
+<section class="cell markdown"><h2 id="sources">6. Source anchors</h2>
 <ul>
 <li>Public config source: <code>moonshotai/Kimi-K2.5/config.json</code>, especially <code>text_config.hidden_size</code>, <code>text_config.num_hidden_layers</code>, <code>text_config.num_attention_heads</code>, <code>text_config.q_lora_rank</code>, <code>text_config.kv_lora_rank</code>, <code>text_config.qk_nope_head_dim</code>, <code>text_config.qk_rope_head_dim</code>, <code>text_config.v_head_dim</code>, <code>text_config.intermediate_size</code>, <code>text_config.moe_intermediate_size</code>, <code>text_config.n_routed_experts</code>, and <code>text_config.num_experts_per_tok</code>.</li>
-<li>SGLang attention projections: <code>python/sglang/srt/models/deepseek_v2.py:1133</code> for <code>fused_qkv_a_proj_with_mqa</code>, <code>python/sglang/srt/models/deepseek_v2.py:1141</code> for <code>q_b_proj</code>, and <code>python/sglang/srt/models/deepseek_v2.py:1189</code> for <code>kv_b_proj</code>.</li>
+<li>SGLang attention projections: <code>python/sglang/srt/models/deepseek_v2.py:1133</code> for <code>fused_qkv_a_proj_with_mqa</code> and <code>python/sglang/srt/models/deepseek_v2.py:1141</code> for <code>q_b_proj</code>.</li>
 <li>SGLang MoE construction: <code>python/sglang/srt/models/deepseek_v2.py:396</code> for routed plus fused shared expert construction and <code>top_k=config.num_experts_per_tok + self.num_fused_shared_experts</code>.</li>
 <li>SGLang absorbed MLA behavior: <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:291</code> for <code>q_nope @ w_kc</code> and <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:448</code> for applying <code>w_vc</code> after latent attention output.</li>
 <li>Secondary MLA explainer: <a href="https://zhuanlan.zhihu.com/p/16730036197">deepseek技术解读(1)-彻底理解MLA（Multi-Head Latent Attention）</a>, section <strong>4.2. MLA原理解读</strong>. Use it as a conceptual article-equation bridge, not as the authoritative Kimi/SGLang source.</li>
