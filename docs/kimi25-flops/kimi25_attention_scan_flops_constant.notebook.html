@@ -1,10 +1,14 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en-US">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Kimi K2.5 Attention Scan FLOPs Notebook</title>
+  <title>Kimi K2.5 Attention Scan FLOPs Constant</title>
+  <meta name="description" content="Reader-facing verification of the Kimi K2.5 attention-scan FLOPs constant with context-pair counting, QK, RoPE, and AV arithmetic.">
+  <meta property="og:title" content="Kimi K2.5 Attention Scan FLOPs Constant">
+  <meta property="og:description" content="Step-by-step calculation view for validating attention_scan_flops_per_pair = 8,495,104.">
+  <meta property="og:type" content="article">
   <style>
 :root {
   --bg: #f7f3ea;
@@ -21,19 +25,31 @@ body {
   background: radial-gradient(circle at 10% 0%, #fff7d9 0, transparent 30rem), var(--bg);
   color: var(--ink);
   font-family: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  font-size: 19px;
   line-height: 1.62;
 }
 main {
-  max-width: 1040px;
+  width: min(1680px, calc(100vw - 24px));
   margin: 0 auto;
-  padding: 48px 24px 80px;
+  padding: 32px 0 80px;
 }
 .paper {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 22px;
-  padding: 36px;
+  padding: 34px;
   box-shadow: 0 24px 70px rgba(60, 45, 20, .13);
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  column-gap: 34px;
+  align-items: start;
+}
+.paper > h1,
+.paper > .note {
+  grid-column: 1 / -1;
+}
+.paper > section {
+  grid-column: 2;
 }
 h1, h2, h3 {
   font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
@@ -52,78 +68,195 @@ pre {
   border-radius: 14px;
   padding: 16px;
   overflow: auto;
-}
-blockquote {
-  margin: 1rem 0;
-  padding: .85rem 1rem;
-  border-left: 5px solid var(--accent);
-  background: #edf6f3;
-  color: var(--code);
+  font-size: .96em;
+  line-height: 1.5;
 }
 table {
   width: 100%;
+  min-width: 1120px;
   border-collapse: collapse;
   margin: 1.2rem 0;
-  font-size: .95rem;
+  font-size: 1em;
 }
 th, td {
   border: 1px solid var(--line);
-  padding: 8px 10px;
+  padding: 10px 12px;
   vertical-align: top;
 }
 th { background: #efe5cf; text-align: left; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+caption {
+  caption-side: top;
+  margin-bottom: .45rem;
+  color: var(--muted);
+  font-weight: 700;
+  text-align: left;
 }
-.card {
-  display: block;
-  padding: 18px;
-  min-height: 130px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: #fffaf0;
-  text-decoration: none;
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.2rem 0;
+  border-radius: 12px;
 }
-.card strong { display: block; color: var(--ink); font-size: 1.08rem; margin-bottom: 8px; }
-.card span { color: var(--muted); font-weight: 400; }
+.table-wrap table { margin: 0; }
+.result-table { min-width: 760px; }
 .cell {
   margin: 1rem 0 1.4rem;
-  padding: 1rem;
+  padding: 1rem 1.1rem;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fffaf0;
+  overflow-x: auto;
 }
 .cell.markdown { background: transparent; border-color: transparent; padding: 0; }
+.cell.markdown > p,
+.cell.markdown > ul,
+.cell.markdown > ol {
+  max-width: 980px;
+}
+.cell.markdown code { overflow-wrap: anywhere; }
+.math {
+  display: inline-block;
+  max-width: 100%;
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+  font-size: 1.08em;
+  line-height: 1.45;
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+.math-block {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: .55rem 0 .35rem;
+  padding: .35rem .55rem;
+  border-radius: 10px;
+  background: #fff8e8;
+  color: var(--code);
+  overflow-x: auto;
+}
+.toc {
+  grid-column: 1;
+  position: sticky;
+  top: 22px;
+  max-height: calc(100vh - 44px);
+  overflow: auto;
+  margin: 0;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff8e8;
+}
+.toc strong {
+  display: block;
+  margin-bottom: 8px;
+  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+}
+.toc ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  columns: 1;
+}
+.toc li { break-inside: avoid; margin: .25rem 0; }
+.toc .sub { margin-left: 1rem; font-size: .94em; }
+.note {
+  margin: .9rem 0 1.4rem;
+  color: var(--muted);
+  max-width: 980px;
+}
 .badge {
   display: inline-block;
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 4px 10px;
   color: var(--muted);
-  font-size: .85rem;
+  font-size: .9em;
 }
-</style>
+.summary {
+  display: grid;
+  grid-template-columns: minmax(220px, .8fr) minmax(320px, 1.2fr);
+  gap: 18px;
+  align-items: start;
+  margin: 1rem 0 1.4rem;
+}
+.summary .result {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff8e8;
+  padding: 18px;
+}
+.summary .result strong {
+  display: block;
+  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+.summary .result code { font-size: 1.05em; }
+@media (max-width: 760px) {
+  body { font-size: 18px; }
+  main { width: min(100vw - 20px, 1480px); padding-top: 20px; }
+  .paper { padding: 20px; border-radius: 16px; }
+  table { min-width: 760px; }
+  .summary { grid-template-columns: 1fr; }
+}
+@media (max-width: 1100px) {
+  .paper { display: block; }
+  .toc {
+    position: static;
+    max-height: none;
+    margin: 1.2rem 0 2rem;
+  }
+}
+  </style>
 </head>
 <body>
 <main>
 <div class="paper">
-<h1>Kimi K2.5 Attention Scan FLOPs Notebook</h1>
-<p><span class="badge">Rendered notebook view</span></p>
-<section class="cell markdown"><h1>Kimi K2.5 Attention Scan FLOPs Constant</h1>
-<p>This notebook converts <code>kimi25_attention_scan_flops_constant.html</code> into a block-by-block calculation notebook.</p>
-<p>Target result:</p>
-<p><code>attention_scan_flops_per_pair = 8,495,104</code></p>
-<p>Scope contract: single giant GPU, no parallelism, multiply-add counted as 2 FLOPs, absorbed MLA scan only. This is not per token by itself. Total attention FLOPs need an attention-pair count.</p></section>
-<section class="cell markdown"><h2>1. What is a context pair?</h2>
-<p>A context pair means one query token looking at one cached context position, across all 64 heads on the single giant GPU.</p>
-<p>Total attention scan FLOPs are:</p>
-<p><code>attention_pair_count * attention_scan_flops_per_pair</code></p>
+<h1>Kimi K2.5 Attention Scan FLOPs Constant</h1>
+<p class="note">This page derives the per-attention-pair scan FLOPs constant used in Kimi K2.5 serving FLOP accounting. The key difference from the linear FLOPs page is that this constant is not charged once per forward token; it is charged once for every query-context pair.</p>
+<nav class="toc" aria-label="Table of contents">
+  <strong>Table of contents</strong>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#context-pair">What is a context pair?</a></li>
+    <li><a href="#model-constants">Model constants</a></li>
+    <li><a href="#absorbed-mla-scan">Absorbed MLA scan shape</a></li>
+    <li><a href="#all-layers">Across all layers</a></li>
+    <li><a href="#compact-check">Compact formula sanity check</a></li>
+    <li><a href="#missing-dims">Why qk_nope and v_head do not appear</a></li>
+    <li><a href="#pair-example">Example request pair count</a></li>
+    <li><a href="#excluded">What this constant does not include</a></li>
+    <li><a href="#accuracy-claims">Accuracy claims</a></li>
+  </ol>
+</nav>
+<section class="cell markdown"><h2 id="overview">Overview</h2>
+<div class="summary">
+  <div class="result">
+    <strong>Target result</strong>
+    <code>attention_scan_flops_per_pair = 8,495,104</code>
+  </div>
+  <div>
+    <p><strong>Scope contract:</strong> Kimi K2.5 text decoder only; no tensor parallelism, expert parallelism, or pipeline parallelism in the logical accounting baseline; multiply-add counted as 2 FLOPs; absorbed MLA attention scan arithmetic is counted.</p>
+    <p><strong>Important:</strong> this is a pair constant, not a token constant. Total attention scan FLOPs are <code>attention_pair_count * attention_scan_flops_per_pair</code>.</p>
+  </div>
+</div>
+<div class="table-wrap"><table class="result-table">
+<caption>Top-level decomposition of the attention scan pair constant</caption>
+<thead><tr><th scope="col">Component</th><th scope="col">Formula</th><th scope="col">FLOPs per layer per pair</th><th scope="col">Why it is here</th></tr></thead>
+<tbody>
+<tr><td>Content QK</td><td><code>64 * 2 * 512</code></td><td><code>65,536</code></td><td>Each local head compares an absorbed content query with latent cached content.</td></tr>
+<tr><td>RoPE QK</td><td><code>64 * 2 * 64</code></td><td><code>8,192</code></td><td>Each head also compares the RoPE query branch with the RoPE key branch.</td></tr>
+<tr><td>Latent AV</td><td><code>64 * 2 * 512</code></td><td><code>65,536</code></td><td>Each head accumulates latent cached values after attention weighting.</td></tr>
+<tr><td>Per layer total</td><td><code>65,536 + 8,192 + 65,536</code></td><td><code>139,264</code></td><td>One query-context pair in one text layer.</td></tr>
+<tr><td><strong>All layers total</strong></td><td><code>61 * 139,264</code></td><td><code>8,495,104</code></td><td>Used as <code>attention_scan_flops_per_pair</code>.</td></tr>
+</tbody>
+</table></div></section>
+<section class="cell markdown"><h2 id="context-pair">1. What is a context pair?</h2>
+<p>A context pair means one query token looking at one cached context position, across all 64 heads in the no-parallelism accounting baseline.</p>
+<p><span class="math math-block">attention_scan_FLOPs = attention_pair_count &times; attention_scan_flops_per_pair</span></p>
 <p>Cached prefix tokens are not charged full linear work again, but they can still be keys/values in context. That is why cached tokens can still create attention pairs.</p></section>
-<section class="cell markdown"><h2>2. Model constants used by the scan</h2>
-<p>These names intentionally match the HTML pages and the full-model architecture map.</p></section>
-<section class="cell"><p><span class="badge">Code cell 4</span></p><pre><code>L = 61
+<section class="cell markdown"><h2 id="model-constants">2. Model constants</h2>
+<p>These are the Kimi K2.5 attention dimensions used by the scan calculation.</p></section>
+<section class="cell"><p><span class="badge">Calculation</span></p><pre><code>L = 61
 num_attention_heads = 64
 heads = num_attention_heads
 
@@ -135,21 +268,35 @@ v_head = 128
 assert heads == 64
 
 {
-    &#x27;L&#x27;: L,
-    &#x27;heads&#x27;: heads,
-    &#x27;kv_lora&#x27;: kv_lora,
-    &#x27;qk_rope&#x27;: qk_rope,
-    &#x27;qk_nope&#x27;: qk_nope,
-    &#x27;v_head&#x27;: v_head,
-}</code></pre></section>
-<section class="cell markdown"><h2>3. Absorbed MLA scan shape</h2>
-<p>Kimi uses absorbed MLA. Instead of materializing full per-head K/V tensors for the cache, the scan works against latent cache state plus a small RoPE key.</p>
-<p>For one query-context pair, each head does three scan operations:</p>
-<ul><li>Content QK: <code>q_content[512] dot c_j[512]</code>.</li></ul>
-<ul><li>RoPE QK: <code>q_rope[64] dot k_rope_j[64]</code>.</li></ul>
-<ul><li>AV latent accumulation: <code>attention_weight * c_j[512]</code>.</li></ul>
+    'L': L,
+    'heads': heads,
+    'kv_lora': kv_lora,
+    'qk_rope': qk_rope,
+    'qk_nope': qk_nope,
+    'v_head': v_head,
+}</code></pre>
+<div class="table-wrap"><table class="result-table">
+<caption>Model constants used below</caption>
+<thead><tr><th scope="col">Name</th><th scope="col">Value</th><th scope="col">Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>L</code></td><td><code>61</code></td><td>Text decoder layers.</td></tr>
+<tr><td><code>heads</code></td><td><code>64</code></td><td>Attention heads before any runtime sharding.</td></tr>
+<tr><td><code>kv_lora</code></td><td><code>512</code></td><td>Latent KV cache dimension used by absorbed MLA.</td></tr>
+<tr><td><code>qk_rope</code></td><td><code>64</code></td><td>RoPE query/key branch dimension.</td></tr>
+<tr><td><code>qk_nope</code></td><td><code>128</code></td><td>Content query/key dimension before absorption.</td></tr>
+<tr><td><code>v_head</code></td><td><code>128</code></td><td>Per-head value dimension after the later value projection.</td></tr>
+</tbody>
+</table></div></section>
+<section class="cell markdown"><h2 id="absorbed-mla-scan">3. Absorbed MLA scan shape</h2>
+<p>Kimi uses absorbed MLA. Instead of materializing full per-head K/V tensors for the cache, the attention scan works against latent cache state plus a small RoPE key branch.</p>
+<p>For one query-context pair in one layer, each head does three scan operations:</p>
+<ul>
+<li>Content QK: <code>q_content[512] dot c_j[512]</code>.</li>
+<li>RoPE QK: <code>q_rope[64] dot k_rope_j[64]</code>.</li>
+<li>AV latent accumulation: <code>attention_weight * c_j[512]</code>.</li>
+</ul>
 <p>Here <code>c_j[512]</code> means the normalized latent content vector used by the attention scan.</p></section>
-<section class="cell"><p><span class="badge">Code cell 6</span></p><pre><code>content_qk_per_layer = heads * 2 * kv_lora
+<section class="cell"><p><span class="badge">Calculation</span></p><pre><code>content_qk_per_layer = heads * 2 * kv_lora
 rope_qk_per_layer = heads * 2 * qk_rope
 av_latent_per_layer = heads * 2 * kv_lora
 
@@ -165,74 +312,109 @@ assert av_latent_per_layer == 65_536
 assert attention_scan_flops_per_pair_per_layer == 139_264
 
 {
-    &#x27;content_qk_per_layer&#x27;: content_qk_per_layer,
-    &#x27;rope_qk_per_layer&#x27;: rope_qk_per_layer,
-    &#x27;av_latent_per_layer&#x27;: av_latent_per_layer,
-    &#x27;attention_scan_flops_per_pair_per_layer&#x27;: attention_scan_flops_per_pair_per_layer,
-}</code></pre></section>
-<section class="cell markdown"><h2>4. Across all layers</h2>
-<p>The pair constant multiplies the per-layer pair cost by <code>L=61</code> layers.</p></section>
-<section class="cell"><p><span class="badge">Code cell 8</span></p><pre><code>attention_scan_flops_per_pair = (
+    'content_qk_per_layer': content_qk_per_layer,
+    'rope_qk_per_layer': rope_qk_per_layer,
+    'av_latent_per_layer': av_latent_per_layer,
+    'attention_scan_flops_per_pair_per_layer': attention_scan_flops_per_pair_per_layer,
+}</code></pre>
+<div class="table-wrap"><table class="result-table">
+<caption>Per-layer pair scan result</caption>
+<thead><tr><th scope="col">Term</th><th scope="col">Formula</th><th scope="col">FLOPs per layer per pair</th></tr></thead>
+<tbody>
+<tr><td><code>content_qk_per_layer</code></td><td><code>64 * 2 * 512</code></td><td><code>65,536</code></td></tr>
+<tr><td><code>rope_qk_per_layer</code></td><td><code>64 * 2 * 64</code></td><td><code>8,192</code></td></tr>
+<tr><td><code>av_latent_per_layer</code></td><td><code>64 * 2 * 512</code></td><td><code>65,536</code></td></tr>
+<tr><td><strong>Total</strong></td><td><code>content_qk + rope_qk + av_latent</code></td><td><code>139,264</code></td></tr>
+</tbody>
+</table></div></section>
+<section class="cell markdown"><h2 id="all-layers">4. Across all layers</h2>
+<p>The pair constant multiplies the per-layer pair cost by <code>L=61</code> text decoder layers.</p></section>
+<section class="cell"><p><span class="badge">Calculation</span></p><pre><code>attention_scan_flops_per_pair = (
     L * attention_scan_flops_per_pair_per_layer
 )
 
 assert attention_scan_flops_per_pair == 8_495_104
 
 {
-    &#x27;attention_scan_flops_per_pair_per_layer&#x27;: attention_scan_flops_per_pair_per_layer,
-    &#x27;L&#x27;: L,
-    &#x27;attention_scan_flops_per_pair&#x27;: attention_scan_flops_per_pair,
-}</code></pre></section>
-<section class="cell markdown"><h2>5. Compact formula sanity check</h2>
-<p>The compact equivalent formula is:</p>
-<p><code>L * 2 * heads * (2 * kv_lora + qk_rope)</code></p></section>
-<section class="cell"><p><span class="badge">Code cell 10</span></p><pre><code>compact = L * 2 * heads * (2 * kv_lora + qk_rope)
+    'attention_scan_flops_per_pair_per_layer': attention_scan_flops_per_pair_per_layer,
+    'L': L,
+    'attention_scan_flops_per_pair': attention_scan_flops_per_pair,
+}</code></pre>
+<div class="table-wrap"><table class="result-table">
+<caption>All-layer attention scan pair constant</caption>
+<thead><tr><th scope="col">Term</th><th scope="col">Formula</th><th scope="col">FLOPs</th></tr></thead>
+<tbody>
+<tr><td><code>attention_scan_flops_per_pair_per_layer</code></td><td><code>65,536 + 8,192 + 65,536</code></td><td><code>139,264</code></td></tr>
+<tr><td><code>attention_scan_flops_per_pair</code></td><td><code>61 * 139,264</code></td><td><code>8,495,104</code></td></tr>
+</tbody>
+</table></div></section>
+<section class="cell markdown"><h2 id="compact-check">5. Compact formula sanity check</h2>
+<p>The same result can be written as a compact one-line formula:</p>
+<p><span class="math math-block">attention_scan_flops_per_pair = L &times; 2 &times; heads &times; (2 &times; kv_lora + qk_rope)</span></p></section>
+<section class="cell"><p><span class="badge">Calculation</span></p><pre><code>compact = L * 2 * heads * (2 * kv_lora + qk_rope)
 
 assert compact == attention_scan_flops_per_pair
 assert compact == 8_495_104
 
-compact</code></pre></section>
-<section class="cell markdown"><h2>6. Why <code>qk_nope</code> and <code>v_head</code> do not appear in the pair-scan constant</h2>
+compact</code></pre>
+<div class="table-wrap"><table class="result-table">
+<caption>Compact formula result</caption>
+<thead><tr><th scope="col">Formula</th><th scope="col">FLOPs</th></tr></thead>
+<tbody>
+<tr><td><code>61 * 2 * 64 * (2 * 512 + 64)</code></td><td><code>8,495,104</code></td></tr>
+</tbody>
+</table></div></section>
+<section class="cell markdown"><h2 id="missing-dims">6. Why <code>qk_nope</code> and <code>v_head</code> do not appear</h2>
 <p><code>qk_nope=128</code> does not appear because the no-position query is multiplied by absorbed <code>W_KC</code> before the scan. After absorption, the scan sees a 512-dim latent content query, so the scan cost uses <code>kv_lora=512</code>.</p>
-<p><code>v_head=128</code> does not appear because the scan accumulates latent <code>kv_lora=512</code> values. The later absorbed <code>W_VC</code> projection maps latent output to <code>v_head=128</code>; that projection is charged in the per-token linear FLOPs notebook.</p>
-<p>All 64 heads appear because this is the no-parallelism baseline.</p></section>
-<section class="cell markdown"><h2>7. Optional: compute attention pairs for simple request shapes</h2>
-<p>This cell is not needed to derive the constant, but it shows how to use the constant.</p>
-<p>For a no-cache request with <code>input_tokens</code> prompt tokens and <code>output_tokens</code> generated tokens:</p>
-<ul><li>Prompt/prefill pairs are triangular: <code>input_tokens * (input_tokens + 1) // 2</code>.</li></ul>
-<ul><li>Decode pairs: each output query attends to the full prompt plus previously generated output tokens.</li></ul>
-<ul><li>Total scan FLOPs: <code>pairs * attention_scan_flops_per_pair</code>.</li></ul></section>
-<section class="cell"><p><span class="badge">Code cell 13</span></p><pre><code>def no_cache_attention_pairs(input_tokens: int, output_tokens: int) -&gt; dict:
+<p><code>v_head=128</code> does not appear because the scan accumulates latent <code>kv_lora=512</code> values. The later absorbed <code>W_VC</code> projection maps latent output to <code>v_head=128</code>; that projection is charged in the per-forward-token linear FLOPs page.</p>
+<p>All 64 heads appear because this is the no-parallelism logical baseline.</p></section>
+<section class="cell markdown"><h2 id="pair-example">7. Example request pair count</h2>
+<p>This example is not needed to derive the constant, but it shows how to use the constant. For a no-cache request with <code>input_tokens</code> prompt tokens and <code>output_tokens</code> generated tokens:</p>
+<ul>
+<li>Prompt/prefill pairs are triangular: <code>input_tokens * (input_tokens + 1) // 2</code>.</li>
+<li>Decode pairs: each output query attends to the full prompt plus previously generated output tokens.</li>
+<li>Total scan FLOPs: <code>pairs * attention_scan_flops_per_pair</code>.</li>
+</ul></section>
+<section class="cell"><p><span class="badge">Calculation</span></p><pre><code>def no_cache_attention_pairs(input_tokens: int, output_tokens: int) -> dict:
     prefill_pairs = input_tokens * (input_tokens + 1) // 2
     decode_pairs = output_tokens * input_tokens + output_tokens * (output_tokens - 1) // 2
     total_pairs = prefill_pairs + decode_pairs
     return {
-        &#x27;prefill_pairs&#x27;: prefill_pairs,
-        &#x27;decode_pairs&#x27;: decode_pairs,
-        &#x27;total_pairs&#x27;: total_pairs,
-        &#x27;attention_scan_flops&#x27;: total_pairs * attention_scan_flops_per_pair,
+        'prefill_pairs': prefill_pairs,
+        'decode_pairs': decode_pairs,
+        'total_pairs': total_pairs,
+        'attention_scan_flops': total_pairs * attention_scan_flops_per_pair,
     }
 
 example = no_cache_attention_pairs(input_tokens=10, output_tokens=10)
 
-assert example[&#x27;prefill_pairs&#x27;] == 55
-assert example[&#x27;decode_pairs&#x27;] == 145
-assert example[&#x27;total_pairs&#x27;] == 200
-assert example[&#x27;attention_scan_flops&#x27;] == 200 * 8_495_104
+assert example['prefill_pairs'] == 55
+assert example['decode_pairs'] == 145
+assert example['total_pairs'] == 200
+assert example['attention_scan_flops'] == 200 * 8_495_104
 
-example</code></pre></section>
-<section class="cell markdown"><h2>8. What this constant does not include</h2>
+example</code></pre>
+<div class="table-wrap"><table class="result-table">
+<caption>10 input tokens + 10 output tokens example</caption>
+<thead><tr><th scope="col">Term</th><th scope="col">Value</th></tr></thead>
+<tbody>
+<tr><td><code>prefill_pairs</code></td><td><code>55</code></td></tr>
+<tr><td><code>decode_pairs</code></td><td><code>145</code></td></tr>
+<tr><td><code>total_pairs</code></td><td><code>200</code></td></tr>
+<tr><td><code>attention_scan_flops</code></td><td><code>1,699,020,800</code></td></tr>
+</tbody>
+</table></div></section>
+<section class="cell markdown"><h2 id="excluded">8. What this constant does not include</h2>
 <p>Excluded from this constant:</p>
-<ul><li><code>qkv_a</code>, <code>q_b</code>, <code>W_KC</code>, <code>W_VC</code>, and <code>o_proj</code>; those are per-forward-token linear work.</li></ul>
-<ul><li>Softmax, scale, mask, exp, and reductions.</li></ul>
-<ul><li>RMSNorm and RoPE elementwise rotation.</li></ul>
-<ul><li>KV cache bytes and memory bandwidth.</li></ul>
-<ul><li>MoE, MLP, and router work.</li></ul></section>
-<section class="cell markdown"><h2>9. Source anchors</h2>
-<ul><li>HTML source converted from: <code>z_local/benchserving/mfu_metrics/kimi25_attention_scan_flops_constant.html</code>.</li></ul>
-<ul><li>Public config source: <code>moonshotai/Kimi-K2.5/config.json</code>.</li></ul>
-<ul><li>Local absorbed MLA source: <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py</code>.</li></ul>
-<ul><li>Local model source: <code>python/sglang/srt/models/deepseek_v2.py</code> for <code>attn_mqa</code>, <code>kv_lora_rank + qk_rope_head_dim</code>, and <code>v_head_dim=kv_lora_rank</code>.</li></ul></section>
+<ul>
+<li><code>qkv_a</code>, <code>q_b</code>, <code>W_KC</code>, <code>W_VC</code>, and <code>o_proj</code>; those are per-forward-token linear work.</li>
+<li>Softmax, scale, mask, exp, reductions, and other elementwise attention operations.</li>
+<li>RMSNorm and RoPE elementwise rotation.</li>
+<li>KV cache bytes and memory bandwidth.</li>
+<li>MoE, MLP, and router work.</li>
+</ul></section>
+<section class="cell markdown"><h2 id="accuracy-claims">9. Accuracy claims</h2>
+<p>Tom reviewed this AI-generated article and found it to be accurate. If you spot any problem, please share back to Tom.</p></section>
 </div>
 </main>
 </body>
