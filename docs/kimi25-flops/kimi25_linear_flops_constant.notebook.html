@@ -328,7 +328,7 @@ constants</code></pre>
 <li><code>o_proj</code>: all attention-output dimensions are included.</li>
 </ul></section>
 <section class="cell markdown"><h3 id="article-equations">2.1 Article equations mapped to calculation variables</h3>
-<p>The article equations are useful as an MLA dataflow reference, but this page counts FLOPs in the SGLang implementation-shaped variables. Read the table as a bridge from conceptual MLA equations to the calculation formulas.</p>
+<p>The article equations come from <a href="https://zhuanlan.zhihu.com/p/16730036197">deepseek技术解读(1)-彻底理解MLA（Multi-Head Latent Attention）</a>, especially section <strong>4.2. MLA原理解读</strong>. They are useful as an MLA dataflow reference, but this page counts FLOPs in the SGLang implementation-shaped variables. Read the table as a bridge from conceptual MLA equations to the calculation formulas.</p>
 <div class="table-wrap"><table><caption>MLA article equations translated into Kimi/SGLang FLOP terms</caption><thead><tr><th scope="col">Article eq</th><th scope="col">Article formula</th><th scope="col">Meaning</th><th scope="col">Kimi variable in this calculation</th><th scope="col">FLOP term that counts the projection</th></tr></thead><tbody>
 <tr><td>(37)</td><td><span class="math">c<sup>Q</sup><sub>t</sub> = W<sup>DQ</sup>h<sub>t</sub></span></td><td>Compress hidden state into a query latent.</td><td><code>q_lora = 1536</code></td><td>Part of <code>qkv_a = 2 * H * (...)</code></td></tr>
 <tr><td>(38)</td><td><span class="math">[q<sup>C</sup><sub>t,1</sub>, ..., q<sup>C</sup><sub>t,nₕ</sub>] = q<sup>C</sup><sub>t</sub> = W<sup>UQ</sup>c<sup>Q</sup><sub>t</sub></span></td><td>Expand query latent into per-head <strong>content/no-RoPE query</strong>.</td><td><code>heads * qk_nope = 64 * 128</code></td><td>Content part of <code>q_b = 2 * q_lora * (heads * qk_head)</code></td></tr>
@@ -562,7 +562,7 @@ assert linear_flops_per_token == 61_023_322_112
 <li>SGLang attention projections: <code>python/sglang/srt/models/deepseek_v2.py:1133</code> for <code>fused_qkv_a_proj_with_mqa</code>, <code>python/sglang/srt/models/deepseek_v2.py:1141</code> for <code>q_b_proj</code>, and <code>python/sglang/srt/models/deepseek_v2.py:1189</code> for <code>kv_b_proj</code>.</li>
 <li>SGLang MoE construction: <code>python/sglang/srt/models/deepseek_v2.py:396</code> for routed plus fused shared expert construction and <code>top_k=config.num_experts_per_tok + self.num_fused_shared_experts</code>.</li>
 <li>SGLang absorbed MLA behavior: <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:291</code> for <code>q_nope @ w_kc</code> and <code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:448</code> for applying <code>w_vc</code> after latent attention output.</li>
-<li>Secondary MLA explainer: <code>https://zhuanlan.zhihu.com/p/16730036197</code>. Use it as a conceptual article-equation bridge, not as the authoritative Kimi/SGLang source.</li>
+<li>Secondary MLA explainer: <a href="https://zhuanlan.zhihu.com/p/16730036197">deepseek技术解读(1)-彻底理解MLA（Multi-Head Latent Attention）</a>, section <strong>4.2. MLA原理解读</strong>. Use it as a conceptual article-equation bridge, not as the authoritative Kimi/SGLang source.</li>
 </ul></section>
 </div>
 </main>
