@@ -216,6 +216,13 @@
       margin-top: 14px;
     }
 
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
     .idea {
       border: 1px solid var(--line);
       border-radius: 20px;
@@ -275,7 +282,7 @@
 
     @media (max-width: 920px) {
       main { width: min(100vw - 20px, 1260px); padding-top: 22px; }
-      header, .cards, .two-col, .mini-flow { grid-template-columns: 1fr; }
+      header, .cards, .two-col, .three-col, .mini-flow { grid-template-columns: 1fr; }
       h1 { font-size: clamp(36px, 11vw, 56px); }
       section { padding: 16px; border-radius: 22px; }
     }
@@ -427,6 +434,36 @@
     </div>
     <div class="footer-note">
       <p>For peers new to Kimi, this is the right stopping point: wrapper, text tower, MLA, sparse MoE, prefill, decode. After this picture is clear, the linear and attention-scan FLOP pages become much easier to read.</p>
+    </div>
+  </section>
+
+  <section id="reading-order">
+    <h2>5. First-Pass Reading Order</h2>
+    <p>If someone is new to this model family, do not start from tensor shapes. Start from the dataflow and only add detail when a serving question needs it.</p>
+    <div class="mini-flow" aria-label="Architecture reading order">
+      <div class="step side"><strong>1. Wrapper</strong><span>text and optional vision inputs become one token sequence</span></div>
+      <div class="step side"><strong>2. Text tower</strong><span>the 61-layer transformer does almost all model work</span></div>
+      <div class="step attn"><strong>3. MLA</strong><span>attention reads context through a compressed cache representation</span></div>
+      <div class="step moe"><strong>4. MoE</strong><span>router activates only a small expert set per token</span></div>
+      <div class="step side"><strong>5. Serving</strong><span>prefill writes cache; decode reads cache repeatedly</span></div>
+    </div>
+  </section>
+
+  <section id="first-pass-boundary">
+    <h2>6. What To Ignore On First Read</h2>
+    <div class="three-col">
+      <div class="idea">
+        <h3>Ignore exact FLOP constants first</h3>
+        <p>Those are important later, but they are easier once the architecture picture is stable. First know which parts are per-token and which parts grow with context.</p>
+      </div>
+      <div class="idea">
+        <h3>Ignore kernel-level scheduling first</h3>
+        <p>Continuous batching, CUDA kernels, quantization, and bandwidth matter for performance, but they sit below this model-shape view.</p>
+      </div>
+      <div class="idea">
+        <h3>Ignore every small layer first</h3>
+        <p>Norms, residual adds, final logits, and sampling are real, but the first architecture pass should focus on the text tower, MLA, and MoE.</p>
+      </div>
     </div>
   </section>
 </main>
