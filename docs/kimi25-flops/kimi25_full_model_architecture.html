@@ -403,69 +403,6 @@
     </div>
   </section>
 
-  <section id="ideas">
-    <h2>3. The Two Architecture Ideas To Remember</h2>
-    <div class="two-col">
-      <div class="idea">
-        <h3>MLA attention compresses what decode must remember</h3>
-        <p>Ordinary attention stores large per-head keys and values. MLA stores a smaller latent KV representation plus RoPE position information. At serving time, this matters because decode repeatedly scans the KV cache for every new token.</p>
-      </div>
-      <div class="idea">
-        <h3>Sparse MoE makes the feed-forward path selective</h3>
-        <p>The model owns 384 routed experts, but each token only activates the top 8 routed experts plus 1 shared expert. The router chooses which experts are useful, so the model has many parameters without running all experts for every token.</p>
-      </div>
-    </div>
-    <div class="footer-note">
-      <p><strong>Serving mental model:</strong> prefill processes many prompt tokens and creates cache; decode processes one new token per request step and repeatedly reads existing cache. This page only explains the architecture shape. The separate FLOP pages are where the exact constants are derived.</p>
-    </div>
-  </section>
-
-  <section id="serving-lens">
-    <h2>4. How To Use This Mental Model</h2>
-    <div class="two-col">
-      <div class="idea">
-        <h3>When a request arrives</h3>
-        <p>Think of the prompt as a token sequence entering the same 61-layer text tower. During prefill, many tokens move through the tower together and the model writes KV-cache state that future decode steps will reuse.</p>
-      </div>
-      <div class="idea">
-        <h3>When the model generates</h3>
-        <p>Each decode step adds one new token, but that token can look back at the whole accumulated context through MLA attention. The MoE path is still token-wise, while the attention path grows with context length.</p>
-      </div>
-    </div>
-    <div class="footer-note">
-      <p>For peers new to Kimi, this is the right stopping point: wrapper, text tower, MLA, sparse MoE, prefill, decode. After this picture is clear, the linear and attention-scan FLOP pages become much easier to read.</p>
-    </div>
-  </section>
-
-  <section id="reading-order">
-    <h2>5. First-Pass Reading Order</h2>
-    <p>If someone is new to this model family, do not start from tensor shapes. Start from the dataflow and only add detail when a serving question needs it.</p>
-    <div class="mini-flow" aria-label="Architecture reading order">
-      <div class="step side"><strong>1. Wrapper</strong><span>text and optional vision inputs become one token sequence</span></div>
-      <div class="step side"><strong>2. Text tower</strong><span>the 61-layer transformer does almost all model work</span></div>
-      <div class="step attn"><strong>3. MLA</strong><span>attention reads context through a compressed cache representation</span></div>
-      <div class="step moe"><strong>4. MoE</strong><span>router activates only a small expert set per token</span></div>
-      <div class="step side"><strong>5. Serving</strong><span>prefill writes cache; decode reads cache repeatedly</span></div>
-    </div>
-  </section>
-
-  <section id="first-pass-boundary">
-    <h2>6. What To Ignore On First Read</h2>
-    <div class="three-col">
-      <div class="idea">
-        <h3>Ignore exact FLOP constants first</h3>
-        <p>Those are important later, but they are easier once the architecture picture is stable. First know which parts are per-token and which parts grow with context.</p>
-      </div>
-      <div class="idea">
-        <h3>Ignore kernel-level scheduling first</h3>
-        <p>Continuous batching, CUDA kernels, quantization, and bandwidth matter for performance, but they sit below this model-shape view.</p>
-      </div>
-      <div class="idea">
-        <h3>Ignore every small layer first</h3>
-        <p>Norms, residual adds, final logits, and sampling are real, but the first architecture pass should focus on the text tower, MLA, and MoE.</p>
-      </div>
-    </div>
-  </section>
 </main>
 </body>
 </html>
