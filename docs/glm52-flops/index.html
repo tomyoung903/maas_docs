@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/">
+  <title>GLM-5.2 FLOPs Pack</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --soft: #e8f2ef;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 900px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 860px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.danger { color: var(--accent-2); font-weight: 800; }
+.footer {
+  margin-top: 42px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/">Public URL</a></nav>
+
+<h1>GLM-5.2 FLOPs Pack</h1>
+<p class="lead">A compact reference for the GLM-5.2 architecture shape, active linear FLOPs per generated token, and attention-scan FLOPs as context grows.</p>
+<div class="grid"><section class="card"><div class="label">architecture</div><div class="value">78 layers, 3 dense + 75 MoE</div></section><section class="card"><div class="label">active linear</div><div class="value">12.194 GFLOP / token / GPU</div></section><section class="card"><div class="label">attention scan</div><div class="value">1.358 MFLOP / context pair / GPU</div></section><section class="card"><div class="label">DSA top-k</div><div class="value">2,048 selected keys</div></section></div>
+<h2>Pages</h2>
+<table><tr><th>Page</th><th>Use it for</th></tr><tr><td><a href="glm52_architecture.html">GLM-5.2 architecture</a></td><td>Layer stack, MLA dimensions, MoE routing, DSA indexer, and built-in MTP.</td></tr>
+<tr><td><a href="glm52_linear_flops_per_token.html">Linear FLOPs per generated token</a></td><td>The TP8 active model-math constant used for MFU reasoning.</td></tr>
+<tr><td><a href="glm52_attention_scan_flops_per_token.html">Attention scan FLOPs per generated token</a></td><td>How context length and DSA top-k change scan work.</td></tr></table>
+<div class="note">These pages count core model math per GPU at TP=8. They intentionally separate model FLOPs from wall-clock throughput, batching effects, CUDA graph replay, communication, and kernel efficiency.</div>
+
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/">https://tomyoung903.github.io/maas_docs/glm52-flops/</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
+</main>
+</body>
+</html>

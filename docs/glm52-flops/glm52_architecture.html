@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html">
+  <title>GLM-5.2 Architecture Map</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --soft: #e8f2ef;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 900px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 860px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.danger { color: var(--accent-2); font-weight: 800; }
+.footer {
+  margin-top: 42px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html">Public URL</a></nav>
+
+<h1>GLM-5.2 Architecture Map</h1>
+<p class="lead">GLM-5.2 is a DeepSeek-style MLA sparse-MoE model with GLM's DSA/NSA sparse attention indexer and one built-in next-token prediction layer for speculative decoding.</p>
+<div class="grid"><section class="card"><div class="label">model class</div><div class="value"><code>GlmMoeDsaForCausalLM</code></div></section><section class="card"><div class="label">hidden size</div><div class="value">6,144</div></section><section class="card"><div class="label">context length</div><div class="value">1,048,576</div></section><section class="card"><div class="label">nextn/MTP layers</div><div class="value">1</div></section></div>
+<h2>Layer Stack</h2>
+<table><tr><th>Region</th><th>Layers</th><th>MLP/MoE</th></tr><tr><td>Dense warm-up</td><td>0-2</td><td>SwiGLU dense MLP, intermediate 12,288</td></tr>
+<tr><td>Sparse body</td><td>3-77</td><td>256 routed experts, top-8 plus 1 shared expert</td></tr>
+<tr><td>Draft layer</td><td>separate nextn layer</td><td>One sparse decoder layer used when SGLang speculative decoding is enabled</td></tr></table>
+<h2>MLA Attention Shape</h2>
+<table><tr><th>Field</th><th>Value</th><th>Why it matters</th></tr><tr><td>Heads</td><td>64</td><td>TP=8 gives 8 local heads per GPU</td></tr>
+<tr><td>Q low-rank</td><td>2,048</td><td>Replicated q latent before TP-sharded q_b projection</td></tr>
+<tr><td>KV low-rank</td><td>512</td><td>Stored MLA latent dimension for content score and value accumulation</td></tr>
+<tr><td>QK no-RoPE</td><td>192</td><td>Content score head dimension after absorption</td></tr>
+<tr><td>QK RoPE</td><td>64</td><td>Position-aware score dimension</td></tr>
+<tr><td>V head</td><td>256</td><td>Output value dimension before o_proj</td></tr></table>
+<h2>DSA / NSA Sparse Attention</h2>
+<p>GLM-5.2 exposes DSA indexer fields in the config. In SGLang, that routes the model to the <code>nsa</code> backend instead of ordinary full-context MLA when the backend is left to defaults.</p>
+<div class="grid"><section class="card"><div class="label">index top-k</div><div class="value">2,048</div></section><section class="card"><div class="label">index heads</div><div class="value">32</div></section><section class="card"><div class="label">index head dim</div><div class="value">128</div></section><section class="card"><div class="label">scan cap idea</div><div class="value">full scan below top-k, sparse scan above it</div></section></div>
+<div class="note">The DSA indexer changes the long-context scaling story. The attention page counts the selected-key scan math and separately calls out that indexer/top-k work is additional overhead.</div>
+<h2>Speculative Decoding</h2>
+<p>The checkpoint has <code>num_nextn_predict_layers = 1</code>. A plain non-speculative forward does not use it. In our SGLang serving setup, <code>--speculative-algorithm EAGLE</code> loads the same checkpoint as the draft model and remaps the nextn layer into the draft path.</p>
+
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
+</main>
+</body>
+</html>

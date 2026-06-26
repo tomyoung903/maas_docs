@@ -1,65 +1,190 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MaaS Docs</title>
   <style>
     :root {
-      --bg: #f6f1e8;
-      --ink: #1d241f;
-      --muted: #5c665f;
-      --card: #fffaf0;
-      --line: #d8cdbc;
-      --accent: #9b4d24;
+      --bg: #f5f7f7;
+      --paper: #ffffff;
+      --ink: #18211f;
+      --muted: #5d6865;
+      --line: #cbd6d3;
+      --accent: #0b6b66;
+      --accent-2: #8b3f2f;
+      --soft: #e7f0ee;
     }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at top left, rgba(155, 77, 36, 0.16), transparent 32rem),
-        linear-gradient(135deg, var(--bg), #ebe4d6);
+      background: var(--bg);
       color: var(--ink);
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
     }
     main {
-      width: min(760px, calc(100vw - 40px));
-      padding: 44px;
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      background: color-mix(in srgb, var(--card) 92%, white);
-      box-shadow: 0 24px 80px rgba(60, 42, 24, 0.14);
+      width: min(1120px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+    header {
+      margin-bottom: 30px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.15;
+      letter-spacing: 0;
     }
     h1 {
-      margin: 0 0 12px;
-      font-size: clamp(36px, 7vw, 76px);
-      letter-spacing: -0.06em;
-      line-height: 0.9;
+      max-width: 780px;
+      font-size: clamp(2.25rem, 6vw, 4.5rem);
+    }
+    h2 {
+      margin-bottom: 14px;
+      font-size: 1.35rem;
+    }
+    h3 {
+      font-size: 1.1rem;
     }
     p {
-      margin: 0 0 28px;
+      margin: 10px 0 0;
+      max-width: 820px;
       color: var(--muted);
-      font-size: 18px;
-      line-height: 1.6;
     }
-    a {
-      display: inline-block;
-      padding: 14px 18px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: white;
+    .pack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 16px;
+    }
+    .pack {
+      display: grid;
+      gap: 16px;
+      min-height: 100%;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+    .pack.glm {
+      border-top: 5px solid var(--accent);
+    }
+    .pack.kimi {
+      border-top: 5px solid var(--accent-2);
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pill {
+      display: inline-flex;
+      min-height: 28px;
+      align-items: center;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--soft);
+      color: var(--ink);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .links {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .links a {
+      display: flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--accent);
+      font-weight: 750;
       text-decoration: none;
-      font: 700 15px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #fbfdfc;
+    }
+    .links a::after {
+      content: "Open";
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+    footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .92rem;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
   </style>
 </head>
 <body>
   <main>
-    <h1>MaaS Docs</h1>
-    <p>Static references for serving efficiency, model FLOPs, architecture diagrams, and verification notebooks.</p>
-    <a href="./kimi25-flops/">Open Kimi K2.5 FLOPs Pack</a>
+    <header>
+      <h1>MaaS Docs</h1>
+      <p>Static references for serving efficiency, model FLOPs, architecture notes, and verification notebooks.</p>
+    </header>
+
+    <section aria-labelledby="model-flops">
+      <h2 id="model-flops">Model FLOPs Packs</h2>
+      <div class="pack-grid">
+        <article class="pack glm">
+          <div>
+            <h3>GLM-5.2 FLOPs Pack</h3>
+            <p>Architecture map, TP8 active linear FLOPs, and DSA attention-scan accounting for GLM-5.2.</p>
+            <div class="meta" aria-label="GLM-5.2 pack metadata">
+              <span class="pill">GLM-5.2</span>
+              <span class="pill">TP8</span>
+              <span class="pill">DSA</span>
+              <span class="pill">MoE</span>
+            </div>
+          </div>
+          <ul class="links">
+            <li><a href="./glm52-flops/">Overview</a></li>
+            <li><a href="./glm52-flops/glm52_architecture.html">Architecture</a></li>
+            <li><a href="./glm52-flops/glm52_linear_flops_per_token.html">Linear FLOPs per token</a></li>
+            <li><a href="./glm52-flops/glm52_attention_scan_flops_per_token.html">Attention scan FLOPs</a></li>
+          </ul>
+        </article>
+
+        <article class="pack kimi">
+          <div>
+            <h3>Kimi K2.5 FLOPs Pack</h3>
+            <p>Architecture references, MLA tutorials, notebook exports, and FLOP constants for Kimi K2.5.</p>
+            <div class="meta" aria-label="Kimi K2.5 pack metadata">
+              <span class="pill">Kimi K2.5</span>
+              <span class="pill">MLA</span>
+              <span class="pill">MoE</span>
+              <span class="pill">Notebooks</span>
+            </div>
+          </div>
+          <ul class="links">
+            <li><a href="./kimi25-flops/">Overview</a></li>
+            <li><a href="./kimi25-flops/kimi25_full_model_architecture.html">Architecture</a></li>
+            <li><a href="./kimi25-flops/kimi25_linear_flops_constant.html">Linear FLOPs constant</a></li>
+            <li><a href="./kimi25-flops/kimi25_attention_scan_flops_constant.html">Attention scan constant</a></li>
+            <li><a href="./kimi25-flops/kimi25_mlp_moe_router_equations.html">MLP, MoE, and router equations</a></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      Public base: <code>https://tomyoung903.github.io/maas_docs/</code>
+    </footer>
   </main>
 </body>
 </html>
