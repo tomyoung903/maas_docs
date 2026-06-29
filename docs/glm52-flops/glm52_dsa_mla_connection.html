@@ -191,32 +191,56 @@ attention score:
 <h2>DSA Selection Math</h2>
 <p>DSA adds a learned indexer before sparse attention. The indexer is a separate relevance scorer: it looks at the current query token and the cached index keys for previous tokens, then returns token positions to keep. It does not produce the final attention probabilities.</p>
 <h3>Variables In The Selector</h3>
-<table><tr><th>Variable</th><th>Meaning</th></tr><tr><td><code>t</code></td><td>The current token position whose next hidden state is computing attention.</td></tr>
-<tr><td><code>i</code></td><td>A candidate key/value token position in the already available causal history.</td></tr>
-<tr><td><code>C_t</code></td><td>The causal candidate set: all positions that token <code>t</code> is allowed to attend to.</td></tr>
-<tr><td><code>h_t</code></td><td>The current hidden state. It gives the indexer semantic information about what the current token is asking for.</td></tr>
-<tr><td><code>z_t^q</code></td><td>The MLA query latent for the current token. The indexer can reuse this compact query signal instead of recomputing a full attention query.</td></tr>
-<tr><td><code>cached_index_key_i</code></td><td>The indexer's compact stored key for previous token <code>i</code>. This is separate from the MLA KV cache used later by sparse attention.</td></tr>
-<tr><td><code>u_{t,i}</code></td><td>A scalar relevance logit saying how useful previous token <code>i</code> looks for current token <code>t</code>.</td></tr>
-<tr><td><code>I_t</code></td><td>The selected set of key/value token positions that will be used by sparse MLA attention.</td></tr></table>
+<table><tr><th>Variable / tensor</th><th>Shape</th><th>Meaning</th></tr><tr><td><code>t</code></td><td>scalar index</td><td>The current token position whose attention is being selected.</td></tr>
+<tr><td><code>i</code></td><td>scalar index</td><td>A candidate key/value token position in the causal history.</td></tr>
+<tr><td><code>L_t</code></td><td>scalar</td><td><code>|C_t|</code>, the number of causal candidates. For one sequence without prefix tricks, <code>L_t=t+1</code>.</td></tr>
+<tr><td><code>C_t</code></td><td>set of <code>L_t</code> integer positions</td><td>All positions that token <code>t</code> is allowed to attend to.</td></tr>
+<tr><td><code>h_t</code></td><td><code>[6144]</code></td><td>The current hidden state. It gives the indexer semantic information about what the current token is asking for.</td></tr>
+<tr><td><code>z_t^q</code></td><td><code>[2048]</code></td><td>The MLA query latent for the current token. The indexer reuses this compact query signal.</td></tr>
+<tr><td><code>x_t</code></td><td><code>[32, 128]</code></td><td>The indexer query produced from <code>z_t^q</code> by <code>wq_b</code> and reshaped into index heads.</td></tr>
+<tr><td><code>g_t</code></td><td><code>[32, 1]</code></td><td>Per-index-head gates from <code>weights_proj(h_t)</code>, used to weight the index-head dot products.</td></tr>
+<tr><td><code>e_i</code></td><td><code>[128]</code></td><td>The cached index key for previous token <code>i</code>, produced from that token's hidden state by <code>wk</code> and norm/RoPE.</td></tr>
+<tr><td><code>E_t</code></td><td><code>[L_t, 128]</code></td><td>The logical stack of cached index keys for every candidate <code>i in C_t</code>. SGLang stores it in a paged cache physically, but this is the math shape.</td></tr>
+<tr><td><code>m_{t,i,b}</code></td><td>scalar</td><td>The raw index-head score for candidate <code>i</code> and index head <code>b</code>.</td></tr>
+<tr><td><code>M_t</code></td><td><code>[L_t, 32]</code></td><td>All raw index-head scores for the current query over all causal candidates.</td></tr>
+<tr><td><code>u_{t,i}</code></td><td>scalar</td><td>The final relevance logit saying how useful previous token <code>i</code> looks for current token <code>t</code>.</td></tr>
+<tr><td><code>u_t</code></td><td><code>[L_t]</code></td><td>All relevance logits for the current query over its causal candidates.</td></tr>
+<tr><td><code>I_t</code></td><td><code>[min(2048, L_t)]</code> logical int positions</td><td>The selected key/value positions used by sparse MLA attention. Kernels may pad this to <code>[2048]</code> with sentinel values.</td></tr></table>
 <p>For GLM-5.2, the indexer lives in its own learned space with <code>32</code> index heads, index head dimension <code>128</code>, and <code>K=2048</code> selected positions. Its job is only to choose candidates; the real MLA score <code>s_{t,i,a}</code> is computed later for those candidates.</p>
 <pre><code>causal candidate set:
-  C_t = {i | 0 <= i <= t}
+  C_t = {i | 0 <= i <= t}                         # L_t integer positions
 
 conceptual indexer query:
-  x_t = IndexerQuery(h_t, z_t^q)
+  x_t = reshape(wq_b(z_t^q))                         # [32, 128]
+
+per-query index-head gates:
+  g_t = weights_proj(h_t) / sqrt(32)                 # [32, 1]
 
 cached index key for a previous token:
-  e_i = cached_index_key_i
+  e_i = cached_index_key_i                           # [128]
+  E_t = stack_i(e_i for i in C_t)                    # [L_t, 128]
 
-indexer relevance logits:
-  u_{t,i} = score(x_t, e_i)  for each i in C_t
+raw index-head scores:
+  m_{t,i,b} = dot(x_t[b], e_i)                     # scalar
+  M_t = score_heads(x_t, E_t)                        # [L_t, 32]
+
+relevance logits:
+  u_{t,i} = sum_b gate(g_t[b]) * m_{t,i,b}       # scalar
+  u_t = [u_{t,i} for i in C_t]                     # [L_t]
 
 selected positions:
-  I_t = TopK_i(u_{t,i}, K=2048) over i in C_t
+  I_t = TopK_i(u_t, K=2048)            # int positions, [min(K, L_t)]
 
 short context:
   if |C_t| <= K, then I_t = C_t</code></pre>
+<h3>Batched Prefill Shape</h3>
+<table><tr><th>Tensor</th><th>Logical shape for T_q query tokens</th><th>Meaning</th></tr><tr><td><code>H</code></td><td><code>[T_q, 6144]</code></td><td>Hidden states for all query tokens in the prefill chunk.</td></tr>
+<tr><td><code>Z^q</code></td><td><code>[T_q, 2048]</code></td><td>MLA query latents for those query tokens.</td></tr>
+<tr><td><code>X</code></td><td><code>[T_q, 32, 128]</code></td><td>Indexer query tensor after <code>wq_b</code> reshape.</td></tr>
+<tr><td><code>G</code></td><td><code>[T_q, 32, 1]</code></td><td>Per-query, per-index-head gates.</td></tr>
+<tr><td><code>E</code></td><td><code>[L_cache, 128]</code></td><td>Logical cached index-key table for the available context.</td></tr>
+<tr><td><code>U</code></td><td><code>[T_q, L_cache]</code> before ragged masking</td><td>Indexer relevance logits before each row is masked to its own causal candidates.</td></tr>
+<tr><td><code>TopK</code></td><td><code>[T_q, 2048]</code> int32</td><td>Padded selected-position tensor returned to the sparse attention backend.</td></tr></table>
 <div class="note">Read <code>I_t</code> as an integer position list, not as attention weights. DSA first chooses positions with the indexer; the next section computes the actual softmax over only those positions.</div>
 <h2>Sparse MLA Attention</h2>
 <p>After DSA chooses <code>I_t</code>, the softmax is normal attention math, but its denominator and value sum range over selected positions only.</p>
