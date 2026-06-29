@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html">
+  <title>GLM-5.2 DSA + MLA Connection</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --soft: #e8f2ef;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 900px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 860px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.danger { color: var(--accent-2); font-weight: 800; }
+.footer {
+  margin-top: 42px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html">Public URL</a></nav>
+
+<h1>GLM-5.2 DSA + MLA Connection</h1>
+<p class="lead">MLA defines the compressed attention representation. DSA decides which context keys each query should scan. DSA prefill CP decides which GPU rank owns which query tokens during long prefill.</p>
+<div class="grid"><section class="card"><div class="label">MLA QK head dim</div><div class="value">256</div></section><section class="card"><div class="label">MLA KV payload</div><div class="value">576 values/token/layer</div></section><section class="card"><div class="label">DSA selected keys</div><div class="value">2,048 per query</div></section><section class="card"><div class="label">H200 CP layout</div><div class="value">TP8 -> CP8, attention TP1</div></section></div>
+<h2>The Three Pieces</h2>
+<table><tr><th>Name</th><th>What it is</th><th>What it changes</th></tr><tr><td>MLA</td><td>Multi-head Latent Attention. Query and KV are projected through low-rank latent spaces: <code>q_lora=2,048</code>, <code>kv_lora=512</code>, and <code>qk_rope=64</code>.</td><td>It reduces the KV cache shape and lets the attention score/value math use absorbed projection matrices.</td></tr>
+<tr><td>DSA</td><td>DeepSeek Sparse Attention. An indexer predicts top-k useful context keys for each query; GLM-5.2 uses <code>index_topk=2,048</code>.</td><td>It changes the long-context scan from all prior keys to selected keys after the dense threshold.</td></tr>
+<tr><td>DSA prefill CP</td><td>Runtime context parallelism for DSA prefill. It splits query tokens across attention-CP ranks while keeping attention TP at 1 in the H200 TP8 setup.</td><td>It reduces per-rank long-prefill attention work and memory pressure along the token axis.</td></tr></table>
+<h2>GLM-5.2 H200 CP Shape</h2>
+<pre><code>tp_size = 8
+dp_size = 1
+attn_cp_size = tp_size / dp_size = 8
+attn_tp_size = tp_size / dp_size / attn_cp_size = 1
+
+rank r owns query tokens where token_id % 8 == r
+
+for each local token t:
+  q_latent_t = q_a(h_t)
+  q_t        = q_b(norm(q_latent_t))   # full 64 heads, not 8 heads
+  topk_t     = DSA_indexer(h_t, q_latent_t)
+  out_t      = sparse_MLA(q_t, selected_KV[topk_t])</code></pre>
+<div class="note">The important part: under DSA prefill CP, <code>attn_tp_size=1</code>. Each rank computes full-head Q for about one eighth of the query tokens. It is not computing one eighth of the heads for all query tokens.</div>
+<h2>TP vs CP For Query Projection</h2>
+<table><tr><th>Layout</th><th>Rank sees</th><th>Q shape per rank</th><th>Meaning</th></tr><tr><td>Classic attention TP8</td><td>all query tokens</td><td><code>[T, 8, 256]</code></td><td>Output/head dimension is sharded across TP ranks.</td></tr>
+<tr><td>DSA prefill CP8</td><td>about one eighth of query tokens</td><td><code>[T/8, 64, 256]</code></td><td>Sequence/query-token dimension is sharded across CP ranks.</td></tr></table>
+<p>For the main <code>q_b_proj</code> GEMM, CP is mostly a different sharding axis: <code>T * Q_out/8</code> versus <code>T/8 * Q_out</code>. The larger win is not that Q projection has fewer total model FLOPs. The larger win is that long-prefill attention and DSA selected-key scanning are distributed across ranks by query token.</p>
+<h2>How The Forward Pass Connects</h2>
+<table><tr><th>Step</th><th>What happens</th><th>Relevant implementation surface</th></tr><tr><td>1. Split prefill tokens</td><td>For round-robin CP, rank <code>r</code> receives tokens <code>r, r+8, r+16, ...</code>.</td><td><code>dsa_cp_round_robin_split_data</code> and <code>cp_split_and_rebuild_data</code>.</td></tr>
+<tr><td>2. Build MLA Q/KV latent</td><td><code>fused_qkv_a_proj_with_mqa</code> is replicated. <code>q_b_proj</code> is column-parallel with <code>tp_size=attn_tp_size</code>; here that is 1.</td><td><code>DeepseekV2AttentionMLA</code>.</td></tr>
+<tr><td>3. Run the DSA indexer</td><td>For each local query token, the indexer produces top-k key positions. GLM-5.2 uses 32 index heads, head dim 128, and top-k 2048.</td><td><code>Indexer</code> under <code>layers/attention/dsa</code>.</td></tr>
+<tr><td>4. Run sparse MLA</td><td>The attention kernel scans the selected KV entries instead of blindly scanning every prior key once context is above top-k.</td><td><code>triton_sparse_mla.py</code> and DSA backend kernels.</td></tr>
+<tr><td>5. Restore token order</td><td>The local outputs are all-gathered across CP ranks and reranged back to token order.</td><td><code>cp_all_gather_rerange_output</code>.</td></tr></table>
+<h2>What Is Not Happening</h2>
+<table><tr><th>Misread</th><th>Correct reading</th></tr><tr><td><code>tp=8</code> means Q is still head-sharded during DSA CP.</td><td>No. In this setup <code>attn_cp_size=8</code> consumes the TP group for attention CP, so effective <code>attn_tp_size=1</code>.</td></tr>
+<tr><td>DSA is the same thing as MLA.</td><td>No. MLA is the compressed attention representation. DSA is the sparse key-selection mechanism sitting on top of that attention path.</td></tr>
+<tr><td>CP makes Q projection algorithmically cheaper.</td><td>Not really for <code>q_b_proj</code>; it changes the sharding axis. The main prefill benefit is attention scan parallelism and lower per-rank pressure.</td></tr>
+<tr><td>The MTP layer is always active.</td><td>No. The checkpoint has one nextn/MTP layer, but a normal non-speculative forward does not use it. SGLang uses it when EAGLE speculative decoding is enabled.</td></tr></table>
+<h2>Practical Reading For GLM-5.2</h2>
+<p>When someone says GLM-5.2 uses MLA + DSA, read it as: the model stores and computes attention through DeepSeek-style latent KV, then uses a DSA indexer to choose which latent KV entries each query should attend to at long context. When someone says the H200 setup uses DSA prefill CP, read it as: the long prefill query tokens are split across the eight GPUs, and each GPU runs full-head MLA/DSA attention for its local token slice.</p>
+
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
+</main>
+</body>
+</html>

@@ -142,7 +142,7 @@ pre {
 </head>
 <body>
 <main>
-<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html">Public URL</a></nav>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html">Public URL</a></nav>
 
 <h1>GLM-5.2 Architecture Map</h1>
 <p class="lead">GLM-5.2 is a DeepSeek-style MLA sparse-MoE model with GLM's DSA/NSA sparse attention indexer and one built-in next-token prediction layer for speculative decoding.</p>
@@ -159,7 +159,7 @@ pre {
 <tr><td>QK RoPE</td><td>64</td><td>Position-aware score dimension</td></tr>
 <tr><td>V head</td><td>256</td><td>Output value dimension before o_proj</td></tr></table>
 <h2>DSA / NSA Sparse Attention</h2>
-<p>GLM-5.2 exposes DSA indexer fields in the config. In SGLang, that routes the model to the <code>nsa</code> backend instead of ordinary full-context MLA when the backend is left to defaults.</p>
+<p>GLM-5.2 exposes DSA indexer fields in the config. In SGLang, that routes the model to the <code>dsa</code> backend instead of ordinary full-context MLA when the backend is left to defaults.</p>
 <div class="grid"><section class="card"><div class="label">index top-k</div><div class="value">2,048</div></section><section class="card"><div class="label">index heads</div><div class="value">32</div></section><section class="card"><div class="label">index head dim</div><div class="value">128</div></section><section class="card"><div class="label">scan cap idea</div><div class="value">full scan below top-k, sparse scan above it</div></section></div>
 <div class="note">The DSA indexer changes the long-context scaling story. The attention page counts the selected-key scan math and separately calls out that indexer/top-k work is additional overhead.</div>
 <h2>Speculative Decoding</h2>
