@@ -125,12 +125,76 @@ th {
 code, pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
+code {
+  padding: .08rem .22rem;
+  border-radius: 4px;
+  background: #edf3f1;
+  color: #243431;
+}
 pre {
   overflow: auto;
   padding: 16px;
   border-radius: 8px;
   background: var(--code-bg);
   color: var(--code);
+}
+.math-var, .math-func, .math-space, .shape, .eq-block {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+.math-var { font-style: italic; white-space: nowrap; }
+.math-func { font-style: normal; white-space: nowrap; }
+.math-space { white-space: nowrap; color: #253633; }
+.shape {
+  display: inline-block;
+  white-space: nowrap;
+  color: #314541;
+  font-variant-numeric: tabular-nums;
+}
+.sym {
+  padding: 0 .08em;
+  border-bottom: 2px solid transparent;
+  font-weight: 700;
+}
+.sym-hidden { color: #0b6b66; border-bottom-color: rgba(11, 107, 102, .35); }
+.sym-q { color: #7a3e9d; border-bottom-color: rgba(122, 62, 157, .35); }
+.sym-kv { color: #8f4b16; border-bottom-color: rgba(143, 75, 22, .35); }
+.sym-index { color: #1b5faa; border-bottom-color: rgba(27, 95, 170, .35); }
+.sym-gate { color: #9f3d3d; border-bottom-color: rgba(159, 61, 61, .35); }
+.sym-attn { color: #4f6b18; border-bottom-color: rgba(79, 107, 24, .35); }
+.sym-weight { color: #3d5260; border-bottom-color: rgba(61, 82, 96, .28); }
+.eq-block {
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  overflow-x: auto;
+}
+.eq-title {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font: 800 .86rem Inter, ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.eq-row {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 26px minmax(260px, 1fr) minmax(140px, max-content);
+  gap: 10px;
+  align-items: baseline;
+  min-width: 760px;
+  padding: 5px 0;
+}
+.eq-lhs { text-align: right; }
+.eq-op { text-align: center; color: var(--muted); }
+.eq-rhs { color: #1d2b28; }
+.eq-note { color: var(--muted); white-space: nowrap; }
+.eq-row.single {
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, max-content);
+}
+.eq-comment {
+  margin-top: 8px;
+  color: var(--muted);
+  font: .93rem Inter, ui-sans-serif, system-ui, sans-serif;
 }
 .danger { color: var(--accent-2); font-weight: 800; }
 .footer {
@@ -148,149 +212,64 @@ pre {
 <p class="lead">This page describes the model math only: MLA compresses the attention state, DSA chooses a sparse key set, and attention is evaluated over that selected set.</p>
 <div class="grid"><section class="card"><div class="label">hidden width</div><div class="value">6,144</div></section><section class="card"><div class="label">attention heads</div><div class="value">64</div></section><section class="card"><div class="label">MLA KV cache</div><div class="value">576 scalars/token/layer</div></section><section class="card"><div class="label">DSA selected keys</div><div class="value">2,048</div></section></div>
 <h2>Symbols</h2>
-<table><tr><th>Symbol</th><th>GLM-5.2 value</th><th>Meaning</th></tr><tr><td><code>h_t</code></td><td><code>R^6144</code></td><td>Transformer hidden state at token position <code>t</code>.</td></tr>
-<tr><td><code>H</code></td><td>64</td><td>Number of attention heads.</td></tr>
-<tr><td><code>d_c</code></td><td>192</td><td>No-RoPE content score dimension per head.</td></tr>
-<tr><td><code>d_r</code></td><td>64</td><td>RoPE score dimension.</td></tr>
-<tr><td><code>d_q</code></td><td>256</td><td><code>d_c + d_r</code>, the total query/key score dimension per head.</td></tr>
-<tr><td><code>d_v</code></td><td>256</td><td>Value dimension per head.</td></tr>
-<tr><td><code>r_q</code></td><td>2,048</td><td>MLA query latent rank.</td></tr>
-<tr><td><code>r_{kv}</code></td><td>512</td><td>MLA KV latent rank.</td></tr>
-<tr><td><code>K</code></td><td>2,048</td><td>DSA selected-key count.</td></tr></table>
+<table><tr><th>Symbol</th><th>GLM-5.2 value</th><th>Meaning</th></tr><tr><td><span class="sym sym-hidden math-var">h<sub>t</sub></span></td><td><span class="math-space">&Ropf;<sup>6144</sup></span></td><td>Transformer hidden state at token position <span class="math-var">t</span>.</td></tr>
+<tr><td><span class="math-var">H</span></td><td>64</td><td>Number of attention heads.</td></tr>
+<tr><td><span class="math-var">d<sub>c</sub></span></td><td>192</td><td>No-RoPE content score dimension per head.</td></tr>
+<tr><td><span class="math-var">d<sub>r</sub></span></td><td>64</td><td>RoPE score dimension.</td></tr>
+<tr><td><span class="math-var">d<sub>q</sub></span></td><td>256</td><td><span class="math-var">d<sub>c</sub></span> + <span class="math-var">d<sub>r</sub></span>, the total query/key score dimension per head.</td></tr>
+<tr><td><span class="math-var">d<sub>v</sub></span></td><td>256</td><td>Value dimension per head.</td></tr>
+<tr><td><span class="math-var">r<sub>q</sub></span></td><td>2,048</td><td>MLA query latent rank.</td></tr>
+<tr><td><span class="math-var">r<sub>kv</sub></span></td><td>512</td><td>MLA KV latent rank.</td></tr>
+<tr><td><span class="sym sym-select math-var">K</span></td><td>2,048</td><td>DSA selected-key count.</td></tr></table>
 <h2>MLA Projection Math</h2>
 <p>MLA first maps the hidden state into a query latent and a compact KV cache entry. The cache stores one shared latent vector plus one RoPE key vector per token and layer.</p>
-<pre><code>query latent:
-  z_t^q = W_DQ h_t                         in R^2048
-  q_t   = reshape(W_UQ RMSNorm(z_t^q))      in R^64 x R^256
-
-cached KV payload:
-  [c_t^kv, k_t^R] = W_DKV h_t
-  c_t^kv in R^512
-  k_t^R  in R^64
-
-cache scalars per token per layer:
-  r_kv + d_r = 512 + 64 = 576</code></pre>
-<div class="note">A materialized per-head KV would have <code>H * (d_q + d_v) = 64 * (256 + 256) = 32,768</code> scalars per token per layer. MLA stores <code>576</code>, about <code>56.9x</code> fewer scalars before dtype bytes and layer count.</div>
+<div class="eq-block"><div class="eq-title">MLA projection math</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">z<sub>t</sub><sup>q</sup></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var">W<sub>DQ</sub></span> <span class="sym sym-hidden math-var">h<sub>t</sub></span></div><div class="eq-note">&isin; <span class="math-space">&Ropf;<sup>2048</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">q<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">reshape</span>(<span class="sym sym-weight math-var">W<sub>UQ</sub></span> <span class="math-func">RMSNorm</span>(<span class="sym sym-q math-var">z<sub>t</sub><sup>q</sup></span>))</div><div class="eq-note">&isin; <span class="math-space">&Ropf;<sup>64 &times; 256</sup></span></div></div><div class="eq-row"><div class="eq-lhs">[<span class="sym sym-kv math-var">c<sub>t</sub><sup>kv</sup></span>, <span class="sym sym-kv math-var">k<sub>t</sub><sup>R</sup></span>]</div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var">W<sub>DKV</sub></span> <span class="sym sym-hidden math-var">h<sub>t</sub></span></div><div class="eq-note"><span class="sym sym-kv math-var">c<sub>t</sub><sup>kv</sup></span> &isin; <span class="math-space">&Ropf;<sup>512</sup></span>; <span class="sym sym-kv math-var">k<sub>t</sub><sup>R</sup></span> &isin; <span class="math-space">&Ropf;<sup>64</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">r<sub>kv</sub></span> + <span class="math-var">d<sub>r</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">512 + 64</div><div class="eq-note">= 576 scalars/token/layer</div></div></div>
+<div class="note">A materialized per-head KV would have <span class="math-var">H</span> &times; (<span class="math-var">d<sub>q</sub></span> + <span class="math-var">d<sub>v</sub></span>) = 64 &times; (256 + 256) = 32,768 scalars per token per layer. MLA stores 576, about 56.9x fewer scalars before dtype bytes and layer count.</div>
 <h2>Absorbed Key And Value Math</h2>
 <p>The latent cache is not the same as ordinary per-head K and V tensors. For scoring, each head has a learned content-key up-projection. For values, the attention kernel can first accumulate the shared latent vector and apply the value up-projection after the weighted sum.</p>
-<pre><code>split the query head:
-  q_{t,a} = [q^C_{t,a}, q^R_{t,a}]
-  q^C_{t,a} in R^192
-  q^R_{t,a} in R^64
-
-for a previous token i and head a:
-  k^C_{i,a} = W_UK,a c_i^kv              in R^192
-  c_i^kv is also the latent value input       in R^512
-
-attention score:
-  s_{t,i,a} =
-    (dot(q^C_{t,a}, k^C_{i,a})
-     + dot(RoPE(q^R_{t,a}, t), k^R_i)) / sqrt(d_q)</code></pre>
+<div class="eq-block"><div class="eq-title">Absorbed key and value math</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">q<sub>t,a</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">[<span class="sym sym-q math-var">q<sub>t,a</sub><sup>C</sup></span>, <span class="sym sym-q math-var">q<sub>t,a</sub><sup>R</sup></span>]</div><div class="eq-note"></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">q<sub>t,a</sub><sup>C</sup></span></div><div class="eq-op">&isin;</div><div class="eq-rhs"><span class="math-space">&Ropf;<sup>192</sup></span></div><div class="eq-note"></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">q<sub>t,a</sub><sup>R</sup></span></div><div class="eq-op">&isin;</div><div class="eq-rhs"><span class="math-space">&Ropf;<sup>64</sup></span></div><div class="eq-note"></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-kv math-var">k<sub>i,a</sub><sup>C</sup></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var">W<sub>UK,a</sub></span> <span class="sym sym-kv math-var">c<sub>i</sub><sup>kv</sup></span></div><div class="eq-note">&isin; <span class="math-space">&Ropf;<sup>192</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-kv math-var">c<sub>i</sub><sup>kv</sup></span></div><div class="eq-op">&isin;</div><div class="eq-rhs"><span class="math-space">&Ropf;<sup>512</sup></span></div><div class="eq-note">latent value input</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">s<sub>t,i,a</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">(<span class="math-func">dot</span>(<span class="sym sym-q math-var">q<sub>t,a</sub><sup>C</sup></span>, <span class="sym sym-kv math-var">k<sub>i,a</sub><sup>C</sup></span>) + <span class="math-func">dot</span>(<span class="math-func">RoPE</span>(<span class="sym sym-q math-var">q<sub>t,a</sub><sup>R</sup></span>, <span class="math-var">t</span>), <span class="sym sym-kv math-var">k<sub>i</sub><sup>R</sup></span>)) / &radic;<span class="math-var">d<sub>q</sub></span></div><div class="eq-note">score before softmax</div></div></div>
 <h2>DSA Selection Math</h2>
 <p>DSA adds a learned indexer before sparse attention. The indexer is a separate relevance scorer: it looks at the current query token and the cached index keys for previous tokens, then returns token positions to keep. It does not produce the final attention probabilities.</p>
 <h3>Variables In The Selector</h3>
-<table><tr><th>Variable / tensor</th><th>Shape</th><th>Meaning</th></tr><tr><td><code>t</code></td><td>scalar index</td><td>The current token position whose attention is being selected.</td></tr>
-<tr><td><code>i</code></td><td>scalar index</td><td>A candidate key/value token position in the causal history.</td></tr>
-<tr><td><code>L_t</code></td><td>scalar</td><td><code>|C_t|</code>, the number of causal candidates. For one sequence without prefix tricks, <code>L_t=t+1</code>.</td></tr>
-<tr><td><code>C_t</code></td><td>set of <code>L_t</code> integer positions</td><td>All positions that token <code>t</code> is allowed to attend to.</td></tr>
-<tr><td><code>h_t</code></td><td><code>[6144]</code></td><td>The current hidden state. It gives the indexer semantic information about what the current token is asking for.</td></tr>
-<tr><td><code>z_t^q</code></td><td><code>[2048]</code></td><td>The raw MLA query latent for the current token.</td></tr>
-<tr><td><code>z_norm_t^q</code></td><td><code>[2048]</code></td><td><code>RMSNorm(z_t^q)</code>. This normalized q-lora vector is what the indexer query projection consumes.</td></tr>
-<tr><td><code>W_idx_Q</code></td><td><code>[2048, 32 * 128]</code></td><td>Learned indexer query projection. In SGLang code this module is named <code>Indexer.wq_b</code>; it is not the main MLA <code>q_b_proj</code>.</td></tr>
-<tr><td><code>W_idx_K</code></td><td><code>[6144, 128]</code></td><td>Learned indexer key projection. In SGLang code this module is named <code>Indexer.wk</code>.</td></tr>
-<tr><td><code>W_idx_G</code></td><td><code>[6144, 32]</code></td><td>Learned index-head gate projection. In SGLang code this module is named <code>Indexer.weights_proj</code>.</td></tr>
-<tr><td><code>x_t</code></td><td><code>[32, 128]</code></td><td>The indexer query after projecting <code>z_norm_t^q</code>, applying RoPE to the first 64 dimensions, and Hadamard-rotating the 128-d vector.</td></tr>
-<tr><td><code>g_t</code></td><td><code>[32]</code></td><td>Per-index-head gates used to weight the index-head dot products.</td></tr>
-<tr><td><code>k^idx_i</code></td><td><code>[128]</code></td><td>The cached index key for previous token <code>i</code>, produced from that token's hidden state by the indexer key projection, layer norm, RoPE on the first 64 dimensions, and Hadamard rotation.</td></tr>
-<tr><td><code>K^idx_t</code></td><td><code>[L_t, 128]</code></td><td>The logical stack of cached index keys for every candidate <code>i in C_t</code>. SGLang stores it in a paged index-key cache physically, but this is the math shape.</td></tr>
-<tr><td><code>m_{t,i,b}</code></td><td>scalar</td><td>The raw index-head score for candidate <code>i</code> and index head <code>b</code>.</td></tr>
-<tr><td><code>M_t</code></td><td><code>[L_t, 32]</code></td><td>All raw index-head scores for the current query over all causal candidates.</td></tr>
-<tr><td><code>u_{t,i}</code></td><td>scalar</td><td>The final relevance logit saying how useful previous token <code>i</code> looks for current token <code>t</code>.</td></tr>
-<tr><td><code>u_t</code></td><td><code>[L_t]</code></td><td>All relevance logits for the current query over its causal candidates.</td></tr>
-<tr><td><code>I_t</code></td><td><code>[min(2048, L_t)]</code> logical int positions</td><td>The selected key/value token positions used by sparse MLA attention.</td></tr>
-<tr><td><code>TopK_t</code></td><td><code>[2048]</code> int32</td><td>The implementation tensor: <code>I_t</code> padded with <code>-1</code> sentinel values when fewer than K positions are valid.</td></tr></table>
-<p>For GLM-5.2, the indexer lives in its own learned space with <code>32</code> index heads, index head dimension <code>128</code>, and <code>K=2048</code> selected positions. Its job is only to choose candidates; the real MLA score <code>s_{t,i,a}</code> is computed later for those candidates.</p>
-<pre><code>causal candidate set:
-  C_t = {i | 0 <= i <= t}                         # L_t integer positions
-
-conceptual indexer query:
-  z_norm_t^q = RMSNorm(z_t^q)                        # [2048]
-  x_t = reshape(z_norm_t^q @ W_idx_Q)                # [32, 128]
-  x_t[:, :64] = RoPE(x_t[:, :64], position=t)
-  x_t = Hadamard(x_t)                                # [32, 128]
-  # SGLang implementation name: Indexer.wq_b
-
-per-query index-head gates:
-  g_t = (h_t @ W_idx_G) / sqrt(32)                   # [32]
-  # SGLang implementation name: Indexer.weights_proj
-
-cached index key for a previous token:
-  kidx_i = LayerNorm(h_i @ W_idx_K)                  # [128]
-  kidx_i[:64] = RoPE(kidx_i[:64], position=i)
-  kidx_i = Hadamard(kidx_i)                          # [128]
-  # SGLang implementation name: Indexer.wk, cached as cached_index_key_i
-  Kidx_t = stack_i(kidx_i for i in C_t)              # [L_t, 128]
-
-raw index-head scores:
-  m_{t,i,b} = relu(dot(x_t[b], kidx_i))            # scalar
-  M_t = score_heads(x_t, Kidx_t)                     # [L_t, 32]
-
-relevance logits:
-  u_{t,i} = sum_b g_t[b] * m_{t,i,b}             # scalar
-  u_t = [u_{t,i} for i in C_t]                     # [L_t]
-
-selected positions:
-  I_t = TopK_i(u_t, K=2048)            # logical int positions, [min(K, L_t)]
-  TopK_t = pad_with_minus_one(I_t, K=2048)  # implementation tensor, [2048]
-
-short context:
-  if |C_t| <= K, then I_t = C_t</code></pre>
-<div class="note">The equations above are the model-math view. SGLang quantizes the indexer query/key path for the fast kernel and folds FP8 scales plus the <code>head_dim^-0.5</code> score scale into the implementation weights.</div>
+<table><tr><th>Variable / tensor</th><th>Shape</th><th>Meaning</th></tr><tr><td><span class="math-var">t</span></td><td>scalar index</td><td>The current token position whose attention is being selected.</td></tr>
+<tr><td><span class="math-var">i</span></td><td>scalar index</td><td>A candidate key/value token position in the causal history.</td></tr>
+<tr><td><span class="sym sym-select math-var">L<sub>t</sub></span></td><td>scalar</td><td>|<span class="sym sym-select math-var">C<sub>t</sub></span>|, the number of causal candidates. For one sequence without prefix tricks, <span class="sym sym-select math-var">L<sub>t</sub></span> = <span class="math-var">t</span> + 1.</td></tr>
+<tr><td><span class="sym sym-select math-var">C<sub>t</sub></span></td><td>set of <span class="sym sym-select math-var">L<sub>t</sub></span> integer positions</td><td>All positions that token <span class="math-var">t</span> is allowed to attend to.</td></tr>
+<tr><td><span class="sym sym-hidden math-var">h<sub>t</sub></span></td><td><span class="shape">[6144]</span></td><td>The current hidden state. It gives the indexer semantic information about what the current token is asking for.</td></tr>
+<tr><td><span class="sym sym-q math-var">z<sub>t</sub><sup>q</sup></span></td><td><span class="shape">[2048]</span></td><td>The raw MLA query latent for the current token.</td></tr>
+<tr><td><span class="sym sym-q math-var">z<sub>norm,t</sub><sup>q</sup></span></td><td><span class="shape">[2048]</span></td><td><span class="math-func">RMSNorm</span>(<span class="sym sym-q math-var">z<sub>t</sub><sup>q</sup></span>). This normalized q-lora vector is what the indexer query projection consumes.</td></tr>
+<tr><td><span class="sym sym-weight math-var">W<sub>idx,Q</sub></span></td><td><span class="shape">[2048, 32 x 128]</span></td><td>Learned indexer query projection. In SGLang code this module is named <code>Indexer.wq_b</code>; it is not the main MLA <code>q_b_proj</code>.</td></tr>
+<tr><td><span class="sym sym-weight math-var">W<sub>idx,K</sub></span></td><td><span class="shape">[6144, 128]</span></td><td>Learned indexer key projection. In SGLang code this module is named <code>Indexer.wk</code>.</td></tr>
+<tr><td><span class="sym sym-weight math-var">W<sub>idx,G</sub></span></td><td><span class="shape">[6144, 32]</span></td><td>Learned index-head gate projection. In SGLang code this module is named <code>Indexer.weights_proj</code>.</td></tr>
+<tr><td><span class="sym sym-index math-var">x<sub>t</sub></span></td><td><span class="shape">[32, 128]</span></td><td>The indexer query after projecting <span class="sym sym-q math-var">z<sub>norm,t</sub><sup>q</sup></span>, applying RoPE to the first 64 dimensions, and Hadamard-rotating the 128-d vector.</td></tr>
+<tr><td><span class="sym sym-gate math-var">g<sub>t</sub></span></td><td><span class="shape">[32]</span></td><td>Per-index-head gates used to weight the index-head dot products.</td></tr>
+<tr><td><span class="sym sym-index math-var">k<sub>i</sub><sup>idx</sup></span></td><td><span class="shape">[128]</span></td><td>The cached index key for previous token <span class="math-var">i</span>, produced from that token's hidden state by the indexer key projection, layer norm, RoPE on the first 64 dimensions, and Hadamard rotation.</td></tr>
+<tr><td><span class="sym sym-index math-var">K<sub>t</sub><sup>idx</sup></span></td><td><span class="shape">[<span class="sym sym-select math-var">L<sub>t</sub></span>, 128]</span></td><td>The logical stack of cached index keys for every candidate <span class="math-var">i</span> &isin; <span class="sym sym-select math-var">C<sub>t</sub></span>. SGLang stores it in a paged index-key cache physically, but this is the math shape.</td></tr>
+<tr><td><span class="sym sym-index math-var">m<sub>t,i,b</sub></span></td><td>scalar</td><td>The raw index-head score for candidate <span class="math-var">i</span> and index head <span class="math-var">b</span>.</td></tr>
+<tr><td><span class="sym sym-index math-var">M<sub>t</sub></span></td><td><span class="shape">[<span class="sym sym-select math-var">L<sub>t</sub></span>, 32]</span></td><td>All raw index-head scores for the current query over all causal candidates.</td></tr>
+<tr><td><span class="sym sym-select math-var">u<sub>t,i</sub></span></td><td>scalar</td><td>The final relevance logit saying how useful previous token <span class="math-var">i</span> looks for current token <span class="math-var">t</span>.</td></tr>
+<tr><td><span class="sym sym-select math-var">u<sub>t</sub></span></td><td><span class="shape">[<span class="sym sym-select math-var">L<sub>t</sub></span>]</span></td><td>All relevance logits for the current query over its causal candidates.</td></tr>
+<tr><td><span class="sym sym-select math-var">I<sub>t</sub></span></td><td><span class="shape">[min(2048, <span class="sym sym-select math-var">L<sub>t</sub></span>)]</span> logical int positions</td><td>The selected key/value token positions used by sparse MLA attention.</td></tr>
+<tr><td><span class="sym sym-select math-var">TopK<sub>t</sub></span></td><td><span class="shape">[2048]</span> int32</td><td>The implementation tensor: <span class="sym sym-select math-var">I<sub>t</sub></span> padded with <code>-1</code> sentinel values when fewer than <span class="sym sym-select math-var">K</span> positions are valid.</td></tr></table>
+<p>For GLM-5.2, the indexer lives in its own learned space with 32 index heads, index head dimension 128, and <span class="sym sym-select math-var">K</span> = 2048 selected positions. Its job is only to choose candidates; the real MLA score <span class="sym sym-attn math-var">s<sub>t,i,a</sub></span> is computed later for those candidates.</p>
+<div class="eq-block"><div class="eq-title">Causal candidate set</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-select math-var">C<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&lbrace; <span class="math-var">i</span> | 0 &le; <span class="math-var">i</span> &le; <span class="math-var">t</span> &rbrace;</div><div class="eq-note">|<span class="sym sym-select math-var">C<sub>t</sub></span>| = <span class="sym sym-select math-var">L<sub>t</sub></span></div></div></div><div class="eq-block"><div class="eq-title">Indexer query before FP8 quantization</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">z<sub>norm,t</sub><sup>q</sup></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">RMSNorm</span>(<span class="sym sym-q math-var">z<sub>t</sub><sup>q</sup></span>)</div><div class="eq-note"><span class="shape">[2048]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">x<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">reshape</span>(<span class="sym sym-q math-var">z<sub>norm,t</sub><sup>q</sup></span> <span class="sym sym-weight math-var">W<sub>idx,Q</sub></span>)</div><div class="eq-note"><span class="shape">[32, 128]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">x<sub>t</sub></span>[:, :64]</div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">RoPE</span>(<span class="sym sym-index math-var">x<sub>t</sub></span>[:, :64], position=<span class="math-var">t</span>)</div><div class="eq-note">first 64 dims</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">x<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">Hadamard</span>(<span class="sym sym-index math-var">x<sub>t</sub></span>)</div><div class="eq-note"><span class="shape">[32, 128]</span></div></div><div class="eq-comment">SGLang implementation module: <code>Indexer.wq_b</code>.</div></div><div class="eq-block"><div class="eq-title">Per-query index-head gates</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-gate math-var">g<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">(<span class="sym sym-hidden math-var">h<sub>t</sub></span> <span class="sym sym-weight math-var">W<sub>idx,G</sub></span>) / &radic;32</div><div class="eq-note"><span class="shape">[32]</span></div></div><div class="eq-comment">SGLang implementation module: <code>Indexer.weights_proj</code>.</div></div><div class="eq-block"><div class="eq-title">Cached index key for previous token</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">k<sub>i</sub><sup>idx</sup></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">LayerNorm</span>(<span class="sym sym-hidden math-var">h<sub>i</sub></span> <span class="sym sym-weight math-var">W<sub>idx,K</sub></span>)</div><div class="eq-note"><span class="shape">[128]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">k<sub>i</sub><sup>idx</sup></span>[:64]</div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">RoPE</span>(<span class="sym sym-index math-var">k<sub>i</sub><sup>idx</sup></span>[:64], position=<span class="math-var">i</span>)</div><div class="eq-note">first 64 dims</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">k<sub>i</sub><sup>idx</sup></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">Hadamard</span>(<span class="sym sym-index math-var">k<sub>i</sub><sup>idx</sup></span>)</div><div class="eq-note"><span class="shape">[128]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">K<sub>t</sub><sup>idx</sup></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">stack</span>(<span class="sym sym-index math-var">k<sub>i</sub><sup>idx</sup></span> for <span class="math-var">i</span> &isin; <span class="sym sym-select math-var">C<sub>t</sub></span>)</div><div class="eq-note"><span class="shape">[<span class="sym sym-select math-var">L<sub>t</sub></span>, 128]</span></div></div><div class="eq-comment">SGLang implementation module: <code>Indexer.wk</code>; this is the value previously called <code>cached_index_key_i</code>.</div></div><div class="eq-block"><div class="eq-title">Relevance scores and selected positions</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">m<sub>t,i,b</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">ReLU</span>(<span class="math-func">dot</span>(<span class="sym sym-index math-var">x<sub>t</sub></span>[<span class="math-var">b</span>], <span class="sym sym-index math-var">k<sub>i</sub><sup>idx</sup></span>))</div><div class="eq-note">scalar</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">M<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">score_heads</span>(<span class="sym sym-index math-var">x<sub>t</sub></span>, <span class="sym sym-index math-var">K<sub>t</sub><sup>idx</sup></span>)</div><div class="eq-note"><span class="shape">[<span class="sym sym-select math-var">L<sub>t</sub></span>, 32]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-select math-var">u<sub>t,i</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">b</span></sub> <span class="sym sym-gate math-var">g<sub>t</sub></span>[<span class="math-var">b</span>] <span class="sym sym-index math-var">m<sub>t,i,b</sub></span></div><div class="eq-note">scalar</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-select math-var">u<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">[<span class="sym sym-select math-var">u<sub>t,i</sub></span> for <span class="math-var">i</span> &isin; <span class="sym sym-select math-var">C<sub>t</sub></span>]</div><div class="eq-note"><span class="shape">[<span class="sym sym-select math-var">L<sub>t</sub></span>]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-select math-var">I<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">TopK</span><sub><span class="math-var">i</span></sub>(<span class="sym sym-select math-var">u<sub>t</sub></span>, <span class="sym sym-select math-var">K</span>=2048)</div><div class="eq-note">logical positions, <span class="shape">[min(2048, <span class="sym sym-select math-var">L<sub>t</sub></span>)]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-select math-var">TopK<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">pad_minus_one</span>(<span class="sym sym-select math-var">I<sub>t</sub></span>, <span class="sym sym-select math-var">K</span>=2048)</div><div class="eq-note"><span class="shape">[2048]</span></div></div><div class="eq-row"><div class="eq-lhs">if |<span class="sym sym-select math-var">C<sub>t</sub></span>| &le; <span class="sym sym-select math-var">K</span></div><div class="eq-op">then</div><div class="eq-rhs"><span class="sym sym-select math-var">I<sub>t</sub></span> = <span class="sym sym-select math-var">C<sub>t</sub></span></div><div class="eq-note">short context</div></div></div>
+<div class="note">The equations above are the model-math view. SGLang quantizes the indexer query/key path for the fast kernel and folds FP8 scales plus the head-dimension score scale <span class="math-space">head_dim<sup>-0.5</sup></span> into the implementation weights.</div>
 <h3>Batched Prefill Shape</h3>
-<table><tr><th>Tensor</th><th>Logical shape for T_q query tokens</th><th>Meaning</th></tr><tr><td><code>Hidden_q</code></td><td><code>[T_q, 6144]</code></td><td>Hidden states for all query tokens in the prefill chunk.</td></tr>
-<tr><td><code>Z^q</code></td><td><code>[T_q, 2048]</code></td><td>MLA query latents for those query tokens.</td></tr>
-<tr><td><code>X</code></td><td><code>[T_q, 32, 128]</code></td><td>Indexer query tensor after the indexer query projection and reshape.</td></tr>
-<tr><td><code>G</code></td><td><code>[T_q, 32]</code></td><td>Per-query, per-index-head gates.</td></tr>
-<tr><td><code>Kidx_cache</code></td><td><code>[L_cache, 128]</code></td><td>Logical cached index-key table for the available context. This is separate from the MLA KV cache.</td></tr>
-<tr><td><code>U</code></td><td><code>[T_q, L_cache]</code> before ragged masking</td><td>Indexer relevance logits. Each query row is masked to its own causal candidate set <code>C_t</code>; paged decode often materializes a max-sequence rectangle, while ragged prefill uses row offsets/lengths.</td></tr>
-<tr><td><code>TopK</code></td><td><code>[T_q, 2048]</code> int32</td><td>Padded selected-position tensor returned to the sparse attention backend; invalid padding entries are <code>-1</code>.</td></tr></table>
-<div class="note">Read <code>I_t</code> as an integer position list, not as attention weights. DSA first chooses positions with the indexer; the next section computes the actual softmax over only those positions.</div>
+<table><tr><th>Tensor</th><th>Logical shape for query tokens</th><th>Meaning</th></tr><tr><td><span class="sym sym-hidden math-var">Hidden<sub>q</sub></span></td><td><span class="shape">[<span class="math-var">T<sub>q</sub></span>, 6144]</span></td><td>Hidden states for all query tokens in the prefill chunk.</td></tr>
+<tr><td><span class="sym sym-q math-var">Z<sup>q</sup></span></td><td><span class="shape">[<span class="math-var">T<sub>q</sub></span>, 2048]</span></td><td>MLA query latents for those query tokens.</td></tr>
+<tr><td><span class="sym sym-index math-var">X</span></td><td><span class="shape">[<span class="math-var">T<sub>q</sub></span>, 32, 128]</span></td><td>Indexer query tensor after the indexer query projection and reshape.</td></tr>
+<tr><td><span class="sym sym-gate math-var">G</span></td><td><span class="shape">[<span class="math-var">T<sub>q</sub></span>, 32]</span></td><td>Per-query, per-index-head gates.</td></tr>
+<tr><td><span class="sym sym-index math-var">Kidx<sub>cache</sub></span></td><td><span class="shape">[L<sub>cache</sub>, 128]</span></td><td>Logical cached index-key table for the available context. This is separate from the MLA KV cache.</td></tr>
+<tr><td><span class="sym sym-select math-var">U</span></td><td><span class="shape">[<span class="math-var">T<sub>q</sub></span>, L<sub>cache</sub>]</span> before ragged masking</td><td>Indexer relevance logits. Each query row is masked to its own causal candidate set <span class="sym sym-select math-var">C<sub>t</sub></span>; paged decode often materializes a max-sequence rectangle, while ragged prefill uses row offsets/lengths.</td></tr>
+<tr><td><span class="sym sym-select math-var">TopK</span></td><td><span class="shape">[<span class="math-var">T<sub>q</sub></span>, 2048]</span> int32</td><td>Padded selected-position tensor returned to the sparse attention backend; invalid padding entries are <code>-1</code>.</td></tr></table>
+<div class="note">Read <span class="sym sym-select math-var">I<sub>t</sub></span> as an integer position list, not as attention weights. DSA first chooses positions with the indexer; the next section computes the actual softmax over only those positions.</div>
 <h2>Sparse MLA Attention</h2>
-<p>After DSA chooses <code>I_t</code>, the softmax is normal attention math, but its denominator and value sum range over selected positions only.</p>
-<pre><code>per head a:
-  alpha_{t,i,a} = softmax over i in I_t of s_{t,i,a}
-
-latent value accumulation:
-  z^attn_{t,a} = sum over i in I_t:
-                   alpha_{t,i,a} * c_i^kv          # [512]
-
-per-head value up-projection:
-  o_{t,a} = W_UV,a z^attn_{t,a}                   # [256]
-
-combine heads:
-  o_t = concat_a(o_{t,a})                in R^16384
-  y_t = W_O o_t                          in R^6144</code></pre>
+<p>After DSA chooses <span class="sym sym-select math-var">I<sub>t</sub></span>, the softmax is normal attention math, but its denominator and value sum range over selected positions only.</p>
+<div class="eq-block"><div class="eq-title">Sparse MLA attention after DSA selection</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">&alpha;<sub>t,i,a</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">softmax</span> over <span class="math-var">i</span> &isin; <span class="sym sym-select math-var">I<sub>t</sub></span> of <span class="sym sym-attn math-var">s<sub>t,i,a</sub></span></div><div class="eq-note">per head</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">z<sub>t,a</sub><sup>attn</sup></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">i</span> &isin; <span class="sym sym-select math-var">I<sub>t</sub></span></sub> <span class="sym sym-attn math-var">&alpha;<sub>t,i,a</sub></span> <span class="sym sym-kv math-var">c<sub>i</sub><sup>kv</sup></span></div><div class="eq-note"><span class="shape">[512]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">o<sub>t,a</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var">W<sub>UV,a</sub></span> <span class="sym sym-attn math-var">z<sub>t,a</sub><sup>attn</sup></span></div><div class="eq-note"><span class="shape">[256]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">o<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">concat</span><sub><span class="math-var">a</span></sub>(<span class="sym sym-attn math-var">o<sub>t,a</sub></span>)</div><div class="eq-note">&isin; <span class="math-space">&Ropf;<sup>16384</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">y<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var">W<sub>O</sub></span> <span class="sym sym-attn math-var">o<sub>t</sub></span></div><div class="eq-note">&isin; <span class="math-space">&Ropf;<sup>6144</sup></span></div></div></div>
 <h2>Core Scaling Consequence</h2>
-<p>Without sparse selection, a new query scans every previous key. With DSA, the scan term is capped by <code>K</code> once the context is longer than <code>K</code>. This is the fundamental long-context change.</p>
-<pre><code>dense selected positions:
-  |I_t| = t + 1
-
-DSA selected positions:
-  |I_t| = min(t + 1, 2048)
-
-model-math MLA scan per selected key:
-  H * 2 * (2 * r_kv + d_r)
-  = 64 * 2 * (2 * 512 + 64)
-  = 139,264 FLOPs / selected key / layer
-
-model-math DSA selected-key scan cap per layer:
-  139,264 * 2048
-  = 285,212,672 FLOPs / token / layer
-
-model-math DSA selected-key scan cap across 78 layers:
-  285,212,672 * 78
-  = 22.247 GFLOP / token</code></pre>
-<div class="note">This page counts only the model-side attention scan shape. The DSA indexer, top-k operation, cache movement, and kernel overhead are additional system costs; they do not change the mathematical fact that the attention sum is over <code>I_t</code> instead of all previous positions.</div>
+<p>Without sparse selection, a new query scans every previous key. With DSA, the scan term is capped by <span class="sym sym-select math-var">K</span> once the context is longer than <span class="sym sym-select math-var">K</span>. This is the fundamental long-context change.</p>
+<div class="eq-block"><div class="eq-title">Core scaling consequence</div><div class="eq-row"><div class="eq-lhs">|<span class="sym sym-select math-var">I<sub>t</sub></span>|</div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">t</span> + 1</div><div class="eq-note">dense selected positions</div></div><div class="eq-row"><div class="eq-lhs">|<span class="sym sym-select math-var">I<sub>t</sub></span>|</div><div class="eq-op">=</div><div class="eq-rhs">min(<span class="math-var">t</span> + 1, 2048)</div><div class="eq-note">DSA selected positions</div></div><div class="eq-row"><div class="eq-lhs">MLA scan per selected key</div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">H</span> &times; 2 &times; (2 &times; <span class="math-var">r<sub>kv</sub></span> + <span class="math-var">d<sub>r</sub></span>)</div><div class="eq-note">= 139,264 FLOPs/layer</div></div><div class="eq-row"><div class="eq-lhs">DSA selected-key scan cap</div><div class="eq-op">=</div><div class="eq-rhs">139,264 &times; 2048</div><div class="eq-note">= 285,212,672 FLOPs/token/layer</div></div><div class="eq-row"><div class="eq-lhs">Across 78 layers</div><div class="eq-op">=</div><div class="eq-rhs">285,212,672 &times; 78</div><div class="eq-note">= 22.247 GFLOP / token</div></div></div>
+<div class="note">This page counts only the model-side attention scan shape. The DSA indexer, top-k operation, cache movement, and kernel overhead are additional system costs; they do not change the mathematical fact that the attention sum is over <span class="sym sym-select math-var">I<sub>t</sub></span> instead of all previous positions.</div>
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
 </main>
