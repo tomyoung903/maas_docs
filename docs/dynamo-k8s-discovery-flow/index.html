@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dynamo Kubernetes Discovery Flow</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #17202a;
+      --muted: #647084;
+      --line: #d9dee8;
+      --soft-line: #e9edf3;
+      --worker: #0f766e;
+      --worker-soft: #e7f4f1;
+      --k8s: #2563eb;
+      --k8s-soft: #eaf1ff;
+      --dynamo: #7c3aed;
+      --dynamo-soft: #f2ecff;
+      --frontend: #c2410c;
+      --frontend-soft: #fff0e7;
+      --operator: #475569;
+      --operator-soft: #eef1f5;
+      --ok: #15803d;
+      --warn: #b45309;
+      --radius: 8px;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    code {
+      border: 1px solid var(--soft-line);
+      border-radius: 5px;
+      background: #f8fafc;
+      color: #1e293b;
+      padding: 1px 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.88em;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 12px 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(15, 118, 110, 0.9));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+      flex: 0 0 auto;
+    }
+
+    .brand-title {
+      font-weight: 760;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 264px minmax(0, 1fr);
+      gap: 30px;
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .rail {
+      align-self: start;
+      position: sticky;
+      top: 72px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .rail h2 {
+      margin: 2px 0 10px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 760;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .rail a {
+      display: block;
+      border-radius: 6px;
+      padding: 7px 8px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .rail a:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    .section {
+      margin-bottom: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .section-body {
+      padding: 24px;
+    }
+
+    .doc-header {
+      padding: 28px;
+      border-bottom: 1px solid var(--soft-line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #475569;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 920px;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    .lede {
+      margin-top: 14px;
+      max-width: 940px;
+      color: #3f4b5f;
+      font-size: 17px;
+    }
+
+    .rule {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .rule-item {
+      min-height: 112px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .rule-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .rule-item span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .rule-item.worker {
+      border-color: rgba(15, 118, 110, 0.3);
+      background: var(--worker-soft);
+    }
+
+    .rule-item.k8s {
+      border-color: rgba(37, 99, 235, 0.28);
+      background: var(--k8s-soft);
+    }
+
+    .rule-item.frontend {
+      border-color: rgba(194, 65, 12, 0.28);
+      background: var(--frontend-soft);
+    }
+
+    .callout {
+      border: 1px solid #f1c783;
+      border-left: 5px solid var(--warn);
+      border-radius: var(--radius);
+      background: #fff8ed;
+      padding: 14px 16px;
+      color: #593306;
+    }
+
+    .flow-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .flow-chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      padding: 5px 10px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .lane {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      padding: 5px 10px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--operator);
+    }
+
+    .dot.operator { background: var(--operator); }
+    .dot.worker { background: var(--worker); }
+    .dot.k8s { background: var(--k8s); }
+    .dot.dynamo { background: var(--dynamo); }
+    .dot.frontend { background: var(--frontend); }
+
+    .timeline {
+      counter-reset: step;
+      display: grid;
+      gap: 14px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .step {
+      counter-increment: step;
+      position: relative;
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      padding: 16px;
+    }
+
+    .step-number {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 780;
+    }
+
+    .step-number::before {
+      content: counter(step);
+    }
+
+    .step.worker .step-number { background: var(--worker); }
+    .step.k8s .step-number { background: var(--k8s); }
+    .step.dynamo .step-number { background: var(--dynamo); }
+    .step.frontend .step-number { background: var(--frontend); }
+    .step.operator .step-number { background: var(--operator); }
+
+    .step-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .tag {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .tag.worker { background: var(--worker-soft); color: var(--worker); }
+    .tag.k8s { background: var(--k8s-soft); color: var(--k8s); }
+    .tag.dynamo { background: var(--dynamo-soft); color: var(--dynamo); }
+    .tag.frontend { background: var(--frontend-soft); color: var(--frontend); }
+    .tag.operator { background: var(--operator-soft); color: var(--operator); }
+
+    .step p {
+      color: #3f4b5f;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .mini {
+      border: 1px solid var(--soft-line);
+      border-radius: var(--radius);
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .mini b {
+      display: block;
+      margin-bottom: 5px;
+      color: #334155;
+      font-size: 13px;
+    }
+
+    .refs {
+      display: grid;
+      gap: 6px;
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .refs li {
+      overflow-wrap: anywhere;
+      color: #526071;
+      font-size: 13px;
+    }
+
+    .refs li::before {
+      content: "ref";
+      display: inline-block;
+      margin-right: 7px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      padding: 0 4px;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 780;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      vertical-align: 1px;
+    }
+
+    .term-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .term {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      padding: 15px;
+    }
+
+    .term dt {
+      margin-bottom: 6px;
+      color: #0f172a;
+      font-size: 16px;
+      font-weight: 780;
+    }
+
+    .term dd {
+      margin: 0;
+      color: #475569;
+    }
+
+    .check-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      font-size: 14px;
+    }
+
+    .check-table th,
+    .check-table td {
+      border-bottom: 1px solid var(--soft-line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .check-table th {
+      background: #f8fafc;
+      color: #334155;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .check-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .yes {
+      color: var(--ok);
+      font-weight: 780;
+    }
+
+    .no {
+      color: #991b1b;
+      font-weight: 780;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 18px;
+      }
+
+      .rail {
+        position: static;
+      }
+
+      .rail nav {
+        columns: 2;
+      }
+
+      .rule,
+      .term-grid,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .topbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 12px 18px;
+      }
+
+      .brand-subtitle {
+        white-space: normal;
+      }
+
+      .doc-header,
+      .section-body {
+        padding: 18px;
+      }
+
+      .step {
+        grid-template-columns: 1fr;
+      }
+
+      .step-title-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-title">Dynamo Kubernetes Discovery Flow</div>
+          <div class="brand-subtitle">How a decode pod becomes visible to the frontend router</div>
+        </div>
+      </div>
+      <div class="brand-subtitle">Repo context: <code>dynamo</code> runtime/operator and <code>sglang</code> chart values</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="rail" aria-label="Page navigation">
+      <h2>Contents</h2>
+      <nav>
+        <a href="#mental-model">Mental model</a>
+        <a href="#flow">10-step flow</a>
+        <a href="#glossary">Glossary</a>
+        <a href="#readiness-join">Readiness join</a>
+        <a href="#reference-map">Reference map</a>
+      </nav>
+    </aside>
+
+    <main>
+      <section class="section" id="mental-model">
+        <div class="doc-header">
+          <div class="eyebrow">Kubernetes discovery</div>
+          <h1>A worker is routable only after Kubernetes readiness and Dynamo metadata agree.</h1>
+          <p class="lede">
+            A decode pod can be running before it is safe for the frontend to send it new requests.
+            Dynamo avoids that by joining two signals: Kubernetes says the pod is ready, and Dynamo says
+            the pod has registered a usable <code>generate</code> endpoint with model metadata.
+          </p>
+          <div class="legend" aria-label="Lane legend">
+            <span class="lane"><span class="dot operator"></span>Operator/deployment</span>
+            <span class="lane"><span class="dot worker"></span>Decode worker</span>
+            <span class="lane"><span class="dot k8s"></span>Kubernetes readiness</span>
+            <span class="lane"><span class="dot dynamo"></span>Dynamo discovery</span>
+            <span class="lane"><span class="dot frontend"></span>Frontend/router</span>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="rule">
+            <div class="rule-item worker">
+              <strong>DynamoWorkerMetadata CR</strong>
+              <span>The worker publishes what it can do: namespace, component, endpoint, instance id, transport, and model/runtime metadata.</span>
+            </div>
+            <div class="rule-item k8s">
+              <strong>EndpointSlice readiness</strong>
+              <span>Kubernetes publishes which selected pods are ready according to their readiness probes.</span>
+            </div>
+            <div class="rule-item frontend">
+              <strong>Frontend worker set</strong>
+              <span>The frontend watches the joined result and routes only to workers that have both signals.</span>
+            </div>
+          </div>
+
+          <div class="flow-line" aria-label="High level flow">
+            <span class="flow-chip">pod starts</span>
+            <span class="flow-chip">runtime starts</span>
+            <span class="flow-chip">handler installed</span>
+            <span class="flow-chip">metadata CR written</span>
+            <span class="flow-chip">/health ready</span>
+            <span class="flow-chip">EndpointSlice ready</span>
+            <span class="flow-chip">discovery joins</span>
+            <span class="flow-chip">frontend routes</span>
+          </div>
+
+          <div class="callout" style="margin-top: 18px;">
+            <strong>Code-order nuance.</strong>
+            In the actual runtime code, <code>serve_endpoint</code> installs the request handler and marks endpoint
+            health ready before the discovery registration persists metadata into Kubernetes. The externally visible
+            rule remains the same: the frontend sees the worker only after the discovery daemon can join readiness
+            and metadata.
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="flow">
+        <div class="section-body">
+          <h2>10-Step Flow With Code Anchors</h2>
+          <ol class="timeline">
+            <li class="step operator" id="step-1">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3>Decode pod starts</h3>
+                  <span class="tag operator">deployment</span>
+                </div>
+                <p>
+                  The chart values describe a Dynamo graph with a frontend service and a worker service.
+                  The worker defaults to the service name <code>decode</code>; the GLM CP overlay sets image,
+                  model path, replica count, resources, probes, and SGLang flags. The Dynamo operator turns
+                  that high-level graph into lower-level Kubernetes objects.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>At this point Kubernetes can create a pod, but the model process may still be loading and not yet useful.</div>
+                  <div class="mini"><b>Plain language</b>This is only "the container exists", not "the worker is ready for traffic".</div>
+                </div>
+                <ul class="refs">
+                  <li><code>sglang/charts/dynamo-sglang-values/glm-5.2.cp.yaml:67</code> worker config begins</li>
+                  <li><code>sglang/charts/dynamo-sglang-values/glm-5.2.cp.yaml:68</code> worker replica count</li>
+                  <li><code>sglang/charts/dynamo-sglang/templates/dynamographdeployment.yaml:4</code> renders <code>DynamoGraphDeployment</code></li>
+                  <li><code>dynamo/deploy/operator/internal/controller/dynamographdeployment_controller.go:1116</code> operator reconciles graph services</li>
+                  <li><code>dynamo/deploy/operator/internal/controller/dynamocomponentdeployment_controller.go:276</code> operator reconciles Kubernetes deployments</li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step operator" id="step-2">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3>Dynamo runtime starts</h3>
+                  <span class="tag operator">operator defaults</span>
+                </div>
+                <p>
+                  The operator builds the pod spec and injects the runtime environment. That includes
+                  <code>DYN_DISCOVERY_BACKEND=kubernetes</code>, pod name, namespace, and UID. Those values are
+                  how the runtime later creates a stable identity and writes metadata tied to the pod.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>The runtime needs Kubernetes identity before it can publish itself into discovery.</div>
+                  <div class="mini"><b>Plain language</b>The process learns "who am I in this cluster?" before announcing itself.</div>
+                </div>
+                <ul class="refs">
+                  <li><code>dynamo/deploy/operator/internal/dynamo/graph.go:1126</code> selects backend-specific container behavior</li>
+                  <li><code>dynamo/deploy/operator/internal/dynamo/graph.go:1133</code> builds the base pod spec</li>
+                  <li><code>dynamo/deploy/operator/internal/dynamo/component_common.go:87</code> common container defaults</li>
+                  <li><code>dynamo/deploy/operator/internal/dynamo/component_common.go:113</code> injects <code>POD_NAME</code></li>
+                  <li><code>dynamo/deploy/operator/internal/dynamo/component_common.go:138</code> injects Kubernetes discovery backend</li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step worker" id="step-3">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3><code>generate</code> endpoint handler is installed</h3>
+                  <span class="tag worker">worker process</span>
+                </div>
+                <p>
+                  The SGLang decode worker loads the engine, creates the Dynamo endpoint name, constructs
+                  <code>DecodeWorkerHandler</code>, and serves <code>handler.generate</code>. The Rust runtime
+                  then registers the endpoint with the request-plane server so incoming calls have a real
+                  handler to execute.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>Discovery metadata alone is not enough; the actual request handler must be installed first.</div>
+                  <div class="mini"><b>Plain language</b>The worker opens the door and puts someone behind the counter before saying "send me work".</div>
+                </div>
+                <ul class="refs">
+                  <li><code>dynamo/components/src/dynamo/sglang/init_llm.py:76</code> starts SGLang engine load</li>
+                  <li><code>dynamo/components/src/dynamo/sglang/init_llm.py:80</code> creates the <code>generate</code> endpoint</li>
+                  <li><code>dynamo/components/src/dynamo/sglang/init_llm.py:108</code> creates <code>DecodeWorkerHandler</code></li>
+                  <li><code>dynamo/components/src/dynamo/sglang/init_llm.py:138</code> serves <code>handler.generate</code></li>
+                  <li><code>dynamo/lib/runtime/src/component/endpoint.rs:176</code> registers endpoint with the request-plane server</li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step dynamo" id="step-4">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3>Runtime writes <code>DynamoWorkerMetadata</code> CR</h3>
+                  <span class="tag dynamo">discovery metadata</span>
+                </div>
+                <p>
+                  Dynamo's discovery API is an address book abstraction. With the Kubernetes backend, registering
+                  an endpoint means writing a namespaced <code>DynamoWorkerMetadata</code> custom resource. That
+                  CR stores serialized discovery metadata, and it has a pod owner reference so Kubernetes can
+                  garbage-collect it when the pod disappears.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>The frontend needs model/runtime metadata, not just a pod IP.</div>
+                  <div class="mini"><b>Plain language</b>This is the worker saying "I am worker X, I provide generate, and here is how to talk to me".</div>
+                </div>
+                <ul class="refs">
+                  <li><code>dynamo/lib/runtime/src/component/endpoint.rs:222</code> begins discovery-plane registration</li>
+                  <li><code>dynamo/lib/runtime/src/component/endpoint.rs:230</code> builds <code>DiscoverySpec::Endpoint</code></li>
+                  <li><code>dynamo/lib/runtime/src/component/endpoint.rs:238</code> calls <code>discovery.register</code></li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube.rs:177</code> builds and applies the CR</li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/crd.rs:25</code> defines <code>DynamoWorkerMetadataSpec</code></li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/crd.rs:46</code> builds CR with pod owner reference</li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step worker" id="step-5">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3><code>/health</code> becomes ready after required endpoint health is ready</h3>
+                  <span class="tag worker">system health</span>
+                </div>
+                <p>
+                  Worker pods expose a system server on port <code>9090</code>. The operator configures system
+                  health to depend on the <code>generate</code> endpoint. Once the handler is inserted, the runtime
+                  marks that endpoint ready, and <code>/health</code> can return healthy.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>Readiness should reflect the endpoint that will actually serve generation requests.</div>
+                  <div class="mini"><b>Plain language</b>Kubernetes asks "are you ready?", and the worker answers yes only after <code>generate</code> is usable.</div>
+                </div>
+                <ul class="refs">
+                  <li><code>dynamo/deploy/operator/internal/dynamo/component_worker.go:87</code> requires endpoint health for <code>generate</code></li>
+                  <li><code>dynamo/deploy/operator/internal/dynamo/component_worker.go:91</code> sets <code>DYN_SYSTEM_PORT</code></li>
+                  <li><code>dynamo/lib/runtime/src/system_health.rs:116</code> health requires all configured endpoint health checks to be ready</li>
+                  <li><code>dynamo/lib/runtime/src/pipeline/network/ingress/shared_tcp_endpoint.rs:330</code> inserts handler first</li>
+                  <li><code>dynamo/lib/runtime/src/pipeline/network/ingress/shared_tcp_endpoint.rs:333</code> then marks endpoint health ready</li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step k8s" id="step-6">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3>kubelet readiness probe succeeds</h3>
+                  <span class="tag k8s">pod readiness</span>
+                </div>
+                <p>
+                  The kubelet is the node-local Kubernetes agent. It periodically calls the worker's readiness
+                  probe. In your GLM CP values, readiness is <code>GET /health</code> on the named <code>system</code>
+                  port, with a long initial delay and a one-failure threshold.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>Kubernetes will not mark the pod as ready until the probe succeeds.</div>
+                  <div class="mini"><b>Plain language</b>The node checks the worker locally and reports readiness to the cluster.</div>
+                </div>
+                <ul class="refs">
+                  <li><code>sglang/charts/dynamo-sglang-values/glm-5.2.cp.yaml:183</code> chart readiness probe override</li>
+                  <li><code>sglang/charts/dynamo-sglang/templates/dynamographdeployment.yaml:292</code> template emits worker readiness probe</li>
+                  <li><code>dynamo/deploy/operator/internal/dynamo/component_worker.go:57</code> operator default readiness probe is <code>/health</code></li>
+                  <li><code>dynamo/deploy/operator/internal/dynamo/component_worker.go:42</code> operator default liveness probe is <code>/live</code></li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step k8s" id="step-7">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3>Kubernetes EndpointSlice marks pod ready</h3>
+                  <span class="tag k8s">cluster readiness</span>
+                </div>
+                <p>
+                  The operator creates a Service with discovery labels and selectors. Kubernetes maintains
+                  EndpointSlices for that Service. Each EndpointSlice entry records whether the selected pod is
+                  ready. Dynamo reads those ready entries as the Kubernetes side of the gate.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>EndpointSlice is the cluster-wide readiness signal that other pods can watch.</div>
+                  <div class="mini"><b>Plain language</b>Kubernetes publishes a list saying "these selected pods are ready right now".</div>
+                </div>
+                <ul class="refs">
+                  <li><code>dynamo/deploy/operator/internal/dynamo/graph.go:662</code> adds Kubernetes discovery labels to the Service</li>
+                  <li><code>dynamo/deploy/operator/internal/dynamo/graph.go:667</code> Service selector targets component pods</li>
+                  <li><code>dynamo/docs/kubernetes/service-discovery.md:63</code> docs explain Service to EndpointSlice maintenance</li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/utils.rs:84</code> extracts ready entries from EndpointSlice</li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/utils.rs:89</code> requires <code>conditions.ready</code></li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step dynamo" id="step-8">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3>Dynamo discovery daemon joins readiness and metadata</h3>
+                  <span class="tag dynamo">join gate</span>
+                </div>
+                <p>
+                  Every pod using Kubernetes discovery runs a discovery daemon. In pod mode it watches
+                  EndpointSlices for readiness and watches <code>DynamoWorkerMetadata</code> CRs for metadata.
+                  A worker enters the snapshot only when the ready EndpointSlice entry has a matching metadata CR.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>This prevents both early routing and stale routing.</div>
+                  <div class="mini"><b>Plain language</b>The daemon says "I need both the green light and the worker's business card".</div>
+                </div>
+                <ul class="refs">
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/daemon.rs:24</code> defines readiness data source</li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/daemon.rs:42</code> watches EndpointSlices in pod mode</li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/daemon.rs:142</code> documents the ready plus CR rule</li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/daemon.rs:156</code> watches <code>DynamoWorkerMetadata</code> CRs</li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/daemon.rs:278</code> iterates ready entries</li>
+                  <li><code>dynamo/lib/runtime/src/discovery/kube/daemon.rs:279</code> includes only entries with matching CR metadata</li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step frontend" id="step-9">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3>Frontend discovery watch receives the worker</h3>
+                  <span class="tag frontend">watch stream</span>
+                </div>
+                <p>
+                  The frontend starts a <code>DistributedRuntime</code> with the configured discovery backend.
+                  Its HTTP entrypoint asks discovery to <code>list_and_watch</code> all model cards. The model
+                  watcher consumes discovery events and updates the in-memory model/worker manager.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>The frontend does not poll random pod IPs; it follows the Dynamo discovery stream.</div>
+                  <div class="mini"><b>Plain language</b>The frontend subscribes to the address book and notices when a worker joins or leaves.</div>
+                </div>
+                <ul class="refs">
+                  <li><code>dynamo/components/src/dynamo/frontend/main.py:217</code> creates frontend distributed runtime</li>
+                  <li><code>dynamo/components/src/dynamo/frontend/main.py:322</code> builds the engine from that runtime</li>
+                  <li><code>dynamo/lib/llm/src/entrypoint/input/http.rs:188</code> gets discovery handle</li>
+                  <li><code>dynamo/lib/llm/src/entrypoint/input/http.rs:189</code> starts <code>list_and_watch</code></li>
+                  <li><code>dynamo/lib/llm/src/discovery/watcher.rs:184</code> consumes discovery stream</li>
+                  <li><code>dynamo/lib/llm/src/discovery/watcher.rs:199</code> handles added model instances</li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="step frontend" id="step-10">
+              <div class="step-number" aria-hidden="true"></div>
+              <div>
+                <div class="step-title-row">
+                  <h3>Frontend/router can send new requests to it</h3>
+                  <span class="tag frontend">routing set</span>
+                </div>
+                <p>
+                  Routing uses a worker set built from live instances and runtime configs. The KV router chooses
+                  a worker; it does not make the worker exist. Discovery decides which workers are eligible, and
+                  routing chooses among those eligible workers for each request.
+                </p>
+                <div class="mini-grid">
+                  <div class="mini"><b>Why this matters</b>A worker must be both live and configured before the router should select it.</div>
+                  <div class="mini"><b>Plain language</b>Discovery creates the candidate list; the router picks one candidate for a request.</div>
+                </div>
+                <ul class="refs">
+                  <li><code>dynamo/lib/llm/src/discovery/runtime_configs.rs:24</code> starts runtime config watch</li>
+                  <li><code>dynamo/lib/llm/src/discovery/runtime_configs.rs:28</code> watches instance availability</li>
+                  <li><code>dynamo/lib/llm/src/discovery/runtime_configs.rs:32</code> watches runtime configs from discovery</li>
+                  <li><code>dynamo/lib/llm/src/discovery/runtime_configs.rs:65</code> keeps only workers that have both signals</li>
+                  <li><code>dynamo/lib/llm/src/kv_router.rs:136</code> notes KV router selects a worker</li>
+                  <li><code>dynamo/lib/llm/src/kv_router.rs:142</code> stores indexer, scheduler, and worker configs</li>
+                </ul>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section" id="glossary">
+        <div class="section-body">
+          <h2>Glossary For Kubernetes/Dynamo Laymen</h2>
+          <dl class="term-grid">
+            <div class="term">
+              <dt>Operator</dt>
+              <dd>
+                A Kubernetes controller that watches high-level Dynamo custom resources and creates lower-level
+                Kubernetes objects for you. You write a <code>DynamoGraphDeployment</code>; the operator reconciles
+                component deployments, services, probes, labels, env vars, service accounts, roles, and role bindings.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>DynamoGraphDeployment</dt>
+              <dd>
+                The high-level graph object that describes the app: frontend service, decode worker service,
+                replica counts, image, args, resources, probes, and volumes. In your GLM chart this is rendered
+                by Helm from <code>glm-5.2.cp.yaml</code>.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>DynamoComponentDeployment</dt>
+              <dd>
+                The operator's intermediate component object. The graph has several services; each service becomes
+                a component deployment, and then the component deployment controller creates or updates the real
+                Kubernetes <code>Deployment</code>.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>Decode pod / backend / worker</dt>
+              <dd>
+                In this page these are the same traffic-serving side of the system. The chart calls the worker
+                service <code>decode</code>. The runtime endpoint is usually discussed as the backend
+                <code>generate</code> endpoint because it is the thing the frontend eventually calls.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>Frontend</dt>
+              <dd>
+                The HTTP-facing process. It receives OpenAI-compatible requests, watches discovery, maintains a
+                current view of available model workers, and asks a router to choose a worker for each request.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>Discovery</dt>
+              <dd>
+                Dynamo's address-book abstraction. It answers "which components exist, what endpoints do they
+                provide, what model/runtime metadata do they have, and are they currently eligible?" On Kubernetes,
+                this address book is backed by native Kubernetes objects.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>DWM: DynamoWorkerMetadata</dt>
+              <dd>
+                The actual custom resource used by Kubernetes discovery. It stores serialized Dynamo metadata for
+                a worker pod. DWM is the shorthand used in this page; <code>DynamoWorkerMetadata</code> is the
+                exact code and Kubernetes resource term.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>Custom Resource and CRD</dt>
+              <dd>
+                A custom resource is a Kubernetes object type added by an application. The CRD defines the type;
+                each CR is one object instance. <code>DynamoWorkerMetadata</code> is a custom resource under the
+                <code>nvidia.com</code> API group.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>EndpointSlice</dt>
+              <dd>
+                A Kubernetes object maintained for Services. It lists selected pod endpoints and their readiness
+                condition. Dynamo watches EndpointSlices so it can use Kubernetes' view of readiness without
+                directly probing every pod itself.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>readinessProbe</dt>
+              <dd>
+                A kubelet check that decides whether a pod should be considered ready. For this worker it calls
+                <code>/health</code> on the system port. A passing readiness probe allows Kubernetes to mark the
+                endpoint ready.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>livenessProbe and startupProbe</dt>
+              <dd>
+                Liveness asks whether Kubernetes should restart a stuck container. Startup gives slow-starting
+                containers time before liveness restarts apply. They protect process lifecycle, while readiness
+                controls whether the pod should receive new traffic.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>kubelet</dt>
+              <dd>
+                The Kubernetes node agent. It runs containers through the container runtime and performs probes.
+                When its readiness probe succeeds or fails, that status flows back into Kubernetes pod and
+                EndpointSlice state.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>Request plane</dt>
+              <dd>
+                The transport and server path that carries actual generation calls. Installing an endpoint in the
+                request plane means the worker has a callable handler, not just metadata saying it exists.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>Router / KV router</dt>
+              <dd>
+                The routing logic in the frontend. Discovery determines which workers are candidates. The router
+                chooses one candidate using policy and runtime information such as KV/cache-aware state.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>Owner reference</dt>
+              <dd>
+                A Kubernetes link saying one object belongs to another. DWM CRs are written with a pod owner
+                reference, so Kubernetes can clean up metadata when the pod is deleted.
+              </dd>
+            </div>
+            <div class="term">
+              <dt>RBAC</dt>
+              <dd>
+                Kubernetes permissions. The operator creates a service account, role, and role binding so Dynamo
+                pods can watch EndpointSlices and DWM CRs in their namespace.
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="section" id="readiness-join">
+        <div class="section-body">
+          <h2>Why The Join Matters</h2>
+          <p>
+            The most important line is not a single probe or a single CR write. It is the join:
+            <code>ready EndpointSlice entry + matching DynamoWorkerMetadata CR</code>. Each signal blocks a
+            different failure mode.
+          </p>
+          <table class="check-table">
+            <thead>
+              <tr>
+                <th>EndpointSlice ready?</th>
+                <th>DWM CR exists?</th>
+                <th>Published to frontend?</th>
+                <th>Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td>The pod is absent, starting, or not useful yet. Nothing should route to it.</td>
+              </tr>
+              <tr>
+                <td class="no">No</td>
+                <td class="yes">Yes</td>
+                <td class="no">No</td>
+                <td>The worker has metadata, but Kubernetes does not consider it ready. Do not route yet.</td>
+              </tr>
+              <tr>
+                <td class="yes">Yes</td>
+                <td class="no">No</td>
+                <td class="no">No</td>
+                <td>The pod looks ready, but Dynamo does not have endpoint/model metadata. Do not route yet.</td>
+              </tr>
+              <tr>
+                <td class="yes">Yes</td>
+                <td class="yes">Yes</td>
+                <td class="yes">Yes</td>
+                <td>The pod is ready and Dynamo knows what it provides. The frontend can include it.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="reference-map">
+        <div class="section-body">
+          <h2>Condensed Reference Map</h2>
+          <p>
+            These are the highest-value files to keep open while debugging this path.
+          </p>
+          <table class="check-table">
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>File</th>
+                <th>What to look for</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Chart values</td>
+                <td><code>sglang/charts/dynamo-sglang-values/glm-5.2.cp.yaml</code></td>
+                <td>Frontend and worker replicas, args, image, readiness/liveness probes.</td>
+              </tr>
+              <tr>
+                <td>Chart template</td>
+                <td><code>sglang/charts/dynamo-sglang/templates/dynamographdeployment.yaml</code></td>
+                <td>How values become a <code>DynamoGraphDeployment</code>.</td>
+              </tr>
+              <tr>
+                <td>Operator worker defaults</td>
+                <td><code>dynamo/deploy/operator/internal/dynamo/component_worker.go</code></td>
+                <td>System port, <code>/health</code>, <code>/live</code>, and endpoint-health env vars.</td>
+              </tr>
+              <tr>
+                <td>Operator common env</td>
+                <td><code>dynamo/deploy/operator/internal/dynamo/component_common.go</code></td>
+                <td>Pod identity and <code>DYN_DISCOVERY_BACKEND=kubernetes</code>.</td>
+              </tr>
+              <tr>
+                <td>SGLang decode startup</td>
+                <td><code>dynamo/components/src/dynamo/sglang/init_llm.py</code></td>
+                <td>Engine load, endpoint creation, handler creation, endpoint serving.</td>
+              </tr>
+              <tr>
+                <td>Endpoint registration</td>
+                <td><code>dynamo/lib/runtime/src/component/endpoint.rs</code></td>
+                <td>Request-plane registration followed by discovery registration.</td>
+              </tr>
+              <tr>
+                <td>Kubernetes discovery writer</td>
+                <td><code>dynamo/lib/runtime/src/discovery/kube.rs</code></td>
+                <td>Builds and applies <code>DynamoWorkerMetadata</code>.</td>
+              </tr>
+              <tr>
+                <td>Discovery daemon</td>
+                <td><code>dynamo/lib/runtime/src/discovery/kube/daemon.rs</code></td>
+                <td>Watches EndpointSlices and DWM CRs; publishes only the joined snapshot.</td>
+              </tr>
+              <tr>
+                <td>Frontend discovery watch</td>
+                <td><code>dynamo/lib/llm/src/entrypoint/input/http.rs</code></td>
+                <td>Starts <code>list_and_watch</code> and passes events to <code>ModelWatcher</code>.</td>
+              </tr>
+              <tr>
+                <td>Routing candidates</td>
+                <td><code>dynamo/lib/llm/src/discovery/runtime_configs.rs</code></td>
+                <td>Joins live instance ids with runtime configs before the router sees them.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
