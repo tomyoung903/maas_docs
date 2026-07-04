@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_selector_cp8_evidence.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_selector_cp8_evidence.html">
+  <title>GLM-5.2 DSA Selector CP8 Evidence</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --accent-3: #7a3e9d;
+  --soft: #e8f2ef;
+  --warn-soft: #f7ece8;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main { max-width: 1380px; margin: 0 auto; padding: 42px 22px 80px; }
+nav { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 28px; }
+nav a {
+  display: inline-flex; align-items: center; min-height: 38px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--paper);
+  color: var(--accent); font-weight: 700; text-decoration: none;
+}
+.doc-shell { display: grid; grid-template-columns: minmax(190px, 230px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.doc-content { min-width: 0; }
+.content-overview {
+  position: sticky; top: 18px; padding: 10px 0 10px 14px;
+  border-left: 4px solid rgba(11, 107, 102, .28); color: var(--muted);
+}
+.content-overview-title { margin: 0 0 10px; color: var(--ink); font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.content-overview a { display: block; padding: 5px 0; color: var(--muted); font-size: .9rem; font-weight: 700; line-height: 1.25; text-decoration: none; }
+.content-overview a:hover, .content-overview a:focus { color: var(--accent); text-decoration: underline; }
+.content-overview a.depth-2 { padding-left: 12px; font-size: .84rem; font-weight: 650; }
+h1, h2, h3 { line-height: 1.18; letter-spacing: 0; }
+h1 { max-width: 980px; margin: 0 0 14px; font-size: clamp(2.2rem, 5vw, 4.5rem); }
+h2 { margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 1.55rem; }
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 900px; color: var(--muted); }
+a { color: var(--accent); }
+.lead { margin: 0 0 24px; font-size: 1.08rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 24px 0; }
+.card { min-height: 120px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.label { color: var(--muted); font-size: .82rem; font-weight: 700; text-transform: uppercase; }
+.value { margin-top: 8px; font-size: 1.55rem; font-weight: 800; }
+.subvalue { margin-top: 6px; color: var(--muted); font-size: .94rem; }
+.note { margin: 20px 0; padding: 16px 18px; border-left: 5px solid var(--accent); background: var(--soft); color: var(--ink); }
+.note.warn { border-left-color: var(--accent-2); background: var(--warn-soft); }
+table { width: 100%; border-collapse: collapse; margin: 18px 0 26px; background: var(--paper); }
+th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
+th { background: #e1ece9; color: var(--ink); }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+code { padding: .08rem .22rem; border-radius: 4px; background: #edf3f1; color: #243431; }
+pre { overflow: auto; padding: 16px; border-radius: 8px; background: var(--code-bg); color: var(--code); }
+.math-var, .math-func, .math-space, .shape, .eq-block { font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif; }
+.math-var { font-style: italic; white-space: nowrap; }
+.math-vec, .math-mat, .math-set, .math-tensor { font-weight: 700; }
+.math-func { font-style: normal; white-space: nowrap; }
+.math-space { white-space: nowrap; color: #253633; }
+.shape { display: inline-block; white-space: nowrap; color: #314541; font-variant-numeric: tabular-nums; }
+.sym { padding: 0 .08em; border-bottom: 2px solid transparent; }
+.sym-q { color: #7a3e9d; border-bottom-color: rgba(122, 62, 157, .35); }
+.sym-index { color: #1b5faa; border-bottom-color: rgba(27, 95, 170, .35); }
+.sym-select { color: #6a4f00; border-bottom-color: rgba(106, 79, 0, .34); }
+.eq-block { max-width: 100%; margin: 18px 0 26px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 8px; background: #fbfdfc; overflow-x: auto; }
+.eq-title { margin: 0 0 10px; color: var(--accent); font: 800 .86rem Inter, ui-sans-serif, system-ui, sans-serif; text-transform: uppercase; }
+.eq-row { display: grid; grid-template-columns: minmax(160px, max-content) 26px minmax(260px, 1fr) minmax(160px, max-content); gap: 10px; align-items: baseline; width: max-content; min-width: min(780px, 100%); padding: 5px 0; }
+.eq-lhs { text-align: right; }
+.eq-op { text-align: center; color: var(--muted); }
+.eq-rhs { color: #1d2b28; }
+.eq-note { color: var(--muted); white-space: nowrap; }
+.bar-row { display: grid; grid-template-columns: 120px minmax(160px, 1fr) 120px; gap: 12px; align-items: center; margin: 10px 0; max-width: 820px; }
+.bar-track { height: 18px; border-radius: 4px; background: #dde8e5; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+.bar-fill.alt { background: var(--accent-3); }
+.footer { margin-top: 42px; color: var(--muted); font-size: .92rem; }
+@media (max-width: 980px) {
+  main { max-width: 1160px; padding: 28px 16px 64px; }
+  .doc-shell { display: block; }
+  .content-overview { position: static; margin: 0 0 22px; padding: 12px 14px; background: rgba(255, 255, 255, .72); }
+  .content-overview a { display: inline-block; margin-right: 14px; }
+  .content-overview a.depth-2 { padding-left: 0; }
+}
+@media (max-width: 600px) {
+  table { display: block; max-width: 100%; overflow-x: auto; }
+  .eq-row { grid-template-columns: max-content 24px max-content max-content; }
+  .bar-row { grid-template-columns: 1fr; gap: 6px; }
+}
+  </style>
+</head>
+<body>
+<main>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_selector_cp8_evidence.html">Public URL</a></nav>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">Overview</div>
+  <a href="#result">Result</a>
+  <a href="#measurement">Measurement Setup</a>
+  <a href="#selector-math">Selector Row Math</a>
+  <a href="#request-table">Request Table</a>
+  <a href="#raw-evidence">Raw Evidence</a>
+  <a href="#caveats">Caveats</a>
+</aside>
+<section class="doc-content">
+<h1>GLM-5.2 DSA Selector CP8 Evidence</h1>
+<p class="lead">This page records a direct H200 experiment for the DSA selector path during a 100K-token GLM-5.2 prefill. The only serving-mode difference is plain TP8 versus TP8 plus <code>--attn-cp-size 8</code> DSA prefill context parallelism.</p>
+
+<section id="result">
+<h2>Result</h2>
+<div class="grid">
+  <section class="card"><div class="label">Selector critical path</div><div class="value">2.64x faster</div><div class="subvalue">Layer-0 max-rank selector time, steady requests 2-3.</div></section>
+  <section class="card"><div class="label">End-to-end request</div><div class="value">2.21x faster</div><div class="subvalue">100K prefill + 1 generated token, steady requests 2-3.</div></section>
+  <section class="card"><div class="label">No-CP query rows per rank</div><div class="value">100,000</div><div class="subvalue">Every TP rank repeats the layer-0 selector over the whole prompt.</div></section>
+  <section class="card"><div class="label">CP8 query rows per rank</div><div class="value">12,500</div><div class="subvalue">Each CP rank receives one eighth of the query rows.</div></section>
+</div>
+<div class="bar-row"><strong>No CP</strong><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span>78.1 ms</span></div>
+<div class="bar-row"><strong>CP8</strong><div class="bar-track"><div class="bar-fill alt" style="width:37.9%"></div></div><span>29.6 ms</span></div>
+<p>The selector timing metric above is the sum of synchronized <code>Indexer.forward_cuda</code> time for layer 0 on each rank, then the maximum rank sum is used as the critical-path proxy. In steady state, no-CP is <strong>78.116 ms</strong>; CP8 is <strong>29.626 ms</strong>.</p>
+</section>
+
+<section id="measurement">
+<h2>Measurement Setup</h2>
+<table>
+<tr><th>Field</th><th>No CP</th><th>CP8</th></tr>
+<tr><td>Cluster nodes</td><td>gpu-h200-1, Taiwan H200</td><td>gpu-h200-2, Taiwan H200</td></tr>
+<tr><td>Image</td><td colspan="2"><code>image.hpc-ai.com/platform/dynamo-sglang-runtime:sglang-aa2ce33e0f-dynamo-e33122c32d-mooncake-patched</code></td></tr>
+<tr><td>Model</td><td colspan="2"><code>/share_storage/models/GLM-5.2-FP8</code></td></tr>
+<tr><td>Common serving flags</td><td colspan="2"><pre>python3 -m sglang.launch_server \
+  --model-path /share_storage/models/GLM-5.2-FP8 \
+  --served-model-name GLM-5.2-FP8 \
+  --tp-size 8 \
+  --context-length 131072 \
+  --chunked-prefill-size 8192 \
+  --mem-fraction-static 0.82 \
+  --disable-cuda-graph \
+  --disable-radix-cache \
+  --attention-backend dsa \
+  --prefill-attention-backend dsa \
+  --decode-attention-backend dsa</pre></td></tr>
+<tr><td>CP-specific flags</td><td>None</td><td><code>--attn-cp-size 8 --enable-dsa-prefill-context-parallel --dsa-prefill-cp-mode round-robin-split</code></td></tr>
+<tr><td>Prompt</td><td colspan="2">Three 100,000-token prompts: <code>" A" + " the" * 99999</code>, <code>" B" + " the" * 99999</code>, <code>" C" + " the" * 99999</code>. The tokenizer endpoint returned exactly 100,000 tokens for each prompt on both servers.</td></tr>
+<tr><td>Generation</td><td colspan="2"><code>max_new_tokens=1</code>, <code>temperature=0</code>.</td></tr>
+<tr><td>Timing hook</td><td colspan="2">Temporary wrapper around <code>sglang.srt.layers.attention.dsa.dsa_indexer.Indexer.forward_cuda</code>. It records layer 0 only, synchronizes CUDA before and after the call, and logs rank, CP flag, query rows, output rows, top-k, and elapsed milliseconds.</td></tr>
+<tr><td>Artifact directories</td><td><code>/share_storage/codex_dsa_selector_evidence/nocp_20260704_185819</code></td><td><code>/share_storage/codex_dsa_selector_evidence/cp8_20260704_185819</code></td></tr>
+</table>
+<div class="note warn">CUDA graph capture and radix cache were disabled for this evidence run. That keeps the measured path explicit and prevents prefix-cache reuse. Treat the end-to-end seconds as controlled experiment numbers, not a production benchmark.</div>
+</section>
+
+<section id="selector-math">
+<h2>Selector Row Math</h2>
+<p>The measured lines directly show the row partitioning. With <code>chunked-prefill-size=8192</code>, a 100,000-token prompt becomes 12 full chunks plus one tail chunk.</p>
+<div class="eq-block">
+  <div class="eq-title">No CP</div>
+  <div class="eq-row"><div class="eq-lhs"><span class="math-var sym sym-q">q_rows</span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-space">8192 for 12 chunks, then 1696</span></div><div class="eq-note">per rank</div></div>
+  <div class="eq-row"><div class="eq-lhs"><span class="math-var sym sym-q">sum q_rows</span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-space">12 x 8192 + 1696 = 100000</span></div><div class="eq-note">per rank</div></div>
+</div>
+<div class="eq-block">
+  <div class="eq-title">CP8</div>
+  <div class="eq-row"><div class="eq-lhs"><span class="math-var sym sym-q">q_rows</span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-space">8192 / 8 = 1024 for 12 chunks, then 1696 / 8 = 212</span></div><div class="eq-note">per rank</div></div>
+  <div class="eq-row"><div class="eq-lhs"><span class="math-var sym sym-q">sum q_rows</span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-space">12 x 1024 + 212 = 12500</span></div><div class="eq-note">per rank</div></div>
+</div>
+<p>The important point is that CP8 cuts the per-rank selector query rows by 8x, but the measured selector critical path improves by about 2.64x, not 8x. The remaining time is fixed overhead, selector kernel efficiency, memory traffic, synchronization, and the rest of the model prefill path.</p>
+</section>
+
+<section id="request-table">
+<h2>Request Table</h2>
+<table>
+<tr><th>Mode</th><th>Request</th><th>Prompt tokens</th><th>Cached tokens</th><th>End-to-end</th><th>Timing lines</th><th>Sum q_rows per rank</th><th>Chunk q_rows</th><th>Layer-0 max rank selector</th><th>Layer-0 mean rank selector</th></tr>
+<tr>
+<td>No CP</td><td>1</td><td>100,000</td><td>0</td>
+<td>9.580 s</td><td>104</td><td>100,000</td>
+<td>1,696, 8,192</td><td>334.243 ms</td><td>309.954 ms</td>
+</tr><tr>
+<td>No CP</td><td>2</td><td>100,000</td><td>0</td>
+<td>9.288 s</td><td>104</td><td>100,000</td>
+<td>1,696, 8,192</td><td>78.417 ms</td><td>75.912 ms</td>
+</tr><tr>
+<td>No CP</td><td>3</td><td>100,000</td><td>0</td>
+<td>9.311 s</td><td>104</td><td>100,000</td>
+<td>1,696, 8,192</td><td>77.815 ms</td><td>75.482 ms</td>
+</tr><tr>
+<td>CP8</td><td>1</td><td>100,000</td><td>0</td>
+<td>4.368 s</td><td>104</td><td>12,500</td>
+<td>212, 1,024</td><td>193.865 ms</td><td>192.098 ms</td>
+</tr><tr>
+<td>CP8</td><td>2</td><td>100,000</td><td>0</td>
+<td>4.207 s</td><td>104</td><td>12,500</td>
+<td>212, 1,024</td><td>31.475 ms</td><td>29.615 ms</td>
+</tr><tr>
+<td>CP8</td><td>3</td><td>100,000</td><td>0</td>
+<td>4.204 s</td><td>104</td><td>12,500</td>
+<td>212, 1,024</td><td>27.777 ms</td><td>26.530 ms</td>
+</tr>
+</table>
+<h3>Steady-State Average</h3>
+<table>
+<tr><th>Metric</th><th>No CP</th><th>CP8</th><th>No CP / CP8</th></tr>
+<tr><td>End-to-end request time</td><td>9.300 s</td><td>4.206 s</td><td>2.21x</td></tr>
+<tr><td>Layer-0 selector max-rank sum</td><td>78.116 ms</td><td>29.626 ms</td><td>2.64x</td></tr>
+<tr><td>Layer-0 selector mean-rank sum</td><td>75.697 ms</td><td>28.072 ms</td><td>2.70x</td></tr>
+<tr><td>Sum of all rank selector time</td><td>605.577 ms</td><td>224.578 ms</td><td>2.70x</td></tr>
+</table>
+</section>
+
+<section id="raw-evidence">
+<h2>Raw Evidence</h2>
+<p>These are unedited Docker log lines from steady request 2. The no-CP lines show <code>cp=0</code> and <code>q_rows=8192</code>; the CP8 lines show <code>cp=1</code> and <code>q_rows=1024</code>.</p>
+<pre>2026-07-04T11:06:12.826235034Z CODEX_DSA_SELECTOR_TIMING rank=3 layer=0 cp=0 q_rows=8192 x_rows=8192 out_rows=8192 topk=2048 ms=1.883
+2026-07-04T11:06:12.826274286Z CODEX_DSA_SELECTOR_TIMING rank=4 layer=0 cp=0 q_rows=8192 x_rows=8192 out_rows=8192 topk=2048 ms=1.903
+2026-07-04T11:06:12.826277290Z CODEX_DSA_SELECTOR_TIMING rank=5 layer=0 cp=0 q_rows=8192 x_rows=8192 out_rows=8192 topk=2048 ms=1.921
+2026-07-04T11:06:07.743816869Z CODEX_DSA_SELECTOR_TIMING rank=5 layer=0 cp=1 q_rows=1024 x_rows=1024 out_rows=1024 topk=2048 ms=2.221
+2026-07-04T11:06:07.743853642Z CODEX_DSA_SELECTOR_TIMING rank=1 layer=0 cp=1 q_rows=1024 x_rows=1024 out_rows=1024 topk=2048 ms=2.228
+2026-07-04T11:06:07.743855752Z CODEX_DSA_SELECTOR_TIMING rank=0 layer=0 cp=1 q_rows=1024 x_rows=1024 out_rows=1024 topk=2048 ms=2.242</pre>
+<p>Every final 100K request had 104 selector timing lines: 13 chunks times 8 ranks. Request metadata reported <code>cached_tokens=0</code> for all six 100K requests.</p>
+</section>
+
+<section id="caveats">
+<h2>Caveats</h2>
+<ul>
+  <li>The selector timing is for layer 0 only. The operation shape is representative of the selector path, but this page does not claim a full all-layer selector sum for the 100K prompt.</li>
+  <li>The hook synchronizes CUDA around <code>Indexer.forward_cuda</code>, so absolute end-to-end latency is perturbed. The comparison is still useful because both modes use the same hook and same prompt size.</li>
+  <li>The first measured request includes some residual cold-start effects. The headline numbers use requests 2 and 3.</li>
+  <li>The experiment used two H200 nodes, one per mode, so tiny node-to-node differences are possible. The row-count evidence is independent of that.</li>
+</ul>
+</section>
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_selector_cp8_evidence.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_selector_cp8_evidence.html</a><br>Generated from the 2026-07-04 Taiwan H200 selector timing experiment.</p>
+</section>
+</div>
+</main>
+</body>
+</html>
