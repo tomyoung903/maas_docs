@@ -160,6 +160,7 @@ th, td {
   padding: 10px 12px;
   vertical-align: top;
   text-align: left;
+  overflow-wrap: anywhere;
 }
 th {
   background: #e1ece9;
@@ -207,6 +208,7 @@ pre {
 .sym-select { color: #6a4f00; border-bottom-color: rgba(106, 79, 0, .34); }
 .sym-weight { color: #3d5260; border-bottom-color: rgba(61, 82, 96, .28); }
 .eq-block {
+  max-width: 100%;
   margin: 18px 0 26px;
   padding: 16px 18px;
   border: 1px solid var(--line);
@@ -225,7 +227,8 @@ pre {
   grid-template-columns: minmax(120px, max-content) 26px minmax(260px, 1fr) minmax(140px, max-content);
   gap: 10px;
   align-items: baseline;
-  min-width: 760px;
+  width: max-content;
+  min-width: min(760px, 100%);
   padding: 5px 0;
 }
 .eq-lhs { text-align: right; }
@@ -269,11 +272,21 @@ pre {
     padding-left: 0;
   }
 }
+@media (max-width: 600px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .eq-row {
+    grid-template-columns: max-content 24px max-content max-content;
+  }
+}
 </style>
 </head>
 <body>
 <main>
-<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html">Public URL</a></nav>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html">Public URL</a></nav>
 <div class="doc-shell">
 <aside class="content-overview" aria-label="Content overview">
   <div class="content-overview-title">On this page</div>
@@ -309,7 +322,7 @@ pre {
 <p>The latent cache is not the same as ordinary per-head K and V tensors. For scoring, each head has a learned content-key up-projection. For values, the attention kernel can first accumulate the shared latent vector and apply the value up-projection after the weighted sum.</p>
 <div class="eq-block"><div class="eq-title">Absorbed key and value math</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var math-vec">q<sub>t,a</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">[<span class="sym sym-q math-var math-vec">q<sub>t,a</sub><sup>C</sup></span>, <span class="sym sym-q math-var math-vec">q<sub>t,a</sub><sup>R</sup></span>]</div><div class="eq-note"></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var math-vec">q<sub>t,a</sub><sup>C</sup></span></div><div class="eq-op">&isin;</div><div class="eq-rhs"><span class="math-space">&Ropf;<sup>192</sup></span></div><div class="eq-note"></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var math-vec">q<sub>t,a</sub><sup>R</sup></span></div><div class="eq-op">&isin;</div><div class="eq-rhs"><span class="math-space">&Ropf;<sup>64</sup></span></div><div class="eq-note"></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-kv math-var math-vec">k<sub>i,a</sub><sup>C</sup></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var math-mat">W<sub>UK,a</sub></span> <span class="sym sym-kv math-var math-vec">c<sub>i</sub><sup>kv</sup></span></div><div class="eq-note">&isin; <span class="math-space">&Ropf;<sup>192</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-kv math-var math-vec">c<sub>i</sub><sup>kv</sup></span></div><div class="eq-op">&isin;</div><div class="eq-rhs"><span class="math-space">&Ropf;<sup>512</sup></span></div><div class="eq-note">latent value input</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">s<sub>t,i,a</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">(<span class="math-func">dot</span>(<span class="sym sym-q math-var math-vec">q<sub>t,a</sub><sup>C</sup></span>, <span class="sym sym-kv math-var math-vec">k<sub>i,a</sub><sup>C</sup></span>) + <span class="math-func">dot</span>(<span class="math-func">RoPE</span>(<span class="sym sym-q math-var math-vec">q<sub>t,a</sub><sup>R</sup></span>, <span class="math-var">t</span>), <span class="sym sym-kv math-var math-vec">k<sub>i</sub><sup>R</sup></span>)) / &radic;<span class="math-var">d<sub>q</sub></span></div><div class="eq-note">score before softmax</div></div></div>
 <h2 id="dsa-selection">DSA Selection Math</h2>
-<p>DSA adds a learned indexer before sparse attention. The indexer is a separate relevance scorer: it looks at the current query token and the cached index keys for previous tokens, then returns token positions to keep. It does not produce the final attention probabilities.</p>
+<p>DSA adds a learned indexer before sparse attention. The indexer is a separate relevance scorer: it looks at the current query token and the cached index keys for causal candidate tokens up to and including the current position, then returns token positions to keep. It does not produce the final attention probabilities.</p>
 <h3 id="selector-variables">Variables In The Selector</h3>
 <table><tr><th>Variable / tensor</th><th>Shape</th><th>Meaning</th></tr><tr><td><span class="math-var">t</span></td><td>scalar index</td><td>The current token position whose attention is being selected.</td></tr>
 <tr><td><span class="math-var">i</span></td><td>scalar index</td><td>A candidate key/value token position in the causal history.</td></tr>
@@ -323,7 +336,7 @@ pre {
 <tr><td><span class="sym sym-weight math-var math-mat">W<sub>idx,G</sub></span></td><td><span class="shape">[6144, 32]</span></td><td>Learned index-head gate projection. In SGLang code this module is named <code>Indexer.weights_proj</code>.</td></tr>
 <tr><td><span class="sym sym-index math-var math-mat">x<sub>t</sub></span></td><td><span class="shape">[32, 128]</span></td><td>The indexer query after projecting <span class="sym sym-q math-var math-vec">z<sub>norm,t</sub><sup>q</sup></span>, applying RoPE to the first 64 dimensions, and Hadamard-rotating the 128-d vector.</td></tr>
 <tr><td><span class="sym sym-gate math-var math-vec">g<sub>t</sub></span></td><td><span class="shape">[32]</span></td><td>Per-index-head gates used to weight the index-head dot products.</td></tr>
-<tr><td><span class="sym sym-index math-var math-vec">k<sub>i</sub><sup>idx</sup></span></td><td><span class="shape">[128]</span></td><td>The cached index key for previous token <span class="math-var">i</span>, produced from that token's hidden state by the indexer key projection, layer norm, RoPE on the first 64 dimensions, and Hadamard rotation.</td></tr>
+<tr><td><span class="sym sym-index math-var math-vec">k<sub>i</sub><sup>idx</sup></span></td><td><span class="shape">[128]</span></td><td>The cached index key for causal candidate token <span class="math-var">i</span>, produced from that token's hidden state by the indexer key projection, layer norm, RoPE on the first 64 dimensions, and Hadamard rotation.</td></tr>
 <tr><td><span class="sym sym-index math-var math-mat">K<sub>t</sub><sup>idx</sup></span></td><td><span class="shape">[<span class="sym sym-select math-var">L<sub>t</sub></span>, 128]</span></td><td>The logical stack of cached index keys for every candidate <span class="math-var">i</span> &isin; <span class="sym sym-select math-var math-set">C<sub>t</sub></span>. SGLang stores it in a paged index-key cache physically, but this is the math shape.</td></tr>
 <tr><td><span class="sym sym-index math-var">m<sub>t,i,b</sub></span></td><td>scalar</td><td>The raw index-head score for candidate <span class="math-var">i</span> and index head <span class="math-var">b</span>.</td></tr>
 <tr><td><span class="sym sym-index math-var math-mat">M<sub>t</sub></span></td><td><span class="shape">[<span class="sym sym-select math-var">L<sub>t</sub></span>, 32]</span></td><td>All raw index-head scores for the current query over all causal candidates.</td></tr>
@@ -347,9 +360,9 @@ pre {
 <p>After DSA chooses <span class="sym sym-select math-var math-set">I<sub>t</sub></span>, the softmax is normal attention math, but its denominator and value sum range over selected positions only.</p>
 <div class="eq-block"><div class="eq-title">Sparse MLA attention after DSA selection</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">&alpha;<sub>t,i,a</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">softmax</span> over <span class="math-var">i</span> &isin; <span class="sym sym-select math-var math-set">I<sub>t</sub></span> of <span class="sym sym-attn math-var">s<sub>t,i,a</sub></span></div><div class="eq-note">per head</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var math-vec">z<sub>t,a</sub><sup>attn</sup></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">i</span> &isin; <span class="sym sym-select math-var math-set">I<sub>t</sub></span></sub> <span class="sym sym-attn math-var">&alpha;<sub>t,i,a</sub></span> <span class="sym sym-kv math-var math-vec">c<sub>i</sub><sup>kv</sup></span></div><div class="eq-note"><span class="shape">[512]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var math-vec">o<sub>t,a</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var math-mat">W<sub>UV,a</sub></span> <span class="sym sym-attn math-var math-vec">z<sub>t,a</sub><sup>attn</sup></span></div><div class="eq-note"><span class="shape">[256]</span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var math-vec">o<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">concat</span><sub><span class="math-var">a</span></sub>(<span class="sym sym-attn math-var math-vec">o<sub>t,a</sub></span>)</div><div class="eq-note">&isin; <span class="math-space">&Ropf;<sup>16384</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var math-vec">y<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var math-mat">W<sub>O</sub></span> <span class="sym sym-attn math-var math-vec">o<sub>t</sub></span></div><div class="eq-note">&isin; <span class="math-space">&Ropf;<sup>6144</sup></span></div></div></div>
 <h2 id="scaling">Core Scaling Consequence</h2>
-<p>Without sparse selection, a new query scans every previous key. With DSA, the scan term is capped by <span class="sym sym-select math-var">K</span> once the context is longer than <span class="sym sym-select math-var">K</span>. This is the fundamental long-context change.</p>
+<p>Without sparse selection, a new query's final attention sum scans every allowed key. With DSA, the final MLA attention sum is capped by <span class="sym sym-select math-var">K</span> once the context is longer than <span class="sym sym-select math-var">K</span>. The selector still scores candidates over the causal history before top-k; that selector surface is the long-prefill system bottleneck discussed in the <a href="glm52_prefill_cp_advantage.html">Prefill CP page</a>.</p>
 <div class="eq-block"><div class="eq-title">Core scaling consequence</div><div class="eq-row"><div class="eq-lhs">|<span class="sym sym-select math-var math-set">I<sub>t</sub></span>|</div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">t</span> + 1</div><div class="eq-note">dense selected positions</div></div><div class="eq-row"><div class="eq-lhs">|<span class="sym sym-select math-var math-set">I<sub>t</sub></span>|</div><div class="eq-op">=</div><div class="eq-rhs">min(<span class="math-var">t</span> + 1, 2048)</div><div class="eq-note">DSA selected positions</div></div><div class="eq-row"><div class="eq-lhs">MLA scan per selected key</div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">H</span> &times; 2 &times; (2 &times; <span class="math-var">r<sub>kv</sub></span> + <span class="math-var">d<sub>r</sub></span>)</div><div class="eq-note">= 139,264 FLOPs/layer</div></div><div class="eq-row"><div class="eq-lhs">DSA selected-key scan cap</div><div class="eq-op">=</div><div class="eq-rhs">139,264 &times; 2048</div><div class="eq-note">= 285,212,672 FLOPs/token/layer</div></div><div class="eq-row"><div class="eq-lhs">Across 78 layers</div><div class="eq-op">=</div><div class="eq-rhs">285,212,672 &times; 78</div><div class="eq-note">= 22.247 GFLOP / token</div></div></div>
-<div class="note">This page counts only the model-side attention scan shape. The DSA indexer, top-k operation, cache movement, and kernel overhead are additional system costs; they do not change the mathematical fact that the attention sum is over <span class="sym sym-select math-var math-set">I<sub>t</sub></span> instead of all previous positions.</div>
+<div class="note">This page counts only the model-side attention scan shape. The DSA indexer, top-k operation, cache movement, and kernel overhead are additional system costs; they do not change the mathematical fact that the final attention sum is over <span class="sym sym-select math-var math-set">I<sub>t</sub></span> instead of every allowed causal position.</div>
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
 </article>
