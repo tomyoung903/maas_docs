@@ -382,6 +382,7 @@ pre {
   <a href="#takeaway">Takeaway</a>
   <a href="#experiment">Europe Experiment</a>
   <a class="depth-2" href="#measurements">Measurements</a>
+  <a class="depth-2" href="#runtime-evidence">Runtime Trace</a>
   <a href="#math">PP Math</a>
   <a class="depth-2" href="#chunking">100K Chunking</a>
   <a href="#scheduler">SGLang Scheduler</a>
@@ -397,7 +398,7 @@ pre {
 <h2>Takeaway</h2>
 <div class="grid">
   <section class="card"><div class="label">tested config</div><div class="value">PP4 &times; TP2</div><p>Eight H200 GPUs total. Four pipeline stages, two tensor-parallel ranks inside each stage.</p></section>
-  <section class="card"><div class="label">100K chunking</div><div class="value">13 chunks</div><p>With an 8,000-token chunk cap, the log shows twelve full chunks plus one page-aligned tail on PP0.</p></section>
+  <section class="card"><div class="label">100K chunking</div><div class="value">13 chunks</div><p>The scheduler trace shows twelve 8,000-token payload chunks plus one 4,000-token tail for a single 100K prefill.</p></section>
   <section class="card"><div class="label">hot single request</div><div class="value">4.970 s</div><p>Median client-observed TTFT/total for three 100K-token prompts after warmup.</p></section>
   <section class="card"><div class="label">four concurrent</div><div class="value">17.49 s</div><p>All four 100K-token prompts completed, but as a staircase rather than one perfect wave.</p></section>
 </div>
@@ -432,6 +433,42 @@ pre {
   <div class="bar-row"><div class="bar-label">two concurrent wall</div><div class="bar-track"><div class="bar-fill" style="width:85.5%"></div></div><div class="bar-value">14.965 s</div></div>
   <div class="bar-row"><div class="bar-label">four concurrent wall</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><div class="bar-value">17.494 s</div></div>
 </div>
+
+<h3 id="runtime-evidence">Runtime Trace Evidence</h3>
+<p>I reran the PP4 &times; TP2 experiment with a small runtime patch inside the container. The patch records one attention-TP rank per PP stage and emits JSONL events at PP batch selection and <code>run_batch</code> entry/return. The final hot run used the same 100,000-token raw <code>input_ids</code> request shape and flushed cache between request groups.</p>
+<table>
+  <tr><th>Artifact</th><th>What it contains</th></tr>
+  <tr><td><a href="evidence/glm52_pp100k_runtime_trace_summary.json">trace summary JSON</a></td><td>Parsed per-request, per-PP-stage event counts, launch windows, batch chunk-token sequences, and client timing metadata.</td></tr>
+  <tr><td><a href="evidence/glm52_pp100k_runtime_trace_sample.jsonl">trace sample JSONL</a></td><td>First 240 raw scheduler trace events from the instrumented run.</td></tr>
+  <tr><td><a href="evidence/glm52_pp100k_runtime_client_results.jsonl">client results JSONL</a></td><td>Streaming client timings and server <code>meta_info</code> for warmup, single 100K, and concurrent 100K groups.</td></tr>
+  <tr><td><a href="evidence/glm52_pp100k_runtime_server_prefill_excerpt.log">server prefill log excerpt</a></td><td>Filtered SGLang log lines for cache flushes, request receive/finish records, and prefill batch rows.</td></tr>
+  <tr><td><a href="evidence/glm52_pp100k_runtime_patch.py">runtime patch</a></td><td>The exact startup patch that fixed the PP KV start-layer issue and injected JSONL tracing.</td></tr>
+</table>
+
+<table>
+  <tr><th>Instrumented run</th><th>Client TTFT / total</th><th>Server e2e</th><th>Runtime note</th></tr>
+  <tr><td>16K warmup</td><td>169.234 s</td><td>169.223 s</td><td>Excluded from hot analysis because it paid DeepGEMM first-use precompile.</td></tr>
+  <tr><td>single 100K</td><td>5.034 s</td><td>5.020 s</td><td>Trace overhead stayed close to the earlier 4.970 s hot median.</td></tr>
+  <tr><td>hot concurrent4</td><td>5.172 s, 9.429 s, 13.341 s, 17.357 s</td><td>5.145 s, 9.405 s, 13.313 s, 17.326 s</td><td>Same staircase shape as the earlier 17.494 s four-request group.</td></tr>
+</table>
+
+<table>
+  <tr><th>Single 100K trace row</th><th>PP0</th><th>PP1</th><th>PP2</th><th>PP3</th></tr>
+  <tr><td><code>run_batch_enter</code> count</td><td>13</td><td>13</td><td>13</td><td>13</td></tr>
+  <tr><td>Batch payload chunks</td><td>12 &times; 8,000 + 4,000</td><td>12 &times; 8,000 + 4,000</td><td>12 &times; 8,000 + 4,000</td><td>12 &times; 8,000 + 4,000</td></tr>
+  <tr><td>First launch after PP0 first launch</td><td>0.000 s</td><td>0.085 s</td><td>0.163 s</td><td>0.248 s</td></tr>
+  <tr><td>Last launch after PP0 first launch</td><td>3.792 s</td><td>4.086 s</td><td>4.431 s</td><td>4.794 s</td></tr>
+</table>
+
+<table>
+  <tr><th>Hot concurrent4 request</th><th>PP0 first launch from group start</th><th>PP3 last launch from group start</th><th>Client TTFT</th></tr>
+  <tr><td>r0</td><td>0.000 s</td><td>4.358 s</td><td>5.172 s</td></tr>
+  <tr><td>r1</td><td>4.026 s</td><td>8.747 s</td><td>9.429 s</td></tr>
+  <tr><td>r2</td><td>8.423 s</td><td>12.647 s</td><td>13.341 s</td></tr>
+  <tr><td>r3</td><td>12.312 s</td><td>17.248 s</td><td>17.357 s</td></tr>
+</table>
+
+<div class="note">Two details matter when reading the trace. First, <code>batch_extend_num_tokens</code> is the scheduler payload length; the server prefill log can show a page-aligned allocation length, so the single 100K tail is 4,000 payload tokens in the trace while the log excerpt shows a 4,032-token final prefill row. Second, concurrent requests interleave through PP slots, so the raw summary keeps per-request launch windows instead of treating every request as an independent 13-row sequence.</div>
 </section>
 
 <section id="math">
@@ -477,10 +514,11 @@ pre {
   <div class="eq-line"><span><span class="math-var sym sym-token">T</span></span><span>=</span><span>100,000 prompt tokens</span></div>
   <div class="eq-line"><span><span class="math-var sym sym-token">C</span></span><span>=</span><span>8,000 max prefill tokens per scheduler chunk</span></div>
   <div class="eq-line"><span><span class="math-var sym sym-token">N</span><sub>chunks</sub></span><span>=</span><span><span class="math-func">ceil</span>(<span class="math-var">T</span> / <span class="math-var">C</span>) = 13</span></div>
-  <div class="eq-line"><span>observed PP0 chunks</span><span>=</span><span>12 &times; 8,000 + 4,032 <span class="eq-comment">page-aligned tail in the log</span></span></div>
+  <div class="eq-line"><span>observed trace chunks</span><span>=</span><span>12 &times; 8,000 + 4,000 <span class="eq-comment">scheduler payload lengths</span></span></div>
+  <div class="eq-line"><span>observed log tail</span><span>=</span><span>4,032 <span class="eq-comment">page-aligned prefill row in the server log</span></span></div>
 </div>
 
-<p>The tail is 4,032 rather than exactly 4,000 because this run used a 64-token page size and the scheduler aligns chunk boundaries to pages. The server log for each hot 100K single request shows PP0 scheduling 13 prefill batches with <code>#cached-token: 0</code>.</p>
+<p>The scheduler trace records payload chunks summing to exactly 100,000 tokens: twelve 8,000-token chunks and one 4,000-token tail. The server prefill log separately reports a page-aligned final prefill row of 4,032 tokens because this run used a 64-token page size. The hot single 100K request shows 13 <code>run_batch_enter</code> events on every PP stage with <code>#cached-token: 0</code> in the corresponding log rows.</p>
 </section>
 
 <section id="scheduler">
@@ -528,7 +566,7 @@ pre {
 </section>
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_pp_100k_prefill.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_pp_100k_prefill.html</a><br>
-Experiment date: July 7, 2026. Source artifacts remain on <code>gpu-h200-0</code> under <code>/mnt/fastfs/tom/pp100k</code>.</p>
+Experiment date: July 7, 2026. Source artifacts remain on <code>gpu-h200-0</code> under <code>/mnt/fastfs/tom/pp100k</code> and <code>/mnt/fastfs/tom/pp100k_trace</code>.</p>
 </section>
 </div>
 </main>
