@@ -6,19 +6,21 @@
   <title>GLM-5.2 PD Worker Args: Decode, DP Attention, and PP Microbatches</title>
   <style>
     :root {
-      --bg: #f7f9fb;
+      --bg: #f4f7fb;
       --panel: #ffffff;
-      --ink: #18202a;
-      --muted: #5e6b7a;
-      --line: #d8e0ea;
-      --code: #101820;
-      --code-bg: #eef3f8;
+      --panel-soft: #f8fafc;
+      --ink: #14202e;
+      --muted: #607083;
+      --line: #d6dee8;
+      --code: #102033;
+      --code-bg: #eef4fa;
       --prefill: #0f766e;
       --decode: #2563eb;
       --dp: #8a5a00;
       --pp: #7c3aed;
       --warn: #9f1239;
       --ok: #166534;
+      --shadow: 0 10px 28px rgba(20, 32, 46, 0.08);
     }
 
     * {
@@ -30,51 +32,87 @@
       background: var(--bg);
       color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.55;
+      font-size: 16px;
+      line-height: 1.62;
     }
 
     header {
       border-bottom: 1px solid var(--line);
-      background: var(--panel);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,255,255,0.86)),
+        var(--panel);
     }
 
     .header-inner {
-      max-width: 1180px;
+      max-width: 1320px;
       margin: 0 auto;
-      padding: 28px 24px 22px;
+      padding: 38px 28px 30px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: 0;
+      text-transform: uppercase;
     }
 
     h1 {
       margin: 0 0 10px;
-      font-size: 30px;
-      line-height: 1.15;
+      max-width: 1060px;
+      font-size: 38px;
+      line-height: 1.12;
       letter-spacing: 0;
     }
 
     .subtitle {
-      max-width: 900px;
+      max-width: 980px;
       margin: 0;
       color: var(--muted);
-      font-size: 15px;
+      font-size: 16px;
+    }
+
+    .meta-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 650;
     }
 
     .layout {
-      max-width: 1180px;
+      max-width: 1320px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 220px minmax(0, 1fr);
-      gap: 24px;
-      padding: 24px;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 34px;
+      padding: 30px 28px 42px;
     }
 
     nav {
       position: sticky;
-      top: 16px;
+      top: 20px;
       align-self: start;
       border: 1px solid var(--line);
       background: var(--panel);
       border-radius: 8px;
-      padding: 14px;
+      padding: 16px;
+      box-shadow: var(--shadow);
     }
 
     nav .nav-title {
@@ -87,11 +125,12 @@
 
     nav a {
       display: block;
-      padding: 7px 6px;
+      padding: 8px 7px;
       border-radius: 6px;
       color: var(--ink);
       text-decoration: none;
       font-size: 14px;
+      line-height: 1.25;
     }
 
     nav a:hover {
@@ -103,20 +142,20 @@
     }
 
     section {
-      margin-bottom: 26px;
+      margin-bottom: 36px;
       padding-bottom: 4px;
     }
 
     h2 {
-      margin: 0 0 12px;
-      font-size: 21px;
+      margin: 0 0 14px;
+      font-size: 24px;
       line-height: 1.25;
       letter-spacing: 0;
     }
 
     h3 {
       margin: 22px 0 10px;
-      font-size: 16px;
+      font-size: 18px;
       line-height: 1.3;
       letter-spacing: 0;
     }
@@ -138,8 +177,9 @@
       border: 1px solid var(--line);
       background: var(--panel);
       border-radius: 8px;
-      padding: 16px 18px;
+      padding: 18px 20px;
       margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(20, 32, 46, 0.05);
     }
 
     .answer {
@@ -176,7 +216,8 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--panel);
-      padding: 12px 14px;
+      padding: 14px 16px;
+      box-shadow: 0 4px 14px rgba(20, 32, 46, 0.05);
     }
 
     .metric .label {
@@ -188,8 +229,64 @@
     }
 
     .metric .value {
-      font-size: 19px;
+      font-size: 22px;
       font-weight: 750;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 14px 0 18px;
+    }
+
+    .answer-card {
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--decode);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .answer-card.prefill {
+      border-top-color: var(--prefill);
+    }
+
+    .answer-card.pp {
+      border-top-color: var(--pp);
+    }
+
+    .card-label {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .card-title {
+      margin-bottom: 8px;
+      font-size: 17px;
+      font-weight: 780;
+      line-height: 1.28;
+    }
+
+    .card-body {
+      margin: 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .callout {
+      border: 1px solid #c7d2fe;
+      border-left: 4px solid var(--decode);
+      background: #f7f9ff;
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin: 14px 0 20px;
     }
 
     table {
@@ -200,6 +297,7 @@
       border-radius: 8px;
       overflow: hidden;
       margin: 12px 0 18px;
+      box-shadow: 0 4px 14px rgba(20, 32, 46, 0.05);
     }
 
     th, td {
@@ -208,6 +306,7 @@
       text-align: left;
       vertical-align: top;
       font-size: 14px;
+      overflow-wrap: anywhere;
     }
 
     th {
@@ -220,6 +319,54 @@
       border-bottom: 0;
     }
 
+    .chart-table {
+      table-layout: fixed;
+    }
+
+    .chart-table th:nth-child(1) {
+      width: 25%;
+    }
+
+    .chart-table th:nth-child(2) {
+      width: 10%;
+    }
+
+    .chart-table th:nth-child(3) {
+      width: 13%;
+    }
+
+    .chart-table th:nth-child(4) {
+      width: 18%;
+    }
+
+    .role-badge {
+      display: inline-block;
+      border-radius: 6px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      padding: 2px 8px;
+      font-weight: 700;
+    }
+
+    .arg-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: flex-start;
+    }
+
+    .arg-list code {
+      display: inline-block;
+      padding: 3px 6px;
+      line-height: 1.35;
+    }
+
+    .arg-note {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     code {
       font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
       font-size: 0.92em;
@@ -227,6 +374,7 @@
       background: var(--code-bg);
       padding: 1px 4px;
       border-radius: 4px;
+      overflow-wrap: anywhere;
     }
 
     pre {
@@ -239,6 +387,7 @@
       color: var(--code);
       font-size: 13px;
       line-height: 1.45;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
     }
 
     pre code {
@@ -276,14 +425,30 @@
     .eq {
       display: grid;
       grid-template-columns: max-content max-content minmax(0, 1fr);
-      gap: 10px;
+      gap: 12px;
       align-items: baseline;
-      padding: 8px 10px;
+      padding: 12px 14px;
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
-      margin: 8px 0;
+      margin: 10px 0;
       overflow-x: auto;
+      font-size: 16px;
+    }
+
+    .compact-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+
+    .compact-list div {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 11px 12px;
+      font-size: 14px;
     }
 
     .src {
@@ -293,9 +458,18 @@
     }
 
     @media (max-width: 860px) {
+      .header-inner {
+        padding: 24px 16px 22px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
       .layout {
         grid-template-columns: 1fr;
         padding: 16px;
+        gap: 18px;
       }
 
       nav {
@@ -305,18 +479,80 @@
       .grid {
         grid-template-columns: 1fr;
       }
+
+      .summary-grid,
+      .compact-list {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-table {
+        table-layout: auto;
+      }
+
+      table {
+        border-collapse: separate;
+        overflow: visible;
+      }
+
+      thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      tbody,
+      tr,
+      td {
+        display: block;
+        width: 100%;
+      }
+
+      tr {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+      }
+
+      tr:last-child {
+        border-bottom: 0;
+      }
+
+      td {
+        border-bottom: 0;
+        padding: 7px 0;
+      }
+
+      td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+      }
     }
   </style>
 </head>
 <body>
   <header>
     <div class="header-inner">
+      <div class="eyebrow">Temporary MaaS Note</div>
       <h1>GLM-5.2 PD Worker Args: Decode, DP Attention, and PP Microbatches</h1>
       <p class="subtitle">
         Temporary note for the Northwest B200 <code>maas-prod-zhipu</code> GLM-5.2
         prefill/decode chart. This page is intentionally under <code>tmp/</code>
         and is not linked from the main docs index.
       </p>
+      <div class="meta-strip" aria-label="Document metadata">
+        <span class="pill">Release: <code>glm52-runtime-b200-pd</code></span>
+        <span class="pill">Chart: <code>dynamo-sglang-runtime-0.1.0</code></span>
+        <span class="pill">Scope: 2 decode + 2 prefill workers</span>
+      </div>
     </div>
   </header>
 
@@ -334,60 +570,54 @@
     <main>
       <section id="summary">
         <h2>Summary</h2>
-        <div class="answer">
+        <div class="summary-grid">
+          <article class="answer-card">
+            <div class="card-label">Decode Prefill Arg</div>
+            <div class="card-title"><code>--max-prefill-tokens 8192</code> is not the decode admission limiter.</div>
+            <p class="card-body">
+              Decode mode builds <code>PREBUILT</code> batches from transferred KV
+              and caps new work by request slots, not by ordinary prefill token
+              admission through <code>PrefillAdder</code>.
+            </p>
+          </article>
+          <article class="answer-card">
+            <div class="card-label">Decode Topology</div>
+            <div class="card-title"><code>tp-size=8</code> and <code>dp-size=8</code> still means eight GPUs.</div>
+            <p class="card-body">
+              DP attention reinterprets the eight-rank TP world as eight
+              attention-DP lanes, so the inner attention TP size is one.
+            </p>
+          </article>
+          <article class="answer-card pp">
+            <div class="card-label">Prefill PP</div>
+            <div class="card-title">The PP microbatch request cap is six.</div>
+            <p class="card-body">
+              With <code>max_running_requests=48</code>, <code>pp_size=8</code>,
+              and no explicit <code>pp_max_micro_batch_size</code>, SGLang computes
+              <code>48 / 8 = 6</code>.
+            </p>
+          </article>
+        </div>
+
+        <div class="callout">
           <p>
-            <span class="verdict">Short answer:</span>
-            <code>--max-prefill-tokens 8192</code> on the decode worker is not the
-            normal decode scheduling limiter. Decode mode does not schedule ordinary
-            prefill batches through <code>PrefillAdder</code>; it creates prebuilt
-            decode batches from already-transferred KV state and caps admission by
-            request slots.
-          </p>
-          <p>
-            <span class="caveat">Caveat:</span>
-            the value is still carried through <code>ServerArgs</code> and worker
-            info, so it can affect generic logging or buffer helper code. It is
-            just not the knob that limits decode-side work in this PD path.
+            <span class="verdict">Careful answer:</span>
+            decode <code>max_prefill_tokens</code> is not a pure parser no-op
+            because it remains in <code>ServerArgs</code> and worker info. It is
+            just not the normal decode scheduling limiter in this PD path.
           </p>
         </div>
 
-        <div class="answer">
-          <p>
-            Decode uses <code>--tp-size 8</code> and <code>--dp-size 8</code>
-            because DP attention reinterprets the TP world as attention-DP lanes.
-            With <span class="math-var">T</span><sub>global</sub> = 8 and
-            <span class="math-var">D</span><sub>attn</sub> = 8, the inner attention
-            tensor-parallel size is:
-          </p>
-          <div class="eq">
-            <span class="math-var">T</span><sub>attn</sub>
-            <span>=</span>
-            <span><span class="math-var">T</span><sub>global</sub> / <span class="math-var">D</span><sub>attn</sub> = 8 / 8 = 1</span>
-          </div>
-          <p>
-            Practically, the pod runs eight scheduler/model ranks on eight GPUs;
-            each rank is one attention-DP lane, and the controller dispatches across
-            those lanes.
-          </p>
+        <h3>Two formulas that explain the chart</h3>
+        <div class="eq">
+          <span><span class="math-var">T</span><sub>attn</sub></span>
+          <span>=</span>
+          <span><span class="math-var">T</span><sub>global</sub> / <span class="math-var">D</span><sub>attn</sub> = 8 / 8 = 1</span>
         </div>
-
-        <div class="answer pp">
-          <p>
-            Prefill uses <code>--max-prefill-tokens 16384</code>,
-            <code>--chunked-prefill-size 16384</code>, <code>--pp-size 8</code>,
-            and <code>--max-running-requests 48</code>. Because
-            <code>pp_max_micro_batch_size</code> is unset, the scheduler computes:
-          </p>
-          <div class="eq">
-            <span class="math-var">B</span><sub>pp-micro</sub>
-            <span>=</span>
-            <span>max(48 / 8, 1) = 6 requests</span>
-          </div>
-          <p>
-            That request-count microbatch cap is separate from the token cap. The
-            token cap is handled by prefill admission and chunking through
-            <code>PrefillAdder</code>.
-          </p>
+        <div class="eq">
+          <span><span class="math-var">B</span><sub>pp-micro</sub></span>
+          <span>=</span>
+          <span>max(<code>max_running_requests</code> / <code>pp_size</code>, 1) = max(48 / 8, 1) = 6</span>
         </div>
       </section>
 
@@ -400,7 +630,7 @@
           <code>sglang-pd-routed-engine-fix-frontend-utils-20260706</code>.
         </p>
 
-        <table>
+        <table class="chart-table">
           <thead>
             <tr>
               <th>Worker key</th>
@@ -412,32 +642,60 @@
           </thead>
           <tbody>
             <tr>
-              <td><code>dynamoSglang.workers.decode</code></td>
-              <td><span class="sym-decode">decode</span></td>
-              <td><code>gpu-worker-203</code></td>
-              <td><code>tpSize=8</code>, <code>dpSize=8</code></td>
-              <td><code>--max-prefill-tokens 8192</code>, <code>--max-running-requests 128</code>, <code>--cuda-graph-max-bs-decode 128</code>, <code>--speculative-algorithm EAGLE</code></td>
+              <td data-label="Worker key"><code>dynamoSglang.workers.decode</code></td>
+              <td data-label="Role"><span class="role-badge sym-decode">decode</span></td>
+              <td data-label="Node"><code>gpu-worker-203</code></td>
+              <td data-label="Core sizing"><code>tpSize=8</code>, <code>dpSize=8</code></td>
+              <td data-label="Main role-specific args">
+                <div class="arg-list">
+                  <code>--max-prefill-tokens 8192</code>
+                  <code>--max-running-requests 128</code>
+                  <code>--cuda-graph-max-bs-decode 128</code>
+                  <code>--speculative-algorithm EAGLE</code>
+                </div>
+              </td>
             </tr>
             <tr>
-              <td><code>dynamoSglang.workers.decode-204</code></td>
-              <td><span class="sym-decode">decode</span></td>
-              <td><code>gpu-worker-204</code></td>
-              <td><code>tpSize=8</code>, <code>dpSize=8</code></td>
-              <td>Same decode sizing, with node-specific RDMA device names.</td>
+              <td data-label="Worker key"><code>dynamoSglang.workers.decode-204</code></td>
+              <td data-label="Role"><span class="role-badge sym-decode">decode</span></td>
+              <td data-label="Node"><code>gpu-worker-204</code></td>
+              <td data-label="Core sizing"><code>tpSize=8</code>, <code>dpSize=8</code></td>
+              <td data-label="Main role-specific args">
+                <div class="arg-list">
+                  <code>--max-prefill-tokens 8192</code>
+                  <code>--max-running-requests 128</code>
+                  <code>--cuda-graph-max-bs-decode 128</code>
+                  <code>--speculative-algorithm EAGLE</code>
+                </div>
+                <div class="arg-note">Same decode sizing, with node-specific RDMA device names.</div>
+              </td>
             </tr>
             <tr>
-              <td><code>dynamoSglang.workers.prefill</code></td>
-              <td><span class="sym-prefill">prefill</span></td>
-              <td><code>gpu-worker-202</code></td>
-              <td><code>tpSize=1</code>, <code>dpSize=1</code>, <code>ppSize=8</code></td>
-              <td><code>--max-prefill-tokens 16384</code>, <code>--max-running-requests 48</code>, <code>--enable-hierarchical-cache</code></td>
+              <td data-label="Worker key"><code>dynamoSglang.workers.prefill</code></td>
+              <td data-label="Role"><span class="role-badge sym-prefill">prefill</span></td>
+              <td data-label="Node"><code>gpu-worker-202</code></td>
+              <td data-label="Core sizing"><code>tpSize=1</code>, <code>dpSize=1</code>, <code>ppSize=8</code></td>
+              <td data-label="Main role-specific args">
+                <div class="arg-list">
+                  <code>--max-prefill-tokens 16384</code>
+                  <code>--max-running-requests 48</code>
+                  <code>--enable-hierarchical-cache</code>
+                </div>
+              </td>
             </tr>
             <tr>
-              <td><code>dynamoSglang.workers.prefill-201</code></td>
-              <td><span class="sym-prefill">prefill</span></td>
-              <td><code>gpu-worker-201</code></td>
-              <td><code>tpSize=1</code>, <code>dpSize=1</code>, <code>ppSize=8</code></td>
-              <td>Same prefill sizing as <code>prefill</code>.</td>
+              <td data-label="Worker key"><code>dynamoSglang.workers.prefill-201</code></td>
+              <td data-label="Role"><span class="role-badge sym-prefill">prefill</span></td>
+              <td data-label="Node"><code>gpu-worker-201</code></td>
+              <td data-label="Core sizing"><code>tpSize=1</code>, <code>dpSize=1</code>, <code>ppSize=8</code></td>
+              <td data-label="Main role-specific args">
+                <div class="arg-list">
+                  <code>--max-prefill-tokens 16384</code>
+                  <code>--max-running-requests 48</code>
+                  <code>--enable-hierarchical-cache</code>
+                </div>
+                <div class="arg-note">Same prefill sizing as <code>prefill</code>.</div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -545,24 +803,24 @@
           </thead>
           <tbody>
             <tr>
-              <td><span class="math-var">T</span><sub>global</sub></td>
-              <td>8</td>
-              <td>Eight physical scheduler/model ranks, one per GPU.</td>
+              <td data-label="Quantity"><span class="math-var">T</span><sub>global</sub></td>
+              <td data-label="Value in decode worker">8</td>
+              <td data-label="Meaning">Eight physical scheduler/model ranks, one per GPU.</td>
             </tr>
             <tr>
-              <td><span class="math-var">D</span><sub>attn</sub></td>
-              <td>8</td>
-              <td>Eight attention-DP lanes for independent request partitions.</td>
+              <td data-label="Quantity"><span class="math-var">D</span><sub>attn</sub></td>
+              <td data-label="Value in decode worker">8</td>
+              <td data-label="Meaning">Eight attention-DP lanes for independent request partitions.</td>
             </tr>
             <tr>
-              <td><span class="math-var">T</span><sub>attn</sub></td>
-              <td>1</td>
-              <td>No inner attention tensor sharding inside each DP lane.</td>
+              <td data-label="Quantity"><span class="math-var">T</span><sub>attn</sub></td>
+              <td data-label="Value in decode worker">1</td>
+              <td data-label="Meaning">No inner attention tensor sharding inside each DP lane.</td>
             </tr>
             <tr>
-              <td>Per-lane request cap</td>
-              <td>About 16</td>
-              <td><code>max_running_requests 128 / dp_size 8</code>, subject to KV capacity.</td>
+              <td data-label="Quantity">Per-lane request cap</td>
+              <td data-label="Value in decode worker">About 16</td>
+              <td data-label="Meaning"><code>max_running_requests 128 / dp_size 8</code>, subject to KV capacity.</td>
             </tr>
           </tbody>
         </table>
@@ -655,40 +913,40 @@
           </thead>
           <tbody>
             <tr>
-              <td><code>max_prefill_tokens</code> is a server arg.</td>
-              <td><code>python/sglang/srt/server_args.py:688</code> defines it; <code>python/sglang/srt/managers/tp_worker.py:447</code> returns it through worker info.</td>
+              <td data-label="Claim"><code>max_prefill_tokens</code> is a server arg.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/server_args.py:688</code> defines it; <code>python/sglang/srt/managers/tp_worker.py:447</code> returns it through worker info.</td>
             </tr>
             <tr>
-              <td>Normal prefill uses <code>PrefillAdder</code>.</td>
-              <td><code>python/sglang/srt/managers/scheduler.py:2983</code> constructs <code>PrefillAdder(..., self.max_prefill_tokens, chunked_prefill_size, ...)</code>.</td>
+              <td data-label="Claim">Normal prefill uses <code>PrefillAdder</code>.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/managers/scheduler.py:2983</code> constructs <code>PrefillAdder(..., self.max_prefill_tokens, chunked_prefill_size, ...)</code>.</td>
             </tr>
             <tr>
-              <td>Decode requests do not enter the normal prefill queue.</td>
-              <td><code>python/sglang/srt/managers/scheduler.py:2364</code> branches by disaggregation mode; decode uses <code>disagg_decode_prealloc_queue</code>.</td>
+              <td data-label="Claim">Decode requests do not enter the normal prefill queue.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/managers/scheduler.py:2364</code> branches by disaggregation mode; decode uses <code>disagg_decode_prealloc_queue</code>.</td>
             </tr>
             <tr>
-              <td>Decode creates prebuilt batches and caps by request slots.</td>
-              <td><code>python/sglang/srt/disaggregation/decode.py:1838</code> schedules decode; <code>python/sglang/srt/disaggregation/decode.py:1887</code> computes <code>batch_size = min(req_to_token_pool.size, max_running_requests)</code>; <code>python/sglang/srt/disaggregation/decode_schedule_batch_mixin.py:24</code> marks the fake completed prefill as <code>PREBUILT</code>.</td>
+              <td data-label="Claim">Decode creates prebuilt batches and caps by request slots.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/disaggregation/decode.py:1838</code> schedules decode; <code>python/sglang/srt/disaggregation/decode.py:1887</code> computes <code>batch_size = min(req_to_token_pool.size, max_running_requests)</code>; <code>python/sglang/srt/disaggregation/decode_schedule_batch_mixin.py:24</code> marks the fake completed prefill as <code>PREBUILT</code>.</td>
             </tr>
             <tr>
-              <td>DP attention maps <code>tp=8, dp=8</code> to attention TP size 1.</td>
-              <td><code>python/sglang/srt/layers/dp_attention.py:245</code> computes <code>attn_tp_size = tp_size / dp_size / attn_cp_size</code>; <code>python/sglang/srt/managers/data_parallel_controller.py:516</code> uses that mapping when launching ranks.</td>
+              <td data-label="Claim">DP attention maps <code>tp=8, dp=8</code> to attention TP size 1.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/layers/dp_attention.py:245</code> computes <code>attn_tp_size = tp_size / dp_size / attn_cp_size</code>; <code>python/sglang/srt/managers/data_parallel_controller.py:516</code> uses that mapping when launching ranks.</td>
             </tr>
             <tr>
-              <td>The distributed world is not multiplied by DP attention.</td>
-              <td><code>python/sglang/srt/model_executor/model_runner.py:1225</code> initializes distributed world size as <code>tp_size * pp_size</code>.</td>
+              <td data-label="Claim">The distributed world is not multiplied by DP attention.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/model_executor/model_runner.py:1225</code> initializes distributed world size as <code>tp_size * pp_size</code>.</td>
             </tr>
             <tr>
-              <td>Explicit max running requests are per DP worker after division.</td>
-              <td><code>python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py:981</code> resolves max requests; <code>python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py:990</code> divides requested max running requests by <code>dp_size</code>.</td>
+              <td data-label="Claim">Explicit max running requests are per DP worker after division.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py:981</code> resolves max requests; <code>python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py:990</code> divides requested max running requests by <code>dp_size</code>.</td>
             </tr>
             <tr>
-              <td>PP microbatch cap defaults from max running requests and PP size.</td>
-              <td><code>python/sglang/srt/managers/scheduler.py:904</code> sets <code>pp_max_micro_batch_size = max(max_running_requests / pp_size, 1)</code> when unset; <code>python/sglang/srt/managers/scheduler.py:2885</code> uses it in <code>get_num_allocatable_reqs</code>.</td>
+              <td data-label="Claim">PP microbatch cap defaults from max running requests and PP size.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/managers/scheduler.py:904</code> sets <code>pp_max_micro_batch_size = max(max_running_requests / pp_size, 1)</code> when unset; <code>python/sglang/srt/managers/scheduler.py:2885</code> uses it in <code>get_num_allocatable_reqs</code>.</td>
             </tr>
             <tr>
-              <td>PP loop has one slot per PP stage plus async depth.</td>
-              <td><code>python/sglang/srt/managers/scheduler_pp_mixin.py:539</code> sets <code>pp_loop_size = pp_size + pp_async_batch_depth</code>.</td>
+              <td data-label="Claim">PP loop has one slot per PP stage plus async depth.</td>
+              <td data-label="Evidence"><code>python/sglang/srt/managers/scheduler_pp_mixin.py:539</code> sets <code>pp_loop_size = pp_size + pp_async_batch_depth</code>.</td>
             </tr>
           </tbody>
         </table>
