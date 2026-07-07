@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SGLang Parallelism Mental Model: DP, TP, PP, CP</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --paper: #ffffff;
+      --soft: #f8fafc;
+      --ink: #111827;
+      --muted: #5f6f84;
+      --line: #d8e0eb;
+      --code-bg: #eef4fb;
+      --tp: #2563eb;
+      --dp: #b45309;
+      --cp: #0f766e;
+      --pp: #7c3aed;
+      --moe: #be123c;
+      --ok: #166534;
+      --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.62;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .header-inner {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 38px 28px 30px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      max-width: 1020px;
+      font-size: 38px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 1040px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .meta-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: #263548;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .layout {
+      max-width: 1360px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 34px;
+      padding: 30px 28px 46px;
+    }
+
+    nav {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    nav .nav-title {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    nav a {
+      display: block;
+      padding: 8px 7px;
+      border-radius: 6px;
+      color: #253245;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    nav a:hover {
+      background: var(--code-bg);
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    section {
+      margin-bottom: 38px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 25px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 19px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+      color: #102033;
+      background: var(--code-bg);
+      border-radius: 4px;
+      padding: 1px 4px;
+      overflow-wrap: anywhere;
+    }
+
+    .lead {
+      border: 1px solid #bfdbfe;
+      border-left: 4px solid var(--tp);
+      border-radius: 8px;
+      background: #f8fbff;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .lead strong {
+      color: #1d4ed8;
+    }
+
+    .mental-stack {
+      display: grid;
+      gap: 10px;
+      margin: 18px 0 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .stack-row {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .stack-label {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 10px 12px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .stack-band {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 10px;
+    }
+
+    .axis-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .axis {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 10px 12px;
+      min-height: 86px;
+    }
+
+    .axis b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .axis > span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .axis.tp {
+      border-left: 4px solid var(--tp);
+    }
+
+    .axis.dp {
+      border-left: 4px solid var(--dp);
+    }
+
+    .axis.cp {
+      border-left: 4px solid var(--cp);
+    }
+
+    .axis.pp {
+      border-left: 4px solid var(--pp);
+    }
+
+    .axis.moe {
+      border-left: 4px solid var(--moe);
+    }
+
+    .formula-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 14px 0 18px;
+    }
+
+    .formula-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 15px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .formula-title {
+      margin-bottom: 10px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .eq {
+      display: grid;
+      grid-template-columns: max-content max-content minmax(0, 1fr);
+      gap: 12px;
+      align-items: baseline;
+      margin: 8px 0;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+      overflow-x: auto;
+      font-size: 16px;
+    }
+
+    .lhs {
+      white-space: nowrap;
+    }
+
+    .op {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .math-var {
+      font-style: italic;
+    }
+
+    .math-set {
+      font-style: italic;
+      font-weight: 700;
+    }
+
+    .sym-tp {
+      color: var(--tp);
+    }
+
+    .sym-dp {
+      color: var(--dp);
+    }
+
+    .sym-cp {
+      color: var(--cp);
+    }
+
+    .sym-pp {
+      color: var(--pp);
+    }
+
+    .sym-moe {
+      color: var(--moe);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      overflow: hidden;
+      margin: 12px 0 18px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .arg-table th:nth-child(1) {
+      width: 19%;
+    }
+
+    .arg-table th:nth-child(2) {
+      width: 13%;
+    }
+
+    .arg-table th:nth-child(3) {
+      width: 28%;
+    }
+
+    .note {
+      border: 1px solid #fde68a;
+      border-left: 4px solid var(--dp);
+      border-radius: 8px;
+      background: #fffbeb;
+      padding: 14px 16px;
+      margin: 14px 0 18px;
+    }
+
+    .example {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      margin: 18px 0;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .example-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content;
+      gap: 12px;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdff;
+      padding: 16px 18px;
+    }
+
+    .example h3 {
+      margin: 0 0 6px;
+    }
+
+    .example-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .example-badge {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      padding: 6px 10px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .example-body {
+      padding: 16px 18px 18px;
+    }
+
+    .args {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 0 0 14px;
+    }
+
+    .runtime-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .runtime-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 10px 12px;
+      min-height: 84px;
+    }
+
+    .runtime-card > span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .runtime-card strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 20px;
+      line-height: 1.18;
+    }
+
+    .runtime-card small {
+      display: block;
+      margin-top: 3px;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.28;
+    }
+
+    .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0 16px;
+    }
+
+    .rank-grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .rank-grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .rank-chip {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 9px 8px;
+      min-height: 82px;
+      text-align: center;
+    }
+
+    .rank-chip b {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+      line-height: 1.18;
+    }
+
+    .rank-chip span {
+      display: block;
+      color: #475569;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .rank-chip.tp {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+
+    .rank-chip.dp {
+      border-color: #fed7aa;
+      background: #fff7ed;
+    }
+
+    .rank-chip.cp {
+      border-color: #99f6e4;
+      background: #f0fdfa;
+    }
+
+    .rank-chip.pp {
+      border-color: #ddd6fe;
+      background: #f5f3ff;
+    }
+
+    .rank-chip.moe {
+      border-color: #fecdd3;
+      background: #fff1f2;
+    }
+
+    .mini-title {
+      margin: 16px 0 8px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .source-list {
+      display: grid;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .source-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+
+    .source-row strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 920px) {
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 18px 16px 36px;
+        gap: 18px;
+      }
+
+      nav {
+        position: static;
+      }
+
+      h1 {
+        font-size: 30px;
+      }
+
+      .formula-grid,
+      .runtime-grid,
+      .axis-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stack-row,
+      .example-head {
+        grid-template-columns: 1fr;
+      }
+
+      .rank-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      table {
+        border-collapse: separate;
+        overflow: visible;
+      }
+
+      thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      tbody,
+      tr,
+      td {
+        display: block;
+        width: 100%;
+      }
+
+      tr {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+      }
+
+      tr:last-child {
+        border-bottom: 0;
+      }
+
+      td {
+        border-bottom: 0;
+        padding: 7px 0;
+      }
+
+      td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .header-inner {
+        padding: 26px 16px 22px;
+      }
+
+      .rank-grid,
+      .rank-grid.four {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .rank-grid.two {
+        grid-template-columns: 1fr;
+      }
+
+      .eq {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="eyebrow">Temporary MaaS Note</div>
+      <h1>SGLang Parallelism Mental Model: DP, TP, PP, and CP</h1>
+      <p class="subtitle">
+        A concrete map from launch arguments to physical ranks and runtime
+        process groups. The point is to separate outer replicas, pipeline stages,
+        and the per-stage TP island from attention-only and MoE-only subdivisions.
+      </p>
+      <div class="meta-strip" aria-label="Document metadata">
+        <span class="pill">Scope: SGLang runtime rank layout</span>
+        <span class="pill">Examples: 5 exact configurations</span>
+        <span class="pill">Source: local SGLang checkout</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav aria-label="Page overview">
+      <div class="nav-title">On This Page</div>
+      <a href="#summary">Mental Model</a>
+      <a href="#formulas">Core Formulas</a>
+      <a href="#args">Input Args</a>
+      <a href="#examples">Five Examples</a>
+      <a href="#rules">Rules of Thumb</a>
+      <a href="#sources">Source Chain</a>
+    </nav>
+
+    <main>
+      <section id="summary">
+        <h2>Mental Model</h2>
+        <div class="lead">
+          <p>
+            <strong>Do not multiply every flag together.</strong>
+            SGLang first builds a world from global TP and PP. Then, inside each
+            PP stage's TP group, attention and MoE get their own coordinate
+            systems. Ordinary DP is different: without DP attention, it launches
+            separate model replicas.
+          </p>
+        </div>
+
+        <div class="mental-stack" aria-label="Parallelism hierarchy">
+          <div class="stack-row">
+            <div class="stack-label">Outer launch</div>
+            <div class="stack-band">
+              <div class="axis-grid">
+                <div class="axis dp">
+                  <b>Ordinary DP replicas</b>
+                  <span>Only when <code>--dp-size</code> is used without DP attention. Each replica launches its own TP × PP world.</span>
+                </div>
+                <div class="axis pp">
+                  <b>PP stages</b>
+                  <span><span class="math-var">P</span> stages multiply the distributed world and form cross-stage PP groups.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="stack-row">
+            <div class="stack-label">Per PP stage</div>
+            <div class="stack-band">
+              <div class="axis-grid">
+                <div class="axis tp">
+                  <b>Global TP island</b>
+                  <span>The parent group of size <span class="math-var">T<sub>global</sub></span>. Dense TP defaults here.</span>
+                </div>
+                <div class="axis dp">
+                  <b>Attention-DP view</b>
+                  <span>Only with <code>--enable-dp-attention</code>. It reuses the TP ranks instead of launching more GPUs.</span>
+                </div>
+                <div class="axis cp">
+                  <b>Attention-CP view</b>
+                  <span>Context-parallel lanes for attention, commonly used for long prefill.</span>
+                </div>
+                <div class="axis moe">
+                  <b>MoE view</b>
+                  <span>Separate MoE-DP, EP, and MoE-TP coordinates inside the same TP island.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="formulas">
+        <h2>Core Formulas</h2>
+        <div class="formula-grid">
+          <article class="formula-card">
+            <div class="formula-title">World and PP</div>
+            <div class="eq">
+              <span class="lhs"><span class="math-var sym-pp">W</span></span>
+              <span class="op">=</span>
+              <span><span class="math-var sym-tp">T<sub>global</sub></span> × <span class="math-var sym-pp">P</span></span>
+            </div>
+            <div class="eq">
+              <span class="lhs"><span class="math-var">r<sub>world</sub></span></span>
+              <span class="op">=</span>
+              <span><span class="math-var sym-pp">p</span> × <span class="math-var sym-tp">T<sub>global</sub></span> + <span class="math-var sym-tp">r<sub>T</sub></span></span>
+            </div>
+            <p>
+              The rank inside a model worker is formed from PP rank and local TP
+              rank. This is why PP is outside the TP-island math.
+            </p>
+          </article>
+
+          <article class="formula-card">
+            <div class="formula-title">Attention view</div>
+            <div class="eq">
+              <span class="lhs"><span class="math-var sym-dp">D<sub>attn</sub></span></span>
+              <span class="op">=</span>
+              <span><span class="math-var">D<sub>arg</sub></span> when DP attention is enabled, otherwise 1</span>
+            </div>
+            <div class="eq">
+              <span class="lhs"><span class="math-var sym-tp">T<sub>attn</sub></span></span>
+              <span class="op">=</span>
+              <span><span class="math-var sym-tp">T<sub>global</sub></span> / (<span class="math-var sym-dp">D<sub>attn</sub></span> × <span class="math-var sym-cp">C<sub>attn</sub></span>)</span>
+            </div>
+            <div class="eq">
+              <span class="lhs"><span class="math-var sym-tp">r<sub>T</sub></span></span>
+              <span class="op">=</span>
+              <span>((<span class="math-var sym-dp">d<sub>attn</sub></span> × <span class="math-var sym-cp">C<sub>attn</sub></span> + <span class="math-var sym-cp">c<sub>attn</sub></span>) × <span class="math-var sym-tp">T<sub>attn</sub></span>) + <span class="math-var sym-tp">t<sub>attn</sub></span></span>
+            </div>
+          </article>
+
+          <article class="formula-card">
+            <div class="formula-title">MoE view</div>
+            <div class="eq">
+              <span class="lhs"><span class="math-var sym-tp">T<sub>moe</sub></span></span>
+              <span class="op">=</span>
+              <span><span class="math-var sym-tp">T<sub>global</sub></span> / (<span class="math-var sym-moe">D<sub>moe</sub></span> × <span class="math-var sym-moe">E</span>)</span>
+            </div>
+            <div class="eq">
+              <span class="lhs"><span class="math-var sym-tp">r<sub>T</sub></span></span>
+              <span class="op">=</span>
+              <span>((<span class="math-var sym-moe">d<sub>moe</sub></span> × <span class="math-var sym-moe">E</span> + <span class="math-var sym-moe">e</span>) × <span class="math-var sym-tp">T<sub>moe</sub></span>) + <span class="math-var sym-tp">t<sub>moe</sub></span></span>
+            </div>
+            <p>
+              This is a separate coordinate system from attention. That is the
+              mechanism that keeps MLP/MoE paths from accidentally inheriting
+              attention-DP lanes.
+            </p>
+          </article>
+
+          <article class="formula-card">
+            <div class="formula-title">Ordinary DP</div>
+            <div class="eq">
+              <span class="lhs">GPU budget</span>
+              <span class="op">=</span>
+              <span><span class="math-var">D<sub>arg</sub></span> × <span class="math-var sym-tp">T<sub>global</sub></span> × <span class="math-var sym-pp">P</span></span>
+            </div>
+            <p>
+              This formula is only for ordinary DP when DP attention is disabled.
+              With DP attention, <span class="math-var">D<sub>arg</sub></span>
+              becomes <span class="math-var sym-dp">D<sub>attn</sub></span>
+              inside the TP island instead.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="args">
+        <h2>Input Args</h2>
+        <table class="arg-table">
+          <thead>
+            <tr>
+              <th>Arg</th>
+              <th>Symbol</th>
+              <th>Runtime effect</th>
+              <th>Common pitfall</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Arg"><code>--tp-size</code></td>
+              <td data-label="Symbol"><span class="math-var sym-tp">T<sub>global</sub></span></td>
+              <td data-label="Runtime effect">Parent TP island per PP stage. Attention and MoE derive smaller views from this budget.</td>
+              <td data-label="Common pitfall">It is not always the effective attention TP size.</td>
+            </tr>
+            <tr>
+              <td data-label="Arg"><code>--pp-size</code></td>
+              <td data-label="Symbol"><span class="math-var sym-pp">P</span></td>
+              <td data-label="Runtime effect">Multiplies the worker world and creates pipeline-stage groups across matching TP ranks.</td>
+              <td data-label="Common pitfall">It is outside the attention and MoE subdivisions.</td>
+            </tr>
+            <tr>
+              <td data-label="Arg"><code>--dp-size</code></td>
+              <td data-label="Symbol"><span class="math-var">D<sub>arg</sub></span></td>
+              <td data-label="Runtime effect">Ordinary DP replicas if DP attention is off; attention-DP lanes if DP attention is on.</td>
+              <td data-label="Common pitfall">Same flag, two different runtime meanings.</td>
+            </tr>
+            <tr>
+              <td data-label="Arg"><code>--enable-dp-attention</code></td>
+              <td data-label="Symbol"><span class="math-var sym-dp">D<sub>attn</sub></span></td>
+              <td data-label="Runtime effect">Reuses the global TP group as attention-DP lanes. It does not multiply physical ranks by DP.</td>
+              <td data-label="Common pitfall">Without this flag, <code>--dp-size 8 --tp-size 8</code> is ordinary DP and wants many more GPUs.</td>
+            </tr>
+            <tr>
+              <td data-label="Arg"><code>--attn-cp-size</code></td>
+              <td data-label="Symbol"><span class="math-var sym-cp">C<sub>attn</sub></span></td>
+              <td data-label="Runtime effect">Context-parallel lanes inside attention. Effective attention TP is divided by this value.</td>
+              <td data-label="Common pitfall">It must divide the TP island together with attention DP.</td>
+            </tr>
+            <tr>
+              <td data-label="Arg"><code>--enable-prefill-cp</code>, <code>--cp-strategy</code></td>
+              <td data-label="Symbol">policy</td>
+              <td data-label="Runtime effect">Turns on prefill CP behavior and selects the split strategy, such as <code>zigzag</code> or <code>interleave</code>.</td>
+              <td data-label="Common pitfall">The policy changes the token split pattern, not the group-size formula.</td>
+            </tr>
+            <tr>
+              <td data-label="Arg"><code>--ep-size</code></td>
+              <td data-label="Symbol"><span class="math-var sym-moe">E</span></td>
+              <td data-label="Runtime effect">Expert-parallel lanes for MoE layers.</td>
+              <td data-label="Common pitfall">EP is MoE-specific. It is not attention TP.</td>
+            </tr>
+            <tr>
+              <td data-label="Arg"><code>--moe-dp-size</code></td>
+              <td data-label="Symbol"><span class="math-var sym-moe">D<sub>moe</sub></span></td>
+              <td data-label="Runtime effect">MoE data-parallel lanes inside the TP island.</td>
+              <td data-label="Common pitfall">When it differs from attention CP, current code only allows the special <span class="math-var sym-moe">D<sub>moe</sub></span> = 1 case; current validation also keeps <span class="math-var sym-moe">D<sub>moe</sub></span> &gt; 1 away from PP.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          <p>
+            The high-order rule is: PP and ordinary DP can create more model
+            worlds. DP attention, CP, EP, and MoE-DP are views inside the TP
+            island for a specific subsystem.
+          </p>
+        </div>
+      </section>
+
+      <section id="examples">
+        <h2>Five Exact Runtime Examples</h2>
+
+        <article class="example" id="ex-plain-tp">
+          <div class="example-head">
+            <div>
+              <h3>1. Plain TP8</h3>
+              <p>One model worker, no pipeline, no data-parallel attention, no context parallelism.</p>
+            </div>
+            <div class="example-badge">8 GPUs total</div>
+          </div>
+          <div class="example-body">
+            <div class="args">
+              <code>--tp-size 8</code>
+              <code>--pp-size 1</code>
+              <code>--dp-size 1</code>
+              <code>--attn-cp-size 1</code>
+            </div>
+            <div class="runtime-grid">
+              <div class="runtime-card"><span>World</span><strong>8</strong><small><span class="math-var">W</span> = 8 × 1</small></div>
+              <div class="runtime-card"><span>Attention</span><strong><span class="math-var">D<sub>attn</sub></span> 1, <span class="math-var">C<sub>attn</sub></span> 1</strong><small><span class="math-var">T<sub>attn</sub></span> = 8</small></div>
+              <div class="runtime-card"><span>MoE default</span><strong><span class="math-var">D<sub>moe</sub></span> 1, <span class="math-var">E</span> 1</strong><small><span class="math-var">T<sub>moe</sub></span> = 8</small></div>
+              <div class="runtime-card"><span>Interpretation</span><strong>TP only</strong><small>Dense and attention both use the full TP island.</small></div>
+            </div>
+            <div class="mini-title">Rank coordinates</div>
+            <div class="rank-grid">
+              <div class="rank-chip tp"><b>TP0</b><span>attn d0 c0 t0</span><span>moe d0 e0 t0</span></div>
+              <div class="rank-chip tp"><b>TP1</b><span>attn d0 c0 t1</span><span>moe d0 e0 t1</span></div>
+              <div class="rank-chip tp"><b>TP2</b><span>attn d0 c0 t2</span><span>moe d0 e0 t2</span></div>
+              <div class="rank-chip tp"><b>TP3</b><span>attn d0 c0 t3</span><span>moe d0 e0 t3</span></div>
+              <div class="rank-chip tp"><b>TP4</b><span>attn d0 c0 t4</span><span>moe d0 e0 t4</span></div>
+              <div class="rank-chip tp"><b>TP5</b><span>attn d0 c0 t5</span><span>moe d0 e0 t5</span></div>
+              <div class="rank-chip tp"><b>TP6</b><span>attn d0 c0 t6</span><span>moe d0 e0 t6</span></div>
+              <div class="rank-chip tp"><b>TP7</b><span>attn d0 c0 t7</span><span>moe d0 e0 t7</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="example" id="ex-ordinary-dp">
+          <div class="example-head">
+            <div>
+              <h3>2. Ordinary DP2 with TP4</h3>
+              <p>DP attention is off, so the controller launches two independent TP4 replicas.</p>
+            </div>
+            <div class="example-badge">8 GPUs total</div>
+          </div>
+          <div class="example-body">
+            <div class="args">
+              <code>--tp-size 4</code>
+              <code>--pp-size 1</code>
+              <code>--dp-size 2</code>
+              <code>no --enable-dp-attention</code>
+            </div>
+            <div class="runtime-grid">
+              <div class="runtime-card"><span>Per replica world</span><strong>4</strong><small><span class="math-var">W</span> = 4 × 1</small></div>
+              <div class="runtime-card"><span>Replicas</span><strong>2</strong><small>Ordinary DP sits outside the model worker.</small></div>
+              <div class="runtime-card"><span>Attention per replica</span><strong><span class="math-var">T<sub>attn</sub></span> = 4</strong><small><span class="math-var">D<sub>attn</sub></span> = 1</small></div>
+              <div class="runtime-card"><span>Interpretation</span><strong>two TP worlds</strong><small>Not two attention lanes inside one TP world.</small></div>
+            </div>
+            <div class="mini-title">Physical grouping on one node</div>
+            <div class="rank-grid two">
+              <div class="rank-chip dp"><b>DP replica 0</b><span>GPU 0,1,2,3</span><span>local TP0..TP3</span></div>
+              <div class="rank-chip dp"><b>DP replica 1</b><span>GPU 4,5,6,7</span><span>local TP0..TP3</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="example" id="ex-dp-attn">
+          <div class="example-head">
+            <div>
+              <h3>3. Decode DP Attention: TP8 and DP8</h3>
+              <p>The Northwest decode mental model: eight physical ranks become eight attention-DP lanes.</p>
+            </div>
+            <div class="example-badge">8 GPUs total</div>
+          </div>
+          <div class="example-body">
+            <div class="args">
+              <code>--tp-size 8</code>
+              <code>--pp-size 1</code>
+              <code>--dp-size 8</code>
+              <code>--enable-dp-attention</code>
+              <code>--attn-cp-size 1</code>
+            </div>
+            <div class="runtime-grid">
+              <div class="runtime-card"><span>World</span><strong>8</strong><small>Still 8 ranks, not 64.</small></div>
+              <div class="runtime-card"><span>Attention DP</span><strong><span class="math-var">D<sub>attn</sub></span> = 8</strong><small>One lane per global TP rank.</small></div>
+              <div class="runtime-card"><span>Attention TP</span><strong><span class="math-var">T<sub>attn</sub></span> = 1</strong><small>8 / (8 × 1)</small></div>
+              <div class="runtime-card"><span>Dense path</span><strong>global TP view</strong><small>Communicators bridge layouts as needed.</small></div>
+            </div>
+            <div class="mini-title">Attention rank coordinates</div>
+            <div class="rank-grid">
+              <div class="rank-chip dp"><b>TP0</b><span>attn d0 c0 t0</span><span>process DP0_TP0</span></div>
+              <div class="rank-chip dp"><b>TP1</b><span>attn d1 c0 t0</span><span>process DP1_TP1</span></div>
+              <div class="rank-chip dp"><b>TP2</b><span>attn d2 c0 t0</span><span>process DP2_TP2</span></div>
+              <div class="rank-chip dp"><b>TP3</b><span>attn d3 c0 t0</span><span>process DP3_TP3</span></div>
+              <div class="rank-chip dp"><b>TP4</b><span>attn d4 c0 t0</span><span>process DP4_TP4</span></div>
+              <div class="rank-chip dp"><b>TP5</b><span>attn d5 c0 t0</span><span>process DP5_TP5</span></div>
+              <div class="rank-chip dp"><b>TP6</b><span>attn d6 c0 t0</span><span>process DP6_TP6</span></div>
+              <div class="rank-chip dp"><b>TP7</b><span>attn d7 c0 t0</span><span>process DP7_TP7</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="example" id="ex-cp-prefill">
+          <div class="example-head">
+            <div>
+              <h3>4. Long Prefill CP8</h3>
+              <p>Context parallelism slices attention work across the context dimension inside TP8.</p>
+            </div>
+            <div class="example-badge">8 GPUs total</div>
+          </div>
+          <div class="example-body">
+            <div class="args">
+              <code>--tp-size 8</code>
+              <code>--pp-size 1</code>
+              <code>--dp-size 1</code>
+              <code>--attn-cp-size 8</code>
+              <code>--enable-prefill-cp</code>
+              <code>--cp-strategy interleave</code>
+            </div>
+            <div class="runtime-grid">
+              <div class="runtime-card"><span>World</span><strong>8</strong><small>CP reuses TP ranks.</small></div>
+              <div class="runtime-card"><span>Attention CP</span><strong><span class="math-var">C<sub>attn</sub></span> = 8</strong><small>Eight context lanes.</small></div>
+              <div class="runtime-card"><span>Attention TP</span><strong><span class="math-var">T<sub>attn</sub></span> = 1</strong><small>8 / (1 × 8)</small></div>
+              <div class="runtime-card"><span>Split policy</span><strong>interleave</strong><small>Policy changes ordering, not rank count.</small></div>
+            </div>
+            <div class="mini-title">Attention CP rank coordinates</div>
+            <div class="rank-grid">
+              <div class="rank-chip cp"><b>TP0</b><span>attn d0 c0 t0</span></div>
+              <div class="rank-chip cp"><b>TP1</b><span>attn d0 c1 t0</span></div>
+              <div class="rank-chip cp"><b>TP2</b><span>attn d0 c2 t0</span></div>
+              <div class="rank-chip cp"><b>TP3</b><span>attn d0 c3 t0</span></div>
+              <div class="rank-chip cp"><b>TP4</b><span>attn d0 c4 t0</span></div>
+              <div class="rank-chip cp"><b>TP5</b><span>attn d0 c5 t0</span></div>
+              <div class="rank-chip cp"><b>TP6</b><span>attn d0 c6 t0</span></div>
+              <div class="rank-chip cp"><b>TP7</b><span>attn d0 c7 t0</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="example" id="ex-all-axes">
+          <div class="example-head">
+            <div>
+              <h3>5. PP2 plus Attention DP2, CP2, and MoE EP2</h3>
+              <p>PP is outside the TP island; attention-DP and CP live inside each stage, while MoE EP has its own view.</p>
+            </div>
+            <div class="example-badge">16 GPUs total</div>
+          </div>
+          <div class="example-body">
+            <div class="args">
+              <code>--tp-size 8</code>
+              <code>--pp-size 2</code>
+              <code>--dp-size 2</code>
+              <code>--enable-dp-attention</code>
+              <code>--attn-cp-size 2</code>
+              <code>--ep-size 2</code>
+              <code>--moe-dp-size 1</code>
+            </div>
+            <div class="runtime-grid">
+              <div class="runtime-card"><span>World</span><strong>16</strong><small><span class="math-var">W</span> = 8 × 2</small></div>
+              <div class="runtime-card"><span>Attention</span><strong><span class="math-var">D<sub>attn</sub></span> 2, <span class="math-var">C<sub>attn</sub></span> 2</strong><small><span class="math-var">T<sub>attn</sub></span> = 2</small></div>
+              <div class="runtime-card"><span>MoE</span><strong><span class="math-var">D<sub>moe</sub></span> 1, <span class="math-var">E</span> 2</strong><small><span class="math-var">T<sub>moe</sub></span> = 4</small></div>
+              <div class="runtime-card"><span>PP groups</span><strong>8 pairs</strong><small>[0,8], [1,9], ... [7,15]</small></div>
+            </div>
+            <div class="mini-title">World rank grouping</div>
+            <div class="rank-grid two">
+              <div class="rank-chip pp"><b>PP stage 0</b><span>world ranks 0..7</span><span>local TP0..TP7</span></div>
+              <div class="rank-chip pp"><b>PP stage 1</b><span>world ranks 8..15</span><span>local TP0..TP7</span></div>
+            </div>
+            <div class="mini-title">Per-stage local TP coordinates</div>
+            <div class="rank-grid">
+              <div class="rank-chip moe"><b>TP0</b><span>attn d0 c0 t0</span><span>moe d0 e0 t0</span></div>
+              <div class="rank-chip moe"><b>TP1</b><span>attn d0 c0 t1</span><span>moe d0 e0 t1</span></div>
+              <div class="rank-chip moe"><b>TP2</b><span>attn d0 c1 t0</span><span>moe d0 e0 t2</span></div>
+              <div class="rank-chip moe"><b>TP3</b><span>attn d0 c1 t1</span><span>moe d0 e0 t3</span></div>
+              <div class="rank-chip moe"><b>TP4</b><span>attn d1 c0 t0</span><span>moe d0 e1 t0</span></div>
+              <div class="rank-chip moe"><b>TP5</b><span>attn d1 c0 t1</span><span>moe d0 e1 t1</span></div>
+              <div class="rank-chip moe"><b>TP6</b><span>attn d1 c1 t0</span><span>moe d0 e1 t2</span></div>
+              <div class="rank-chip moe"><b>TP7</b><span>attn d1 c1 t1</span><span>moe d0 e1 t3</span></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section id="rules">
+        <h2>Rules of Thumb</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Answer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Question">Does <code>--dp-size</code> multiply GPU count?</td>
+              <td data-label="Answer">Yes for ordinary DP. No for DP attention, where it becomes <span class="math-var sym-dp">D<sub>attn</sub></span> inside the TP group.</td>
+            </tr>
+            <tr>
+              <td data-label="Question">Does CP multiply GPU count?</td>
+              <td data-label="Answer">No. <span class="math-var sym-cp">C<sub>attn</sub></span> subdivides the TP island, reducing effective attention TP.</td>
+            </tr>
+            <tr>
+              <td data-label="Question">Where does PP fit?</td>
+              <td data-label="Answer">PP is outside the TP-island formulas. It multiplies the distributed world as <span class="math-var">W</span> = <span class="math-var sym-tp">T<sub>global</sub></span> × <span class="math-var sym-pp">P</span>.</td>
+            </tr>
+            <tr>
+              <td data-label="Question">Why does MLP not get confused by attention DP?</td>
+              <td data-label="Answer">Attention, dense TP, and MoE use different process-group views. The same local TP rank can carry attention coordinates and MoE coordinates at the same time.</td>
+            </tr>
+            <tr>
+              <td data-label="Question">What must divide cleanly?</td>
+              <td data-label="Answer"><span class="math-var sym-tp">T<sub>global</sub></span> must be divisible by the active attention subdivision and by the active MoE subdivision. Current validation also enforces extra MoE-DP and CP compatibility rules.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="sources">
+        <h2>Source Chain</h2>
+        <div class="source-list">
+          <div class="source-row">
+            <strong>World size and argument handoff</strong>
+            <code>python/sglang/srt/model_executor/model_runner.py:1225</code> initializes the distributed world as <code>tp_size * pp_size</code> and passes TP, DP-attention, PP, EP, CP, and MoE-DP sizes into model-parallel initialization.
+          </div>
+          <div class="source-row">
+            <strong>Ordinary DP versus DP attention launch</strong>
+            <code>python/sglang/srt/managers/data_parallel_controller.py:180</code> chooses DP-attention launch or ordinary DP launch. <code>data_parallel_controller.py:271</code> loops over ordinary DP ranks and advances the base GPU id by <code>tp_size * pp_size</code>; <code>data_parallel_controller.py:448</code> launches only one TP group for DP attention.
+          </div>
+          <div class="source-row">
+            <strong>Attention formulas</strong>
+            <code>python/sglang/srt/layers/dp_attention.py:245</code> computes attention DP size, attention TP size, and DP rank from local TP rank. The rank layout comment at <code>dp_attention.py:255</code> gives the exact coordinate formula.
+          </div>
+          <div class="source-row">
+            <strong>Hierarchy comment</strong>
+            <code>python/sglang/srt/managers/data_parallel_controller.py:545</code> states the two per-TP-island hierarchies: attention is Global(TP) -> DP -> ATTN_CP -> ATTN_TP, while MoE is Global(TP) -> MOE_DP -> EP -> MOE_TP.
+          </div>
+          <div class="source-row">
+            <strong>Process-group construction</strong>
+            <code>python/sglang/srt/distributed/parallel_state.py:1914</code> validates world size against TP × PP. <code>parallel_state.py:1962</code> builds attention CP and attention TP groups. <code>parallel_state.py:2034</code> builds MoE groups. <code>parallel_state.py:2120</code> builds PP groups.
+          </div>
+          <div class="source-row">
+            <strong>Validation constraints</strong>
+            <code>python/sglang/srt/server_args.py:5029</code> validates CP divisibility, <code>server_args.py:5042</code> validates MoE-DP constraints, and <code>server_args.py:5075</code> handles DP-attention side effects.
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
