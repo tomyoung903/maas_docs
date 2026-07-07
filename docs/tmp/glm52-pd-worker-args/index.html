@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GLM-5.2 PD Worker Args: Decode, DP Attention, and PP Microbatches</title>
+  <style>
+    :root {
+      --bg: #f7f9fb;
+      --panel: #ffffff;
+      --ink: #18202a;
+      --muted: #5e6b7a;
+      --line: #d8e0ea;
+      --code: #101820;
+      --code-bg: #eef3f8;
+      --prefill: #0f766e;
+      --decode: #2563eb;
+      --dp: #8a5a00;
+      --pp: #7c3aed;
+      --warn: #9f1239;
+      --ok: #166534;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .header-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 24px 22px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 900px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .layout {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 24px;
+      padding: 24px;
+    }
+
+    nav {
+      position: sticky;
+      top: 16px;
+      align-self: start;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    nav .nav-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    nav a {
+      display: block;
+      padding: 7px 6px;
+      border-radius: 6px;
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      background: var(--code-bg);
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    section {
+      margin-bottom: 26px;
+      padding-bottom: 4px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 21px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 16px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul {
+      margin: 0 0 14px 20px;
+      padding: 0;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .note, .answer {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+    }
+
+    .answer {
+      border-left: 4px solid var(--decode);
+    }
+
+    .answer.prefill {
+      border-left-color: var(--prefill);
+    }
+
+    .answer.pp {
+      border-left-color: var(--pp);
+    }
+
+    .verdict {
+      display: inline-block;
+      font-weight: 700;
+      color: var(--ok);
+    }
+
+    .caveat {
+      color: var(--warn);
+      font-weight: 650;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 12px 0 18px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 12px 14px;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .metric .value {
+      font-size: 19px;
+      font-weight: 750;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 12px 0 18px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      color: var(--muted);
+      background: #f1f5f9;
+      font-weight: 750;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+      color: var(--code);
+      background: var(--code-bg);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    pre {
+      margin: 12px 0 18px;
+      padding: 14px;
+      overflow-x: auto;
+      background: var(--code-bg);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--code);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      font-size: inherit;
+    }
+
+    .math-var {
+      font-style: italic;
+    }
+
+    .math-vec {
+      font-style: italic;
+      font-weight: 700;
+    }
+
+    .sym-decode {
+      color: var(--decode);
+    }
+
+    .sym-prefill {
+      color: var(--prefill);
+    }
+
+    .sym-dp {
+      color: var(--dp);
+    }
+
+    .sym-pp {
+      color: var(--pp);
+    }
+
+    .eq {
+      display: grid;
+      grid-template-columns: max-content max-content minmax(0, 1fr);
+      gap: 10px;
+      align-items: baseline;
+      padding: 8px 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin: 8px 0;
+      overflow-x: auto;
+    }
+
+    .src {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+
+      nav {
+        position: static;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>GLM-5.2 PD Worker Args: Decode, DP Attention, and PP Microbatches</h1>
+      <p class="subtitle">
+        Temporary note for the Northwest B200 <code>maas-prod-zhipu</code> GLM-5.2
+        prefill/decode chart. This page is intentionally under <code>tmp/</code>
+        and is not linked from the main docs index.
+      </p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav aria-label="Page overview">
+      <div class="nav-title">On This Page</div>
+      <a href="#summary">Summary</a>
+      <a href="#chart">Chart Context</a>
+      <a href="#decode-prefill">Decode Max Prefill</a>
+      <a href="#decode-dp">Decode TP and DP</a>
+      <a href="#prefill-pp">Prefill PP Microbatch</a>
+      <a href="#sources">Source Chain</a>
+    </nav>
+
+    <main>
+      <section id="summary">
+        <h2>Summary</h2>
+        <div class="answer">
+          <p>
+            <span class="verdict">Short answer:</span>
+            <code>--max-prefill-tokens 8192</code> on the decode worker is not the
+            normal decode scheduling limiter. Decode mode does not schedule ordinary
+            prefill batches through <code>PrefillAdder</code>; it creates prebuilt
+            decode batches from already-transferred KV state and caps admission by
+            request slots.
+          </p>
+          <p>
+            <span class="caveat">Caveat:</span>
+            the value is still carried through <code>ServerArgs</code> and worker
+            info, so it can affect generic logging or buffer helper code. It is
+            just not the knob that limits decode-side work in this PD path.
+          </p>
+        </div>
+
+        <div class="answer">
+          <p>
+            Decode uses <code>--tp-size 8</code> and <code>--dp-size 8</code>
+            because DP attention reinterprets the TP world as attention-DP lanes.
+            With <span class="math-var">T</span><sub>global</sub> = 8 and
+            <span class="math-var">D</span><sub>attn</sub> = 8, the inner attention
+            tensor-parallel size is:
+          </p>
+          <div class="eq">
+            <span class="math-var">T</span><sub>attn</sub>
+            <span>=</span>
+            <span><span class="math-var">T</span><sub>global</sub> / <span class="math-var">D</span><sub>attn</sub> = 8 / 8 = 1</span>
+          </div>
+          <p>
+            Practically, the pod runs eight scheduler/model ranks on eight GPUs;
+            each rank is one attention-DP lane, and the controller dispatches across
+            those lanes.
+          </p>
+        </div>
+
+        <div class="answer pp">
+          <p>
+            Prefill uses <code>--max-prefill-tokens 16384</code>,
+            <code>--chunked-prefill-size 16384</code>, <code>--pp-size 8</code>,
+            and <code>--max-running-requests 48</code>. Because
+            <code>pp_max_micro_batch_size</code> is unset, the scheduler computes:
+          </p>
+          <div class="eq">
+            <span class="math-var">B</span><sub>pp-micro</sub>
+            <span>=</span>
+            <span>max(48 / 8, 1) = 6 requests</span>
+          </div>
+          <p>
+            That request-count microbatch cap is separate from the token cap. The
+            token cap is handled by prefill admission and chunking through
+            <code>PrefillAdder</code>.
+          </p>
+        </div>
+      </section>
+
+      <section id="chart">
+        <h2>Chart Context</h2>
+        <p>
+          The four worker pods are from the Helm release
+          <code>maas-prod-zhipu/glm52-runtime-b200-pd</code>, chart
+          <code>dynamo-sglang-runtime-0.1.0</code>, runtime build
+          <code>sglang-pd-routed-engine-fix-frontend-utils-20260706</code>.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Worker key</th>
+              <th>Role</th>
+              <th>Node</th>
+              <th>Core sizing</th>
+              <th>Main role-specific args</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>dynamoSglang.workers.decode</code></td>
+              <td><span class="sym-decode">decode</span></td>
+              <td><code>gpu-worker-203</code></td>
+              <td><code>tpSize=8</code>, <code>dpSize=8</code></td>
+              <td><code>--max-prefill-tokens 8192</code>, <code>--max-running-requests 128</code>, <code>--cuda-graph-max-bs-decode 128</code>, <code>--speculative-algorithm EAGLE</code></td>
+            </tr>
+            <tr>
+              <td><code>dynamoSglang.workers.decode-204</code></td>
+              <td><span class="sym-decode">decode</span></td>
+              <td><code>gpu-worker-204</code></td>
+              <td><code>tpSize=8</code>, <code>dpSize=8</code></td>
+              <td>Same decode sizing, with node-specific RDMA device names.</td>
+            </tr>
+            <tr>
+              <td><code>dynamoSglang.workers.prefill</code></td>
+              <td><span class="sym-prefill">prefill</span></td>
+              <td><code>gpu-worker-202</code></td>
+              <td><code>tpSize=1</code>, <code>dpSize=1</code>, <code>ppSize=8</code></td>
+              <td><code>--max-prefill-tokens 16384</code>, <code>--max-running-requests 48</code>, <code>--enable-hierarchical-cache</code></td>
+            </tr>
+            <tr>
+              <td><code>dynamoSglang.workers.prefill-201</code></td>
+              <td><span class="sym-prefill">prefill</span></td>
+              <td><code>gpu-worker-201</code></td>
+              <td><code>tpSize=1</code>, <code>dpSize=1</code>, <code>ppSize=8</code></td>
+              <td>Same prefill sizing as <code>prefill</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="decode-prefill">
+        <h2>1. Decode <code>--max-prefill-tokens 8192</code></h2>
+        <p>
+          In ordinary generation mode, <code>max_prefill_tokens</code> feeds the
+          prefill scheduler. The scheduler creates a <code>PrefillAdder</code> with
+          <code>self.max_prefill_tokens</code> and <code>chunked_prefill_size</code>.
+          <code>PrefillAdder</code> then stops adding additional requests once the
+          prefill input-token budget is consumed.
+        </p>
+
+        <div class="eq">
+          <span class="math-var">P</span><sub>budget</sub>
+          <span>=</span>
+          <span>configured <code>max_prefill_tokens</code>, refined by chunking and available KV memory</span>
+        </div>
+
+        <p>
+          Decode disaggregation is different. New requests are placed into the
+          decode preallocation queue, not the ordinary waiting queue used by the
+          prefill adder. The decode scheduler later constructs a fake completed
+          prefill batch with <code>prepare_for_prebuilt()</code> and runs decode.
+        </p>
+
+        <pre><code>_add_request_to_queue(...):
+  NULL    -> waiting_queue
+  PREFILL -> disagg_prefill_bootstrap_queue
+  DECODE  -> disagg_decode_prealloc_queue</code></pre>
+
+        <p>
+          The decode prebuilt path caps new admissions by request slots:
+          <code>batch_size = min(req_to_token_pool.size, max_running_requests)</code>.
+          It does not pass through <code>PrefillAdder(max_prefill_tokens, ...)</code>.
+        </p>
+
+        <p>
+          So the practical answer is: for decode worker scheduling and TTFT-style
+          prefill batching, <code>--max-prefill-tokens 8192</code> is not the
+          operative limiter. The meaningful decode knobs in this chart are
+          <code>max_running_requests</code>, decode CUDA graph batch size,
+          speculative decoding settings, available KV/cache slots, and DP-attention
+          lane count.
+        </p>
+
+        <div class="note">
+          <p>
+            It is still not a pure parser no-op. <code>TPModelWorker.get_worker_info()</code>
+            returns <code>server_args.max_prefill_tokens</code> to the scheduler,
+            and generic helpers such as eager buffer sizing can read related prefill
+            ceilings. That is why the careful statement is "not a decode scheduling
+            limiter," not "impossible to observe anywhere."
+          </p>
+        </div>
+      </section>
+
+      <section id="decode-dp">
+        <h2>2. Decode <code>tp-size=8</code> and <code>dp-size=8</code></h2>
+        <p>
+          In this codebase, DP attention uses the TP process group as the physical
+          eight-rank worker group, then derives attention-DP and attention-TP from
+          it. The key function computes:
+        </p>
+
+        <div class="eq">
+          <span class="math-var">D</span><sub>attn</sub>
+          <span>=</span>
+          <span><code>dp_size</code> when <code>enable_dp_attention</code> is true</span>
+        </div>
+        <div class="eq">
+          <span class="math-var">T</span><sub>attn</sub>
+          <span>=</span>
+          <span><code>tp_size</code> / <span class="math-var">D</span><sub>attn</sub> / <span class="math-var">C</span><sub>attn</sub></span>
+        </div>
+
+        <p>
+          Your decode chart has <code>tp_size=8</code>, <code>dp_size=8</code>, and
+          <code>attn_cp_size=1</code>. Therefore:
+        </p>
+
+        <div class="eq">
+          <span class="math-var">T</span><sub>attn</sub>
+          <span>=</span>
+          <span>8 / 8 / 1 = 1</span>
+        </div>
+
+        <p>
+          This is not "64 GPUs." The distributed environment still initializes a
+          world of <code>tp_size * pp_size</code>. For decode, <code>pp_size=1</code>,
+          so the pod uses eight ranks on eight GPUs. DP attention makes each rank
+          an attention-DP lane, and model/expert communication then gathers and
+          scatters hidden states across the shared TP group where needed.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Quantity</th>
+              <th>Value in decode worker</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="math-var">T</span><sub>global</sub></td>
+              <td>8</td>
+              <td>Eight physical scheduler/model ranks, one per GPU.</td>
+            </tr>
+            <tr>
+              <td><span class="math-var">D</span><sub>attn</sub></td>
+              <td>8</td>
+              <td>Eight attention-DP lanes for independent request partitions.</td>
+            </tr>
+            <tr>
+              <td><span class="math-var">T</span><sub>attn</sub></td>
+              <td>1</td>
+              <td>No inner attention tensor sharding inside each DP lane.</td>
+            </tr>
+            <tr>
+              <td>Per-lane request cap</td>
+              <td>About 16</td>
+              <td><code>max_running_requests 128 / dp_size 8</code>, subject to KV capacity.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="prefill-pp">
+        <h2>3. Prefill <code>max-prefill-tokens 16384</code> and <code>pp-size 8</code></h2>
+        <p>
+          The prefill workers use pipeline parallelism, not decode DP attention:
+          <code>tpSize=1</code>, <code>dpSize=1</code>, <code>ppSize=8</code>. Each
+          pod still uses eight GPUs, but those GPUs are pipeline stages rather than
+          attention-DP lanes.
+        </p>
+
+        <div class="grid">
+          <div class="metric">
+            <div class="label">Token chunk cap</div>
+            <div class="value">16,384</div>
+          </div>
+          <div class="metric">
+            <div class="label">PP stages</div>
+            <div class="value">8</div>
+          </div>
+          <div class="metric">
+            <div class="label">Computed microbatch cap</div>
+            <div class="value">6 requests</div>
+          </div>
+        </div>
+
+        <p>
+          The code has two separate limits:
+        </p>
+        <ul>
+          <li>
+            <span class="sym-prefill">Token budget:</span>
+            <code>max_prefill_tokens</code> and <code>chunked_prefill_size</code>
+            constrain how many prefill input tokens are scheduled into an extend
+            batch.
+          </li>
+          <li>
+            <span class="sym-pp">PP request microbatch cap:</span>
+            <code>pp_max_micro_batch_size</code> constrains how many requests can
+            sit in one PP microbatch slot.
+          </li>
+        </ul>
+
+        <p>
+          Because the chart does not set <code>--pp-max-micro-batch-size</code>,
+          scheduler initialization fills it in:
+        </p>
+
+        <div class="eq">
+          <span class="math-var">B</span><sub>pp-micro</sub>
+          <span>=</span>
+          <span>max(<code>max_running_requests</code> / <code>pp_size</code>, 1)</span>
+        </div>
+        <div class="eq">
+          <span class="math-var">B</span><sub>pp-micro</sub>
+          <span>=</span>
+          <span>max(48 / 8, 1) = 6</span>
+        </div>
+
+        <p>
+          Then prefill admission calls <code>get_num_allocatable_reqs(running_bs)</code>,
+          which subtracts the current PP microbatch request count from
+          <code>pp_max_micro_batch_size</code>. That determines how many more
+          requests the current microbatch can accept. Separately,
+          <code>PrefillAdder</code> uses the 16,384-token budget and page-aligned
+          chunking to decide how much of a long prompt is included in this extend
+          pass.
+        </p>
+
+        <p>
+          So, for the current prefill chart, the expected behavior is
+          <span class="math-var">up to six requests per PP microbatch</span>, with
+          each extend/chunk constrained by a 16,384-token prefill budget. A single
+          long request can still consume the token budget and become the only
+          request in that microbatch.
+        </p>
+      </section>
+
+      <section id="sources">
+        <h2>Source Chain</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Claim</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>max_prefill_tokens</code> is a server arg.</td>
+              <td><code>python/sglang/srt/server_args.py:688</code> defines it; <code>python/sglang/srt/managers/tp_worker.py:447</code> returns it through worker info.</td>
+            </tr>
+            <tr>
+              <td>Normal prefill uses <code>PrefillAdder</code>.</td>
+              <td><code>python/sglang/srt/managers/scheduler.py:2983</code> constructs <code>PrefillAdder(..., self.max_prefill_tokens, chunked_prefill_size, ...)</code>.</td>
+            </tr>
+            <tr>
+              <td>Decode requests do not enter the normal prefill queue.</td>
+              <td><code>python/sglang/srt/managers/scheduler.py:2364</code> branches by disaggregation mode; decode uses <code>disagg_decode_prealloc_queue</code>.</td>
+            </tr>
+            <tr>
+              <td>Decode creates prebuilt batches and caps by request slots.</td>
+              <td><code>python/sglang/srt/disaggregation/decode.py:1838</code> schedules decode; <code>python/sglang/srt/disaggregation/decode.py:1887</code> computes <code>batch_size = min(req_to_token_pool.size, max_running_requests)</code>; <code>python/sglang/srt/disaggregation/decode_schedule_batch_mixin.py:24</code> marks the fake completed prefill as <code>PREBUILT</code>.</td>
+            </tr>
+            <tr>
+              <td>DP attention maps <code>tp=8, dp=8</code> to attention TP size 1.</td>
+              <td><code>python/sglang/srt/layers/dp_attention.py:245</code> computes <code>attn_tp_size = tp_size / dp_size / attn_cp_size</code>; <code>python/sglang/srt/managers/data_parallel_controller.py:516</code> uses that mapping when launching ranks.</td>
+            </tr>
+            <tr>
+              <td>The distributed world is not multiplied by DP attention.</td>
+              <td><code>python/sglang/srt/model_executor/model_runner.py:1225</code> initializes distributed world size as <code>tp_size * pp_size</code>.</td>
+            </tr>
+            <tr>
+              <td>Explicit max running requests are per DP worker after division.</td>
+              <td><code>python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py:981</code> resolves max requests; <code>python/sglang/srt/model_executor/model_runner_kv_cache_mixin.py:990</code> divides requested max running requests by <code>dp_size</code>.</td>
+            </tr>
+            <tr>
+              <td>PP microbatch cap defaults from max running requests and PP size.</td>
+              <td><code>python/sglang/srt/managers/scheduler.py:904</code> sets <code>pp_max_micro_batch_size = max(max_running_requests / pp_size, 1)</code> when unset; <code>python/sglang/srt/managers/scheduler.py:2885</code> uses it in <code>get_num_allocatable_reqs</code>.</td>
+            </tr>
+            <tr>
+              <td>PP loop has one slot per PP stage plus async depth.</td>
+              <td><code>python/sglang/srt/managers/scheduler_pp_mixin.py:539</code> sets <code>pp_loop_size = pp_size + pp_async_batch_depth</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
