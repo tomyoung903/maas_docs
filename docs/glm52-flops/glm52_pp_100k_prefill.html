@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_pp_100k_prefill.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_pp_100k_prefill.html">
+  <title>GLM-5.2 PP in a 100K Prefill</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --blue: #1b5faa;
+  --gold: #8a6500;
+  --green: #4f6b18;
+  --soft: #e8f2ef;
+  --soft-2: #f7faf9;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.doc-shell {
+  display: grid;
+  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.doc-content { min-width: 0; }
+.content-overview {
+  position: sticky;
+  top: 18px;
+  padding: 10px 0 10px 14px;
+  border-left: 4px solid rgba(11, 107, 102, .28);
+  color: var(--muted);
+}
+.content-overview-title {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.content-overview a {
+  display: block;
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.content-overview a:hover,
+.content-overview a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.content-overview a.depth-2 {
+  padding-left: 12px;
+  font-size: .84rem;
+  font-weight: 650;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 950px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 880px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+code {
+  padding: .08rem .22rem;
+  border-radius: 4px;
+  background: #edf3f1;
+  color: #243431;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.math-var, .math-func, .eq-block {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+.math-var { font-style: italic; white-space: nowrap; }
+.math-vec, .math-mat, .math-set, .math-tensor { font-weight: 700; }
+.math-func { font-style: normal; white-space: nowrap; }
+.shape {
+  display: inline-block;
+  white-space: nowrap;
+  color: #314541;
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+  font-variant-numeric: tabular-nums;
+}
+.sym {
+  padding: 0 .08em;
+  border-bottom: 2px solid transparent;
+}
+.sym-layer { color: var(--blue); border-bottom-color: rgba(27, 95, 170, .34); }
+.sym-stage { color: var(--accent); border-bottom-color: rgba(11, 107, 102, .34); }
+.sym-token { color: var(--gold); border-bottom-color: rgba(138, 101, 0, .34); }
+.sym-time { color: var(--accent-2); border-bottom-color: rgba(159, 61, 61, .34); }
+.eq-block {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  overflow-x: auto;
+}
+.eq-title {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: .82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.eq-line {
+  display: grid;
+  grid-template-columns: minmax(180px, max-content) max-content minmax(260px, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  min-width: 620px;
+  padding: 5px 0;
+}
+.eq-comment {
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: .92rem;
+}
+.pipeline {
+  margin: 22px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  overflow-x: auto;
+}
+.pipe-grid {
+  display: grid;
+  grid-template-columns: 92px repeat(16, minmax(42px, 1fr));
+  gap: 6px;
+  min-width: 840px;
+  align-items: center;
+}
+.stage-label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 800;
+}
+.slot, .tick {
+  min-height: 30px;
+  border-radius: 6px;
+  font-size: .78rem;
+  font-weight: 800;
+  text-align: center;
+}
+.tick {
+  color: var(--muted);
+  line-height: 30px;
+}
+.slot {
+  border: 1px solid rgba(11, 107, 102, .18);
+  background: #eef6f3;
+  color: #21413d;
+  line-height: 28px;
+}
+.slot.idle {
+  border-style: dashed;
+  background: #f8fbfa;
+  color: #9aa9a6;
+}
+.slot.s0 { background: #e8f2ef; }
+.slot.s1 { background: #edf1fb; border-color: rgba(27, 95, 170, .22); }
+.slot.s2 { background: #fbf4df; border-color: rgba(138, 101, 0, .22); }
+.slot.s3 { background: #f8eaea; border-color: rgba(159, 61, 61, .22); }
+.bar-chart {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 26px;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 220px) minmax(220px, 1fr) 86px;
+  gap: 12px;
+  align-items: center;
+}
+.bar-label {
+  color: var(--muted);
+  font-weight: 750;
+}
+.bar-track {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 28px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--accent), var(--blue));
+}
+.bar-value {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 700;
+}
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+.legend .l0::before { background: #e8f2ef; border: 1px solid rgba(11, 107, 102, .22); }
+.legend .l1::before { background: #edf1fb; border: 1px solid rgba(27, 95, 170, .22); }
+.legend .l2::before { background: #fbf4df; border: 1px solid rgba(138, 101, 0, .22); }
+.legend .l3::before { background: #f8eaea; border: 1px solid rgba(159, 61, 61, .22); }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft-2);
+  color: var(--ink);
+  font-size: .84rem;
+  font-weight: 800;
+}
+.footer {
+  margin-top: 42px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .92rem;
+}
+@media (max-width: 860px) {
+  .doc-shell { grid-template-columns: 1fr; }
+  .content-overview { position: static; border-left-width: 3px; }
+  h1 { font-size: 2.2rem; }
+  .bar-row { grid-template-columns: 1fr; gap: 6px; }
+  .bar-value { margin-bottom: 8px; }
+}
+  </style>
+</head>
+<body>
+<main>
+<nav>
+  <a href="index.html">Overview</a>
+  <a href="glm52_architecture.html">Architecture</a>
+  <a href="glm52_dsa_mla_connection.html">DSA + MLA</a>
+  <a href="glm52_prefill_cp_advantage.html">Prefill CP</a>
+  <a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a>
+  <a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a>
+  <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_pp_100k_prefill.html">Public URL</a>
+</nav>
+
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">Overview</div>
+  <a href="#takeaway">Takeaway</a>
+  <a href="#experiment">Europe Experiment</a>
+  <a class="depth-2" href="#measurements">Measurements</a>
+  <a href="#math">PP Math</a>
+  <a class="depth-2" href="#chunking">100K Chunking</a>
+  <a href="#scheduler">SGLang Scheduler</a>
+  <a href="#timeline">Timeline</a>
+  <a href="#interpretation">Interpretation</a>
+</aside>
+
+<section class="doc-content">
+<h1>GLM-5.2 PP in a 100K Prefill</h1>
+<p class="lead">Pipeline parallelism splits the layer stack across GPU stages. It does not split the token axis like context parallelism, and it does not split each matrix multiply the same way tensor parallelism does. In a long prefill, PP mainly changes which layers live on which GPUs and how chunked prefill microbatches flow through those stages.</p>
+
+<section id="takeaway">
+<h2>Takeaway</h2>
+<div class="grid">
+  <section class="card"><div class="label">tested config</div><div class="value">PP4 &times; TP2</div><p>Eight H200 GPUs total. Four pipeline stages, two tensor-parallel ranks inside each stage.</p></section>
+  <section class="card"><div class="label">100K chunking</div><div class="value">13 chunks</div><p>With an 8,000-token chunk cap, the log shows twelve full chunks plus one page-aligned tail on PP0.</p></section>
+  <section class="card"><div class="label">hot single request</div><div class="value">4.970 s</div><p>Median client-observed TTFT/total for three 100K-token prompts after warmup.</p></section>
+  <section class="card"><div class="label">four concurrent</div><div class="value">17.49 s</div><p>All four 100K-token prompts completed, but as a staircase rather than one perfect wave.</p></section>
+</div>
+<p>PP is therefore not the same kind of speedup as DSA context parallelism. CP reduces the long-attention work assigned to one rank. PP preserves the layer dependency and overlaps different microbatches across stages after the pipeline is filled.</p>
+</section>
+
+<section id="experiment">
+<h2>Europe Experiment</h2>
+<table>
+  <tr><th>Field</th><th>Value</th></tr>
+  <tr><td>Cluster and node</td><td><code>$europe-cluster</code>, <code>gpu-h200-0</code></td></tr>
+  <tr><td>Model</td><td><code>/mnt/fastfs/models/zai-org/GLM-5.2-FP8</code></td></tr>
+  <tr><td>Image</td><td><code>image.hpc-ai.com/platform/dynamo-sglang-runtime:sglang-aa2ce33e0f-dynamo-e33122c32d</code></td></tr>
+  <tr><td>Serve shape</td><td><code>--tp 2 --pp-size 4 --context-length 131072 --chunked-prefill-size 8000 --max-prefill-tokens 8000 --kv-cache-dtype fp8_e4m3 --page-size 64</code></td></tr>
+  <tr><td>Request shape</td><td>Raw <code>input_ids</code>, 100,000 prompt tokens, <code>max_new_tokens=1</code>, streaming enabled, unique <code>extra_key</code>, cache flushed between groups.</td></tr>
+  <tr><td>Artifacts on node</td><td><code>/mnt/fastfs/tom/pp100k/client/results_pp4_tp2_100k.jsonl</code>, <code>/mnt/fastfs/tom/pp100k/logs/server.log</code>, <code>/mnt/fastfs/tom/pp100k/metrics/sglang-request-metrics-20260707_04.log</code></td></tr>
+</table>
+<div class="note">The first 16K warmup request took 70.96 seconds because it paid cold-start kernel and runtime costs. The 100K analysis below uses hot 100K requests after that warmup.</div>
+
+<h3 id="measurements">Measurements</h3>
+<table>
+  <tr><th>Run</th><th>Prompt tokens</th><th>Client TTFT</th><th>Client total</th><th>Server e2e</th><th>Cached tokens</th></tr>
+  <tr><td>single-100k-0</td><td>100,000</td><td>4.977 s</td><td>4.977 s</td><td>4.968 s</td><td>0</td></tr>
+  <tr><td>single-100k-1</td><td>100,000</td><td>4.969 s</td><td>4.969 s</td><td>4.961 s</td><td>0</td></tr>
+  <tr><td>single-100k-2</td><td>100,000</td><td>4.970 s</td><td>4.970 s</td><td>4.961 s</td><td>0</td></tr>
+  <tr><td>two concurrent</td><td>2 &times; 100,000</td><td>5.648 s, 14.948 s</td><td>14.965 s group wall</td><td>5.638 s, 14.930 s</td><td>0</td></tr>
+  <tr><td>four concurrent</td><td>4 &times; 100,000</td><td>5.159 s, 9.468 s, 13.459 s, 17.468 s</td><td>17.494 s group wall</td><td>5.128 s, 9.441 s, 13.423 s, 17.428 s</td><td>0</td></tr>
+</table>
+
+<div class="bar-chart" aria-label="Completion time chart">
+  <div class="bar-row"><div class="bar-label">hot single median</div><div class="bar-track"><div class="bar-fill" style="width:28.4%"></div></div><div class="bar-value">4.970 s</div></div>
+  <div class="bar-row"><div class="bar-label">two concurrent wall</div><div class="bar-track"><div class="bar-fill" style="width:85.5%"></div></div><div class="bar-value">14.965 s</div></div>
+  <div class="bar-row"><div class="bar-label">four concurrent wall</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><div class="bar-value">17.494 s</div></div>
+</div>
+</section>
+
+<section id="math">
+<h2>PP Math</h2>
+<p>Let the model have <span class="sym sym-layer math-var">L</span> transformer layers and <span class="sym sym-stage math-var">S</span> pipeline stages. GLM-5.2 has 78 transformer layers in the SGLang runtime path used here, and the experiment used four PP stages.</p>
+
+<div class="eq-block">
+  <div class="eq-title">Layer ownership</div>
+  <div class="eq-line"><span><span class="math-var sym sym-stage">S</span></span><span>=</span><span>4 <span class="eq-comment">pipeline stages</span></span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-layer">L</span></span><span>=</span><span>78 <span class="eq-comment">runtime transformer layers</span></span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-layer">base</span></span><span>=</span><span><span class="math-func">floor</span>(<span class="math-var">L</span> / <span class="math-var">S</span>) = 19</span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-layer">remainder</span></span><span>=</span><span><span class="math-var">L</span> mod <span class="math-var">S</span> = 2</span></div>
+  <div class="eq-line"><span>PP0, PP1</span><span>own</span><span>19 layers each</span></div>
+  <div class="eq-line"><span>PP2, PP3</span><span>own</span><span>20 layers each <span class="eq-comment">extra layers go to the last remainder stages</span></span></div>
+</div>
+
+<p>For a microbatch <span class="sym sym-token math-var">m</span>, stage 0 computes its layers first, sends the hidden states to stage 1, and so on. Tensor parallelism still happens inside a stage: in this run, every PP stage had two TP ranks.</p>
+
+<div class="eq-block">
+  <div class="eq-title">Microbatch flow</div>
+  <div class="eq-line"><span><span class="math-var sym sym-token">H</span><sub>m,0</sub></span><span>&rarr;</span><span><span class="math-func">Stage</span><sub>0</sub> layers <span class="shape">[0, 19)</span></span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-token">H</span><sub>m,1</sub></span><span>&rarr;</span><span><span class="math-func">Stage</span><sub>1</sub> layers <span class="shape">[19, 38)</span></span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-token">H</span><sub>m,2</sub></span><span>&rarr;</span><span><span class="math-func">Stage</span><sub>2</sub> layers <span class="shape">[38, 58)</span></span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-token">H</span><sub>m,3</sub></span><span>&rarr;</span><span><span class="math-func">Stage</span><sub>3</sub> layers <span class="shape">[58, 78)</span> &rarr; logits</span></div>
+</div>
+
+<p>If each stage takes about <span class="sym sym-time math-var">tau</span> seconds per microbatch and there are <span class="sym sym-token math-var">M</span> microbatches, the ideal balanced pipeline time is not <span class="math-var">M S tau</span>. After the initial bubble, different stages work on different microbatches.</p>
+
+<div class="eq-block">
+  <div class="eq-title">Idealized timing</div>
+  <div class="eq-line"><span><span class="math-var sym sym-time">T</span><sub>serial</sub></span><span>&asymp;</span><span><span class="math-var">M</span> &times; <span class="math-var">S</span> &times; <span class="math-var">tau</span></span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-time">T</span><sub>pipeline</sub></span><span>&asymp;</span><span>(<span class="math-var">M</span> + <span class="math-var">S</span> - 1) &times; <span class="math-var">tau</span></span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-time">bubble</span></span><span>=</span><span>(<span class="math-var">S</span> - 1) &times; <span class="math-var">tau</span> before the first fully processed microbatch exits</span></div>
+</div>
+</section>
+
+<section id="chunking">
+<h2>100K Chunking</h2>
+<p>A single 100K-token request is too large to run as one prefill batch under the configured 8,000-token prefill cap. The scheduler repeatedly admits a chunk, updates the request state, then admits the next chunk until the prompt is consumed.</p>
+
+<div class="eq-block">
+  <div class="eq-title">Configured chunk math</div>
+  <div class="eq-line"><span><span class="math-var sym sym-token">T</span></span><span>=</span><span>100,000 prompt tokens</span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-token">C</span></span><span>=</span><span>8,000 max prefill tokens per scheduler chunk</span></div>
+  <div class="eq-line"><span><span class="math-var sym sym-token">N</span><sub>chunks</sub></span><span>=</span><span><span class="math-func">ceil</span>(<span class="math-var">T</span> / <span class="math-var">C</span>) = 13</span></div>
+  <div class="eq-line"><span>observed PP0 chunks</span><span>=</span><span>12 &times; 8,000 + 4,032 <span class="eq-comment">page-aligned tail in the log</span></span></div>
+</div>
+
+<p>The tail is 4,032 rather than exactly 4,000 because this run used a 64-token page size and the scheduler aligns chunk boundaries to pages. The server log for each hot 100K single request shows PP0 scheduling 13 prefill batches with <code>#cached-token: 0</code>.</p>
+</section>
+
+<section id="scheduler">
+<h2>SGLang Scheduler</h2>
+<p>The implementation matters because PP is not a separate external queue. The PP event loop repeatedly calls the normal scheduler for each PP loop slot, then sends request metadata and hidden-state proxy tensors between neighboring stages.</p>
+
+<table>
+  <tr><th>Code anchor</th><th>What it means</th></tr>
+  <tr><td><code>python/sglang/srt/managers/scheduler_pp_mixin.py:67</code></td><td><code>event_loop_pp</code> is the PP scheduler loop. Its docstring describes receive, run, process previous output, and send-to-next-stage order.</td></tr>
+  <tr><td><code>python/sglang/srt/managers/scheduler_pp_mixin.py:94</code></td><td>The loop iterates over PP microbatch slots.</td></tr>
+  <tr><td><code>python/sglang/srt/managers/scheduler_pp_mixin.py:109</code></td><td>Each slot calls <code>get_next_batch_to_run()</code>, so chunked prefill admission still comes from the normal scheduler.</td></tr>
+  <tr><td><code>python/sglang/srt/managers/scheduler_pp_mixin.py:127</code></td><td>If a current batch exists, the stage launches that batch with the proxy tensors received from the previous PP stage.</td></tr>
+  <tr><td><code>python/sglang/srt/managers/scheduler_pp_mixin.py:539</code></td><td>The PP loop slot count is <code>pp_size + pp_async_batch_depth</code>. In this run, async depth was the default 0, so PP4 gave four loop slots.</td></tr>
+  <tr><td><code>python/sglang/srt/distributed/utils.py:124</code></td><td>Layer partitioning uses floor division plus a remainder. Extra layers are assigned to the last remainder PP stages, so 78 layers on PP4 become 19, 19, 20, and 20 layers.</td></tr>
+  <tr><td><code>python/sglang/srt/managers/scheduler.py:904</code></td><td>If not explicitly set, <code>pp_max_micro_batch_size</code> becomes <code>max(max_running_requests / pp_size, 1)</code>. With max running requests 8 and PP4, that is 2 requests per PP microbatch cap.</td></tr>
+  <tr><td><code>python/sglang/srt/managers/scheduler.py:2975</code></td><td>The scheduler selects the active <code>chunked_prefill_size</code> before constructing the prefill admission policy.</td></tr>
+  <tr><td><code>python/sglang/srt/managers/schedule_policy.py:1002</code></td><td>Chunk truncation is page aligned using <code>rem_chunk_tokens // page_size * page_size</code>.</td></tr>
+  <tr><td><code>python/sglang/srt/managers/schedule_policy.py:1025</code></td><td>The request is marked as a chunked prefill and its current extend length is set to the truncated chunk length.</td></tr>
+</table>
+</section>
+
+<section id="timeline">
+<h2>Timeline</h2>
+<p>The diagram below shows the idealized shape for a single 100K request split into 13 chunks on four PP stages. The real runtime has communication, MoE imbalance, scheduler overhead, and attention/kernel variation; the visual is for understanding dependencies.</p>
+
+<div class="pipeline" aria-label="PP pipeline timeline">
+  <div class="pipe-grid">
+    <div></div><div class="tick">t0</div><div class="tick">t1</div><div class="tick">t2</div><div class="tick">t3</div><div class="tick">t4</div><div class="tick">t5</div><div class="tick">t6</div><div class="tick">t7</div><div class="tick">t8</div><div class="tick">t9</div><div class="tick">t10</div><div class="tick">t11</div><div class="tick">t12</div><div class="tick">t13</div><div class="tick">t14</div><div class="tick">t15</div>
+    <div class="stage-label">PP0</div><div class="slot s0">c0</div><div class="slot s0">c1</div><div class="slot s0">c2</div><div class="slot s0">c3</div><div class="slot s0">c4</div><div class="slot s0">c5</div><div class="slot s0">c6</div><div class="slot s0">c7</div><div class="slot s0">c8</div><div class="slot s0">c9</div><div class="slot s0">c10</div><div class="slot s0">c11</div><div class="slot s0">tail</div><div class="slot idle"></div><div class="slot idle"></div><div class="slot idle"></div>
+    <div class="stage-label">PP1</div><div class="slot idle"></div><div class="slot s1">c0</div><div class="slot s1">c1</div><div class="slot s1">c2</div><div class="slot s1">c3</div><div class="slot s1">c4</div><div class="slot s1">c5</div><div class="slot s1">c6</div><div class="slot s1">c7</div><div class="slot s1">c8</div><div class="slot s1">c9</div><div class="slot s1">c10</div><div class="slot s1">c11</div><div class="slot s1">tail</div><div class="slot idle"></div><div class="slot idle"></div>
+    <div class="stage-label">PP2</div><div class="slot idle"></div><div class="slot idle"></div><div class="slot s2">c0</div><div class="slot s2">c1</div><div class="slot s2">c2</div><div class="slot s2">c3</div><div class="slot s2">c4</div><div class="slot s2">c5</div><div class="slot s2">c6</div><div class="slot s2">c7</div><div class="slot s2">c8</div><div class="slot s2">c9</div><div class="slot s2">c10</div><div class="slot s2">c11</div><div class="slot s2">tail</div><div class="slot idle"></div>
+    <div class="stage-label">PP3</div><div class="slot idle"></div><div class="slot idle"></div><div class="slot idle"></div><div class="slot s3">c0</div><div class="slot s3">c1</div><div class="slot s3">c2</div><div class="slot s3">c3</div><div class="slot s3">c4</div><div class="slot s3">c5</div><div class="slot s3">c6</div><div class="slot s3">c7</div><div class="slot s3">c8</div><div class="slot s3">c9</div><div class="slot s3">c10</div><div class="slot s3">c11</div><div class="slot s3">tail</div>
+  </div>
+  <div class="legend"><span class="l0">PP0</span><span class="l1">PP1</span><span class="l2">PP2</span><span class="l3">PP3</span></div>
+</div>
+
+<p>For a single long request, chunks of that one request can fill the pipeline after the first few steps. For multiple long requests, the scheduler has more pending chunks, but the measured completions show that the requests still finish as a staircase. Four concurrent 100K prompts returned at about 5.16, 9.47, 13.46, and 17.47 seconds.</p>
+</section>
+
+<section id="interpretation">
+<h2>Interpretation</h2>
+<p>PP improves feasibility and can improve throughput when there are enough microbatches, but it does not erase layer order. Every token chunk still passes through PP0, then PP1, then PP2, then PP3. The first output waits for the pipeline fill bubble, and the last output waits for the pipeline drain.</p>
+<p>This is why PP should be mentally separated from DSA prefill context parallelism. CP changes how the long attention scan is divided over the token axis. PP changes how the layer stack is divided over GPUs. In GLM-5.2 long prefill, those are different bottlenecks.</p>
+<p>An attempted no-PP TP8 baseline on the same node was excluded from timing: the TP8 server reached health only after disabling prefill CUDA graph, then crashed during the cold 16K warmup before producing usable 100K data. The successful PP4 data above is therefore the experiment evidence used for this page.</p>
+</section>
+
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_pp_100k_prefill.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_pp_100k_prefill.html</a><br>
+Experiment date: July 7, 2026. Source artifacts remain on <code>gpu-h200-0</code> under <code>/mnt/fastfs/tom/pp100k</code>.</p>
+</section>
+</div>
+</main>
+</body>
+</html>
