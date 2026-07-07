@@ -303,75 +303,362 @@
       font-weight: 750;
     }
 
-    .lane-map {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      margin: 12px 0 18px;
-    }
-
-    .lane {
-      border: 1px solid var(--line);
-      border-left: 4px solid var(--dp);
-      border-radius: 6px;
-      background: var(--panel);
-      padding: 8px 10px;
-      min-height: 72px;
-    }
-
-    .lane strong {
-      display: block;
-      font-size: 14px;
-      line-height: 1.25;
-    }
-
-    .lane span {
-      display: block;
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.25;
-    }
-
-    .rank-flow {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr) max-content minmax(0, 1fr);
-      gap: 10px;
-      align-items: center;
-      margin: 14px 0 18px;
-    }
-
-    .flow-step {
+    .topology-viz {
+      margin: 18px 0 22px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: var(--panel);
-      padding: 12px 14px;
-      min-height: 94px;
+      background: #fbfdff;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(20, 32, 46, 0.08);
     }
 
-    .flow-step .label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 750;
-      margin-bottom: 5px;
+    .viz-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content;
+      gap: 14px;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+      padding: 16px 18px;
     }
 
-    .flow-step .value {
-      font-size: 20px;
-      font-weight: 800;
+    .viz-header h4 {
+      margin: 0 0 6px;
+      font-size: 18px;
       line-height: 1.25;
     }
 
-    .flow-step p {
-      margin: 6px 0 0;
-      color: #334155;
-      font-size: 13px;
-      line-height: 1.4;
+    .viz-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
     }
 
-    .flow-arrow {
+    .capture-badge {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .viz-stage {
+      position: relative;
+      padding: 18px;
+      background:
+        linear-gradient(180deg, rgba(239, 246, 255, 0.8), rgba(255,255,255,0)),
+        #fbfdff;
+    }
+
+    .stage-topline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stage-stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 10px 12px;
+      min-height: 80px;
+    }
+
+    .stage-stat span {
+      display: block;
       color: var(--muted);
+      font-size: 11px;
       font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .stage-stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 20px;
+      line-height: 1.18;
+    }
+
+    .stage-stat small {
+      display: block;
+      margin-top: 3px;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .viz-track {
+      position: relative;
+      display: grid;
+      gap: 14px;
+    }
+
+    .track-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .track-label span:last-child {
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .rank-grid,
+    .lane-grid {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .rank-node,
+    .lane-node {
+      position: relative;
+      display: grid;
+      align-content: center;
+      gap: 4px;
+      min-height: 78px;
+      aspect-ratio: 1.05;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 8px;
+      text-align: center;
+      overflow: hidden;
+      transition:
+        border-color 260ms ease,
+        background 260ms ease,
+        box-shadow 260ms ease,
+        transform 260ms ease,
+        opacity 260ms ease;
+    }
+
+    .rank-node strong,
+    .lane-node strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.1;
+    }
+
+    .rank-node span,
+    .lane-node span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.15;
+    }
+
+    .rank-node::after,
+    .lane-node::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 7px;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--line);
+      transform: translateX(-50%);
+      transition: background 260ms ease, box-shadow 260ms ease;
+    }
+
+    .request-row {
+      position: relative;
+      min-height: 42px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.65);
+      overflow: hidden;
+    }
+
+    .request-chip {
+      position: absolute;
+      top: 8px;
+      left: 1.4%;
+      width: 10.5%;
+      min-width: 84px;
+      border: 1px solid #f59e0b;
+      border-radius: 999px;
+      background: #fffbeb;
+      color: #713f12;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 750;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(146, 64, 14, 0.12);
+      animation: requestSweep 7.2s ease-in-out infinite;
+    }
+
+    .request-chip:nth-child(2) {
+      animation-delay: 1.15s;
+    }
+
+    .request-chip:nth-child(3) {
+      animation-delay: 2.3s;
+    }
+
+    .request-chip:nth-child(4) {
+      animation-delay: 3.45s;
+    }
+
+    @keyframes requestSweep {
+      0%, 12% {
+        transform: translateX(0);
+        opacity: 0;
+      }
+      18%, 62% {
+        opacity: 1;
+      }
+      72%, 100% {
+        transform: translateX(720%);
+        opacity: 0;
+      }
+    }
+
+    .viz-stage[data-step="0"] .rank-node {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    }
+
+    .viz-stage[data-step="1"] .rank-node,
+    .viz-stage[data-step="2"] .rank-node {
+      opacity: 0.66;
+    }
+
+    .viz-stage[data-step="1"] .lane-node,
+    .viz-stage[data-step="2"] .lane-node {
+      border-color: #f59e0b;
+      background: #fffbeb;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .viz-stage[data-step="2"] .rank-node {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+      opacity: 1;
+    }
+
+    .viz-stage[data-step="2"] .rank-node::after,
+    .viz-stage[data-step="2"] .lane-node::after {
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(22, 101, 52, 0.12);
+    }
+
+    .viz-callout {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.9fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .callout-panel,
+    .log-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 12px 14px;
+    }
+
+    .callout-panel h5,
+    .log-panel h5 {
+      margin: 0 0 6px;
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.25;
+      text-transform: uppercase;
+    }
+
+    .callout-panel p,
+    .log-panel p {
+      margin: 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .log-line {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .log-line code {
+      background: transparent;
+      padding: 0;
+    }
+
+    .viz-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      background: #ffffff;
+      padding: 12px 18px;
+    }
+
+    .viz-button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--ink);
+      padding: 7px 10px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.1;
+      cursor: pointer;
+    }
+
+    .viz-button:hover,
+    .viz-button[aria-pressed="true"] {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .step-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .step-tab {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      color: #475569;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .step-tab[aria-selected="true"] {
+      border-color: #f59e0b;
+      background: #fffbeb;
+      color: #713f12;
     }
 
     .sample-note {
@@ -654,16 +941,25 @@
         grid-template-columns: 1fr;
       }
 
-      .lane-map {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .rank-flow {
+      .viz-header,
+      .stage-topline,
+      .viz-callout {
         grid-template-columns: 1fr;
       }
 
-      .flow-arrow {
-        display: none;
+      .rank-grid,
+      .lane-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .rank-node,
+      .lane-node {
+        min-height: 70px;
+      }
+
+      .step-tabs {
+        width: 100%;
+        margin-left: 0;
       }
 
       .chart-table {
@@ -715,6 +1011,47 @@
         color: var(--muted);
         font-size: 12px;
         font-weight: 750;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .rank-grid,
+      .lane-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .request-row {
+        display: none;
+      }
+
+      .track-label {
+        display: block;
+      }
+
+      .track-label span:last-child {
+        display: block;
+        margin-top: 4px;
+      }
+
+      .viz-stage {
+        padding: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rank-node,
+      .lane-node,
+      .request-chip {
+        animation: none;
+        transition: none;
+      }
+
+      .request-chip {
+        position: static;
+        display: inline-block;
+        margin: 8px 4px;
+        transform: none;
+        opacity: 1;
       }
     }
   </style>
@@ -1047,47 +1384,135 @@
             </article>
           </div>
 
-          <div class="rank-flow" aria-label="How tp-size 8 and dp-size 8 map to decode ranks">
-            <div class="flow-step">
-              <div class="label">Pod Launch</div>
-              <div class="value"><code>tp=8</code>, <code>dp=8</code></div>
-              <p>The pod starts one eight-rank SGLang worker on eight visible B200 GPUs.</p>
+          <div class="topology-viz" id="decode-topology-viz" aria-label="Animated decode topology from TP ranks into attention-DP lanes">
+            <div class="viz-header">
+              <div>
+                <h4>Animated Decode Topology From The Live Pod Sample</h4>
+                <p>
+                  The same eight B200 ranks first exist as the global TP group,
+                  then attention reinterprets them as eight DP-attention lanes.
+                  The decode-stat sample below is from the two live Northwest
+                  decode pods listed above.
+                </p>
+              </div>
+              <div class="capture-badge">Captured 2026-07-07 16:11 CST</div>
             </div>
-            <div class="flow-arrow">-&gt;</div>
-            <div class="flow-step">
-              <div class="label">DP Attention</div>
-              <div class="value">8 request lanes</div>
-              <p>With DP attention enabled, each rank becomes one attention-DP lane.</p>
+
+            <div class="viz-stage" data-step="0">
+              <div class="stage-topline" aria-label="Live log-derived decode counters">
+                <div class="stage-stat">
+                  <span>Physical ranks</span>
+                  <strong>8</strong>
+                  <small><code>world = tp x pp = 8 x 1</code></small>
+                </div>
+                <div class="stage-stat">
+                  <span>Decode stat lines</span>
+                  <strong>759 / 808</strong>
+                  <small>Last 1000 log lines from the two decode pods.</small>
+                </div>
+                <div class="stage-stat">
+                  <span>Max batch tokens</span>
+                  <strong>367,680</strong>
+                  <small>Observed on <code>gpu-worker-204</code>.</small>
+                </div>
+                <div class="stage-stat">
+                  <span>Transfer evidence</span>
+                  <strong>11 / 10</strong>
+                  <small>Transfer-marked decode-stat lines in the sample.</small>
+                </div>
+              </div>
+
+              <div class="viz-track">
+                <div>
+                  <div class="track-label">
+                    <span>Global TP group inside the decode worker</span>
+                    <span>One rank per visible B200 GPU</span>
+                  </div>
+                  <div class="rank-grid" aria-label="Global TP ranks">
+                    <div class="rank-node" data-rank="0"><strong>TP0</strong><span>GPU 0</span></div>
+                    <div class="rank-node" data-rank="1"><strong>TP1</strong><span>GPU 1</span></div>
+                    <div class="rank-node" data-rank="2"><strong>TP2</strong><span>GPU 2</span></div>
+                    <div class="rank-node" data-rank="3"><strong>TP3</strong><span>GPU 3</span></div>
+                    <div class="rank-node" data-rank="4"><strong>TP4</strong><span>GPU 4</span></div>
+                    <div class="rank-node" data-rank="5"><strong>TP5</strong><span>GPU 5</span></div>
+                    <div class="rank-node" data-rank="6"><strong>TP6</strong><span>GPU 6</span></div>
+                    <div class="rank-node" data-rank="7"><strong>TP7</strong><span>GPU 7</span></div>
+                  </div>
+                </div>
+
+                <div class="request-row" aria-label="Decode request batch motion">
+                  <div class="request-chip">req A</div>
+                  <div class="request-chip">req B</div>
+                  <div class="request-chip">req C</div>
+                  <div class="request-chip">req D</div>
+                </div>
+
+                <div>
+                  <div class="track-label">
+                    <span>Attention-DP view during attention</span>
+                    <span><span class="math-var">T</span><sub>attn</sub> = 8 / 8 / 1 = 1</span>
+                  </div>
+                  <div class="lane-grid" aria-label="Attention DP lanes from live process names">
+                    <div class="lane-node" data-lane="0"><strong>DP0_TP0</strong><span>lane 0</span></div>
+                    <div class="lane-node" data-lane="1"><strong>DP1_TP1</strong><span>lane 1</span></div>
+                    <div class="lane-node" data-lane="2"><strong>DP2_TP2</strong><span>lane 2</span></div>
+                    <div class="lane-node" data-lane="3"><strong>DP3_TP3</strong><span>lane 3</span></div>
+                    <div class="lane-node" data-lane="4"><strong>DP4_TP4</strong><span>lane 4</span></div>
+                    <div class="lane-node" data-lane="5"><strong>DP5_TP5</strong><span>lane 5</span></div>
+                    <div class="lane-node" data-lane="6"><strong>DP6_TP6</strong><span>lane 6</span></div>
+                    <div class="lane-node" data-lane="7"><strong>DP7_TP7</strong><span>lane 7</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="viz-callout">
+                <div class="callout-panel">
+                  <h5 id="viz-step-title">Step 1: Launch as TP=8</h5>
+                  <p id="viz-step-copy">
+                    The decode pod starts one eight-rank worker. <code>dp-size=8</code>
+                    has not multiplied the pod into 64 workers; the live process
+                    list still has one scheduler per visible GPU.
+                  </p>
+                </div>
+                <div class="log-panel">
+                  <h5>Log-grounded sample</h5>
+                  <p>
+                    The captured tail contained hundreds of
+                    <code>metrics_reporter.report_decode_stats</code> entries on
+                    both decode pods.
+                  </p>
+                  <div class="log-line">
+                    <code>worker-203</code>
+                    <span>759 decode-stat lines, max batch tokens 366,784, max generation throughput 205.51 token/s.</span>
+                  </div>
+                  <div class="log-line">
+                    <code>worker-204</code>
+                    <span>808 decode-stat lines, max batch tokens 367,680, max generation throughput 285.64 token/s.</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="flow-arrow">-&gt;</div>
-            <div class="flow-step">
-              <div class="label">Inner Attention TP</div>
-              <div class="value"><span class="math-var">T</span><sub>attn</sub> = 1</div>
-              <p>The live process names pair each DP lane with exactly one TP rank.</p>
+
+            <div class="viz-controls" aria-label="Decode topology animation controls">
+              <button class="viz-button" type="button" data-viz-prev>Prev</button>
+              <button class="viz-button" type="button" data-viz-play aria-pressed="true">Pause</button>
+              <button class="viz-button" type="button" data-viz-next>Next</button>
+              <div class="step-tabs" role="tablist" aria-label="Animation steps">
+                <button class="step-tab" type="button" role="tab" aria-selected="true" data-viz-step="0">1. TP launch</button>
+                <button class="step-tab" type="button" role="tab" aria-selected="false" data-viz-step="1">2. DP attention</button>
+                <button class="step-tab" type="button" role="tab" aria-selected="false" data-viz-step="2">3. Finish</button>
+              </div>
             </div>
           </div>
 
           <p>
-            The decisive live clue is the process naming inside each decode pod.
-            Instead of a 64-rank shape, the pod has eight scheduler workers:
-          </p>
-
-          <div class="lane-map" aria-label="Decode pod scheduler rank map">
-            <div class="lane"><strong><code>DP0_TP0</code></strong><span>GPU 0, attention lane 0</span></div>
-            <div class="lane"><strong><code>DP1_TP1</code></strong><span>GPU 1, attention lane 1</span></div>
-            <div class="lane"><strong><code>DP2_TP2</code></strong><span>GPU 2, attention lane 2</span></div>
-            <div class="lane"><strong><code>DP3_TP3</code></strong><span>GPU 3, attention lane 3</span></div>
-            <div class="lane"><strong><code>DP4_TP4</code></strong><span>GPU 4, attention lane 4</span></div>
-            <div class="lane"><strong><code>DP5_TP5</code></strong><span>GPU 5, attention lane 5</span></div>
-            <div class="lane"><strong><code>DP6_TP6</code></strong><span>GPU 6, attention lane 6</span></div>
-            <div class="lane"><strong><code>DP7_TP7</code></strong><span>GPU 7, attention lane 7</span></div>
-          </div>
-
-          <p>
-            Read this as eight physical ranks, not <code>8 x 8</code> physical
-            ranks. The <code>TP</code> suffix in the live process name is still the
-            global rank identity, while DP attention changes how attention work is
-            partitioned across those same eight ranks.
+            Read the animation as eight physical ranks, not <code>8 x 8</code>
+            physical ranks. The <code>TP</code> suffix in the live process name is
+            still the global rank identity, while DP attention changes how
+            attention work is partitioned across those same eight ranks. The
+            finish step is where the model path sees the output in the expected
+            layout again, instead of confusing MLP/MoE with the attention-DP lane
+            layout.
           </p>
 
           <table>
@@ -1266,5 +1691,108 @@
       </section>
     </main>
   </div>
+  <script>
+    (() => {
+      const root = document.getElementById("decode-topology-viz");
+      if (!root) return;
+
+      const stage = root.querySelector(".viz-stage");
+      const title = root.querySelector("#viz-step-title");
+      const copy = root.querySelector("#viz-step-copy");
+      const tabs = Array.from(root.querySelectorAll(".step-tab"));
+      const playButton = root.querySelector("[data-viz-play]");
+      const prevButton = root.querySelector("[data-viz-prev]");
+      const nextButton = root.querySelector("[data-viz-next]");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      const steps = [
+        {
+          title: "Step 1: Launch as TP=8",
+          copy:
+            "The decode pod starts one eight-rank worker. dp-size=8 has not multiplied the pod into 64 workers; the live process list still has one scheduler per visible GPU."
+        },
+        {
+          title: "Step 2: Attention reinterprets the same ranks as DP=8",
+          copy:
+            "During attention, SGLang derives eight attention-DP lanes from the same TP group. With attn-cp-size=1, the inner attention TP size is one."
+        },
+        {
+          title: "Step 3: Finish back into the model path",
+          copy:
+            "After attention, communication code bridges layouts so dense MLP and MoE code continue to see the expected global TP or MoE layout, not a fake 64-rank shape."
+        }
+      ];
+
+      let step = 0;
+      let playing = !reduceMotion;
+      let timer = null;
+
+      function render(nextStep) {
+        step = (nextStep + steps.length) % steps.length;
+        stage.dataset.step = String(step);
+        title.textContent = steps[step].title;
+        copy.textContent = steps[step].copy;
+        tabs.forEach((tab, index) => {
+          tab.setAttribute("aria-selected", String(index === step));
+        });
+      }
+
+      function stopTimer() {
+        if (timer) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      function updatePlayButton() {
+        playButton.textContent = playing ? "Pause" : "Play";
+        playButton.setAttribute("aria-pressed", String(playing));
+      }
+
+      function startTimer() {
+        stopTimer();
+        if (!playing) return;
+        timer = window.setInterval(() => render(step + 1), 3600);
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          render(Number(tab.dataset.vizStep));
+          startTimer();
+        });
+      });
+
+      prevButton.addEventListener("click", () => {
+        render(step - 1);
+        startTimer();
+      });
+
+      nextButton.addEventListener("click", () => {
+        render(step + 1);
+        startTimer();
+      });
+
+      playButton.addEventListener("click", () => {
+        playing = !playing;
+        updatePlayButton();
+        startTimer();
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          stopTimer();
+        } else {
+          startTimer();
+        }
+      });
+
+      if (reduceMotion) {
+        playing = false;
+      }
+      render(0);
+      updatePlayButton();
+      startTimer();
+    })();
+  </script>
 </body>
 </html>
