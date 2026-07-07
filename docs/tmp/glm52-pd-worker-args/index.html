@@ -233,6 +233,153 @@
       font-weight: 750;
     }
 
+    .live-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 14px 0 18px;
+    }
+
+    .pod-evidence {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(20, 32, 46, 0.05);
+    }
+
+    .pod-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .pod-title {
+      font-size: 15px;
+      font-weight: 780;
+      line-height: 1.35;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--ok);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.12);
+    }
+
+    .pod-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pod-meta div {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-soft);
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+
+    .pod-meta span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .lane-map {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0 18px;
+    }
+
+    .lane {
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--dp);
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 8px 10px;
+      min-height: 72px;
+    }
+
+    .lane strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    .lane span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .rank-flow {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      margin: 14px 0 18px;
+    }
+
+    .flow-step {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 12px 14px;
+      min-height: 94px;
+    }
+
+    .flow-step .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      margin-bottom: 5px;
+    }
+
+    .flow-step .value {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .flow-step p {
+      margin: 6px 0 0;
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .flow-arrow {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .sample-note {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 6px 0 14px;
+    }
+
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -490,8 +637,33 @@
       }
 
       .summary-grid,
+      .live-grid,
       .compact-list {
         grid-template-columns: 1fr;
+      }
+
+      .pod-head {
+        display: block;
+      }
+
+      .status {
+        margin-top: 8px;
+      }
+
+      .pod-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .lane-map {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .rank-flow {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-arrow {
+        display: none;
       }
 
       .chart-table {
@@ -572,6 +744,7 @@
       <a href="#chart">Chart Context</a>
       <a href="#decode-prefill">Decode Max Prefill</a>
       <a href="#decode-dp">Decode TP and DP</a>
+      <a href="#live-decode-evidence">Live Decode Evidence</a>
       <a href="#prefill-pp">Prefill PP Microbatch</a>
       <a href="#sources">Source Chain</a>
     </nav>
@@ -833,6 +1006,129 @@
             </tr>
           </tbody>
         </table>
+
+        <section id="live-decode-evidence">
+          <h3>Live Decode Evidence From Northwest</h3>
+          <p>
+            Snapshot taken from the live <code>maas-prod-zhipu</code> namespace on
+            the Northwest B200 cluster on July 7, 2026 at about 16:11 CST. The two
+            decode pods were both <code>Running</code>, both had zero restarts, and
+            both were launched with the same decode topology:
+            <code>--tp-size 8</code>, <code>--dp-size 8</code>,
+            <code>--enable-dp-attention</code>, and
+            <code>--disaggregation-mode decode</code>.
+          </p>
+
+          <div class="live-grid">
+            <article class="pod-evidence">
+              <div class="pod-head">
+                <div class="pod-title"><code>glm52-runtime-b200-pd-decode-548a1725-57c6bc8bb6-9dqwm</code></div>
+                <div class="status">Running</div>
+              </div>
+              <div class="pod-meta">
+                <div><span>Node</span><code>gpu-worker-203</code></div>
+                <div><span>Pod IP</span><code>10.42.165.138</code></div>
+                <div><span>Visible GPUs</span>8 x NVIDIA B200</div>
+                <div><span>Live scheduler workers</span><code>DP0_TP0</code> through <code>DP7_TP7</code></div>
+              </div>
+            </article>
+
+            <article class="pod-evidence">
+              <div class="pod-head">
+                <div class="pod-title"><code>glm52-runtime-b200-pd-decode-204-548a1725-7d7558c657-2blbc</code></div>
+                <div class="status">Running</div>
+              </div>
+              <div class="pod-meta">
+                <div><span>Node</span><code>gpu-worker-204</code></div>
+                <div><span>Pod IP</span><code>10.42.14.70</code></div>
+                <div><span>Visible GPUs</span>8 x NVIDIA B200</div>
+                <div><span>Live scheduler workers</span><code>DP0_TP0</code> through <code>DP7_TP7</code></div>
+              </div>
+            </article>
+          </div>
+
+          <div class="rank-flow" aria-label="How tp-size 8 and dp-size 8 map to decode ranks">
+            <div class="flow-step">
+              <div class="label">Pod Launch</div>
+              <div class="value"><code>tp=8</code>, <code>dp=8</code></div>
+              <p>The pod starts one eight-rank SGLang worker on eight visible B200 GPUs.</p>
+            </div>
+            <div class="flow-arrow">-&gt;</div>
+            <div class="flow-step">
+              <div class="label">DP Attention</div>
+              <div class="value">8 request lanes</div>
+              <p>With DP attention enabled, each rank becomes one attention-DP lane.</p>
+            </div>
+            <div class="flow-arrow">-&gt;</div>
+            <div class="flow-step">
+              <div class="label">Inner Attention TP</div>
+              <div class="value"><span class="math-var">T</span><sub>attn</sub> = 1</div>
+              <p>The live process names pair each DP lane with exactly one TP rank.</p>
+            </div>
+          </div>
+
+          <p>
+            The decisive live clue is the process naming inside each decode pod.
+            Instead of a 64-rank shape, the pod has eight scheduler workers:
+          </p>
+
+          <div class="lane-map" aria-label="Decode pod scheduler rank map">
+            <div class="lane"><strong><code>DP0_TP0</code></strong><span>GPU 0, attention lane 0</span></div>
+            <div class="lane"><strong><code>DP1_TP1</code></strong><span>GPU 1, attention lane 1</span></div>
+            <div class="lane"><strong><code>DP2_TP2</code></strong><span>GPU 2, attention lane 2</span></div>
+            <div class="lane"><strong><code>DP3_TP3</code></strong><span>GPU 3, attention lane 3</span></div>
+            <div class="lane"><strong><code>DP4_TP4</code></strong><span>GPU 4, attention lane 4</span></div>
+            <div class="lane"><strong><code>DP5_TP5</code></strong><span>GPU 5, attention lane 5</span></div>
+            <div class="lane"><strong><code>DP6_TP6</code></strong><span>GPU 6, attention lane 6</span></div>
+            <div class="lane"><strong><code>DP7_TP7</code></strong><span>GPU 7, attention lane 7</span></div>
+          </div>
+
+          <p>
+            Read this as eight physical ranks, not <code>8 x 8</code> physical
+            ranks. The <code>TP</code> suffix in the live process name is still the
+            global rank identity, while DP attention changes how attention work is
+            partitioned across those same eight ranks.
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Live sample</th>
+                <th>Decode stat lines parsed</th>
+                <th>Max running requests</th>
+                <th>Max tokens in batch</th>
+                <th>Max token usage</th>
+                <th>Max generation throughput</th>
+                <th>Transfer-marked lines</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-label="Live sample"><code>gpu-worker-203</code> decode pod</td>
+                <td data-label="Decode stat lines parsed">759</td>
+                <td data-label="Max running requests">2</td>
+                <td data-label="Max tokens in batch">366,784</td>
+                <td data-label="Max token usage">0.33</td>
+                <td data-label="Max generation throughput">205.51 token/s</td>
+                <td data-label="Transfer-marked lines">11 of 759</td>
+              </tr>
+              <tr>
+                <td data-label="Live sample"><code>gpu-worker-204</code> decode pod</td>
+                <td data-label="Decode stat lines parsed">808</td>
+                <td data-label="Max running requests">2</td>
+                <td data-label="Max tokens in batch">367,680</td>
+                <td data-label="Max token usage">0.33</td>
+                <td data-label="Max generation throughput">285.64 token/s</td>
+                <td data-label="Transfer-marked lines">10 of 808</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="sample-note">
+            The decode-stat log timestamps are UTC. The sampled tail ended at
+            <code>2026-07-07T08:11:03Z</code> on <code>gpu-worker-203</code> and
+            <code>2026-07-07T08:11:04Z</code> on <code>gpu-worker-204</code>.
+          </p>
+        </section>
       </section>
 
       <section id="prefill-pp">
@@ -940,6 +1236,14 @@
             <tr>
               <td data-label="Claim">DP attention maps <code>tp=8, dp=8</code> to attention TP size 1.</td>
               <td data-label="Evidence"><code>python/sglang/srt/layers/dp_attention.py:245</code> computes <code>attn_tp_size = tp_size / dp_size / attn_cp_size</code>; <code>python/sglang/srt/managers/data_parallel_controller.py:516</code> uses that mapping when launching ranks.</td>
+            </tr>
+            <tr>
+              <td data-label="Claim">Live decode pods use eight scheduler workers, not 64 workers.</td>
+              <td data-label="Evidence">On July 7, 2026, <code>glm52-runtime-b200-pd-decode-548a1725-57c6bc8bb6-9dqwm</code> on <code>gpu-worker-203</code> and <code>glm52-runtime-b200-pd-decode-204-548a1725-7d7558c657-2blbc</code> on <code>gpu-worker-204</code> both launched with <code>--tp-size 8</code>, <code>--dp-size 8</code>, and <code>--enable-dp-attention</code>; in-pod process lists showed <code>sglang::scheduler_DP0_TP0</code> through <code>sglang::scheduler_DP7_TP7</code> and eight visible NVIDIA B200 GPUs.</td>
+            </tr>
+            <tr>
+              <td data-label="Claim">The sampled live decode workers were actively serving decode batches.</td>
+              <td data-label="Evidence">The last 1000 log lines sampled from the two decode pods contained 759 and 808 <code>metrics_reporter.report_decode_stats</code> lines respectively, with max observed batch tokens of 366,784 and 367,680 and transfer-marked decode-stat lines on both pods.</td>
             </tr>
             <tr>
               <td data-label="Claim">The distributed world is not multiplied by DP attention.</td>
