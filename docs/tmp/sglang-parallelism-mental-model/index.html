@@ -39,6 +39,23 @@
       line-height: 1.62;
     }
 
+    .skip-link {
+      position: absolute;
+      left: 16px;
+      top: -48px;
+      z-index: 20;
+      border-radius: 6px;
+      background: var(--ink);
+      color: #ffffff;
+      padding: 8px 12px;
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .skip-link:focus {
+      top: 12px;
+    }
+
     header {
       border-bottom: 1px solid var(--line);
       background: var(--paper);
@@ -114,11 +131,17 @@
     }
 
     nav .nav-title {
-      margin-bottom: 8px;
+      margin: 0 0 8px;
       color: var(--muted);
       font-size: 12px;
       font-weight: 800;
       text-transform: uppercase;
+    }
+
+    nav ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
     }
 
     nav a {
@@ -289,9 +312,10 @@
     }
 
     .formula-title {
-      margin-bottom: 10px;
+      margin: 0 0 10px;
       color: #334155;
       font-size: 13px;
+      line-height: 1.25;
       font-weight: 800;
       text-transform: uppercase;
     }
@@ -357,6 +381,15 @@
       overflow: hidden;
       margin: 12px 0 18px;
       box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    caption {
+      caption-side: top;
+      padding: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: left;
     }
 
     th,
@@ -493,17 +526,17 @@
 
     .rank-grid {
       display: grid;
-      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
       gap: 8px;
       margin: 12px 0 16px;
     }
 
     .rank-grid.four {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     }
 
     .rank-grid.two {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
     }
 
     .rank-chip {
@@ -522,11 +555,21 @@
       line-height: 1.18;
     }
 
-    .rank-chip span {
+    .rank-chip > span {
       display: block;
       color: #475569;
       font-size: 11px;
       line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .coord-label {
+      color: #334155;
+      font-weight: 800;
+    }
+
+    .coord .math-var {
+      font-weight: 700;
     }
 
     .rank-chip.tp {
@@ -681,6 +724,7 @@
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
   <header>
     <div class="header-inner">
       <div class="eyebrow">Temporary MaaS Note</div>
@@ -700,26 +744,30 @@
 
   <div class="layout">
     <nav aria-label="Page overview">
-      <div class="nav-title">On This Page</div>
-      <a href="#summary">Mental Model</a>
-      <a href="#formulas">Core Formulas</a>
-      <a href="#args">Input Args</a>
-      <a href="#examples">Five Examples</a>
-      <a href="#rules">Rules of Thumb</a>
-      <a href="#sources">Source Chain</a>
+      <h2 class="nav-title">On This Page</h2>
+      <ul>
+        <li><a href="#summary">Mental Model</a></li>
+        <li><a href="#formulas">Core Formulas</a></li>
+        <li><a href="#args">Input Args</a></li>
+        <li><a href="#examples">Five Examples</a></li>
+        <li><a href="#rules">Rules of Thumb</a></li>
+        <li><a href="#sources">Source Chain</a></li>
+      </ul>
     </nav>
 
-    <main>
+    <main id="main-content">
       <section id="summary">
         <h2>Mental Model</h2>
         <div class="lead">
-          <p>
-            <strong>Do not multiply every flag together.</strong>
-            SGLang first builds a world from global TP and PP. Then, inside each
-            PP stage's TP group, attention and MoE get their own coordinate
-            systems. Ordinary DP is different: without DP attention, it launches
-            separate model replicas.
-          </p>
+            <p>
+              <strong>Do not multiply every flag together.</strong>
+              Each model-worker distributed world has size
+              <span class="math-var sym-tp">T<sub>global</sub></span> ×
+              <span class="math-var sym-pp">P</span>. Then, inside each PP stage's
+              TP group, attention and MoE get their own coordinate systems.
+              Ordinary DP is different: without DP attention, it launches separate
+              model-worker worlds.
+            </p>
         </div>
 
         <div class="mental-stack" aria-label="Parallelism hierarchy">
@@ -746,18 +794,18 @@
                   <b>Global TP island</b>
                   <span>The parent group of size <span class="math-var">T<sub>global</sub></span>. Dense TP defaults here.</span>
                 </div>
-                <div class="axis dp">
-                  <b>Attention-DP view</b>
-                  <span>Only with <code>--enable-dp-attention</code>. It reuses the TP ranks instead of launching more GPUs.</span>
-                </div>
-                <div class="axis cp">
-                  <b>Attention-CP view</b>
-                  <span>Context-parallel lanes for attention, commonly used for long prefill.</span>
-                </div>
-                <div class="axis moe">
-                  <b>MoE view</b>
-                  <span>Separate MoE-DP, EP, and MoE-TP coordinates inside the same TP island.</span>
-                </div>
+                  <div class="axis dp">
+                    <b>Attention-DP view</b>
+                    <span>Only with <code>--enable-dp-attention</code>. It maps request-routing lanes onto existing TP ranks instead of launching more model ranks.</span>
+                  </div>
+                  <div class="axis cp">
+                    <b>Attention-CP view</b>
+                    <span>Group layout for attention context lanes. Prefill splitting also needs <code>--enable-prefill-cp</code> and <code>--cp-strategy</code>.</span>
+                  </div>
+                  <div class="axis moe">
+                    <b>MoE view</b>
+                    <span>For MoE layers, separate MoE-DP, EP, and MoE-TP coordinates inside the same TP island.</span>
+                  </div>
               </div>
             </div>
           </div>
@@ -765,10 +813,10 @@
       </section>
 
       <section id="formulas">
-        <h2>Core Formulas</h2>
-        <div class="formula-grid">
-          <article class="formula-card">
-            <div class="formula-title">World and PP</div>
+          <h2>Core Formulas</h2>
+          <div class="formula-grid">
+            <article class="formula-card">
+              <h3 class="formula-title">World and PP</h3>
             <div class="eq">
               <span class="lhs"><span class="math-var sym-pp">W</span></span>
               <span class="op">=</span>
@@ -783,10 +831,10 @@
               The rank inside a model worker is formed from PP rank and local TP
               rank. This is why PP is outside the TP-island math.
             </p>
-          </article>
+            </article>
 
-          <article class="formula-card">
-            <div class="formula-title">Attention view</div>
+            <article class="formula-card">
+              <h3 class="formula-title">Attention view</h3>
             <div class="eq">
               <span class="lhs"><span class="math-var sym-dp">D<sub>attn</sub></span></span>
               <span class="op">=</span>
@@ -797,15 +845,23 @@
               <span class="op">=</span>
               <span><span class="math-var sym-tp">T<sub>global</sub></span> / (<span class="math-var sym-dp">D<sub>attn</sub></span> × <span class="math-var sym-cp">C<sub>attn</sub></span>)</span>
             </div>
-            <div class="eq">
-              <span class="lhs"><span class="math-var sym-tp">r<sub>T</sub></span></span>
-              <span class="op">=</span>
-              <span>((<span class="math-var sym-dp">d<sub>attn</sub></span> × <span class="math-var sym-cp">C<sub>attn</sub></span> + <span class="math-var sym-cp">c<sub>attn</sub></span>) × <span class="math-var sym-tp">T<sub>attn</sub></span>) + <span class="math-var sym-tp">t<sub>attn</sub></span></span>
-            </div>
-          </article>
+              <div class="eq">
+                <span class="lhs"><span class="math-var sym-tp">r<sub>T</sub></span></span>
+                <span class="op">=</span>
+                <span>((<span class="math-var sym-dp">d<sub>attn</sub></span> × <span class="math-var sym-cp">C<sub>attn</sub></span> + <span class="math-var sym-cp">c<sub>attn</sub></span>) × <span class="math-var sym-tp">T<sub>attn</sub></span>) + <span class="math-var sym-tp">t<sub>attn</sub></span></span>
+              </div>
+              <p>
+                <span class="math-var sym-tp">T<sub>global</sub></span> must be divisible by
+                <span class="math-var sym-dp">D<sub>attn</sub></span> ×
+                <span class="math-var sym-cp">C<sub>attn</sub></span>. The
+                <span class="math-var sym-cp">C<sub>attn</sub></span> layout exists from
+                <code>--attn-cp-size</code>; prefill context splitting additionally
+                requires <code>--enable-prefill-cp</code> and <code>--cp-strategy</code>.
+              </p>
+            </article>
 
-          <article class="formula-card">
-            <div class="formula-title">MoE view</div>
+            <article class="formula-card">
+              <h3 class="formula-title">MoE view</h3>
             <div class="eq">
               <span class="lhs"><span class="math-var sym-tp">T<sub>moe</sub></span></span>
               <span class="op">=</span>
@@ -816,15 +872,22 @@
               <span class="op">=</span>
               <span>((<span class="math-var sym-moe">d<sub>moe</sub></span> × <span class="math-var sym-moe">E</span> + <span class="math-var sym-moe">e</span>) × <span class="math-var sym-tp">T<sub>moe</sub></span>) + <span class="math-var sym-tp">t<sub>moe</sub></span></span>
             </div>
-            <p>
-              This is a separate coordinate system from attention. That is the
-              mechanism that keeps MLP/MoE paths from accidentally inheriting
-              attention-DP lanes.
-            </p>
-          </article>
+              <p>
+                For MoE layers, this is a separate coordinate system from attention.
+                Dense non-attention layers use the global TP view; MoE layers use
+                MoE-DP, EP, and MoE-TP views.
+              </p>
+              <p>
+                When <span class="math-var sym-cp">C<sub>attn</sub></span> is larger
+                than <span class="math-var sym-moe">D<sub>moe</sub></span>, runtime
+                aliases the MoE-DP communication group to the attention-CP group for
+                token sharing. The MoE coordinate arithmetic above still determines
+                EP and MoE-TP.
+              </p>
+            </article>
 
-          <article class="formula-card">
-            <div class="formula-title">Ordinary DP</div>
+            <article class="formula-card">
+              <h3 class="formula-title">Ordinary DP</h3>
             <div class="eq">
               <span class="lhs">GPU budget</span>
               <span class="op">=</span>
@@ -840,16 +903,17 @@
         </div>
       </section>
 
-      <section id="args">
-        <h2>Input Args</h2>
-        <table class="arg-table">
-          <thead>
-            <tr>
-              <th>Arg</th>
-              <th>Symbol</th>
-              <th>Runtime effect</th>
-              <th>Common pitfall</th>
-            </tr>
+        <section id="args">
+          <h2>Input Args</h2>
+          <table class="arg-table">
+            <caption>How launch arguments map to runtime process-group axes.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Arg</th>
+                <th scope="col">Symbol</th>
+                <th scope="col">Runtime effect</th>
+                <th scope="col">Common pitfall</th>
+              </tr>
           </thead>
           <tbody>
             <tr>
@@ -870,18 +934,18 @@
               <td data-label="Runtime effect">Ordinary DP replicas if DP attention is off; attention-DP lanes if DP attention is on.</td>
               <td data-label="Common pitfall">Same flag, two different runtime meanings.</td>
             </tr>
+              <tr>
+                <td data-label="Arg"><code>--enable-dp-attention</code></td>
+                <td data-label="Symbol"><span class="math-var sym-dp">D<sub>attn</sub></span></td>
+                <td data-label="Runtime effect">Maps DP request-routing lanes onto the global TP group as attention-DP lanes. It does not multiply model-worker ranks.</td>
+                <td data-label="Common pitfall">Without this flag, <code>--dp-size 8 --tp-size 8</code> is ordinary DP and wants many more GPUs.</td>
+              </tr>
             <tr>
-              <td data-label="Arg"><code>--enable-dp-attention</code></td>
-              <td data-label="Symbol"><span class="math-var sym-dp">D<sub>attn</sub></span></td>
-              <td data-label="Runtime effect">Reuses the global TP group as attention-DP lanes. It does not multiply physical ranks by DP.</td>
-              <td data-label="Common pitfall">Without this flag, <code>--dp-size 8 --tp-size 8</code> is ordinary DP and wants many more GPUs.</td>
-            </tr>
-            <tr>
-              <td data-label="Arg"><code>--attn-cp-size</code></td>
-              <td data-label="Symbol"><span class="math-var sym-cp">C<sub>attn</sub></span></td>
-              <td data-label="Runtime effect">Context-parallel lanes inside attention. Effective attention TP is divided by this value.</td>
-              <td data-label="Common pitfall">It must divide the TP island together with attention DP.</td>
-            </tr>
+                <td data-label="Arg"><code>--attn-cp-size</code></td>
+                <td data-label="Symbol"><span class="math-var sym-cp">C<sub>attn</sub></span></td>
+                <td data-label="Runtime effect">Context-parallel group layout inside attention. Effective attention TP is divided by this value.</td>
+                <td data-label="Common pitfall">The layout alone is not the long-prefill policy; prefill splitting needs <code>--enable-prefill-cp</code> and <code>--cp-strategy</code>.</td>
+              </tr>
             <tr>
               <td data-label="Arg"><code>--enable-prefill-cp</code>, <code>--cp-strategy</code></td>
               <td data-label="Symbol">policy</td>
@@ -895,11 +959,11 @@
               <td data-label="Common pitfall">EP is MoE-specific. It is not attention TP.</td>
             </tr>
             <tr>
-              <td data-label="Arg"><code>--moe-dp-size</code></td>
-              <td data-label="Symbol"><span class="math-var sym-moe">D<sub>moe</sub></span></td>
-              <td data-label="Runtime effect">MoE data-parallel lanes inside the TP island.</td>
-              <td data-label="Common pitfall">When it differs from attention CP, current code only allows the special <span class="math-var sym-moe">D<sub>moe</sub></span> = 1 case; current validation also keeps <span class="math-var sym-moe">D<sub>moe</sub></span> &gt; 1 away from PP.</td>
-            </tr>
+                <td data-label="Arg"><code>--moe-dp-size</code></td>
+                <td data-label="Symbol"><span class="math-var sym-moe">D<sub>moe</sub></span></td>
+                <td data-label="Runtime effect">MoE data-parallel lanes inside the TP island.</td>
+                <td data-label="Common pitfall">For <span class="math-var sym-moe">D<sub>moe</sub></span> &gt; 1, current validation requires <span class="math-var sym-pp">P</span> = 1, <span class="math-var sym-moe">E</span> × <span class="math-var sym-moe">D<sub>moe</sub></span> ≤ <span class="math-var sym-tp">T<sub>global</sub></span>, and if <span class="math-var sym-moe">E</span> &gt; 1 then <span class="math-var sym-moe">E</span> × <span class="math-var sym-moe">D<sub>moe</sub></span> = <span class="math-var sym-tp">T<sub>global</sub></span>. If <span class="math-var sym-cp">C<sub>attn</sub></span> differs from <span class="math-var sym-moe">D<sub>moe</sub></span>, only the <span class="math-var sym-moe">D<sub>moe</sub></span> = 1 case is allowed.</td>
+              </tr>
           </tbody>
         </table>
 
@@ -932,20 +996,20 @@
             </div>
             <div class="runtime-grid">
               <div class="runtime-card"><span>World</span><strong>8</strong><small><span class="math-var">W</span> = 8 × 1</small></div>
-              <div class="runtime-card"><span>Attention</span><strong><span class="math-var">D<sub>attn</sub></span> 1, <span class="math-var">C<sub>attn</sub></span> 1</strong><small><span class="math-var">T<sub>attn</sub></span> = 8</small></div>
-              <div class="runtime-card"><span>MoE default</span><strong><span class="math-var">D<sub>moe</sub></span> 1, <span class="math-var">E</span> 1</strong><small><span class="math-var">T<sub>moe</sub></span> = 8</small></div>
+                <div class="runtime-card"><span>Attention</span><strong><span class="math-var">D<sub>attn</sub></span> = 1, <span class="math-var">C<sub>attn</sub></span> = 1</strong><small><span class="math-var">T<sub>attn</sub></span> = 8</small></div>
+                <div class="runtime-card"><span>MoE layers</span><strong><span class="math-var">D<sub>moe</sub></span> = 1, <span class="math-var">E</span> = 1</strong><small><span class="math-var">T<sub>moe</sub></span> = 8</small></div>
               <div class="runtime-card"><span>Interpretation</span><strong>TP only</strong><small>Dense and attention both use the full TP island.</small></div>
             </div>
             <div class="mini-title">Rank coordinates</div>
             <div class="rank-grid">
-              <div class="rank-chip tp"><b>TP0</b><span>attn d0 c0 t0</span><span>moe d0 e0 t0</span></div>
-              <div class="rank-chip tp"><b>TP1</b><span>attn d0 c0 t1</span><span>moe d0 e0 t1</span></div>
-              <div class="rank-chip tp"><b>TP2</b><span>attn d0 c0 t2</span><span>moe d0 e0 t2</span></div>
-              <div class="rank-chip tp"><b>TP3</b><span>attn d0 c0 t3</span><span>moe d0 e0 t3</span></div>
-              <div class="rank-chip tp"><b>TP4</b><span>attn d0 c0 t4</span><span>moe d0 e0 t4</span></div>
-              <div class="rank-chip tp"><b>TP5</b><span>attn d0 c0 t5</span><span>moe d0 e0 t5</span></div>
-              <div class="rank-chip tp"><b>TP6</b><span>attn d0 c0 t6</span><span>moe d0 e0 t6</span></div>
-              <div class="rank-chip tp"><b>TP7</b><span>attn d0 c0 t7</span><span>moe d0 e0 t7</span></div>
+                <div class="rank-chip tp"><b>TP0</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=0</span></div>
+                <div class="rank-chip tp"><b>TP1</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=1</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=1</span></div>
+                <div class="rank-chip tp"><b>TP2</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=2</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=2</span></div>
+                <div class="rank-chip tp"><b>TP3</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=3</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=3</span></div>
+                <div class="rank-chip tp"><b>TP4</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=4</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=4</span></div>
+                <div class="rank-chip tp"><b>TP5</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=5</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=5</span></div>
+                <div class="rank-chip tp"><b>TP6</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=6</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=6</span></div>
+                <div class="rank-chip tp"><b>TP7</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=7</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=7</span></div>
             </div>
           </div>
         </article>
@@ -973,18 +1037,18 @@
             </div>
             <div class="mini-title">Physical grouping on one node</div>
             <div class="rank-grid two">
-              <div class="rank-chip dp"><b>DP replica 0</b><span>GPU 0,1,2,3</span><span>local TP0..TP3</span></div>
-              <div class="rank-chip dp"><b>DP replica 1</b><span>GPU 4,5,6,7</span><span>local TP0..TP3</span></div>
+                <div class="rank-chip dp"><b>DP replica 0</b><span>GPU 0, 1, 2, 3</span><span>local <span class="math-var sym-tp">TP0</span>-<span class="math-var sym-tp">TP3</span></span></div>
+                <div class="rank-chip dp"><b>DP replica 1</b><span>GPU 4, 5, 6, 7</span><span>local <span class="math-var sym-tp">TP0</span>-<span class="math-var sym-tp">TP3</span></span></div>
             </div>
           </div>
         </article>
 
         <article class="example" id="ex-dp-attn">
-          <div class="example-head">
-            <div>
-              <h3>3. Decode DP Attention: TP8 and DP8</h3>
-              <p>The Northwest decode mental model: eight physical ranks become eight attention-DP lanes.</p>
-            </div>
+            <div class="example-head">
+              <div>
+                <h3>3. Decode DP Attention: TP8 and DP8</h3>
+                <p>Decode DP-attention example: eight physical ranks become eight attention-DP lanes.</p>
+              </div>
             <div class="example-badge">8 GPUs total</div>
           </div>
           <div class="example-body">
@@ -1003,24 +1067,24 @@
             </div>
             <div class="mini-title">Attention rank coordinates</div>
             <div class="rank-grid">
-              <div class="rank-chip dp"><b>TP0</b><span>attn d0 c0 t0</span><span>process DP0_TP0</span></div>
-              <div class="rank-chip dp"><b>TP1</b><span>attn d1 c0 t0</span><span>process DP1_TP1</span></div>
-              <div class="rank-chip dp"><b>TP2</b><span>attn d2 c0 t0</span><span>process DP2_TP2</span></div>
-              <div class="rank-chip dp"><b>TP3</b><span>attn d3 c0 t0</span><span>process DP3_TP3</span></div>
-              <div class="rank-chip dp"><b>TP4</b><span>attn d4 c0 t0</span><span>process DP4_TP4</span></div>
-              <div class="rank-chip dp"><b>TP5</b><span>attn d5 c0 t0</span><span>process DP5_TP5</span></div>
-              <div class="rank-chip dp"><b>TP6</b><span>attn d6 c0 t0</span><span>process DP6_TP6</span></div>
-              <div class="rank-chip dp"><b>TP7</b><span>attn d7 c0 t0</span><span>process DP7_TP7</span></div>
+                <div class="rank-chip dp"><b>TP0</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span>process <code>DP0_TP0</code></span></div>
+                <div class="rank-chip dp"><b>TP1</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=1, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span>process <code>DP1_TP1</code></span></div>
+                <div class="rank-chip dp"><b>TP2</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=2, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span>process <code>DP2_TP2</code></span></div>
+                <div class="rank-chip dp"><b>TP3</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=3, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span>process <code>DP3_TP3</code></span></div>
+                <div class="rank-chip dp"><b>TP4</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=4, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span>process <code>DP4_TP4</code></span></div>
+                <div class="rank-chip dp"><b>TP5</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=5, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span>process <code>DP5_TP5</code></span></div>
+                <div class="rank-chip dp"><b>TP6</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=6, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span>process <code>DP6_TP6</code></span></div>
+                <div class="rank-chip dp"><b>TP7</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=7, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span>process <code>DP7_TP7</code></span></div>
             </div>
           </div>
         </article>
 
         <article class="example" id="ex-cp-prefill">
-          <div class="example-head">
-            <div>
-              <h3>4. Long Prefill CP8</h3>
-              <p>Context parallelism slices attention work across the context dimension inside TP8.</p>
-            </div>
+            <div class="example-head">
+              <div>
+                <h3>4. Long Prefill CP8</h3>
+                <p>CP lays out eight attention context lanes inside TP8; <code>--enable-prefill-cp</code> and <code>--cp-strategy</code> activate the long-prefill split policy.</p>
+              </div>
             <div class="example-badge">8 GPUs total</div>
           </div>
           <div class="example-body">
@@ -1040,17 +1104,27 @@
             </div>
             <div class="mini-title">Attention CP rank coordinates</div>
             <div class="rank-grid">
-              <div class="rank-chip cp"><b>TP0</b><span>attn d0 c0 t0</span></div>
-              <div class="rank-chip cp"><b>TP1</b><span>attn d0 c1 t0</span></div>
-              <div class="rank-chip cp"><b>TP2</b><span>attn d0 c2 t0</span></div>
-              <div class="rank-chip cp"><b>TP3</b><span>attn d0 c3 t0</span></div>
-              <div class="rank-chip cp"><b>TP4</b><span>attn d0 c4 t0</span></div>
-              <div class="rank-chip cp"><b>TP5</b><span>attn d0 c5 t0</span></div>
-              <div class="rank-chip cp"><b>TP6</b><span>attn d0 c6 t0</span></div>
-              <div class="rank-chip cp"><b>TP7</b><span>attn d0 c7 t0</span></div>
+                <div class="rank-chip cp"><b>TP0</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span></div>
+                <div class="rank-chip cp"><b>TP1</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=1, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span></div>
+                <div class="rank-chip cp"><b>TP2</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=2, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span></div>
+                <div class="rank-chip cp"><b>TP3</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=3, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span></div>
+                <div class="rank-chip cp"><b>TP4</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=4, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span></div>
+                <div class="rank-chip cp"><b>TP5</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=5, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span></div>
+                <div class="rank-chip cp"><b>TP6</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=6, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span></div>
+                <div class="rank-chip cp"><b>TP7</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=7, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span></div>
+              </div>
+              <div class="note">
+                <p>
+                  Because <span class="math-var sym-cp">C<sub>attn</sub></span> = 8 is larger than
+                  <span class="math-var sym-moe">D<sub>moe</sub></span> = 1, SGLang aliases the
+                  MoE-DP sharing communicator to the attention-CP group even though the MoE
+                  coordinate defaults remain <span class="math-var sym-moe">D<sub>moe</sub></span> = 1,
+                  <span class="math-var sym-moe">E</span> = 1, and
+                  <span class="math-var sym-tp">T<sub>moe</sub></span> = 8.
+                </p>
+              </div>
             </div>
-          </div>
-        </article>
+          </article>
 
         <article class="example" id="ex-all-axes">
           <div class="example-head">
@@ -1072,60 +1146,70 @@
             </div>
             <div class="runtime-grid">
               <div class="runtime-card"><span>World</span><strong>16</strong><small><span class="math-var">W</span> = 8 × 2</small></div>
-              <div class="runtime-card"><span>Attention</span><strong><span class="math-var">D<sub>attn</sub></span> 2, <span class="math-var">C<sub>attn</sub></span> 2</strong><small><span class="math-var">T<sub>attn</sub></span> = 2</small></div>
-              <div class="runtime-card"><span>MoE</span><strong><span class="math-var">D<sub>moe</sub></span> 1, <span class="math-var">E</span> 2</strong><small><span class="math-var">T<sub>moe</sub></span> = 4</small></div>
+                <div class="runtime-card"><span>Attention</span><strong><span class="math-var">D<sub>attn</sub></span> = 2, <span class="math-var">C<sub>attn</sub></span> = 2</strong><small><span class="math-var">T<sub>attn</sub></span> = 2</small></div>
+                <div class="runtime-card"><span>MoE layers</span><strong><span class="math-var">D<sub>moe</sub></span> = 1, <span class="math-var">E</span> = 2</strong><small><span class="math-var">T<sub>moe</sub></span> = 4</small></div>
               <div class="runtime-card"><span>PP groups</span><strong>8 pairs</strong><small>[0,8], [1,9], ... [7,15]</small></div>
             </div>
             <div class="mini-title">World rank grouping</div>
             <div class="rank-grid two">
-              <div class="rank-chip pp"><b>PP stage 0</b><span>world ranks 0..7</span><span>local TP0..TP7</span></div>
-              <div class="rank-chip pp"><b>PP stage 1</b><span>world ranks 8..15</span><span>local TP0..TP7</span></div>
+                <div class="rank-chip pp"><b>PP stage 0</b><span>world ranks 0-7</span><span>local <span class="math-var sym-tp">TP0</span>-<span class="math-var sym-tp">TP7</span></span></div>
+                <div class="rank-chip pp"><b>PP stage 1</b><span>world ranks 8-15</span><span>local <span class="math-var sym-tp">TP0</span>-<span class="math-var sym-tp">TP7</span></span></div>
             </div>
             <div class="mini-title">Per-stage local TP coordinates</div>
             <div class="rank-grid">
-              <div class="rank-chip moe"><b>TP0</b><span>attn d0 c0 t0</span><span>moe d0 e0 t0</span></div>
-              <div class="rank-chip moe"><b>TP1</b><span>attn d0 c0 t1</span><span>moe d0 e0 t1</span></div>
-              <div class="rank-chip moe"><b>TP2</b><span>attn d0 c1 t0</span><span>moe d0 e0 t2</span></div>
-              <div class="rank-chip moe"><b>TP3</b><span>attn d0 c1 t1</span><span>moe d0 e0 t3</span></div>
-              <div class="rank-chip moe"><b>TP4</b><span>attn d1 c0 t0</span><span>moe d0 e1 t0</span></div>
-              <div class="rank-chip moe"><b>TP5</b><span>attn d1 c0 t1</span><span>moe d0 e1 t1</span></div>
-              <div class="rank-chip moe"><b>TP6</b><span>attn d1 c1 t0</span><span>moe d0 e1 t2</span></div>
-              <div class="rank-chip moe"><b>TP7</b><span>attn d1 c1 t1</span><span>moe d0 e1 t3</span></div>
+                <div class="rank-chip moe"><b>TP0</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=0</span></div>
+                <div class="rank-chip moe"><b>TP1</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=1</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=1</span></div>
+                <div class="rank-chip moe"><b>TP2</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=1, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=2</span></div>
+                <div class="rank-chip moe"><b>TP3</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=0, <span class="math-var sym-cp">c<sub>attn</sub></span>=1, <span class="math-var sym-tp">t<sub>attn</sub></span>=1</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=0, <span class="math-var sym-tp">t<sub>moe</sub></span>=3</span></div>
+                <div class="rank-chip moe"><b>TP4</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=1, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=1, <span class="math-var sym-tp">t<sub>moe</sub></span>=0</span></div>
+                <div class="rank-chip moe"><b>TP5</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=1, <span class="math-var sym-cp">c<sub>attn</sub></span>=0, <span class="math-var sym-tp">t<sub>attn</sub></span>=1</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=1, <span class="math-var sym-tp">t<sub>moe</sub></span>=1</span></div>
+                <div class="rank-chip moe"><b>TP6</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=1, <span class="math-var sym-cp">c<sub>attn</sub></span>=1, <span class="math-var sym-tp">t<sub>attn</sub></span>=0</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=1, <span class="math-var sym-tp">t<sub>moe</sub></span>=2</span></div>
+                <div class="rank-chip moe"><b>TP7</b><span class="coord"><span class="coord-label">attn:</span> <span class="math-var sym-dp">d<sub>attn</sub></span>=1, <span class="math-var sym-cp">c<sub>attn</sub></span>=1, <span class="math-var sym-tp">t<sub>attn</sub></span>=1</span><span class="coord"><span class="coord-label">moe:</span> <span class="math-var sym-moe">d<sub>moe</sub></span>=0, <span class="math-var sym-moe">e</span>=1, <span class="math-var sym-tp">t<sub>moe</sub></span>=3</span></div>
+              </div>
+              <div class="note">
+                <p>
+                  Here <span class="math-var sym-cp">C<sub>attn</sub></span> = 2 and
+                  <span class="math-var sym-moe">D<sub>moe</sub></span> = 1, so runtime
+                  MoE-DP token sharing uses the attention-CP pairs such as
+                  <code>[TP0, TP2]</code> and <code>[TP1, TP3]</code> within each PP
+                  stage. EP and MoE-TP still follow the MoE coordinates above.
+                </p>
+              </div>
             </div>
-          </div>
-        </article>
+          </article>
       </section>
 
-      <section id="rules">
-        <h2>Rules of Thumb</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Question</th>
-              <th>Answer</th>
-            </tr>
+        <section id="rules">
+          <h2>Rules of Thumb</h2>
+          <table>
+            <caption>Quick checks for whether an argument changes GPU count or only changes a subsystem view.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Question</th>
+                <th scope="col">Answer</th>
+              </tr>
           </thead>
           <tbody>
-            <tr>
-              <td data-label="Question">Does <code>--dp-size</code> multiply GPU count?</td>
-              <td data-label="Answer">Yes for ordinary DP. No for DP attention, where it becomes <span class="math-var sym-dp">D<sub>attn</sub></span> inside the TP group.</td>
-            </tr>
-            <tr>
-              <td data-label="Question">Does CP multiply GPU count?</td>
-              <td data-label="Answer">No. <span class="math-var sym-cp">C<sub>attn</sub></span> subdivides the TP island, reducing effective attention TP.</td>
-            </tr>
-            <tr>
-              <td data-label="Question">Where does PP fit?</td>
-              <td data-label="Answer">PP is outside the TP-island formulas. It multiplies the distributed world as <span class="math-var">W</span> = <span class="math-var sym-tp">T<sub>global</sub></span> × <span class="math-var sym-pp">P</span>.</td>
-            </tr>
-            <tr>
-              <td data-label="Question">Why does MLP not get confused by attention DP?</td>
-              <td data-label="Answer">Attention, dense TP, and MoE use different process-group views. The same local TP rank can carry attention coordinates and MoE coordinates at the same time.</td>
-            </tr>
-            <tr>
-              <td data-label="Question">What must divide cleanly?</td>
-              <td data-label="Answer"><span class="math-var sym-tp">T<sub>global</sub></span> must be divisible by the active attention subdivision and by the active MoE subdivision. Current validation also enforces extra MoE-DP and CP compatibility rules.</td>
-            </tr>
+              <tr>
+                <td data-label="Question">Does <code>--dp-size</code> multiply GPU count?</td>
+                <td data-label="Answer">Yes for ordinary DP. No for DP attention: it maps <span class="math-var">D<sub>arg</sub></span> request-routing lanes onto the existing <span class="math-var sym-tp">T<sub>global</sub></span> ranks as <span class="math-var sym-dp">D<sub>attn</sub></span>.</td>
+              </tr>
+              <tr>
+                <td data-label="Question">Does CP multiply GPU count?</td>
+                <td data-label="Answer">No. <span class="math-var sym-cp">C<sub>attn</sub></span> subdivides the TP island, reducing effective attention TP. Prefill context splitting is activated separately by <code>--enable-prefill-cp</code> and <code>--cp-strategy</code>.</td>
+              </tr>
+              <tr>
+                <td data-label="Question">Where does PP fit?</td>
+                <td data-label="Answer">PP is outside the TP-island formulas. Each model-worker distributed world has size <span class="math-var">W</span> = <span class="math-var sym-tp">T<sub>global</sub></span> × <span class="math-var sym-pp">P</span>. Ordinary DP launches multiple such worlds.</td>
+              </tr>
+              <tr>
+                <td data-label="Question">Which groups do dense MLP and MoE use with DP attention?</td>
+                <td data-label="Answer">Attention uses DP/CP/attention-TP groups; dense non-attention layers use the global TP view; MoE layers use MoE-DP/EP/MoE-TP groups. The same local TP rank can carry attention coordinates and MoE coordinates at the same time.</td>
+              </tr>
+              <tr>
+                <td data-label="Question">What must divide cleanly?</td>
+                <td data-label="Answer"><span class="math-var sym-tp">T<sub>global</sub></span> must be divisible by <span class="math-var sym-dp">D<sub>attn</sub></span> × <span class="math-var sym-cp">C<sub>attn</sub></span>, and the MoE grouping must also divide cleanly at runtime. Current validation additionally constrains MoE-DP, EP, PP, and CP compatibility.</td>
+              </tr>
           </tbody>
         </table>
       </section>
@@ -1137,25 +1221,25 @@
             <strong>World size and argument handoff</strong>
             <code>python/sglang/srt/model_executor/model_runner.py:1225</code> initializes the distributed world as <code>tp_size * pp_size</code> and passes TP, DP-attention, PP, EP, CP, and MoE-DP sizes into model-parallel initialization.
           </div>
-          <div class="source-row">
-            <strong>Ordinary DP versus DP attention launch</strong>
-            <code>python/sglang/srt/managers/data_parallel_controller.py:180</code> chooses DP-attention launch or ordinary DP launch. <code>data_parallel_controller.py:271</code> loops over ordinary DP ranks and advances the base GPU id by <code>tp_size * pp_size</code>; <code>data_parallel_controller.py:448</code> launches only one TP group for DP attention.
-          </div>
+            <div class="source-row">
+              <strong>Ordinary DP versus DP attention launch</strong>
+              <code>python/sglang/srt/managers/data_parallel_controller.py:180</code> chooses DP-attention launch or ordinary DP launch. <code>data_parallel_controller.py:271</code> loops over ordinary DP ranks and advances the base GPU id by <code>tp_size * pp_size</code>; <code>data_parallel_controller.py:459</code> allocates per-DP worker ports for DP attention, and <code>data_parallel_controller.py:475</code> launches only one TP group.
+            </div>
           <div class="source-row">
             <strong>Attention formulas</strong>
             <code>python/sglang/srt/layers/dp_attention.py:245</code> computes attention DP size, attention TP size, and DP rank from local TP rank. The rank layout comment at <code>dp_attention.py:255</code> gives the exact coordinate formula.
           </div>
-          <div class="source-row">
-            <strong>Hierarchy comment</strong>
-            <code>python/sglang/srt/managers/data_parallel_controller.py:545</code> states the two per-TP-island hierarchies: attention is Global(TP) -> DP -> ATTN_CP -> ATTN_TP, while MoE is Global(TP) -> MOE_DP -> EP -> MOE_TP.
-          </div>
-          <div class="source-row">
-            <strong>Process-group construction</strong>
-            <code>python/sglang/srt/distributed/parallel_state.py:1914</code> validates world size against TP × PP. <code>parallel_state.py:1962</code> builds attention CP and attention TP groups. <code>parallel_state.py:2034</code> builds MoE groups. <code>parallel_state.py:2120</code> builds PP groups.
-          </div>
+            <div class="source-row">
+              <strong>Hierarchy comment</strong>
+              <code>python/sglang/srt/managers/data_parallel_controller.py:545</code> states the two per-TP-island hierarchies: attention is <code>Global(TP) → DP → ATTN_CP → ATTN_TP</code>, while MoE is <code>Global(TP) → MOE_DP → EP → MOE_TP</code>.
+            </div>
+            <div class="source-row">
+              <strong>Process-group construction</strong>
+              <code>python/sglang/srt/distributed/parallel_state.py:1914</code> validates world size against TP × PP. <code>parallel_state.py:1962</code> builds attention CP and attention TP groups. <code>parallel_state.py:2034</code> computes MoE grouping, and <code>parallel_state.py:2040</code> aliases MoE-DP to attention CP when CP is wider than MoE-DP. <code>parallel_state.py:2120</code> builds PP groups.
+            </div>
           <div class="source-row">
             <strong>Validation constraints</strong>
-            <code>python/sglang/srt/server_args.py:5029</code> validates CP divisibility, <code>server_args.py:5042</code> validates MoE-DP constraints, and <code>server_args.py:5075</code> handles DP-attention side effects.
+            <code>python/sglang/srt/server_args.py:5029</code> validates CP divisibility, <code>server_args.py:5042</code> enters the MoE-DP validation branch, <code>server_args.py:5052</code> enforces EP × MoE-DP constraints, <code>server_args.py:5061</code> checks CP/MoE-DP compatibility, and <code>server_args.py:5075</code> handles DP-attention side effects.
           </div>
         </div>
       </section>
