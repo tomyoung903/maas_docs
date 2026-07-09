@@ -141,6 +141,11 @@ a { color: var(--accent); }
   margin-top: 8px;
   font-size: 1.55rem;
   font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.value code {
+  white-space: normal;
+  word-break: break-word;
 }
 .note {
   margin: 20px 0;
@@ -287,29 +292,60 @@ pre {
 <body>
 <main>
 <nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html">Public URL</a></nav>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">On this page</div>
+  <a class="depth-1" href="#layer-stack">Layer Stack</a>
+<a class="depth-1" href="#parameter-count">Parameter Count</a>
+<a class="depth-2" href="#tp8-per-rank">TP8 Per-Rank Shapes</a>
+<a class="depth-1" href="#mla-attention-shape">MLA Attention</a>
+<a class="depth-1" href="#dsa-nsa-sparse-attention">DSA / NSA Attention</a>
+<a class="depth-1" href="#speculative-decoding">Speculative Decoding</a>
+</aside>
+<article class="doc-content">
 
 <h1>GLM-5.2 Architecture Map</h1>
 <p class="lead">GLM-5.2 is a DeepSeek-style MLA sparse-MoE model with GLM's DSA/NSA sparse attention indexer and one built-in next-token prediction layer for speculative decoding.</p>
 <div class="grid"><section class="card"><div class="label">model class</div><div class="value"><code>GlmMoeDsaForCausalLM</code></div></section><section class="card"><div class="label">hidden size</div><div class="value">6,144</div></section><section class="card"><div class="label">context length</div><div class="value">1,048,576</div></section><section class="card"><div class="label">nextn/MTP layers</div><div class="value">1</div></section></div>
-<h2>Layer Stack</h2>
+<h2 id="layer-stack">Layer Stack</h2>
 <table><tr><th>Region</th><th>Layers</th><th>MLP/MoE</th></tr><tr><td>Dense warm-up</td><td>0-2</td><td>SwiGLU dense MLP, intermediate 12,288</td></tr>
 <tr><td>Sparse body</td><td>3-77</td><td>256 routed experts, top-8 plus 1 shared expert</td></tr>
 <tr><td>Draft layer</td><td>separate nextn layer</td><td>One sparse decoder layer used when SGLang speculative decoding is enabled</td></tr></table>
-<h2>MLA Attention Shape</h2>
+<h2 id="parameter-count">Parameter Count</h2>
+<p>The TP8 torchinfo report should not be read as the model's total parameter count. The printed <code>Total params</code> line sums parent module rows and child module rows together, so it double-counts module containers. The useful accounting is to first get unique resident parameters on one TP rank, then multiply only the TP-sharded tensors by eight.</p>
+<div class="grid"><section class="card"><div class="label">logical model params</div><div class="value">742.277B</div></section><section class="card"><div class="label">unique rank-0 resident</div><div class="value">94.161B</div></section><section class="card"><div class="label">torchinfo printed rows</div><div class="value">185.753B</div></section><section class="card"><div class="label">replicated rank-0 part</div><div class="value">1.574B</div></section></div>
+<div class="eq-block"><div class="eq-title">TP8 parameter accounting</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>logical</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">P<sub>sharded, rank 0</sub></span> &times; 8 + <span class="math-var">P<sub>replicated, rank 0</sub></span></div><div class="eq-note">742,277,149,356</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>sharded, rank 0</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">92,587,950,240</div><div class="eq-note">resident tensors whose output/input/expert dimension is split by TP</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>replicated, rank 0</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">1,573,547,436</div><div class="eq-note">full tensors copied on every TP rank but counted once logically</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>torchinfo rows</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">94,161,497,676 + 91,591,803,270</div><div class="eq-note">185,753,300,946</div></div><div class="eq-comment">The resulting logical count is about 742.3B parameters. It includes all routed experts, the shared expert, untied embeddings and output head, and FP8 scale/storage tensors surfaced by the SGLang torchinfo run. It is not the active-per-token parameter count.</div></div>
+<h3 id="tp8-per-rank">TP8 Per-Rank Shapes</h3>
+<p>For the H200 TP8 setup we tested, each rank sees about 94.2B unique resident parameters. Most of that is MoE expert storage; replicated modules still occupy HBM on every rank even though they count only once in the logical model total.</p>
+<table><tr><th>Component</th><th>Per-rank shape or object</th><th>Rank-0 count</th><th>Logical rule</th><th>Logical count</th></tr><tr><td>MoE expert tensors</td><td>75 sparse layers; rank-local TP slice of 257 routed plus shared experts</td><td>90,956,412,000</td><td>TP-sharded; multiply by 8</td><td>727,651,296,000</td></tr>
+<tr><td><code>fused_qkv_a_proj_with_mqa</code></td><td>78 full projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span></td><td>1,257,583,392</td><td>replicated; count once logically</td><td>1,257,583,392</td></tr>
+<tr><td><code>o_proj</code></td><td>78 rank-local projections; each maps local heads <span class="shape">[8, 256]</span> back to <span class="shape">[6144]</span></td><td>981,527,040</td><td>TP-sharded; multiply by 8</td><td>7,852,216,320</td></tr>
+<tr><td><code>q_b_proj</code></td><td>78 rank-local projections; each maps <span class="shape">[2048]</span> to <span class="shape">[2048]</span></td><td>327,175,680</td><td>TP-sharded; multiply by 8</td><td>2,617,405,440</td></tr>
+<tr><td>DSA indexer</td><td>21 full learned selector modules; 32 index heads of width 128</td><td>196,821,744</td><td>replicated; count once logically</td><td>196,821,744</td></tr>
+<tr><td><code>lm_head</code></td><td>vocab-parallel shard <span class="shape">[19360, 6144]</span></td><td>118,947,840</td><td>TP-sharded; multiply by 8</td><td>951,582,720</td></tr>
+<tr><td><code>embed_tokens</code></td><td>vocab-parallel shard <span class="shape">[19360, 6144]</span></td><td>118,947,840</td><td>TP-sharded; multiply by 8</td><td>951,582,720</td></tr>
+<tr><td>MoE gate/router</td><td>75 replicated router matrices over 256 routed experts</td><td>117,984,000</td><td>replicated; count once logically</td><td>117,984,000</td></tr>
+<tr><td>Dense MLP gate/up projection</td><td>3 dense layers; rank-local merged output shard maps <span class="shape">[6144]</span> to <span class="shape">[3072]</span></td><td>56,626,560</td><td>TP-sharded; multiply by 8</td><td>453,012,480</td></tr>
+<tr><td>Dense MLP down projection</td><td>3 dense layers; rank-local input shard maps <span class="shape">[1536]</span> to <span class="shape">[6144]</span></td><td>28,313,280</td><td>TP-sharded; multiply by 8</td><td>226,506,240</td></tr>
+<tr><td>RMSNorms and tiny attention scalars</td><td>replicated vectors and scalar kernel bookkeeping entries</td><td>1,158,300</td><td>replicated; count once logically</td><td>1,158,300</td></tr></table>
+<div class="note">Counts in this table come from the rank-0 SGLang torchinfo run. Closed-form weight-only formulas are slightly smaller for several rows because the runtime module tree also exposes FP8 scale tensors and small storage/bookkeeping parameters.</div>
+<h2 id="mla-attention-shape">MLA Attention Shape</h2>
 <table><tr><th>Field</th><th>Value</th><th>Why it matters</th></tr><tr><td>Heads</td><td>64</td><td>TP=8 gives 8 local heads per GPU</td></tr>
 <tr><td>Q low-rank</td><td>2,048</td><td>Replicated q latent before TP-sharded q_b projection</td></tr>
 <tr><td>KV low-rank</td><td>512</td><td>Stored MLA latent dimension for content score and value accumulation</td></tr>
 <tr><td>QK no-RoPE</td><td>192</td><td>Content score head dimension after absorption</td></tr>
 <tr><td>QK RoPE</td><td>64</td><td>Position-aware score dimension</td></tr>
 <tr><td>V head</td><td>256</td><td>Output value dimension before o_proj</td></tr></table>
-<h2>DSA / NSA Sparse Attention</h2>
+<h2 id="dsa-nsa-sparse-attention">DSA / NSA Sparse Attention</h2>
 <p>GLM-5.2 exposes DSA indexer fields in the config. In SGLang, that routes the model to the <code>dsa</code> backend instead of ordinary full-context MLA when the backend is left to defaults.</p>
 <div class="grid"><section class="card"><div class="label">index top-k</div><div class="value">2,048</div></section><section class="card"><div class="label">index heads</div><div class="value">32</div></section><section class="card"><div class="label">index head dim</div><div class="value">128</div></section><section class="card"><div class="label">scan cap idea</div><div class="value">full scan below top-k, sparse scan above it</div></section></div>
 <div class="note">The DSA indexer changes the long-context scaling story. The attention page counts the selected-key scan math and separately calls out that indexer/top-k work is additional overhead.</div>
-<h2>Speculative Decoding</h2>
+<h2 id="speculative-decoding">Speculative Decoding</h2>
 <p>The checkpoint has <code>num_nextn_predict_layers = 1</code>. A plain non-speculative forward does not use it. In our SGLang serving setup, <code>--speculative-algorithm EAGLE</code> loads the same checkpoint as the draft model and remaps the nextn layer into the draft path.</p>
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_architecture.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
+</article>
+</div>
 </main>
 </body>
 </html>
