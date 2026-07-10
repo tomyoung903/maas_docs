@@ -1,7 +1,7 @@
 {
   "artifact": {
     "name": "GLM-5.2 standard prefill kernel timeline on gpu-worker-204",
-    "generated_at": "2026-07-10T11:27:56.595248+08:00",
+    "generated_at": "2026-07-10T13:05:41.770467+08:00",
     "node": "gpu-worker-204",
     "namespace": "maas-prod-zhipu",
     "pod": "glm52-prefill-std-204-nsys-110022",
@@ -1981,6 +1981,14 @@
         "prompt_tokens": 0
       }
     ],
+    "corpus_reuse_evidence": {
+      "unique_prompt_lengths": 14,
+      "first_seen_requests": 14,
+      "repeated_requests": 655,
+      "first_seen_avg_ttft_s": 2.104598,
+      "repeated_avg_ttft_s": 0.717165,
+      "last_first_seen_t": 18.198077
+    },
     "completion_contract": {
       "locust_exit_code": 0,
       "persisted_rows": 669,
@@ -2032,6 +2040,49 @@
     "benchmark_union_seconds": 7.39948,
     "benchmark_peak_concurrency": 7,
     "interpretation": "Long-lived PP SendRecv communication/synchronization residency; not equivalent to useful model compute or wall time."
+  },
+  "peak_bin_evidence": {
+    "non_nccl": {
+      "t": 13,
+      "aggregate_ms": 5108.794383,
+      "start_event_count": 15788,
+      "per_device_ms": [
+        252.450459,
+        430.724466,
+        666.726388,
+        621.885197,
+        716.507141,
+        803.238579,
+        840.334028,
+        776.928125
+      ],
+      "fp8_gemm_ms": 3073.736035,
+      "attention_ms": 1079.601946
+    },
+    "nccl": {
+      "t": 18,
+      "aggregate_ms": 4082.156364,
+      "start_event_count": 83,
+      "long_sendrecv_event_ms": [
+        143.951032,
+        294.959925,
+        461.704153,
+        622.378061,
+        786.114171,
+        950.8296,
+        1116.455712
+      ],
+      "non_nccl_per_device_ms": [
+        751.23138,
+        749.282921,
+        631.683031,
+        399.136384,
+        232.249539,
+        64.372833,
+        0.017472,
+        0.018016
+      ]
+    }
   },
   "kernel_summaries": [
     {
