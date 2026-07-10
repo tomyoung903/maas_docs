@@ -228,16 +228,35 @@
       padding: 15px 16px;
     }
 
-    .pack.ops {
+    .pack:nth-child(3n + 2) {
       border-top-color: var(--accent-2);
     }
 
-    .pack.profile {
+    .pack:nth-child(3n) {
       border-top-color: var(--accent-3);
     }
 
     .pack p {
       color: var(--muted);
+    }
+
+    .pack-path {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .loading-card {
+      min-height: 168px;
+      align-content: center;
+    }
+
+    .status-message {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .status-message.error {
+      color: var(--warn);
     }
 
     .links {
@@ -275,6 +294,10 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 14px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
     }
 
     .artifact-table th,
@@ -324,10 +347,8 @@
       <div class="eyebrow">MaaS Docs Temporary Area</div>
       <h1>MaaS Docs /tmp Index</h1>
       <p class="subtitle">Public directory page for temporary MaaS documentation packs and profiling artifacts under <code>docs/tmp/</code>.</p>
-      <div class="meta-strip" aria-label="Directory metadata">
-        <span class="pill">3 doc packs</span>
-        <span class="pill">2 data artifacts</span>
-        <span class="pill">Updated 2026-07-10</span>
+      <div id="directory-meta" class="meta-strip" aria-label="Directory metadata" aria-live="polite">
+        <span class="pill">Loading live directory</span>
       </div>
     </div>
   </header>
@@ -345,93 +366,252 @@
     <main id="main">
       <section id="overview" class="overview-panel">
         <h2>What This Page Is</h2>
-        <p>This index makes <code>/maas_docs/tmp/</code> open directly and shows the current contents published beneath <code>docs/tmp/</code>.</p>
+        <p>This index reads the repository tree when opened and shows the current contents published beneath <code>docs/tmp/</code>. Child packs and artifacts appear here automatically after they are committed.</p>
         <p>Items here are temporary operational notes, profiling reports, and experiment artifacts. They are public GitHub Pages documents, but they may be superseded by later permanent documentation packs.</p>
       </section>
 
       <section id="doc-packs">
         <h2>Doc Packs</h2>
-        <div class="pack-grid">
-          <article class="pack ops">
-            <div>
-              <h3>GLM-5.2 PD Worker Args</h3>
-              <p>Decode, data-parallel attention, and pipeline-parallel microbatch argument notes for GLM-5.2 worker launch review.</p>
-              <div class="meta-strip" aria-label="GLM-5.2 PD worker args metadata">
-                <span class="pill">GLM-5.2</span>
-                <span class="pill">PD</span>
-                <span class="pill">Worker args</span>
-              </div>
-            </div>
-            <ul class="links">
-              <li><a href="./glm52-pd-worker-args/">Open doc pack</a></li>
-            </ul>
-          </article>
-
-          <article class="pack profile">
-            <div>
-              <h3>GLM-5.2 Prefill Kernel Timeline</h3>
-              <p>PP=8 prefill-shaped profiling report from gpu-worker-204, including kernel launch density, kernel time density, and per-kernel summaries.</p>
-              <div class="meta-strip" aria-label="GLM-5.2 prefill profile metadata">
-                <span class="pill">GLM-5.2</span>
-                <span class="pill">PP=8</span>
-                <span class="pill">Nsight</span>
-              </div>
-            </div>
-            <ul class="links">
-              <li><a href="./glm52-prefill-kernel-timeline/">Open doc pack</a></li>
-              <li><a href="./glm52-prefill-kernel-timeline/timeline_data.json">timeline_data.json</a></li>
-              <li><a href="./glm52-prefill-kernel-timeline/kernel_summary.csv">kernel_summary.csv</a></li>
-            </ul>
-          </article>
-
-          <article class="pack">
-            <div>
-              <h3>SGLang Parallelism Mental Model</h3>
-              <p>DP, TP, PP, and CP mental model for understanding how SGLang parallelism dimensions map onto serving behavior.</p>
-              <div class="meta-strip" aria-label="SGLang parallelism metadata">
-                <span class="pill">SGLang</span>
-                <span class="pill">DP</span>
-                <span class="pill">TP</span>
-                <span class="pill">PP</span>
-                <span class="pill">CP</span>
-              </div>
-            </div>
-            <ul class="links">
-              <li><a href="./sglang-parallelism-mental-model/">Open doc pack</a></li>
-            </ul>
+        <div id="pack-grid" class="pack-grid" aria-busy="true">
+          <article class="pack loading-card">
+            <p class="status-message">Discovering child documentation packs...</p>
           </article>
         </div>
       </section>
 
       <section id="artifacts">
         <h2>Raw Artifacts</h2>
-        <table class="artifact-table">
-          <thead>
-            <tr>
-              <th>Path under /tmp</th>
-              <th>Type</th>
-              <th>Context</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><a href="./glm52-prefill-kernel-timeline/timeline_data.json">glm52-prefill-kernel-timeline/timeline_data.json</a></td>
-              <td>JSON</td>
-              <td>Structured data backing the prefill kernel timeline page.</td>
-            </tr>
-            <tr>
-              <td><a href="./glm52-prefill-kernel-timeline/kernel_summary.csv">glm52-prefill-kernel-timeline/kernel_summary.csv</a></td>
-              <td>CSV</td>
-              <td>Per-kernel count and timing summary from the same profile.</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="artifact-table">
+            <thead>
+              <tr>
+                <th scope="col">Path under /tmp</th>
+                <th scope="col">Type</th>
+                <th scope="col">Size</th>
+              </tr>
+            </thead>
+            <tbody id="artifact-rows" aria-live="polite">
+              <tr>
+                <td colspan="3"><p class="status-message">Discovering raw artifacts...</p></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <footer>
-        Public URL: <code>https://tomyoung903.github.io/maas_docs/tmp/</code>
+        Directory source: <a href="https://github.com/tomyoung903/maas_docs/tree/main/docs/tmp"><code>docs/tmp/</code> on GitHub</a>
       </footer>
     </main>
   </div>
+  <noscript>This directory index requires JavaScript to discover its current child pages.</noscript>
+  <script>
+    (() => {
+      "use strict";
+
+      const treeUrl = "https://api.github.com/repos/tomyoung903/maas_docs/git/trees/main?recursive=1";
+      const pathPrefix = "docs/tmp/";
+      const packGrid = document.querySelector("#pack-grid");
+      const artifactRows = document.querySelector("#artifact-rows");
+      const directoryMeta = document.querySelector("#directory-meta");
+
+      const normalizeText = (value) => value.replace(/\s+/g, " ").trim();
+
+      const titleFromSlug = (slug) => slug
+        .split("-")
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+      const formatBytes = (bytes) => {
+        if (!Number.isFinite(bytes) || bytes < 0) return "Unknown";
+        if (bytes < 1024) return `${bytes} B`;
+        const units = ["KB", "MB", "GB"];
+        let value = bytes / 1024;
+        let unit = units[0];
+        for (let index = 1; value >= 1024 && index < units.length; index += 1) {
+          value /= 1024;
+          unit = units[index];
+        }
+        return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${unit}`;
+      };
+
+      const fileType = (path) => {
+        const filename = path.split("/").pop() || "";
+        const extension = filename.includes(".") ? filename.split(".").pop() : "file";
+        return extension.toUpperCase();
+      };
+
+      const appendPill = (text) => {
+        const pill = document.createElement("span");
+        pill.className = "pill";
+        pill.textContent = text;
+        directoryMeta.append(pill);
+      };
+
+      const extractPackMetadata = (html, slug) => {
+        const childDocument = new DOMParser().parseFromString(html, "text/html");
+        const heading = childDocument.querySelector("h1");
+        const pageTitle = childDocument.querySelector("title");
+        const description = childDocument.querySelector('meta[name="description"]');
+        const title = normalizeText(heading?.textContent || pageTitle?.textContent || titleFromSlug(slug));
+        const paragraph = Array.from(childDocument.querySelectorAll("header p, main p, body > p"))
+          .map((node) => normalizeText(node.textContent || ""))
+          .find((text) => text && text !== title);
+        return {
+          title,
+          summary: normalizeText(description?.content || paragraph || `Documentation under ${slug}.`),
+        };
+      };
+
+      const loadPack = async (entry) => {
+        const relativePath = entry.path.slice(pathPrefix.length);
+        const slug = relativePath.split("/")[0];
+        const href = `./${encodeURIComponent(slug)}/`;
+        const response = await fetch(`${href}?revision=${entry.sha}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Could not read ${entry.path}`);
+        const metadata = extractPackMetadata(await response.text(), slug);
+        return { ...metadata, slug, href };
+      };
+
+      const renderPacks = (packs) => {
+        packGrid.replaceChildren();
+        packGrid.setAttribute("aria-busy", "false");
+
+        if (!packs.length) {
+          const message = document.createElement("p");
+          message.className = "status-message";
+          message.textContent = "No child documentation packs are currently published.";
+          packGrid.append(message);
+          return;
+        }
+
+        packs.forEach((pack) => {
+          const article = document.createElement("article");
+          article.className = "pack";
+
+          const content = document.createElement("div");
+          const heading = document.createElement("h3");
+          heading.textContent = pack.title;
+          const summary = document.createElement("p");
+          summary.textContent = pack.summary;
+          const path = document.createElement("p");
+          path.className = "pack-path";
+          const code = document.createElement("code");
+          code.textContent = `${pack.slug}/`;
+          path.append(code);
+          content.append(heading, summary, path);
+
+          const links = document.createElement("ul");
+          links.className = "links";
+          const item = document.createElement("li");
+          const link = document.createElement("a");
+          link.href = pack.href;
+          link.textContent = "Open doc pack";
+          item.append(link);
+          links.append(item);
+
+          article.append(content, links);
+          packGrid.append(article);
+        });
+      };
+
+      const renderArtifacts = (artifacts) => {
+        artifactRows.replaceChildren();
+
+        if (!artifacts.length) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 3;
+          cell.textContent = "No non-HTML artifacts are currently published.";
+          row.append(cell);
+          artifactRows.append(row);
+          return;
+        }
+
+        artifacts.forEach((artifact) => {
+          const relativePath = artifact.path.slice(pathPrefix.length);
+          const row = document.createElement("tr");
+          const pathCell = document.createElement("td");
+          const link = document.createElement("a");
+          link.href = `./${relativePath.split("/").map(encodeURIComponent).join("/")}`;
+          link.textContent = relativePath;
+          pathCell.append(link);
+          const typeCell = document.createElement("td");
+          typeCell.textContent = fileType(relativePath);
+          const sizeCell = document.createElement("td");
+          sizeCell.textContent = formatBytes(artifact.size);
+          row.append(pathCell, typeCell, sizeCell);
+          artifactRows.append(row);
+        });
+      };
+
+      const renderError = (error) => {
+        packGrid.replaceChildren();
+        packGrid.setAttribute("aria-busy", "false");
+        const message = document.createElement("p");
+        message.className = "status-message error";
+        message.textContent = "The live directory could not be loaded. Open the GitHub directory link below to browse its contents.";
+        packGrid.append(message);
+
+        artifactRows.replaceChildren();
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 3;
+        cell.className = "status-message error";
+        cell.textContent = "Artifact discovery is temporarily unavailable.";
+        row.append(cell);
+        artifactRows.append(row);
+
+        directoryMeta.replaceChildren();
+        appendPill("Directory unavailable");
+        console.error(error);
+      };
+
+      const initialize = async () => {
+        try {
+          const response = await fetch(treeUrl, { cache: "no-store" });
+          if (!response.ok) throw new Error(`GitHub tree request failed with ${response.status}`);
+          const payload = await response.json();
+          if (!Array.isArray(payload.tree) || payload.truncated) {
+            throw new Error("GitHub returned an incomplete repository tree");
+          }
+
+          const packEntries = payload.tree
+            .filter((entry) => entry.type === "blob" && /^docs\/tmp\/[^/]+\/index\.html$/.test(entry.path))
+            .sort((left, right) => left.path.localeCompare(right.path));
+          const artifacts = payload.tree
+            .filter((entry) => entry.type === "blob" && entry.path.startsWith(pathPrefix))
+            .filter((entry) => entry.path !== `${pathPrefix}index.html` && !entry.path.endsWith(".html"))
+            .sort((left, right) => left.path.localeCompare(right.path));
+
+          const packs = await Promise.all(packEntries.map(async (entry) => {
+            try {
+              return await loadPack(entry);
+            } catch (error) {
+              const slug = entry.path.slice(pathPrefix.length).split("/")[0];
+              console.warn(error);
+              return {
+                slug,
+                href: `./${encodeURIComponent(slug)}/`,
+                title: titleFromSlug(slug),
+                summary: `Documentation under ${slug}.`,
+              };
+            }
+          }));
+
+          renderPacks(packs);
+          renderArtifacts(artifacts);
+          directoryMeta.replaceChildren();
+          appendPill(`${packs.length} ${packs.length === 1 ? "doc pack" : "doc packs"}`);
+          appendPill(`${artifacts.length} ${artifacts.length === 1 ? "raw artifact" : "raw artifacts"}`);
+        } catch (error) {
+          renderError(error);
+        }
+      };
+
+      initialize();
+    })();
+  </script>
 </body>
 </html>
