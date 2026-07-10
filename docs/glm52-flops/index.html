@@ -160,6 +160,77 @@ table {
   margin: 18px 0 26px;
   background: var(--paper);
 }
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:nth-child(3),
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-rank-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.parameter-table .param-col-component { width: 19%; }
+.parameter-table .param-col-shape { width: 20%; }
+.parameter-table .param-col-rank { width: 16%; }
+.parameter-table .param-col-expansion { width: 31%; }
+.parameter-table .param-col-logical { width: 14%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
 th, td {
   border: 1px solid var(--line);
   padding: 10px 12px;
@@ -276,6 +347,10 @@ pre {
   .content-overview a.depth-2 {
     padding-left: 0;
   }
+  .parameter-table-scroll .parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
 }
 @media (max-width: 600px) {
   table {
@@ -286,6 +361,11 @@ pre {
   .eq-row {
     grid-template-columns: max-content 24px max-content max-content;
   }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+  }
 }
 </style>
 </head>
@@ -295,7 +375,7 @@ pre {
 
 <h1>GLM-5.2 FLOPs Pack</h1>
 <p class="lead">A compact reference for the GLM-5.2 architecture shape, active linear FLOPs per generated token, and attention-scan FLOPs as context grows.</p>
-<div class="grid"><section class="card"><div class="label">architecture</div><div class="value">78 layers, 3 dense + 75 MoE</div></section><section class="card"><div class="label">active linear</div><div class="value">12.194 GFLOP / token / GPU</div></section><section class="card"><div class="label">attention scan</div><div class="value">1.358 MFLOP / context pair / GPU</div></section><section class="card"><div class="label">DSA top-k</div><div class="value">2,048 selected keys</div></section></div>
+<div class="grid"><section class="card"><div class="label">architecture</div><div class="value">78 layers, 3 dense + 75 MoE</div></section><section class="card"><div class="label">active linear</div><div class="value">12.588 GFLOP / token / GPU</div></section><section class="card"><div class="label">attention scan</div><div class="value">1.358 MFLOP / context pair / GPU</div></section><section class="card"><div class="label">DSA top-k</div><div class="value">2,048 selected keys</div></section></div>
 <h2>Pages</h2>
 <table><tr><th>Page</th><th>Use it for</th></tr><tr><td><a href="glm52_architecture.html">GLM-5.2 architecture</a></td><td>Layer stack, MLA dimensions, MoE routing, DSA indexer, and built-in MTP.</td></tr>
 <tr><td><a href="glm52_dsa_mla_connection.html">DSA + MLA math</a></td><td>The fundamental GLM-5.2 equations for MLA latent KV, DSA top-k selection, and sparse attention.</td></tr>

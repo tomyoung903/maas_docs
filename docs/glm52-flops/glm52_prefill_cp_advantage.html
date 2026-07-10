@@ -160,6 +160,77 @@ table {
   margin: 18px 0 26px;
   background: var(--paper);
 }
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:nth-child(3),
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-rank-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.parameter-table .param-col-component { width: 19%; }
+.parameter-table .param-col-shape { width: 20%; }
+.parameter-table .param-col-rank { width: 16%; }
+.parameter-table .param-col-expansion { width: 31%; }
+.parameter-table .param-col-logical { width: 14%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
 th, td {
   border: 1px solid var(--line);
   padding: 10px 12px;
@@ -276,6 +347,10 @@ pre {
   .content-overview a.depth-2 {
     padding-left: 0;
   }
+  .parameter-table-scroll .parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
 }
 @media (max-width: 600px) {
   table {
@@ -285,6 +360,11 @@ pre {
   }
   .eq-row {
     grid-template-columns: max-content 24px max-content max-content;
+  }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
   }
 }
 </style>
@@ -306,34 +386,36 @@ pre {
 <article class="doc-content">
 
 <h1>Why GLM-5.2 DSA Prefill CP Is Faster</h1>
-<p class="lead">Context parallelism for GLM-5.2 long prefill is best understood as a query-token-axis decomposition of the DSA prefill path. It can be much faster than plain TP8 because the long-context bottleneck is the replicated DSA selector and sparse-attention plumbing, not a single ideal dense GEMM.</p>
+<p class="lead">Context parallelism for GLM-5.2 long prefill is a query-token-axis decomposition of the DSA path. It divides selector rows in 21 refresh layers and selected-key MLA rows in all 78 attention layers, reducing the per-rank critical path that plain TP8 leaves replicated or split only by heads.</p>
 <div class="grid"><section class="card"><div class="label">same GPUs</div><div class="value">TP8 ranks reorganized as CP8</div></section><section class="card"><div class="label">prefill chunk</div><div class="value">8,192 tokens</div></section><section class="card"><div class="label">100K server speedup</div><div class="value">2.542x</div></section><section class="card"><div class="label">CP-divided time</div><div class="value">69.3%</div></section></div>
 <h2 id="short-answer">Short Answer</h2>
-<p>With plain TP8, each attention TP rank still sees the full prefill query chunk for the DSA selector path. The indexer modules are replicated, so a large part of the selector work is repeated across TP ranks. With CP8, those same ranks are relabeled into context-parallel ranks and each rank handles about one eighth of the query rows. That directly shortens the per-rank critical path for the long-context DSA selector and sparse-attention setup.</p>
-<p>CP8 also means attention TP size becomes one in the measured single-node setup. The replicated selector is divided by query rows, while ordinary head-sharded attention work is mostly traded from head sharding to token sharding. The speedup is therefore not 8x: the run still includes projection work, MoE work, selected-key attention, local top-k compute, top-k/result metadata movement, KV/index-key all-gather or rerange, synchronization, scheduling, and kernel overhead.</p>
+<p>With plain TP8, each attention TP rank still sees the full prefill query chunk whenever a layer refreshes the DSA selection. The learned indexer modules are replicated, so those 21 refresh layers repeat the full selector rows across TP ranks. The other 57 layers reuse the latest integer TopK positions and do not rerun the indexer. With CP8, the same ranks are relabeled as context-parallel ranks and each rank handles about one eighth of the query rows. This directly shortens the per-rank selector critical path.</p>
+<p>CP8 also makes attention TP size one in the measured single-node setup. Selector work is divided by query rows, while the selected-key MLA work in all 78 layers is reorganized from head sharding to token sharding. The speedup is therefore not 8x: the run still includes projection work, MoE work, selected-key attention, local TopK compute, TopK metadata movement, KV/index-key communication, synchronization, scheduling, and kernel overhead.</p>
 <div class="note">This page builds on the <a href="glm52_dsa_mla_connection.html">DSA + MLA math page</a>. That page defines the MLA latent cache, the DSA selector, and the selected-key sparse MLA attention. Here the question is wall-clock prefill decomposition.</div>
 <h2 id="what-cp-does">What <code>attn-cp-size</code> Changes</h2>
-<p>In the local SGLang branch, the DSA path is controlled by <code>--enable-nsa-prefill-context-parallel</code> and <code>--nsa-prefill-cp-mode round-robin-split</code>. The CP degree is the attention context-parallel group size. The important effect is not new model math; it is a different mapping from rank to token rows.</p>
+<p>In the local SGLang branch, the DSA path is controlled by <code>--enable-dsa-prefill-context-parallel</code> and <code>--dsa-prefill-cp-mode round-robin-split</code>. The CP degree is the attention context-parallel group size. The important effect is not new model math; it is a different mapping from rank to token rows. The older <code>nsa</code>-named flags remain compatibility aliases.</p>
 <div class="eq-block"><div class="eq-title">Attention CP rank decomposition</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">P<sub>attn-tp</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-q math-var">P<sub>tp</sub></span> / (<span class="sym sym-gate math-var">P<sub>dp</sub></span> &times; <span class="sym sym-select math-var">P<sub>cp</sub></span>)</div><div class="eq-note">attention TP size after CP is carved out</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">r<sub>cp</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&lfloor; <span class="math-var">r<sub>tp</sub></span> / <span class="sym sym-q math-var">P<sub>attn-tp</sub></span> &rfloor; mod <span class="sym sym-select math-var">P<sub>cp</sub></span></div><div class="eq-note">CP rank label derived from TP rank</div></div><div class="eq-row"><div class="eq-lhs">CP off</div><div class="eq-op">:</div><div class="eq-rhs"><span class="sym sym-select math-var">P<sub>cp</sub></span>=1, <span class="sym sym-q math-var">P<sub>attn-tp</sub></span>=8</div><div class="eq-note">plain TP8 attention hierarchy</div></div><div class="eq-row"><div class="eq-lhs">CP8</div><div class="eq-op">:</div><div class="eq-rhs"><span class="sym sym-select math-var">P<sub>cp</sub></span>=8, <span class="sym sym-q math-var">P<sub>attn-tp</sub></span>=1</div><div class="eq-note">the same 8 GPUs are reorganized</div></div><div class="eq-comment">This is why CP8 is a different decomposition of the same ranks, not an additional 8 GPUs.</div></div>
 <div class="eq-block"><div class="eq-title">Query-token split per prefill chunk</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">N<sub>q,rank</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-q math-var">T<sub>c</sub></span></div><div class="eq-note">CP off: each attention TP rank sees the whole query chunk</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">N<sub>q,rank</sub></span></div><div class="eq-op">&approx;</div><div class="eq-rhs">&lceil; <span class="sym sym-q math-var">T<sub>c</sub></span> / <span class="sym sym-select math-var">P</span> &rceil;</div><div class="eq-note">CP on: each CP rank gets a token slice</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">T<sub>c</sub></span> / <span class="sym sym-select math-var">P</span></div><div class="eq-op">=</div><div class="eq-rhs">8192 / 8</div><div class="eq-note">1,024 query rows per full chunk</div></div><div class="eq-comment">With round-robin DSA CP, rank r gets token positions r, r+P, r+2P, and so on.</div></div>
 <table><tr><th>Mode</th><th>Attention CP size</th><th>Attention TP size</th><th>Per-rank query rows for one full chunk</th><th>What this means</th></tr><tr><td>plain TP8</td><td>1</td><td>8</td><td>8,192</td><td>Each rank owns a head/channel shard, but the DSA selector sees the whole query chunk.</td></tr>
 <tr><td>CP8</td><td>8</td><td>1</td><td>1,024</td><td>Each rank owns about one eighth of query rows and, because attention TP is now one, the full attention-head set for those rows.</td></tr></table>
 <h3 id="code-evidence">Code Evidence</h3>
-<table><tr><th>Area</th><th>Local code reference</th><th>Evidence</th></tr><tr><td>Launch flags</td><td><code>python/sglang/srt/server_args.py:5079:1</code>, <code>server_args.py:6839:1</code></td><td><code>--attn-cp-size</code> names the CP degree; DSA prefill CP uses <code>--enable-nsa-prefill-context-parallel</code> and <code>--nsa-prefill-cp-mode</code>.</td></tr>
-<tr><td>Rank hierarchy</td><td><code>python/sglang/srt/entrypoints/engine.py:1406:1</code>, <code>python/sglang/srt/distributed/parallel_state.py:1864:1</code></td><td>SGLang computes <span class='math-var'>P<sub>attn-tp</sub></span> after dividing by the CP degree, then builds <code>ATTN_CP</code> groups from TP ranks.</td></tr>
-<tr><td>Round-robin token split</td><td><code>python/sglang/srt/layers/attention/nsa/utils.py:96:1</code></td><td>The DSA CP split assigns tokens by position modulo CP size: rank <span class='math-var'>r</span> receives positions <span class='math-var'>r, r+P, r+2P, ...</span>.</td></tr>
-<tr><td>DSA metadata split</td><td><code>python/sglang/srt/layers/attention/nsa_backend.py:550:1</code>, <code>nsa_backend.py:773:1</code></td><td>The backend applies the same CP split to query lengths and key-range metadata, so the selector kernel sees only this rank's query rows.</td></tr>
-<tr><td>Replicated selector</td><td><code>python/sglang/srt/layers/attention/nsa/nsa_indexer.py:222:1</code>, <code>nsa_indexer.py:230:1</code></td><td>The indexer query/key projections use <code>ReplicatedLinear</code>, so the DSA selector is not naturally split by ordinary TP weight sharding.</td></tr>
-<tr><td>GLM DSA path</td><td><code>python/sglang/srt/models/glm4_moe.py:1483:1</code>, <code>python/sglang/srt/models/deepseek_v2.py:2473:1</code></td><td><code>GlmMoeDsaForCausalLM</code> inherits the DeepSeekV2 DSA implementation, which prepares CP metadata before the model forward.</td></tr></table>
+<table><tr><th>Area</th><th>Local code reference</th><th>Evidence</th></tr><tr><td>Launch flags</td><td><code>python/sglang/srt/server_args.py:903:1</code>, <code>server_args.py:6469:1</code>, <code>server_args.py:6490:1</code></td><td><code>--attn-cp-size</code> names the CP degree; DSA prefill CP uses <code>--enable-dsa-prefill-context-parallel</code> and <code>--dsa-prefill-cp-mode</code>.</td></tr>
+<tr><td>Rank hierarchy</td><td><code>python/sglang/srt/entrypoints/engine.py:1417:1</code>, <code>python/sglang/srt/distributed/parallel_state.py:1963:1</code></td><td>SGLang computes <span class='math-var'>P<sub>attn-tp</sub></span> after dividing by the CP degree, then builds <code>ATTN_CP</code> groups from TP ranks.</td></tr>
+<tr><td>Round-robin token split</td><td><code>python/sglang/srt/layers/attention/dsa/utils.py:96:1</code></td><td>The DSA CP split assigns tokens by position modulo CP size: rank <span class='math-var'>r</span> receives positions <span class='math-var'>r, r+P, r+2P, ...</span>.</td></tr>
+<tr><td>DSA metadata split</td><td><code>python/sglang/srt/layers/attention/dsa_backend.py:758:1</code>, <code>dsa_backend.py:968:1</code></td><td>The backend applies the same CP split to query lengths and key-range metadata, so the selector kernel sees only this rank's query rows.</td></tr>
+<tr><td>Replicated selector</td><td><code>python/sglang/srt/layers/attention/dsa/dsa_indexer.py:377:1</code>, <code>dsa_indexer.py:385:1</code></td><td>The indexer query/key projections use <code>ReplicatedLinear</code>, so the DSA selector is not naturally split by ordinary TP weight sharding.</td></tr>
+<tr><td>Refresh schedule</td><td><code>python/sglang/srt/configs/model_config.py:180:1</code></td><td><code>layer_skips_topk</code> derives the cadence from <code>index_topk_freq=4</code> and <code>index_skip_topk_offset=3</code>: layers 0, 1, 2, then 6, 10, ..., 74 refresh, for 21 refreshes total.</td></tr>
+<tr><td>Selection reuse</td><td><code>python/sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:261:1</code></td><td>A reuse layer receives <code>topk_indices</code> from the preceding refresh rather than invoking its own indexer; it still performs its own selected-key MLA attention.</td></tr>
+<tr><td>GLM DSA path</td><td><code>python/sglang/srt/models/glm4_moe.py:1477:1</code>, <code>python/sglang/srt/models/deepseek_v2.py:2733:1</code></td><td><code>GlmMoeDsaForCausalLM</code> inherits the DeepSeekV2 DSA implementation, which prepares CP metadata before the model forward.</td></tr></table>
 <h2 id="bottleneck">Bottleneck Math</h2>
 <p>For a long prompt, SGLang does chunked prefill. In the measured setup, a full chunk has <span class="sym sym-q math-var">T<sub>c</sub></span> = 8,192 query tokens, <span class="sym sym-select math-var">P</span> = 8, and DSA keeps <span class="sym sym-select math-var">K</span> = 2048 selected positions per query after the short-context warmup.</p>
-<div class="eq-block"><div class="eq-title">Per-chunk DSA work model</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-hidden math-var">a<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">c</span> <span class="sym sym-q math-var">T<sub>c</sub></span></div><div class="eq-note">tokens cached before chunk c when cached tokens are zero</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">q<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">min(<span class="sym sym-q math-var">T<sub>c</sub></span>, <span class="sym sym-hidden math-var">L</span> - <span class="sym sym-hidden math-var">a<sub>c</sub></span>)</div><div class="eq-note">query tokens in chunk c</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">t</span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-hidden math-var">a<sub>c</sub></span> + <span class="math-var">j</span></div><div class="eq-note">global token index inside the chunk</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">G<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">j</span>=0</sub><sup><span class="sym sym-q math-var">q<sub>c</sub></span>-1</sup> (<span class="sym sym-hidden math-var">a<sub>c</sub></span> + <span class="math-var">j</span> + 1)</div><div class="eq-note">DSA selector candidate pairs</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">G<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-q math-var">q<sub>c</sub></span>(<span class="sym sym-hidden math-var">a<sub>c</sub></span>+1) + <span class="sym sym-q math-var">q<sub>c</sub></span>(<span class="sym sym-q math-var">q<sub>c</sub></span>-1)/2</div><div class="eq-note">closed form</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">A<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">j</span>=0</sub><sup><span class="sym sym-q math-var">q<sub>c</sub></span>-1</sup> min(<span class="sym sym-hidden math-var">a<sub>c</sub></span>+<span class="math-var">j</span>+1, <span class="sym sym-select math-var">K</span>)</div><div class="eq-note">sparse MLA selected-key pairs</div></div></div>
-<p>The key bottleneck is that the DSA selector has to evaluate current query rows against a long causal candidate history before it can return the top selected positions. That candidate table has natural shape query rows by candidate context. TP head sharding is good for per-head attention math, but it does not automatically remove a replicated selector over all query rows.</p>
-<div class="eq-block"><div class="eq-title">Wall-clock timing sketch</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">T<sub>P</sub></span>(<span class="math-var">c</span>)</div><div class="eq-op">&approx;</div><div class="eq-rhs"><span class="sym sym-weight math-var">&theta;<sub>local</sub></span><span class="sym sym-q math-var">q<sub>c</sub></span> + <span class="sym sym-index math-var">&theta;<sub>idx</sub></span><span class="sym sym-index math-var">G<sub>c</sub></span>/<span class="sym sym-select math-var">P</span> + <span class="sym sym-attn math-var">&theta;<sub>sparse</sub></span><span class="sym sym-attn math-var">A<sub>c</sub></span>/s(<span class="sym sym-select math-var">P</span>) + <span class="sym sym-select math-var">&theta;<sub>topk-local</sub></span><span class="sym sym-q math-var">q<sub>c</sub></span><span class="sym sym-select math-var">K</span>/<span class="sym sym-select math-var">P</span> + <span class="sym sym-select math-var">&theta;<sub>topk-meta</sub></span>(<span class="sym sym-select math-var">P</span>, <span class="sym sym-q math-var">q<sub>c</sub></span>, <span class="sym sym-select math-var">K</span>) + <span class="sym sym-gate math-var">&theta;<sub>comm</sub></span>(<span class="sym sym-select math-var">P</span>, <span class="sym sym-q math-var">q<sub>c</sub></span>)</div><div class="eq-note">one chunk</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">T<sub>P</sub></span>(<span class="math-var">c</span>)</div><div class="eq-op">&approx;</div><div class="eq-rhs"><span class="sym sym-weight math-var">F<sub>c</sub></span> + <span class="sym sym-index math-var">V<sub>c</sub></span>/<span class="sym sym-select math-var">P</span></div><div class="eq-note">Amdahl simplification</div></div><div class="eq-row"><div class="eq-lhs">&sum; <span class="sym sym-index math-var">G<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-hidden math-var">L</span>(<span class="sym sym-hidden math-var">L</span>+1)/2</div><div class="eq-note">candidate scan grows quadratically with prompt length</div></div><div class="eq-row"><div class="eq-lhs">&sum; <span class="sym sym-attn math-var">A<sub>c</sub></span></div><div class="eq-op">&approx;</div><div class="eq-rhs"><span class="sym sym-select math-var">K</span><span class="sym sym-hidden math-var">L</span></div><div class="eq-note">selected-key scan is linear after the warmup</div></div><div class="eq-comment">The constants hide kernel efficiency, cache paging, top-k implementation, and communication. They are intentionally wall-clock terms, not pure model FLOPs.</div></div>
-<table><tr><th>Prompt length</th><th>Selector candidate pairs</th><th>Sparse selected-key pairs</th><th>Candidate / selected</th></tr><tr><td>32,768</td><td>536.9M</td><td>65.0M</td><td>8.26x</td></tr>
-<tr><td>65,536</td><td>2.148B</td><td>132.1M</td><td>16.25x</td></tr>
-<tr><td>100,000</td><td>5.000B</td><td>202.7M</td><td>24.67x</td></tr></table>
-<div class="note">The pair-count table is not a FLOP table. It shows why the DSA selector and sparse-attention setup dominate long-prefill wall-clock behavior: at 100K tokens the candidate selection surface is about 5.000B query-candidate pairs, while the final selected-key attention surface is about 202.7M pairs.</div>
+<div class="eq-block"><div class="eq-title">Per-chunk DSA work model</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">N<sub>idx</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">21</div><div class="eq-note">layers that run a fresh selector</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">N<sub>attn</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">78</div><div class="eq-note">layers that run selected-key MLA</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-hidden math-var">a<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">c</span> <span class="sym sym-q math-var">T<sub>c</sub></span></div><div class="eq-note">tokens cached before chunk c when cached tokens are zero</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">q<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">min(<span class="sym sym-q math-var">T<sub>c</sub></span>, <span class="sym sym-hidden math-var">L</span> - <span class="sym sym-hidden math-var">a<sub>c</sub></span>)</div><div class="eq-note">query tokens in chunk c</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">t</span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-hidden math-var">a<sub>c</sub></span> + <span class="math-var">j</span></div><div class="eq-note">global token index inside the chunk</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">G<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">j</span>=0</sub><sup><span class="sym sym-q math-var">q<sub>c</sub></span>-1</sup> (<span class="sym sym-hidden math-var">a<sub>c</sub></span> + <span class="math-var">j</span> + 1)</div><div class="eq-note">candidate pairs per selector-refresh layer</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">G<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-q math-var">q<sub>c</sub></span>(<span class="sym sym-hidden math-var">a<sub>c</sub></span>+1) + <span class="sym sym-q math-var">q<sub>c</sub></span>(<span class="sym sym-q math-var">q<sub>c</sub></span>-1)/2</div><div class="eq-note">closed form</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">A<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">j</span>=0</sub><sup><span class="sym sym-q math-var">q<sub>c</sub></span>-1</sup> min(<span class="sym sym-hidden math-var">a<sub>c</sub></span>+<span class="math-var">j</span>+1, <span class="sym sym-select math-var">K</span>)</div><div class="eq-note">selected-key pairs per MLA attention layer</div></div></div>
+<p>On each refresh layer, the DSA selector evaluates current query rows against the causal candidate history before it can return TopK positions. That table has query-row by candidate-position shape. Ordinary TP shards attention heads, but the selector projection modules are replicated and the selector still receives every query row on each TP rank. CP attacks that runtime duplication directly. The selected-key MLA calculation is different: it runs in all 78 layers, whether their integer position list was refreshed or reused.</p>
+<div class="eq-block"><div class="eq-title">Wall-clock timing sketch</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">T<sub>P</sub></span>(<span class="math-var">c</span>)</div><div class="eq-op">&approx;</div><div class="eq-rhs"><span class="sym sym-weight math-var">&theta;<sub>local</sub></span><span class="sym sym-q math-var">q<sub>c</sub></span> + <span class="sym sym-index math-var">&theta;<sub>idx</sub></span><span class="sym sym-index math-var">N<sub>idx</sub></span><span class="sym sym-index math-var">G<sub>c</sub></span>/<span class="sym sym-select math-var">P</span> + <span class="sym sym-attn math-var">&theta;<sub>sparse</sub></span><span class="sym sym-attn math-var">N<sub>attn</sub></span><span class="sym sym-attn math-var">A<sub>c</sub></span>/s(<span class="sym sym-select math-var">P</span>) + <span class="sym sym-select math-var">&theta;<sub>topk-local</sub></span><span class="sym sym-index math-var">N<sub>idx</sub></span><span class="sym sym-q math-var">q<sub>c</sub></span><span class="sym sym-select math-var">K</span>/<span class="sym sym-select math-var">P</span> + <span class="sym sym-select math-var">&theta;<sub>topk-meta</sub></span>(<span class="sym sym-select math-var">P</span>, <span class="sym sym-q math-var">q<sub>c</sub></span>, <span class="sym sym-select math-var">K</span>) + <span class="sym sym-gate math-var">&theta;<sub>comm</sub></span>(<span class="sym sym-select math-var">P</span>, <span class="sym sym-q math-var">q<sub>c</sub></span>)</div><div class="eq-note">one chunk</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">T<sub>P</sub></span>(<span class="math-var">c</span>)</div><div class="eq-op">&approx;</div><div class="eq-rhs"><span class="sym sym-weight math-var">F<sub>c</sub></span> + <span class="sym sym-index math-var">V<sub>c</sub></span>/<span class="sym sym-select math-var">P</span></div><div class="eq-note">Amdahl simplification</div></div><div class="eq-row"><div class="eq-lhs">&sum; <span class="sym sym-index math-var">G<sub>c</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-hidden math-var">L</span>(<span class="sym sym-hidden math-var">L</span>+1)/2</div><div class="eq-note">per refresh layer; candidate scan grows quadratically</div></div><div class="eq-row"><div class="eq-lhs">&sum; <span class="sym sym-attn math-var">A<sub>c</sub></span></div><div class="eq-op">&approx;</div><div class="eq-rhs"><span class="sym sym-select math-var">K</span><span class="sym sym-hidden math-var">L</span></div><div class="eq-note">per attention layer; selected scan is linear after warmup</div></div><div class="eq-comment">The constants hide kernel efficiency, cache paging, top-k implementation, and communication. They are intentionally wall-clock terms, not pure model FLOPs.</div></div>
+<table><tr><th>Prompt length</th><th>Candidates / refresh layer</th><th>Selected / MLA layer</th><th>Per-layer pair ratio</th><th>Whole-stack pair ratio</th></tr><tr><td>32,768</td><td>536.9M</td><td>65.0M</td><td>8.26x</td><td>2.22x</td></tr>
+<tr><td>65,536</td><td>2.148B</td><td>132.1M</td><td>16.25x</td><td>4.38x</td></tr>
+<tr><td>100,000</td><td>5.000B</td><td>202.7M</td><td>24.67x</td><td>6.64x</td></tr></table>
+<div class="note">The pair table is not a FLOP table. At 100K tokens, one refresh layer has 5.000B candidate pairs and one MLA layer has 202.7M selected pairs, a 24.67x per-layer ratio. Correcting for the schedule gives 105.001B pairs over 21 refreshes versus 15.811B pairs over all 78 MLA layers, or 6.64x. Dimension-weighted candidate-score FLOPs are only 0.394x the selected-MLA scan FLOPs. The measured bottleneck is therefore a runtime result involving replication, memory access, TopK, synchronization, and kernel efficiency, not proof that selector FLOPs exceed MLA FLOPs.</div>
 <h2 id="measurements">Measured Speedups</h2>
 <p>These are warmed repeated medians from H200 with unique prompts and zero cache hits per measured request. Both baseline and CP8 used chunked prefill: <code>--chunked-prefill-size 8192</code>, <code>--max-prefill-tokens 8192</code>, and <code>--enable-mixed-chunk</code>.</p>
 <table><tr><th>Target prompt</th><th>TP8 client</th><th>CP8 client</th><th>TP8 server</th><th>CP8 server</th><th>Median speedup</th></tr><tr><td>32,768</td><td>3.595s</td><td>1.510s</td><td>3.590s</td><td>1.504s</td><td>2.381x client / 2.387x server</td></tr>
@@ -347,7 +429,7 @@ pre {
 <tr><td>100,000</td><td>2.542x</td><td>69.3%</td><td>30.7%</td><td>3.26x</td></tr></table>
 <p>At 100K tokens, the observed server-side speedup of about 2.542x implies that roughly 69.3% of the baseline request time was effectively on the CP-divided path. The remaining 30.7% includes work that CP does not divide perfectly or that CP adds back through communication and orchestration.</p>
 <h2 id="practical-reading">Practical Reading</h2>
-<p>CP8 is worth using when long-prefill DSA selector and sparse-attention setup dominate the request. It is less useful for short prompts, decode-heavy traffic, or workloads where memory pressure and communication overhead erase the query-row split benefit.</p>
+<p>CP8 is worth using when the query-row-parallel DSA path occupies enough of long-prefill wall time. It is less useful for short prompts, decode-heavy traffic, or workloads where memory pressure and communication overhead erase the query-row split benefit. Pair counts alone cannot predict that crossover; use measured stage and kernel timing.</p>
 <div class="note">For the current H200 setup, CP8 should be treated as a Hopper long-prefill optimization. It trades memory and communication for lower TTFT on long prompts. Leave it off for Blackwell paths unless the DSA-CP FP8 RoPE kernels and validation for that platform are in place.</div>
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_prefill_cp_advantage.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_prefill_cp_advantage.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>

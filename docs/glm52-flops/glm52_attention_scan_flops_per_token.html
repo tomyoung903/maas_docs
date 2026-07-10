@@ -160,6 +160,77 @@ table {
   margin: 18px 0 26px;
   background: var(--paper);
 }
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:nth-child(3),
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-rank-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.parameter-table .param-col-component { width: 19%; }
+.parameter-table .param-col-shape { width: 20%; }
+.parameter-table .param-col-rank { width: 16%; }
+.parameter-table .param-col-expansion { width: 31%; }
+.parameter-table .param-col-logical { width: 14%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
 th, td {
   border: 1px solid var(--line);
   padding: 10px 12px;
@@ -276,6 +347,10 @@ pre {
   .content-overview a.depth-2 {
     padding-left: 0;
   }
+  .parameter-table-scroll .parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
 }
 @media (max-width: 600px) {
   table {
@@ -286,38 +361,48 @@ pre {
   .eq-row {
     grid-template-columns: max-content 24px max-content max-content;
   }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+  }
 }
 </style>
 </head>
 <body>
 <main>
 <nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_attention_scan_flops_per_token.html">Public URL</a></nav>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">On this page</div>
+  <a class="depth-1" href="#scope">Scope</a>
+<a class="depth-1" href="#pair-formula">Pair formula</a>
+<a class="depth-1" href="#context-table">Context table</a>
+<a class="depth-1" href="#interpretation">Interpretation</a>
+</aside>
+<article class="doc-content">
 
 <h1>GLM-5.2 Attention Scan FLOPs</h1>
-<p class="lead">Attention scan work grows with the number of context keys touched by each generated token. GLM-5.2's DSA path limits the selected-key scan to top-2048 keys after the context exceeds that threshold.</p>
+<p class="lead">This page counts the selected-key MLA score and value scan in all 78 target layers at TP=8. GLM-5.2 limits that scan to TopK=2048 keys after the context exceeds the threshold.</p>
 <div class="grid"><section class="card"><div class="label">per layer per context pair</div><div class="value">17,408 FLOPs/GPU</div></section><section class="card"><div class="label">all layers per context pair</div><div class="value">1.358 MFLOP/GPU</div></section><section class="card"><div class="label">dense 1M context scan</div><div class="value">1,423.782 GFLOP/token/GPU</div></section><section class="card"><div class="label">DSA top-k scan cap</div><div class="value">2.781 GFLOP/token/GPU</div></section></div>
-<h2>Per Context-Pair Formula</h2>
-<pre><code>local_heads = heads / TP = 64 / 8 = 8
-
-per_layer_pair =
-  local_heads * 2 * (2 * kv_lora + qk_rope)
-= 8 * 2 * (2 * 512 + 64)
-= 17,408 FLOPs/context-pair/layer/GPU
-
-all_layers_pair =
-  17,408 * 78
-= 1,357,824 FLOPs/context-pair/GPU</code></pre>
-<h2>Per Generated Token By Context Length</h2>
+<h2 id="scope">Scope</h2>
+<p>Every target layer computes its own MLA attention over the selected positions. Only 21 layers run a learned DSA indexer to refresh those integer positions; 57 layers reuse the latest list. Reuse avoids a new selector calculation, but it does not skip that layer's MLA score, softmax, latent-value accumulation, or output projection.</p>
+<div class="note">This page therefore multiplies the selected-key MLA pair cost by 78, not 21. Conversely, DSA candidate scoring belongs only to the 21 refresh layers and is outside this scan constant. The <a href="glm52_dsa_mla_connection.html#prefill-100k">100K prefill derivation</a> places both terms at their correct layer scope.</div>
+<h2 id="pair-formula">Per Context-Pair Formula</h2>
+<div class="eq-block"><div class="eq-title">Selected-key MLA pair cost at TP8</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-q math-var">H<sub>local</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-q math-var">H</span>/<span class="sym sym-select math-var">P<sub>tp</sub></span></div><div class="eq-note">64/8 = 8 local heads</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">F<sub>pair,layer</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-q math-var">H<sub>local</sub></span> &times; 2 &times; (2<span class="sym sym-kv math-var">r<sub>kv</sub></span> + <span class="sym sym-rope math-var">d<sub>r</sub></span>)</div><div class="eq-note">17,408 FLOPs/key/layer/rank</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">F<sub>pair,stack</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-attn math-var">N<sub>attn</sub></span><span class="sym sym-attn math-var">F<sub>pair,layer</sub></span></div><div class="eq-note">1,357,824 FLOPs/key/rank</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">F<sub>dense-scan</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-hidden math-var">C</span><span class="sym sym-attn math-var">F<sub>pair,stack</sub></span></div><div class="eq-note">hypothetical full-context scan</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-select math-var">F<sub>selected-scan</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">min(<span class="sym sym-hidden math-var">C</span>, <span class="sym sym-select math-var">K</span>)<span class="sym sym-attn math-var">F<sub>pair,stack</sub></span></div><div class="eq-note">actual selected-key scan model</div></div><div class="eq-comment">The factor 2 counts one score dot product and one latent-value accumulation; each multiply-add is two FLOPs. The content path traverses the 512-dimensional KV latent twice, while the RoPE score traverses 64 dimensions once.</div></div>
+<h2 id="context-table">Per Generated Token by Context Length</h2>
 <table><tr><th>Context length</th><th>Full dense scan</th><th>DSA selected-key scan</th><th>Dense / DSA</th></tr><tr><td>2,048</td><td>2.781 GFLOP</td><td>2.781 GFLOP</td><td>1.0x</td></tr>
 <tr><td>8,192</td><td>11.123 GFLOP</td><td>2.781 GFLOP</td><td>4.0x</td></tr>
 <tr><td>32,768</td><td>44.493 GFLOP</td><td>2.781 GFLOP</td><td>16.0x</td></tr>
 <tr><td>131,072</td><td>177.973 GFLOP</td><td>2.781 GFLOP</td><td>64.0x</td></tr>
 <tr><td>1,048,576</td><td>1,423.782 GFLOP</td><td>2.781 GFLOP</td><td>512.0x</td></tr></table>
 <div class="note">The DSA selected-key column is not total attention cost. It is the score/value scan over selected keys. The indexer, top-k selection, metadata handling, memory traffic, and backend-specific kernels still need profiling or separate accounting.</div>
-<h2>Reading This Correctly</h2>
+<h2 id="interpretation">Reading This Correctly</h2>
 <p>Below 2,048 context tokens, the dense and selected-key scan counts match. Above 2,048, the selected-key scan term stays flat while the dense full-context counter keeps growing linearly. This is why GLM-5.2 long-context profiling should not use a naive dense-attention scan model as the only MFU denominator.</p>
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_attention_scan_flops_per_token.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_attention_scan_flops_per_token.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
+</article>
+</div>
 </main>
 </body>
 </html>

@@ -160,6 +160,77 @@ table {
   margin: 18px 0 26px;
   background: var(--paper);
 }
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:nth-child(3),
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-rank-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.parameter-table .param-col-component { width: 19%; }
+.parameter-table .param-col-shape { width: 20%; }
+.parameter-table .param-col-rank { width: 16%; }
+.parameter-table .param-col-expansion { width: 31%; }
+.parameter-table .param-col-logical { width: 14%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
 th, td {
   border: 1px solid var(--line);
   padding: 10px 12px;
@@ -276,6 +347,10 @@ pre {
   .content-overview a.depth-2 {
     padding-left: 0;
   }
+  .parameter-table-scroll .parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
 }
 @media (max-width: 600px) {
   table {
@@ -286,38 +361,47 @@ pre {
   .eq-row {
     grid-template-columns: max-content 24px max-content max-content;
   }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+  }
 }
 </style>
 </head>
 <body>
 <main>
 <nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_linear_flops_per_token.html">Public URL</a></nav>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">On this page</div>
+  <a class="depth-1" href="#scope">Scope</a>
+<a class="depth-1" href="#attention-projections">Attention projections</a>
+<a class="depth-1" href="#indexer-projections">Indexer projections</a>
+<a class="depth-1" href="#mlp-moe">MLP and MoE</a>
+<a class="depth-1" href="#total">Total</a>
+</aside>
+<article class="doc-content">
 
 <h1>GLM-5.2 Linear FLOPs Per Token</h1>
-<p class="lead">This page derives the active per-generated-token model-math constant for the GLM-5.2 core transformer at TP=8, excluding the vocabulary head.</p>
-<div class="grid"><section class="card"><div class="label">attention projections</div><div class="value">0.069 GFLOP / layer / GPU</div></section><section class="card"><div class="label">dense MLP layer</div><div class="value">0.057 GFLOP / layer / GPU</div></section><section class="card"><div class="label">active MoE layer</div><div class="value">0.085 GFLOP / layer / GPU</div></section><section class="card"><div class="label">total active linear</div><div class="value">12.194 GFLOP / token / GPU</div></section></div>
-<h2>Attention Projection Terms</h2>
-<table><tr><th>Term</th><th>Formula</th><th>FLOPs / layer / GPU</th></tr><tr><td>qkv_a replicated</td><td>2 * hidden * (q_lora + kv_lora + qk_rope)</td><td>32,243,712</td></tr>
-<tr><td>q_b local shard</td><td>2 * q_lora * local_q_output</td><td>8,388,608</td></tr>
-<tr><td>absorbed W_KC</td><td>2 * local_heads * kv_lora * qk_nope</td><td>1,572,864</td></tr>
-<tr><td>absorbed W_VC</td><td>2 * local_heads * kv_lora * v_head</td><td>2,097,152</td></tr>
-<tr><td>o_proj local shard</td><td>2 * local_v_output * hidden</td><td>25,165,824</td></tr>
-<tr><td>attention total</td><td>sum of rows above</td><td><strong>69,468,160</strong></td></tr></table>
-<h2>MLP / MoE Terms</h2>
-<table><tr><th>Term</th><th>Formula</th><th>FLOPs</th></tr><tr><td>dense MLP layer</td><td>6 * hidden * intermediate / TP</td><td>56,623,104</td></tr>
-<tr><td>active MoE layer</td><td>6 * hidden * moe_intermediate * (top8 + shared1) / TP</td><td>84,934,656</td></tr>
-<tr><td>router per sparse layer</td><td>2 * hidden * routed_experts</td><td>3,145,728</td></tr></table>
-<h2>Total</h2>
-<pre><code>linear_total =
-  78 * attention_projection_per_layer
-  + 3 * dense_mlp_layer
-  + 75 * (active_moe_layer + router)
-
-= 12,194,414,592 FLOPs/token/GPU
-= 12.194 GFLOP/token/GPU</code></pre>
-<div class="note">This is an active FLOPs constant. It counts the top-8 routed experts plus one shared expert, not all 256 routed experts. It also excludes sampling, logits head, communication, memory movement, and kernel overhead.</div>
+<p class="lead">This page derives the active per-generated-token linear-model constant for the GLM-5.2 target transformer at TP=8. It includes token-local projections in the 21 DSA selector-refresh layers and excludes context-dependent attention scans.</p>
+<div class="grid"><section class="card"><div class="label">attention projections</div><div class="value">0.069 GFLOP / layer / GPU</div></section><section class="card"><div class="label">indexer setup</div><div class="value">393.609 MFLOP / token / GPU</div></section><section class="card"><div class="label">dense MLP layer</div><div class="value">0.057 GFLOP / layer / GPU</div></section><section class="card"><div class="label">active MoE layer</div><div class="value">0.085 GFLOP / layer / GPU</div></section><section class="card"><div class="label">total active linear</div><div class="value">12.588 GFLOP / token / GPU</div></section></div>
+<h2 id="scope">Scope</h2>
+<p>The constant contains matrix multiplications whose work is fixed for one token: MLA projections in all 78 layers, DSA indexer query/key/gate setup in 21 refresh layers, three dense MLPs, and 75 active MoE blocks. It excludes the vocabulary head and all work whose size depends on context length.</p>
+<div class="note">The indexer candidate-score scan is not missing. It compares a new index query against cached candidate keys, so its work changes with context length. Count it with the selected-key MLA scan on the <a href="glm52_dsa_mla_connection.html#prefill-100k">DSA + MLA page</a>, not in a linear constant.</div>
+<h2 id="attention-projections">Attention Projection Terms</h2>
+<div class="eq-block"><div class="eq-title">Attention projection subtotal per layer per TP8 rank</div><div class="eq-row"><div class="eq-lhs">fused query/KV-A</div><div class="eq-op">=</div><div class="eq-rhs">2 <span class="sym sym-hidden math-var">d<sub>model</sub></span> (<span class="sym sym-q math-var">r<sub>q</sub></span> + <span class="sym sym-kv math-var">r<sub>kv</sub></span> + <span class="sym sym-rope math-var">d<sub>r</sub></span>)</div><div class="eq-note">32,243,712</div></div><div class="eq-row"><div class="eq-lhs">query-B shard</div><div class="eq-op">=</div><div class="eq-rhs">2 <span class="sym sym-q math-var">r<sub>q</sub></span> (<span class="sym sym-q math-var">H</span>/<span class="sym sym-select math-var">P<sub>tp</sub></span>) (<span class="sym sym-kv math-var">d<sub>c</sub></span> + <span class="sym sym-rope math-var">d<sub>r</sub></span>)</div><div class="eq-note">8,388,608</div></div><div class="eq-row"><div class="eq-lhs">absorbed content key</div><div class="eq-op">=</div><div class="eq-rhs">2 (<span class="sym sym-q math-var">H</span>/<span class="sym sym-select math-var">P<sub>tp</sub></span>) <span class="sym sym-kv math-var">r<sub>kv</sub></span> <span class="sym sym-kv math-var">d<sub>c</sub></span></div><div class="eq-note">1,572,864</div></div><div class="eq-row"><div class="eq-lhs">absorbed latent value</div><div class="eq-op">=</div><div class="eq-rhs">2 (<span class="sym sym-q math-var">H</span>/<span class="sym sym-select math-var">P<sub>tp</sub></span>) <span class="sym sym-kv math-var">r<sub>kv</sub></span> <span class="sym sym-attn math-var">d<sub>v</sub></span></div><div class="eq-note">2,097,152</div></div><div class="eq-row"><div class="eq-lhs">output projection</div><div class="eq-op">=</div><div class="eq-rhs">2 (<span class="sym sym-q math-var">H</span>/<span class="sym sym-select math-var">P<sub>tp</sub></span>) <span class="sym sym-attn math-var">d<sub>v</sub></span> <span class="sym sym-hidden math-var">d<sub>model</sub></span></div><div class="eq-note">25,165,824</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-attn math-var">F<sub>attn-proj</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">sum of the five rows</div><div class="eq-note">69,468,160 FLOPs/layer/rank</div></div><div class="eq-comment">The fused query/KV-A projection is replicated. Query-B, the absorbed MLA matrices, and the output projection are TP-sharded.</div></div>
+<h2 id="indexer-projections">DSA Indexer Projection Setup</h2>
+<div class="eq-block"><div class="eq-title">DSA indexer token-local projection setup</div><div class="eq-row"><div class="eq-lhs">index query projection</div><div class="eq-op">=</div><div class="eq-rhs">2 <span class="sym sym-q math-var">r<sub>q</sub></span> <span class="sym sym-index math-var">H<sub>idx</sub></span> <span class="sym sym-index math-var">d<sub>idx</sub></span></div><div class="eq-note">16,777,216</div></div><div class="eq-row"><div class="eq-lhs">index key projection</div><div class="eq-op">=</div><div class="eq-rhs">2 <span class="sym sym-hidden math-var">d<sub>model</sub></span> <span class="sym sym-index math-var">d<sub>idx</sub></span></div><div class="eq-note">1,572,864</div></div><div class="eq-row"><div class="eq-lhs">index head gates</div><div class="eq-op">=</div><div class="eq-rhs">2 <span class="sym sym-hidden math-var">d<sub>model</sub></span> <span class="sym sym-index math-var">H<sub>idx</sub></span></div><div class="eq-note">393,216</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">F<sub>idx-setup</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">sum of the three rows</div><div class="eq-note">18,743,296 FLOPs/token/refresh layer/rank</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-index math-var">N<sub>idx</sub></span> <span class="sym sym-index math-var">F<sub>idx-setup</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">21 &times; 18,743,296</div><div class="eq-note">393,609,216 FLOPs/token/rank</div></div><div class="eq-comment">These ReplicatedLinear projections execute only in selector-refresh layers, so there is no TP divisor. Candidate-history scoring and TopK are not linear-in-token constants and are counted separately on the DSA + MLA page.</div></div>
+<h2 id="mlp-moe">MLP and MoE Terms</h2>
+<div class="eq-block"><div class="eq-title">Feed-forward terms per layer per TP8 rank</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-gate math-var">F<sub>dense</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">6 <span class="sym sym-hidden math-var">d<sub>model</sub></span> <span class="sym sym-gate math-var">d<sub>ff</sub></span>/<span class="sym sym-select math-var">P<sub>tp</sub></span></div><div class="eq-note">56,623,104</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-gate math-var">F<sub>moe</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">6 <span class="sym sym-hidden math-var">d<sub>model</sub></span> <span class="sym sym-gate math-var">d<sub>expert</sub></span> <span class="sym sym-gate math-var">E<sub>active</sub></span>/<span class="sym sym-select math-var">P<sub>tp</sub></span></div><div class="eq-note">84,934,656</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-gate math-var">F<sub>router</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">2 <span class="sym sym-hidden math-var">d<sub>model</sub></span> <span class="sym sym-gate math-var">E<sub>routed</sub></span></div><div class="eq-note">3,145,728</div></div><div class="eq-comment">The active MoE term counts 8 routed experts plus 1 shared expert, not every routed expert.</div></div>
+<h2 id="total">Total</h2>
+<div class="eq-block"><div class="eq-title">Complete active linear constant</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-weight math-var">F<sub>linear</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-attn math-var">N<sub>attn</sub></span><span class="sym sym-attn math-var">F<sub>attn-proj</sub></span> + <span class="sym sym-index math-var">N<sub>idx</sub></span><span class="sym sym-index math-var">F<sub>idx-setup</sub></span> + <span class="sym sym-gate math-var">N<sub>dense</sub></span><span class="sym sym-gate math-var">F<sub>dense</sub></span> + <span class="sym sym-gate math-var">N<sub>moe</sub></span>(<span class="sym sym-gate math-var">F<sub>moe</sub></span> + <span class="sym sym-gate math-var">F<sub>router</sub></span>)</div><div class="eq-note">target-model linear work</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-weight math-var">F<sub>linear</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">78 &times; 69,468,160 + 21 &times; 18,743,296 + 3 &times; 56,623,104 + 75 &times; (84,934,656 + 3,145,728)</div><div class="eq-note">12,588,023,808 FLOPs/token/rank</div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-weight math-var">F<sub>linear</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">12.588 GFLOP</div><div class="eq-note">per generated token per TP8 rank</div></div></div>
+<div class="note">This is an active FLOPs constant. It counts the top-8 routed experts plus one shared expert, not all 256 routed experts. It also excludes sampling, the logits head, communication, memory movement, and kernel overhead.</div>
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_linear_flops_per_token.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_linear_flops_per_token.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
+</article>
+</div>
 </main>
 </body>
 </html>
