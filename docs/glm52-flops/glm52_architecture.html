@@ -160,6 +160,77 @@ table {
   margin: 18px 0 26px;
   background: var(--paper);
 }
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:nth-child(3),
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-rank-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.parameter-table .param-col-component { width: 19%; }
+.parameter-table .param-col-shape { width: 20%; }
+.parameter-table .param-col-rank { width: 16%; }
+.parameter-table .param-col-expansion { width: 31%; }
+.parameter-table .param-col-logical { width: 14%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
 th, td {
   border: 1px solid var(--line);
   padding: 10px 12px;
@@ -276,6 +347,10 @@ pre {
   .content-overview a.depth-2 {
     padding-left: 0;
   }
+  .parameter-table-scroll .parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
 }
 @media (max-width: 600px) {
   table {
@@ -285,6 +360,11 @@ pre {
   }
   .eq-row {
     grid-template-columns: max-content 24px max-content max-content;
+  }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
   }
 }
 </style>
@@ -317,17 +397,7 @@ pre {
 <div class="eq-block"><div class="eq-title">TP8 parameter accounting</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>logical</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">P<sub>sharded, rank 0</sub></span> &times; 8 + <span class="math-var">P<sub>replicated, rank 0</sub></span></div><div class="eq-note">742,277,149,356</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>sharded, rank 0</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">92,587,950,240</div><div class="eq-note">resident tensors whose output/input/expert dimension is split by TP</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>replicated, rank 0</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">1,573,547,436</div><div class="eq-note">full tensors copied on every TP rank but counted once logically</div></div><div class="eq-comment">The resulting logical count is about 742.3B parameters. It includes all routed experts, the shared expert, untied embeddings and output head, plus the FP8 scale/storage tensors exposed by the serving runtime. It is not the active-per-token parameter count.</div></div>
 <h3 id="tp8-per-rank">TP8 Per-Rank Shapes</h3>
 <p>For the H200 TP8 setup we tested, each rank sees about 94.2B unique resident parameters. Most of that is MoE expert storage; replicated modules still occupy HBM on every rank even though they count only once in the logical model total.</p>
-<table><tr><th>Component</th><th>Per-rank shape or object</th><th>Rank-0 count</th><th>Logical rule</th><th>Logical-count expansion</th><th>Logical count</th></tr><tr><td>MoE expert tensors</td><td>75 sparse layers; rank-local TP slice of 257 routed plus shared experts</td><td>90,956,412,000</td><td>TP-sharded; multiply by 8</td><td>75 layers &times; 8 TP shards &times; (257 experts &times; 3 matrices &times; 6,144 hidden &times; 2,048 expert width &divide; 8 TP + 257 experts &times; 3 matrices &times; (6,144 &divide; 128) &times; (2,048 &divide; 8 &divide; 128) FP8 scales)</td><td>727,651,296,000</td></tr>
-<tr><td><code>fused_qkv_a_proj_with_mqa</code></td><td>78 full projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span></td><td>1,257,583,392</td><td>replicated; count once logically</td><td>78 layers &times; (6,144 hidden &times; (2,048 query latent + 512 KV latent + 64 rope key) + (6,144 &divide; 128) &times; 21 FP8 scales)</td><td>1,257,583,392</td></tr>
-<tr><td><code>o_proj</code></td><td>78 rank-local projections; each maps local heads <span class="shape">[8, 256]</span> back to <span class="shape">[6144]</span></td><td>981,527,040</td><td>TP-sharded; multiply by 8</td><td>78 layers &times; 8 TP shards &times; ((64 heads &divide; 8 TP) &times; 256 value dim &times; 6,144 hidden + ((64 &divide; 8) &times; 256 &divide; 128) &times; (6,144 &divide; 128) FP8 scales)</td><td>7,852,216,320</td></tr>
-<tr><td><code>q_b_proj</code></td><td>78 rank-local projections; each maps <span class="shape">[2048]</span> to <span class="shape">[2048]</span></td><td>327,175,680</td><td>TP-sharded; multiply by 8</td><td>78 layers &times; 8 TP shards &times; (2,048 query latent &times; ((64 heads &divide; 8 TP) &times; (192 content + 64 rope)) + (2,048 &divide; 128) &times; (((64 &divide; 8) &times; (192 + 64)) &divide; 128) FP8 scales)</td><td>2,617,405,440</td></tr>
-<tr><td>DSA indexer</td><td>21 full learned selector modules; 32 index heads of width 128</td><td>196,821,744</td><td>replicated; count once logically</td><td>21 DSA layers &times; (2,048 query latent &times; 32 heads &times; 128 width + 6,144 hidden &times; 128 key width + 6,144 hidden &times; 32 head gates + 128 key-norm weights + 688 quantization scale/storage params)</td><td>196,821,744</td></tr>
-<tr><td><code>lm_head</code></td><td>vocab-parallel shard: configured vocabulary rows &divide; 8 TP shards; each row has 6,144 hidden weights</td><td>118,947,840</td><td>TP-sharded; multiply by 8</td><td>configured vocabulary rows &times; 6,144 hidden</td><td>951,582,720</td></tr>
-<tr><td><code>embed_tokens</code></td><td>vocab-parallel shard: configured vocabulary rows &divide; 8 TP shards; each row has 6,144 hidden weights</td><td>118,947,840</td><td>TP-sharded; multiply by 8</td><td>configured vocabulary rows &times; 6,144 hidden</td><td>951,582,720</td></tr>
-<tr><td>MoE gate/router</td><td>75 replicated router matrices over 256 routed experts</td><td>117,984,000</td><td>replicated; count once logically</td><td>75 sparse layers &times; (6,144 hidden &times; 256 routed experts + 256 router correction scalars)</td><td>117,984,000</td></tr>
-<tr><td>Dense MLP gate/up projection</td><td>3 dense layers; rank-local merged output shard maps <span class="shape">[6144]</span> to <span class="shape">[3072]</span></td><td>56,626,560</td><td>TP-sharded; multiply by 8</td><td>3 dense layers &times; 8 TP shards &times; (6,144 hidden &times; (2 gate/up projections &times; 2 &times; 6,144 dense width &divide; 8 TP) + (6,144 &divide; 128) &times; ((2 gate/up projections &times; 2 &times; 6,144 &divide; 8) &divide; 128) FP8 scales)</td><td>453,012,480</td></tr>
-<tr><td>Dense MLP down projection</td><td>3 dense layers; rank-local input shard maps <span class="shape">[1536]</span> to <span class="shape">[6144]</span></td><td>28,313,280</td><td>TP-sharded; multiply by 8</td><td>3 dense layers &times; 8 TP shards &times; ((2 &times; 6,144 dense width &divide; 8 TP) &times; 6,144 hidden + ((2 &times; 6,144 &divide; 8) &divide; 128) &times; (6,144 &divide; 128) FP8 scales)</td><td>226,506,240</td></tr>
-<tr><td>RMSNorms and tiny attention scalars</td><td>replicated vectors and scalar kernel bookkeeping entries</td><td>1,158,300</td><td>replicated; count once logically</td><td>78 layers &times; (6,144 input norm + 6,144 post-attn norm + 2,048 query norm + 512 KV norm) + 156 attention scalars</td><td>1,158,300</td></tr></table>
+<div class="parameter-table-scroll" role="region" aria-label="Hierarchical parameter accounting" tabindex="0"><table class="parameter-table"><colgroup><col class="param-col-component"><col class="param-col-shape"><col class="param-col-rank"><col class="param-col-expansion"><col class="param-col-logical"></colgroup><thead><tr><th>Component</th><th>Per-rank shape or object</th><th>Rank-0 storage</th><th>Logical-count expansion</th><th>Logical count</th></tr></thead><tbody aria-labelledby="param-group-0"><tr class="param-group"><th id="param-group-0" colspan="5"><span class="param-group-title">Feed-forward networks</span><span class="param-group-note">Dense warm-up MLP and sparse MoE parameter families</span></th></tr><tr class="param-subgroup"><th colspan="5">Sparse MoE body - layers 3-77</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Expert gate/up/down projections</th><td>75 sparse layers; 256 routed + 1 shared expert; rank-local TP slice of all three projections</td><td><span class="param-rank-count">90,956,412,000</span><span class="param-rule">TP-sharded &middot; &times;8 logically</span></td><td>75 layers &times; 8 TP shards &times; 257 experts &times; 3 projections &times; [6,144 hidden &times; (2,048 expert width &divide; 8 TP) + (6,144 &divide; 128) &times; ((2,048 &divide; 8 TP) &divide; 128) FP8 scales]</td><td>727,651,296,000</td></tr><tr class="param-leaf"><th scope="row" class="param-component">MoE gate/router</th><td>75 replicated router matrices over 256 routed experts</td><td><span class="param-rank-count">117,984,000</span><span class="param-rule">Replicated &middot; count once logically</span></td><td>75 sparse layers &times; (6,144 hidden &times; 256 routed experts + 256 router correction scalars)</td><td>117,984,000</td></tr><tr class="param-subgroup"><th colspan="5">Dense warm-up - layers 0-2</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Gate/up projection</th><td>3 dense layers; merged rank-local output maps <span class="shape">[6144]</span> to <span class="shape">[3072]</span> (1,536 gate + 1,536 up)</td><td><span class="param-rank-count">56,626,560</span><span class="param-rule">TP-sharded &middot; &times;8 logically</span></td><td>3 layers &times; 8 TP shards &times; 2 projections &times; [6,144 hidden &times; (12,288 intermediate &divide; 8 TP) + (6,144 &divide; 128) &times; ((12,288 &divide; 8 TP) &divide; 128) FP8 scales]</td><td>453,012,480</td></tr><tr class="param-leaf"><th scope="row" class="param-component">Down projection</th><td>3 dense layers; rank-local input shard maps <span class="shape">[1536]</span> to <span class="shape">[6144]</span></td><td><span class="param-rank-count">28,313,280</span><span class="param-rule">TP-sharded &middot; &times;8 logically</span></td><td>3 layers &times; 8 TP shards &times; [(12,288 intermediate &divide; 8 TP) &times; 6,144 hidden + ((12,288 &divide; 8 TP) &divide; 128) &times; (6,144 &divide; 128) FP8 scales]</td><td>226,506,240</td></tr></tbody><tbody aria-labelledby="param-group-1"><tr class="param-group"><th id="param-group-1" colspan="5"><span class="param-group-title">Attention and sparse selection</span><span class="param-group-note">MLA projections and the learned DSA selector</span></th></tr><tr class="param-subgroup"><th colspan="5">MLA projections - all 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>fused_qkv_a_proj_with_mqa</code></th><td>78 full projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span></td><td><span class="param-rank-count">1,257,583,392</span><span class="param-rule">Replicated &middot; count once logically</span></td><td>78 layers &times; (6,144 hidden &times; (2,048 query latent + 512 KV latent + 64 rope key) + (6,144 &divide; 128) &times; 21 FP8 scales)</td><td>1,257,583,392</td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>q_b_proj</code></th><td>78 rank-local projections; each maps <span class="shape">[2048]</span> to <span class="shape">[2048]</span></td><td><span class="param-rank-count">327,175,680</span><span class="param-rule">TP-sharded &middot; &times;8 logically</span></td><td>78 layers &times; 8 TP shards &times; (2,048 query latent &times; ((64 heads &divide; 8 TP) &times; (192 content + 64 rope)) + (2,048 &divide; 128) &times; (((64 &divide; 8) &times; (192 + 64)) &divide; 128) FP8 scales)</td><td>2,617,405,440</td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>o_proj</code></th><td>78 rank-local projections; each maps local heads <span class="shape">[8, 256]</span> back to <span class="shape">[6144]</span></td><td><span class="param-rank-count">981,527,040</span><span class="param-rule">TP-sharded &middot; &times;8 logically</span></td><td>78 layers &times; 8 TP shards &times; ((64 heads &divide; 8 TP) &times; 256 value dim &times; 6,144 hidden + ((64 &divide; 8) &times; 256 &divide; 128) &times; (6,144 &divide; 128) FP8 scales)</td><td>7,852,216,320</td></tr><tr class="param-subgroup"><th colspan="5">DSA selector - 21 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component">DSA indexer</th><td>21 full learned selector modules; 32 index heads of width 128</td><td><span class="param-rank-count">196,821,744</span><span class="param-rule">Replicated &middot; count once logically</span></td><td>21 DSA layers &times; (2,048 query latent &times; 32 heads &times; 128 width + 6,144 hidden &times; 128 key width + 6,144 hidden &times; 32 head gates + 128 key-norm weights + 688 quantization scale/storage params)</td><td>196,821,744</td></tr></tbody><tbody aria-labelledby="param-group-2"><tr class="param-group"><th id="param-group-2" colspan="5"><span class="param-group-title">Token input and output</span><span class="param-group-note">Untied vocabulary embedding and language-model head</span></th></tr><tr class="param-subgroup"><th colspan="5">Vocabulary-parallel tensors</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>embed_tokens</code></th><td>vocab-parallel shard: configured vocabulary rows &divide; 8 TP shards; each row has 6,144 hidden weights</td><td><span class="param-rank-count">118,947,840</span><span class="param-rule">TP-sharded &middot; &times;8 logically</span></td><td>configured vocabulary rows &times; 6,144 hidden</td><td>951,582,720</td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>lm_head</code></th><td>vocab-parallel shard: configured vocabulary rows &divide; 8 TP shards; each row has 6,144 hidden weights</td><td><span class="param-rank-count">118,947,840</span><span class="param-rule">TP-sharded &middot; &times;8 logically</span></td><td>configured vocabulary rows &times; 6,144 hidden</td><td>951,582,720</td></tr></tbody><tbody aria-labelledby="param-group-3"><tr class="param-group"><th id="param-group-3" colspan="5"><span class="param-group-title">Normalization and scalar state</span><span class="param-group-note">Small replicated tensors outside the major projection families</span></th></tr><tr class="param-subgroup"><th colspan="5">Per-layer normalization</th></tr><tr class="param-leaf"><th scope="row" class="param-component">RMSNorms and tiny attention scalars</th><td>replicated vectors and scalar kernel bookkeeping entries</td><td><span class="param-rank-count">1,158,300</span><span class="param-rule">Replicated &middot; count once logically</span></td><td>78 layers &times; (6,144 input norm + 6,144 post-attn norm + 2,048 query norm + 512 KV norm) + 156 attention scalars</td><td>1,158,300</td></tr></tbody></table></div>
 <div class="note">The expansion column is the important one: it shows exactly which layer count, TP factor, vocab shard, or replicated module factor produces each logical count.</div>
 <h2 id="mla-attention-shape">MLA Attention Shape</h2>
 <table><tr><th>Field</th><th>Value</th><th>Why it matters</th></tr><tr><td>Heads</td><td>64</td><td>TP=8 gives 8 local heads per GPU</td></tr>
