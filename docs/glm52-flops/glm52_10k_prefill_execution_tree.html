@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Static technical documentation for GLM-5.2 10K Prefill Execution Tree.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">
+  <title>GLM-5.2 10K Prefill Execution Tree</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --soft: #e8f2ef;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.doc-shell {
+  display: grid;
+  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.doc-content {
+  min-width: 0;
+}
+.content-overview {
+  position: sticky;
+  top: 18px;
+  padding: 10px 0 10px 14px;
+  border-left: 4px solid rgba(11, 107, 102, .28);
+  color: var(--muted);
+}
+.content-overview-title {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.content-overview a {
+  display: block;
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.content-overview a:hover,
+.content-overview a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.content-overview a.depth-2 {
+  padding-left: 12px;
+  font-size: .84rem;
+  font-weight: 650;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 900px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 860px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.value code {
+  white-space: normal;
+  word-break: break-word;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: #4c5d59;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.logical-parameter-table .param-col-component { width: 20%; }
+.logical-parameter-table .param-col-shape { width: 27%; }
+.logical-parameter-table .param-col-expansion { width: 39%; }
+.logical-parameter-table .param-col-logical { width: 14%; }
+.tp8-parameter-table .param-col-component { width: 24%; }
+.tp8-parameter-table .param-col-partition { width: 19%; }
+.tp8-parameter-table .param-col-shape { width: 39%; }
+.tp8-parameter-table .param-col-rank { width: 18%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+code {
+  padding: .08rem .22rem;
+  border-radius: 4px;
+  background: #edf3f1;
+  color: #243431;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.math-var, .math-func, .math-space, .shape, .eq-block {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+.math-var { font-style: italic; white-space: nowrap; }
+.math-vec, .math-mat, .math-set, .math-tensor { font-weight: 700; }
+.math-func { font-style: normal; white-space: nowrap; }
+.math-space { white-space: nowrap; color: #253633; }
+.shape {
+  display: inline-block;
+  white-space: nowrap;
+  color: #314541;
+  font-variant-numeric: tabular-nums;
+}
+.sym {
+  padding: 0 .08em;
+  border-bottom: 2px solid transparent;
+}
+.sym-hidden { color: #0b6b66; border-bottom-color: rgba(11, 107, 102, .35); }
+.sym-q { color: #7a3e9d; border-bottom-color: rgba(122, 62, 157, .35); }
+.sym-kv { color: #8f4b16; border-bottom-color: rgba(143, 75, 22, .35); }
+.sym-index { color: #1b5faa; border-bottom-color: rgba(27, 95, 170, .35); }
+.sym-gate { color: #9f3d3d; border-bottom-color: rgba(159, 61, 61, .35); }
+.sym-attn { color: #4f6b18; border-bottom-color: rgba(79, 107, 24, .35); }
+.sym-select { color: #6a4f00; border-bottom-color: rgba(106, 79, 0, .34); }
+.sym-weight { color: #3d5260; border-bottom-color: rgba(61, 82, 96, .28); }
+.eq-block {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  overflow-x: auto;
+}
+.eq-title {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font: 800 .86rem Inter, ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.eq-row {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 26px minmax(260px, 1fr) minmax(140px, max-content);
+  gap: 10px;
+  align-items: baseline;
+  width: max-content;
+  min-width: min(760px, 100%);
+  padding: 5px 0;
+}
+.eq-lhs { text-align: right; }
+.eq-op { text-align: center; color: var(--muted); }
+.eq-rhs { color: #1d2b28; }
+.eq-note { color: var(--muted); white-space: nowrap; }
+.eq-row.single {
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, max-content);
+}
+.eq-comment {
+  margin-top: 8px;
+  color: var(--muted);
+  font: .93rem Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.danger { color: var(--accent-2); font-weight: 800; }
+.footer {
+  margin-top: 42px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+@media (max-width: 980px) {
+  main {
+    max-width: 1160px;
+    padding: 28px 16px 64px;
+  }
+  .doc-shell {
+    display: block;
+  }
+  .content-overview {
+    position: static;
+    margin: 0 0 22px;
+    padding: 12px 14px;
+    border-left: 4px solid rgba(11, 107, 102, .28);
+    background: rgba(255, 255, 255, .72);
+  }
+  .content-overview a {
+    display: inline-block;
+    margin-right: 14px;
+  }
+  .content-overview a.depth-2 {
+    padding-left: 0;
+  }
+  .parameter-table-scroll .logical-parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
+  .parameter-table-scroll .tp8-parameter-table {
+    width: 900px;
+    min-width: 900px;
+  }
+}
+@media (max-width: 600px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .eq-row {
+    grid-template-columns: max-content 24px max-content max-content;
+  }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+  }
+}
+
+.tree-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.tree-table {
+  width: 100%;
+  min-width: 1180px;
+  margin: 0;
+  table-layout: fixed;
+}
+.tree-table .tree-col-module { width: 25%; }
+.tree-table .tree-col-runs { width: 9%; }
+.tree-table .tree-col-object { width: 22%; }
+.tree-table .tree-col-input { width: 13%; }
+.tree-table .tree-col-output { width: 16%; }
+.tree-table .tree-col-params { width: 15%; }
+.tree-table .tree-group th,
+.tree-table .tree-group td {
+  background: #d7e6e2;
+  border-top-width: 2px;
+  color: var(--ink);
+  font-weight: 750;
+}
+.tree-table .tree-group.depth-2 th,
+.tree-table .tree-group.depth-2 td { background: #e9f1ef; }
+.tree-module {
+  position: relative;
+  display: block;
+  min-width: 220px;
+}
+.tree-module.depth-1 { padding-left: 18px; }
+.tree-module.depth-2 { padding-left: 36px; }
+.tree-module.depth-3 { padding-left: 54px; }
+.tree-module.depth-1::before,
+.tree-module.depth-2::before,
+.tree-module.depth-3::before {
+  position: absolute;
+  top: .72em;
+  height: 1px;
+  background: #8fa9a3;
+  content: "";
+}
+.tree-module.depth-1::before { left: 4px; width: 9px; }
+.tree-module.depth-2::before { left: 21px; width: 10px; }
+.tree-module.depth-3::before { left: 38px; width: 11px; }
+.tree-name { display: block; font-weight: 800; }
+.tree-name code { font-size: .78rem; line-height: 1.25; }
+.tree-role {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: .81rem;
+  font-weight: 550;
+  line-height: 1.3;
+}
+.repeat-badge,
+.trust-badge {
+  display: inline-block;
+  padding: 3px 7px;
+  border: 1px solid #9db8b1;
+  border-radius: 4px;
+  background: #edf4f2;
+  color: #29453f;
+  font-size: .78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.trust-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0 22px;
+}
+.trust-badge.observed { border-color: #6e9d92; background: #e5f1ed; }
+.trust-badge.audited { border-color: #7d8fa3; background: #e9eef3; }
+.trust-badge.pending { border-color: #b49a5a; background: #f5f0df; }
+.rank-object { color: #344c47; font-size: .87rem; line-height: 1.35; }
+.count-primary {
+  display: block;
+  color: var(--ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.count-scope {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.25;
+}
+.combined-parameter-table { min-width: 1420px; }
+.combined-parameter-table .param-col-component { width: 15%; }
+.combined-parameter-table .param-col-logical-shape { width: 20%; }
+.combined-parameter-table .param-col-rank-shape { width: 19%; }
+.combined-parameter-table .param-col-rank-count { width: 11%; }
+.combined-parameter-table .param-col-formula { width: 25%; }
+.combined-parameter-table .param-col-logical-count { width: 10%; }
+.combined-parameter-table .param-leaf td:nth-child(4),
+.combined-parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.source-facts {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+  max-width: 860px;
+  margin: 18px 0 26px;
+  border-top: 1px solid var(--line);
+}
+.source-facts dt,
+.source-facts dd {
+  margin: 0;
+  padding: 9px 10px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.source-facts dt {
+  border-left: 1px solid var(--line);
+  background: #edf3f1;
+  color: var(--ink);
+  font-weight: 800;
+}
+.source-facts dd { background: var(--paper); color: var(--muted); }
+@media (max-width: 980px) {
+  .parameter-table-scroll .combined-parameter-table {
+    width: 1420px;
+    min-width: 1420px;
+  }
+}
+@media (max-width: 600px) {
+  .source-facts { grid-template-columns: 1fr; }
+  .source-facts dt { border-right: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_10k_prefill_execution_tree.html">10K Prefill Tree</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">Public URL</a></nav>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">On this page</div>
+  <a class="depth-1" href="#reading-model">Reading Model</a>
+<a class="depth-1" href="#execution-tree">Execution Tree</a>
+<a class="depth-1" href="#layer-families">Layer Families</a>
+<a class="depth-1" href="#parameter-ledger">Parameter Ledger</a>
+<a class="depth-1" href="#mfu-handoff">MFU Handoff</a>
+</aside>
+<article class="doc-content">
+
+<h1>GLM-5.2 10K Prefill Execution Tree</h1>
+<p class="lead">A compact, rank-aware rendering of the instrumented TorchInfo prefill run. It keeps the useful module hierarchy and observed tensor shapes, collapses repeated decoder blocks, and replaces TorchInfo's invalid aggregate parameter and mult-add totals with audited GLM-5.2 accounting.</p>
+<div class="grid"><section class="card"><div class="label">observed request</div><div class="value">1 &times; 10,000 prefill tokens</div></section><section class="card"><div class="label">parallel view</div><div class="value">TP=8, rank 0</div></section><section class="card"><div class="label">target decoder</div><div class="value">78 layers: 3 dense + 75 MoE</div></section><section class="card"><div class="label">audited target state</div><div class="value">743.422B logical elements</div></section></div>
+<div class="trust-row" aria-label="Data provenance legend">
+  <span class="trust-badge observed">Observed runtime shape</span>
+  <span class="trust-badge audited">Audited parameter state</span>
+  <span class="trust-badge pending">MFU term to derive</span>
+</div>
+<h2 id="reading-model">How To Read This Page</h2>
+<p>The source report is valuable as an execution trace: it shows the actual rank-0 module path and the shapes produced by a 10,000-token prefill. It is not a trustworthy model-accounting engine. Shared module references caused recursive rows, every decoder layer was printed separately, embedding lookup was treated like dense arithmetic, and all resident MoE experts were charged as active work.</p>
+<p>This page therefore joins two sources without mixing their meanings: runtime shapes come from the instrumented run, while parameter state comes from the audited GLM-5.2 architecture inventory. Repeat badges expand each distinct row back to the complete target stack.</p>
+<dl class="source-facts">
+  <dt>Model snapshot</dt><dd><code>zai-org/GLM-5.2-FP8</code></dd>
+  <dt>Runtime view</dt><dd>TP8 rank 0; batch size 1; input length 10,000; one output-logits row</dd>
+  <dt>TorchInfo depth</dt><dd>6 module levels</dd>
+  <dt>Instrumentation time</dt><dd>199.610 seconds; this includes TorchInfo instrumentation and is not serving TTFT</dd>
+  <dt>Source artifact</dt><dd><code>torchinfo_rank0.txt</code> from the July 9 GLM-5.2 logits-patched run</dd>
+</dl>
+<div class="note"><strong>Deliberately excluded:</strong> the report's <code>Total params: 185,753,300,946</code>, its <code>Total mult-adds</code>, activation-memory estimate, and repeated <code>(recursive)</code> rows. None is suitable as an MFU numerator or denominator.</div>
+<h2 id="execution-tree">Collapsed Execution Tree</h2>
+<p>The tree is ordered by forward execution. Parameter objects and counts are for one TP8 rank. Counts include checkpoint-backed FP8 scales where the serving model stores them; parent rows are structural and are not summed.</p>
+<div class="tree-table-scroll" role="region" aria-label="Collapsed 10K prefill execution tree" tabindex="0"><table class="tree-table"><colgroup><col class="tree-col-module"><col class="tree-col-runs"><col class="tree-col-object"><col class="tree-col-input"><col class="tree-col-output"><col class="tree-col-params"></colgroup><thead><tr>
+<th>Module and operation</th><th>Executes</th><th>Parameter object on rank 0</th>
+<th>10K input</th><th>10K output</th><th>Rank-0 elements</th>
+</tr></thead><tbody><tr class="tree-group depth-0"><th scope="row"><span class="tree-module depth-0"><span class="tree-name"><code>TorchinfoPrefillWrapper</code></span><span class="tree-role">One instrumented prefill request and one output-token logits row.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object">request wrapper</td><td><span class="shape">[1, 10000]</span></td><td><span class="shape">[1, 154880]</span></td><td><span class="count-primary">--</span></td></tr><tr class="tree-group depth-1"><th scope="row"><span class="tree-module depth-1"><span class="tree-name"><code>GlmMoeDsaForCausalLM</code></span><span class="tree-role">Target model path observed by rank 0; the separate nextn draft layer is not executed.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object">target stack</td><td><span class="shape">[10000]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span></td></tr><tr class="tree-leaf depth-2"><th scope="row"><span class="tree-module depth-2"><span class="tree-name"><code>embed_tokens</code></span><span class="tree-role">Vocabulary-parallel embedding lookup; this is not a dense matrix multiplication.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object"><span class="shape">[19360, 6144]</span> local vocabulary shard</td><td><span class="shape">[10000]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">118,947,840</span><span class="count-scope">rank-local shard</span></td></tr><tr class="tree-group depth-2"><th scope="row"><span class="tree-module depth-2"><span class="tree-name"><code>layers</code></span><span class="tree-role">The repeated decoder stack, collapsed into common attention plus dense and MoE feed-forward families.</span></span></th><td><span class="repeat-badge">78 layers</span></td><td class="rank-object">decoder layer stack</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span></td></tr><tr class="tree-group depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>self_attn</code></span><span class="tree-role">MLA projection, optional DSA TopK refresh, selected-key attention, and output projection.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object">common attention path</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span><span class="count-scope">every target layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>input_layernorm</code></span><span class="tree-role">Normalize the residual stream before attention.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">6,144</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>fused_qkv_a_proj_with_mqa</code></span><span class="tree-role">Produce query latent, KV latent, and shared RoPE key in one replicated projection.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[6144, 2624]</span> weights + <span class="shape">[48, 21]</span> FP8 scales</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 2624]</span> = <span class="shape">[10000, 2048]</span> + <span class="shape">[10000, 512]</span> + <span class="shape">[10000, 64]</span></td><td><span class="count-primary">16,122,864</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>q_a_layernorm</code></span><span class="tree-role">Normalize the 2,048-dimensional query latent.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[2048]</span></td><td><span class="shape">[10000, 2048]</span></td><td><span class="shape">[10000, 2048]</span></td><td><span class="count-primary">2,048</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>kv_a_layernorm</code></span><span class="tree-role">Normalize the 512-dimensional cached KV latent.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[512]</span></td><td><span class="shape">[10000, 512]</span></td><td><span class="shape">[10000, 512]</span></td><td><span class="count-primary">512</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>q_b_proj</code></span><span class="tree-role">Expand the query latent into eight rank-local heads, each with 192 content and 64 RoPE coordinates.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[2048, 2048]</span> weights + <span class="shape">[16, 16]</span> FP8 scales</td><td><span class="shape">[10000, 2048]</span></td><td><span class="shape">[10000, 2048]</span> = <span class="shape">[10000, 8, 256]</span></td><td><span class="count-primary">4,194,560</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>kv_b_proj / absorbed views</code></span><span class="tree-role">Checkpoint weight becomes rank-local key-absorption and latent-value expansion views after loading.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[512, 8, 448]</span> weights + <span class="shape">[4, 28]</span> FP8 scales</td><td><span class="shape">[10000, 8, 192]</span> or <span class="shape">[10000, 8, 512]</span></td><td><span class="shape">[10000, 8, 512]</span> or <span class="shape">[10000, 8, 256]</span></td><td><span class="count-primary">1,835,120</span><span class="count-scope">per layer; hidden by TorchInfo post-load views</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>indexer</code></span><span class="tree-role">Project index queries, keys, and gates, score causal candidates, then return TopK positions.</span></span></th><td><span class="repeat-badge">21&times;</span></td><td class="rank-object"><span class="shape">[2048, 32, 128]</span> query + <span class="shape">[6144, 128]</span> key + <span class="shape">[6144, 32]</span> gate</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 2048]</span></td><td><span class="count-primary">9,372,464</span><span class="count-scope">only selector-refresh layers</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>rotary_emb</code></span><span class="tree-role">Apply position rotation to the DSA index query and the eight rank-local MLA query heads.</span></span></th><td><span class="repeat-badge">21 + 78&times;</span></td><td class="rank-object">no learned state</td><td><span class="shape">[10000]</span></td><td><span class="shape">[10000, 32, 64]</span> or <span class="shape">[10000, 8, 64]</span></td><td><span class="count-primary">0</span><span class="count-scope">two semantic paths</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>attn_mqa</code></span><span class="tree-role">Score selected keys, apply softmax, and accumulate latent values; scan work depends on causal TopK pairs.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object">uses cached latent KV; no separately owned matrix</td><td><span class="shape">[10000, 8, 512]</span></td><td><span class="shape">[10000, 1, 8, 512]</span></td><td><span class="count-primary">0</span><span class="count-scope">scales counted with attention state</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>o_proj</code></span><span class="tree-role">Merge eight local value heads back into the replicated residual width.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[2048, 6144]</span> weights + <span class="shape">[16, 48]</span> FP8 scales</td><td><span class="shape">[10000, 2048]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">12,583,680</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>post_attention_layernorm</code></span><span class="tree-role">Normalize the residual stream before the feed-forward block.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">6,144</span><span class="count-scope">per layer</span></td></tr><tr class="tree-group depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>dense mlp</code></span><span class="tree-role">SwiGLU feed-forward path used only by warm-up layers 0-2.</span></span></th><td><span class="repeat-badge">3&times;</span></td><td class="rank-object">TP-sharded dense MLP</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span><span class="count-scope">layers 0-2</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>gate_up_proj</code></span><span class="tree-role">Generate rank-local gate and up channels in one projection.</span></span></th><td><span class="repeat-badge">3&times;</span></td><td class="rank-object"><span class="shape">[6144, 3072]</span> weights + <span class="shape">[48, 24]</span> FP8 scales</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 3072]</span></td><td><span class="count-primary">18,875,520</span><span class="count-scope">per dense layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>SiluAndMul</code></span><span class="tree-role">Apply SiLU to the gate half and multiply it by the up half.</span></span></th><td><span class="repeat-badge">3&times;</span></td><td class="rank-object">no learned state</td><td><span class="shape">[10000, 3072]</span></td><td><span class="shape">[10000, 1536]</span></td><td><span class="count-primary">0</span><span class="count-scope">per dense layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>down_proj</code></span><span class="tree-role">Project the rank-local intermediate shard back to hidden width and reduce across TP ranks.</span></span></th><td><span class="repeat-badge">3&times;</span></td><td class="rank-object"><span class="shape">[1536, 6144]</span> weights + <span class="shape">[12, 48]</span> FP8 scales</td><td><span class="shape">[10000, 1536]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">9,437,760</span><span class="count-scope">per dense layer</span></td></tr><tr class="tree-group depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>sparse moe</code></span><span class="tree-role">Route through eight selected experts plus one shared expert in layers 3-77.</span></span></th><td><span class="repeat-badge">75&times;</span></td><td class="rank-object">router + 257 resident experts</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span><span class="count-scope">layers 3-77</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>gate</code></span><span class="tree-role">Compute router scores for all 256 routed experts.</span></span></th><td><span class="repeat-badge">75&times;</span></td><td class="rank-object"><span class="shape">[6144, 256]</span> weights + <span class="shape">[256]</span> correction bias</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 256]</span></td><td><span class="count-primary">1,573,120</span><span class="count-scope">per MoE layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>topk</code></span><span class="tree-role">Select eight routed experts and append the shared expert path.</span></span></th><td><span class="repeat-badge">75&times;</span></td><td class="rank-object">no learned state</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 9]</span></td><td><span class="count-primary">0</span><span class="count-scope">per MoE layer; hidden states observed by the wrapper</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>experts</code></span><span class="tree-role">Dispatch tokens to active experts, execute fused gate/up/down projections, and combine outputs.</span></span></th><td><span class="repeat-badge">75&times;</span></td><td class="rank-object">257 &times; (<span class="shape">[6144, 512]</span> gate/up + <span class="shape">[256, 6144]</span> down + FP8 scales)</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">1,212,752,160</span><span class="count-scope">resident per MoE layer; only 9 experts active per token</span></td></tr><tr class="tree-leaf depth-2"><th scope="row"><span class="tree-module depth-2"><span class="tree-name"><code>norm</code></span><span class="tree-role">Apply the final target-model RMS normalization.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object"><span class="shape">[6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">6,144</span><span class="count-scope">final norm</span></td></tr><tr class="tree-leaf depth-1"><th scope="row"><span class="tree-module depth-1"><span class="tree-name"><code>lm_head via LogitsProcessor</code></span><span class="tree-role">Select the last prefill hidden row, project the local vocabulary shard, and gather full logits.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object"><span class="shape">[19360, 6144]</span></td><td>observed wrapper positions <span class="shape">[10000]</span>; projected hidden <span class="shape">[1, 6144]</span></td><td><span class="shape">[1, 154880]</span></td><td><span class="count-primary">118,947,840</span><span class="count-scope">untied vocabulary head</span></td></tr></tbody></table></div>
+<h2 id="layer-families">Expand The 78 Layers</h2>
+<p>Only three decoder patterns are needed to reconstruct the full stack. Every layer still executes its own MLA selected-key attention; the distinction is whether the layer refreshes DSA TopK positions and whether its feed-forward block is dense or sparse.</p>
+<table><tr><th>Layer family</th><th>Layer IDs</th><th>Copies</th><th>Attention path</th><th>Feed-forward path</th></tr><tr><td>Dense + selector refresh</td><td>0, 1, 2</td><td>3</td><td>Run a new DSA indexer and selected-key MLA</td><td>Dense SwiGLU MLP</td></tr>
+<tr><td>MoE + selector refresh</td><td>6, 10, 14, ..., 74</td><td>18</td><td>Run a new DSA indexer and selected-key MLA</td><td>Sparse MoE: top-8 routed + one shared</td></tr>
+<tr><td>MoE + selector reuse</td><td>3-5, 7-9, ..., 75-77</td><td>57</td><td>Reuse the latest TopK positions; still run layer-local MLA</td><td>Sparse MoE: top-8 routed + one shared</td></tr>
+<tr><td>Target total</td><td>0-77</td><td>78</td><td>21 refresh + 57 reuse</td><td>3 dense + 75 MoE</td></tr></table>
+<div class="note">The raw report's repeated detours through layer 77 are Python module-sharing artifacts exposed by TorchInfo recursion. They are not extra forward passes and are removed from this hierarchy.</div>
+<h2 id="parameter-ledger">One Parameter Ledger</h2>
+<p>This combined table replaces separate logical and per-rank inventories. The logical column counts each checkpoint object once, independent of GPU layout. The rank-0 column shows the state resident on one TP8 worker after tensor-parallel sharding and replication.</p>
+<div class="grid"><section class="card"><div class="label">logical target stack</div><div class="value">743.422B</div></section><section class="card"><div class="label">one TP8 rank</div><div class="value">94.305B</div></section><section class="card"><div class="label">sharded slice / rank</div><div class="value">92.731B</div></section><section class="card"><div class="label">replicated / rank</div><div class="value">1.574B</div></section></div>
+<div class="eq-block"><div class="eq-title">Target-state accounting</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>target</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">P<sub>shardable</sub></span> + <span class="math-var">P<sub>replicated</sub></span></div><div class="eq-note">743,422,270,536</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>rank</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">P<sub>shardable</sub></span> &divide; 8 + <span class="math-var">P<sub>replicated</sub></span></div><div class="eq-note">94,304,643,336</div></div><div class="eq-comment">These are checkpoint-state counts, not active parameters per token. Summing eight physical ranks would count replicated tensors eight times.</div></div>
+<div class="parameter-table-scroll" role="region" aria-label="Combined logical and TP8 parameter accounting" tabindex="0"><table class="parameter-table combined-parameter-table"><colgroup><col class="param-col-component"><col class="param-col-logical-shape"><col class="param-col-rank-shape"><col class="param-col-rank-count"><col class="param-col-formula"><col class="param-col-logical-count"></colgroup><thead><tr><th>Component</th><th>Logical architecture object</th><th>Object on one TP8 rank</th><th>Elements on one rank</th><th>Logical-count formula</th><th>Logical elements</th></tr></thead><tbody aria-labelledby="prefill-param-group-0"><tr class="param-group"><th id="prefill-param-group-0" colspan="6"><span class="param-group-title">Token input and output</span><span class="param-group-note">Untied vocabulary embedding and language-model head</span></th></tr><tr class="param-subgroup"><th colspan="6">Vocabulary tensors</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>embed_tokens</code></th><td>one embedding matrix <span class="shape">[154880, 6144]</span></td><td>vocab-parallel shard: 19,360 of 154,880 vocabulary rows; each row has 6,144 hidden weights</td><td><span class="param-count">118,947,840</span></td><td>154,880 configured vocabulary rows &times; 6,144 hidden</td><td><span class="param-count">951,582,720</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>lm_head</code></th><td>one untied output matrix <span class="shape">[154880, 6144]</span></td><td>vocab-parallel shard: 19,360 of 154,880 vocabulary rows; each row has 6,144 hidden weights</td><td><span class="param-count">118,947,840</span></td><td>154,880 configured vocabulary rows &times; 6,144 hidden</td><td><span class="param-count">951,582,720</span></td></tr></tbody><tbody aria-labelledby="prefill-param-group-1"><tr class="param-group"><th id="prefill-param-group-1" colspan="6"><span class="param-group-title">Attention and sparse selection</span><span class="param-group-note">MLA projections and the learned DSA selector</span></th></tr><tr class="param-subgroup"><th colspan="6">MLA projections - all 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>fused_qkv_a_proj_with_mqa</code></th><td>78 projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span> = <span class="shape">[2048, 512, 64]</span> query latent, KV latent, and shared RoPE key</td><td>78 full projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span> = <span class="shape">[2048, 512, 64]</span> query latent, KV latent, and shared RoPE key</td><td><span class="param-count">1,257,583,392</span></td><td>78 layers &times; [6,144 hidden &times; (2,048 query latent + 512 KV latent + 64 RoPE key) + 48 &times; 21 FP8 scales]</td><td><span class="param-count">1,257,583,392</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>q_b_proj</code></th><td>78 projections; each maps <span class="shape">[2048]</span> to <span class="shape">[64, 256]</span> = <span class="shape">[16384]</span> (192 content + 64 RoPE per head)</td><td>78 rank-local projections; each maps <span class="shape">[2048]</span> to <span class="shape">[8, 256]</span> = <span class="shape">[2048]</span> (192 content + 64 RoPE per head)</td><td><span class="param-count">327,175,680</span></td><td>78 layers &times; [2,048 query latent &times; (64 heads &times; (192 content + 64 RoPE)) + 16 &times; 128 FP8 scales]</td><td><span class="param-count">2,617,405,440</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>kv_b_proj</code></th><td>78 projections; each maps <span class="shape">[512]</span> to <span class="shape">[64, 448]</span> = <span class="shape">[28672]</span> (192 key + 256 value per head)</td><td>78 rank-local projections; each maps <span class="shape">[512]</span> to <span class="shape">[8, 448]</span> = <span class="shape">[3584]</span> (192 key + 256 value per head)</td><td><span class="param-count">143,139,360</span></td><td>78 layers &times; [512 KV latent &times; (64 heads &times; (192 key + 256 value)) + 4 &times; 224 FP8 scales]</td><td><span class="param-count">1,145,114,880</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>o_proj</code></th><td>78 projections; each maps all value heads <span class="shape">[64, 256]</span> to <span class="shape">[6144]</span></td><td>78 rank-local projections; each maps local heads <span class="shape">[8, 256]</span> back to <span class="shape">[6144]</span></td><td><span class="param-count">981,527,040</span></td><td>78 layers &times; [(64 heads &times; 256 value dim) &times; 6,144 hidden + 128 &times; 48 FP8 scales]</td><td><span class="param-count">7,852,216,320</span></td></tr><tr class="param-subgroup"><th colspan="6">DSA TopK refresh - 21 of 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component">DSA indexer</th><td>21 selector modules with 32 index heads of width 128; 57 layers reuse prior TopK indices</td><td>21 checkpoint-backed selector modules at layers 0, 1, 2, then every fourth layer through 74; 57 layers reuse prior TopK indices</td><td><span class="param-count">196,821,744</span></td><td>21 refresh layers &times; [2,048 query latent &times; (32 heads &times; 128 width) + 6,144 hidden &times; 128 key width + 6,144 hidden &times; 32 head gates + 2 &times; 128 key-norm weight/bias + (32 &times; 16 + 1 &times; 48) FP8 scales]</td><td><span class="param-count">196,821,744</span></td></tr></tbody><tbody aria-labelledby="prefill-param-group-2"><tr class="param-group"><th id="prefill-param-group-2" colspan="6"><span class="param-group-title">Feed-forward networks</span><span class="param-group-note">Dense warm-up MLP and sparse MoE parameter families</span></th></tr><tr class="param-subgroup"><th colspan="6">Dense warm-up - layers 0-2</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Gate/up projection</th><td>3 merged projections; each maps <span class="shape">[6144]</span> to <span class="shape">[24576]</span> = <span class="shape">[12288, 12288]</span> gate and up channels</td><td>3 dense layers; merged rank-local output maps <span class="shape">[6144]</span> to <span class="shape">[3072]</span> (1,536 gate + 1,536 up)</td><td><span class="param-count">56,626,560</span></td><td>3 layers &times; [6,144 hidden &times; 24,576 merged output + 48 &times; 192 FP8 scales]</td><td><span class="param-count">453,012,480</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Down projection</th><td>3 projections; each maps <span class="shape">[12288]</span> to <span class="shape">[6144]</span></td><td>3 dense layers; rank-local input shard maps <span class="shape">[1536]</span> to <span class="shape">[6144]</span></td><td><span class="param-count">28,313,280</span></td><td>3 layers &times; [12,288 intermediate &times; 6,144 hidden + 96 &times; 48 FP8 scales]</td><td><span class="param-count">226,506,240</span></td></tr><tr class="param-subgroup"><th colspan="6">Sparse MoE body - layers 3-77</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Expert gate/up/down projections</th><td>75 sparse layers; 257 experts per layer; each expert has merged gate/up <span class="shape">[6144]</span> &rarr; <span class="shape">[4096]</span> and down <span class="shape">[2048]</span> &rarr; <span class="shape">[6144]</span></td><td>75 sparse layers; 256 routed + 1 shared expert; rank-local TP slices of merged gate/up and down weights</td><td><span class="param-count">90,956,412,000</span></td><td>75 layers &times; 257 experts &times; ([6,144 &times; 4,096 weights + 48 &times; 32 FP8 scales] + [2,048 &times; 6,144 weights + 16 &times; 48 FP8 scales])</td><td><span class="param-count">727,651,296,000</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MoE gate/router</th><td>75 router matrices <span class="shape">[6144, 256]</span> with 256 correction scalars per sparse layer</td><td>75 replicated router matrices over 256 routed experts</td><td><span class="param-count">117,984,000</span></td><td>75 sparse layers &times; (6,144 hidden &times; 256 routed experts + 256 correction scalars)</td><td><span class="param-count">117,984,000</span></td></tr></tbody><tbody aria-labelledby="prefill-param-group-3"><tr class="param-group"><th id="prefill-param-group-3" colspan="6"><span class="param-group-title">Normalization and scalar state</span><span class="param-group-note">Normalization vectors and scalar state outside the major projections</span></th></tr><tr class="param-subgroup"><th colspan="6">Layer and model normalization</th></tr><tr class="param-leaf"><th scope="row" class="param-component">RMSNorms, final norm, and attention scales</th><td>per-layer input, post-attention, query, and KV norm vectors; final model norm; scalar attention quantization state</td><td>replicated per-layer norm vectors, final model norm, and scalar attention quantization state</td><td><span class="param-count">1,164,600</span></td><td>78 layers &times; (6,144 input norm + 6,144 post-attention norm + 2,048 query norm + 512 KV norm + 4 MQA/MHA key/value scales) + 6,144 final model norm</td><td><span class="param-count">1,164,600</span></td></tr></tbody></table></div>
+<h2 id="mfu-handoff">MFU Handoff</h2>
+<p>The execution tree is now suitable as the structural input to a prefill FLOP model. The next calculation must derive arithmetic from each operation rather than copy TorchInfo's mult-add column.</p>
+<table><tr><th>Execution term</th><th>Use from this page</th><th>Prefill FLOP treatment</th></tr><tr><td>Embedding</td><td>Lookup count and <span class="shape">[10000, 6144]</span> output</td><td>Memory lookup; do not charge the full vocabulary matrix as a GEMM</td></tr>
+<tr><td>Linear projections</td><td>Observed token rows and rank-local matrix shapes</td><td>For a matrix product, use 2 &times; <span class="math-var">m</span> &times; <span class="math-var">k</span> &times; <span class="math-var">n</span> FLOPs</td></tr>
+<tr><td>Dense MLP</td><td>3 layers with rank-local widths 3,072 and 1,536</td><td>Count gate/up and down GEMMs, then decide separately whether to include elementwise SiLU</td></tr>
+<tr><td>Sparse MoE</td><td>75 layers; router output <span class="shape">[10000, 256]</span>; TopK output <span class="shape">[10000, 9]</span></td><td>Charge eight routed experts plus one shared expert per token, not all 257 resident experts</td></tr>
+<tr><td>DSA selector</td><td>21 refresh layers with <span class="shape">[10000, 2048]</span> selected-position output</td><td>Count selector projections and causal candidate scoring only in refresh layers; include TopK separately if the MFU convention requires it</td></tr>
+<tr><td>MLA selected-key scan</td><td>Rank-local 8 heads; selected positions capped at 2,048</td><td>Count score and value accumulation in all 78 layers using the causal selected-pair sum</td></tr>
+<tr><td>Output head</td><td>One projected hidden row, then <span class="shape">[1, 154880]</span> gathered logits</td><td>Charge one vocabulary projection row, not all 10K hidden rows</td></tr>
+<tr><td>Norm, RoPE, softmax, routing</td><td>Observed shapes and execution counts</td><td>Keep as named non-GEMM terms; include or exclude explicitly instead of hiding them inside a parameter multiplier</td></tr></table>
+<div class="note"><strong>MFU-ready boundary:</strong> this page establishes module scope, repetition, tensor dimensions, and parameter ownership. A later page can now add operation-specific FLOPs and measured prefill time without revisiting the architecture tree.</div>
+
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
+</article>
+</div>
+</main>
+</body>
+</html>
