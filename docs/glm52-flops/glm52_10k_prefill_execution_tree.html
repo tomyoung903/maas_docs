@@ -412,6 +412,17 @@ pre {
   position: relative;
   margin: 0 0 10px;
 }
+.flow-step.has-children > .flow-row {
+  cursor: pointer;
+  transition: border-color .14s ease, box-shadow .14s ease;
+}
+@media (hover: hover) {
+  .flow-step.has-children > .flow-row:hover {
+    border-color: #86aaa2;
+    box-shadow: 0 2px 8px rgba(32, 65, 59, .1);
+  }
+}
+.flow-step.is-collapsed > .flow-children { display: none; }
 .flow-children {
   position: relative;
   margin: 10px 0 2px 22px;
@@ -460,8 +471,33 @@ pre {
 .flow-main { min-width: 0; }
 .flow-heading {
   display: flex;
-  gap: 9px;
+  gap: 8px;
   align-items: flex-start;
+}
+.flow-toggle {
+  display: inline-flex;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #86a69f;
+  border-radius: 4px;
+  background: #fff;
+  color: #27514a;
+  cursor: pointer;
+}
+.flow-toggle-icon {
+  font-size: .92rem;
+  line-height: 1;
+}
+.flow-toggle-icon.collapsed { display: none; }
+.flow-step.is-collapsed > .flow-row .flow-toggle-icon.expanded { display: none; }
+.flow-step.is-collapsed > .flow-row .flow-toggle-icon.collapsed { display: inline; }
+.flow-toggle:focus-visible {
+  outline: 3px solid rgba(11, 107, 102, .32);
+  outline-offset: 2px;
 }
 .flow-step-id {
   display: inline-flex;
@@ -561,6 +597,7 @@ pre {
   .flow-children { margin-left: 12px; padding-left: 18px; }
   .flow-children > .flow-step::before { left: -18px; width: 12px; }
   .flow-step-id { min-width: 36px; height: 28px; }
+  .flow-toggle { flex-basis: 28px; width: 28px; height: 28px; }
   .flow-choice-note { margin-left: 30px; }
 }
 @media (max-width: 430px) {
@@ -594,18 +631,18 @@ pre {
 </div>
 <h2 id="execution-tree">Collapsed Execution Tree</h2>
 <p>Read from top to bottom. Indentation means ownership: the decoder stack owns a repeated decoder layer, the layer owns an attention sublayer and feed-forward sublayer, and each sublayer owns its calculation-ordered operations. Repeat badges collapse identical structure without flattening it.</p>
-<ol class="flow-tree" aria-label="Logical 10K prefill execution tree"><li class="flow-step group">
+<ol class="flow-tree" aria-label="Logical 10K prefill execution tree"><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">M</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-40" aria-label="Collapse child modules under step M" data-step="M" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">M</span>
         <span class="flow-title-wrap"><span class="flow-title">GLM-5.2 target forward</span><span class="flow-role">The complete logical calculation for one 10K-token prefill and one next-token logits row.</span><span class="repeat-badge">one prefill</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 154880]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>embedding, 78 decoder layers, final norm, and untied output head<span class="flow-count">743,422,270,536 logical elements total</span></div>
   </div>
-<ol class="flow-children"><li class="flow-step leaf">
+<ol id="flow-children-40" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
@@ -617,29 +654,29 @@ pre {
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one embedding matrix <span class="shape">[154880, 6144]</span><span class="flow-count">951,582,720 elements</span></div>
   </div>
 
-</li><li class="flow-step group">
+</li><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">2</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-37" aria-label="Collapse child modules under step 2" data-step="2" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2</span>
         <span class="flow-title-wrap"><span class="flow-title">Decoder stack</span><span class="flow-role">Feed the updated residual stream through 78 decoder layers in order; each layer completes attention before its feed-forward branch.</span><span class="repeat-badge">78 sequential layers</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>78 ordered decoder-layer parameter sets</div>
   </div>
-<ol class="flow-children"><li class="flow-step group">
+<ol id="flow-children-37" class="flow-children"><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">2.1</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-32" aria-label="Collapse child modules under step 2.1" data-step="2.1" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2.1</span>
         <span class="flow-title-wrap"><span class="flow-title">Attention sublayer</span><span class="flow-role">Normalize, prepare MLA latents, obtain selected positions, scan selected KV entries, project the result, and add the attention residual.</span><span class="repeat-badge">78 layers</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>MLA projection state in every decoder layer; DSA indexer state only in refresh layers</div>
   </div>
-<ol class="flow-children"><li class="flow-step leaf">
+<ol id="flow-children-32" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
@@ -687,29 +724,29 @@ pre {
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[2048, 16384]</span> + FP8 scales<span class="flow-count">33,556,480 elements per layer</span></div>
   </div>
 
-</li><li class="flow-step group">
+</li><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">2.1.5</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-13" aria-label="Collapse child modules under step 2.1.5" data-step="2.1.5" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2.1.5</span>
         <span class="flow-title-wrap"><span class="flow-title">Choose the selected-position source</span><span class="flow-role">Exactly one branch supplies the position IDs consumed by this layer's sparse MLA scan.</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span>normalized query latent, hidden states, or the prior selected list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>The refresh branch owns learned state; the reuse branch does not</div>
   </div>
-<ol class="flow-children"><li class="flow-step branch-refresh">
+<ol id="flow-children-13" class="flow-children"><li class="flow-step branch-refresh has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">A</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-4" aria-label="Collapse child modules under step A" data-step="A" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">A</span>
         <span class="flow-title-wrap"><span class="flow-title">Refresh selected positions</span><span class="flow-role">Compute a new DSA selection from this layer's hidden states and normalized query latent.</span><span class="repeat-badge">21 layers</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> hidden states + <span class="shape">[10000, 2048]</span> query latent<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> selected position IDs</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one learned indexer in each of 21 refresh layers<span class="flow-count">9,372,464 elements per refresh layer</span></div>
   </div>
-<ol class="flow-children"><li class="flow-step leaf">
+<ol id="flow-children-4" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
@@ -771,18 +808,18 @@ pre {
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>key view of <code>kv_b_proj</code> <span class="shape">[512, 64, 448]</span><span class="flow-count">14,680,960 elements for the complete <code>kv_b_proj</code> per layer</span></div>
   </div>
 
-</li><li class="flow-step group">
+</li><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">2.1.7</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-15" aria-label="Collapse child modules under step 2.1.7" data-step="2.1.7" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2.1.7</span>
         <span class="flow-title-wrap"><span class="flow-title">Selected sparse MLA scan</span><span class="flow-role">Score selected cached positions, normalize their scores, and accumulate values while they are still in the 512-coordinate latent space.</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span>absorbed queries + <span class="shape">[10000, 2048]</span> selected IDs + latent KV cache<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 512]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional projection matrix</div>
   </div>
-<ol class="flow-children"><li class="flow-step leaf">
+<ol id="flow-children-15" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
@@ -868,29 +905,29 @@ pre {
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one norm vector <span class="shape">[6144]</span><span class="flow-count">6,144 elements per layer</span></div>
   </div>
 
-</li><li class="flow-step group">
+</li><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">2.3</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-34" aria-label="Collapse child modules under step 2.3" data-step="2.3" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2.3</span>
         <span class="flow-title-wrap"><span class="flow-title">Choose the feed-forward branch</span><span class="flow-role">The layer ID determines whether hidden states pass through the dense SwiGLU path or the sparse MoE path.</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>Exactly one branch executes in each decoder layer</div>
   </div>
-<ol class="flow-children"><li class="flow-step branch-dense">
+<ol id="flow-children-34" class="flow-children"><li class="flow-step branch-dense has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">D</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-30" aria-label="Collapse child modules under step D" data-step="D" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">D</span>
         <span class="flow-title-wrap"><span class="flow-title">Dense SwiGLU branch</span><span class="flow-role">Used by layers 0-2.</span><span class="repeat-badge">3 layers</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one dense gate/up matrix and one dense down matrix per layer</div>
   </div>
-<ol class="flow-children"><li class="flow-step leaf">
+<ol id="flow-children-30" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
@@ -927,18 +964,18 @@ pre {
   </div>
 
 </li></ol>
-</li><li class="flow-step branch-moe">
+</li><li class="flow-step branch-moe has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">M</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-31" aria-label="Collapse child modules under step M" data-step="M" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">M</span>
         <span class="flow-title-wrap"><span class="flow-title">Sparse MoE branch</span><span class="flow-role">Used by layers 3-77.</span><span class="repeat-badge">75 layers</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>router plus 257 logical expert parameter sets per layer</div>
   </div>
-<ol class="flow-children"><li class="flow-step leaf">
+<ol id="flow-children-31" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
@@ -962,18 +999,18 @@ pre {
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
   </div>
 
-</li><li class="flow-step group">
+</li><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
-        <span class="flow-step-id">M3</span>
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-29" aria-label="Collapse child modules under step M3" data-step="M3" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">M3</span>
         <span class="flow-title-wrap"><span class="flow-title">Active expert computation</span><span class="flow-role">Execute only the selected expert paths, while the logical model still owns all 257 expert parameter sets in this layer.</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> hidden states + route list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>257 experts; each has merged gate/up and down projections<span class="flow-count">9,702,017,280 elements per sparse layer</span></div>
   </div>
-<ol class="flow-children"><li class="flow-step leaf">
+<ol id="flow-children-29" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
@@ -1099,6 +1136,36 @@ pre {
 <tr><td>Output head</td><td>One projected hidden row, then <span class="shape">[1, 154880]</span> full-vocabulary logits</td><td>Charge one vocabulary projection row, not all 10K hidden rows</td></tr>
 <tr><td>Norm, RoPE, softmax, routing</td><td>Shapes and repetition are explicit tree leaves</td><td>Keep as named non-GEMM terms; include or exclude explicitly instead of hiding them inside a parameter multiplier</td></tr></table>
 <div class="note"><strong>MFU-ready boundary:</strong> this page establishes logical operation scope, repetition, tensor dimensions, and parameter ownership. A later calculation can add operation-specific FLOPs and measured prefill time without reconstructing the model tree.</div>
+
+<script>
+(() => {
+  const tree = document.querySelector(".flow-tree");
+  if (!tree) return;
+
+  const setExpanded = (step, expanded) => {
+    const children = step.querySelector(":scope > .flow-children");
+    const button = step.querySelector(":scope > .flow-row .flow-toggle");
+    if (!children || !button) return;
+
+    step.classList.toggle("is-collapsed", !expanded);
+    children.hidden = !expanded;
+    button.setAttribute("aria-expanded", String(expanded));
+    const action = expanded ? "Collapse" : "Expand";
+    const stepId = button.dataset.step;
+    button.setAttribute("aria-label", `${action} child modules under step ${stepId}`);
+    button.title = `${action} child modules`;
+  };
+
+  tree.addEventListener("click", (event) => {
+    const row = event.target.closest(".flow-row");
+    const step = row?.parentElement;
+    if (!step?.classList.contains("has-children")) return;
+    if (window.getSelection()?.toString()) return;
+    setExpanded(step, step.classList.contains("is-collapsed"));
+  });
+})();
+</script>
+
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
 </article>
