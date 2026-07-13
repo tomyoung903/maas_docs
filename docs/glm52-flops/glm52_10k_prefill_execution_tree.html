@@ -867,11 +867,11 @@ pre {
     <div class="flow-main">
       <div class="flow-heading">
         <span class="flow-step-id">2.1.6</span>
-        <span class="flow-title-wrap"><span class="flow-title">Prepare the absorbed MLA query</span><span class="flow-role">Map each 192-coordinate content query into the 512-coordinate KV-latent space, and rotate the separate query/key positional coordinates.</span></span>
+        <span class="flow-title-wrap"><span class="flow-title">Prepare the absorbed MLA query</span><span class="flow-role">Use the 192-coordinate key slice of <code>kv_b_proj</code> to map each content query into the 512-coordinate KV-latent space, and rotate the separate query/key positional coordinates.</span></span>
       </div>
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 192]</span> content + <span class="shape">[10000, 64, 64]</span> query RoPE + <span class="shape">[10000, 1, 64]</span> key RoPE<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 512]</span> absorbed content + rotated RoPE paths</div>
-    <div class="flow-state"><span class="flow-label">Logical parameter state</span>key view of <code>kv_b_proj</code> <span class="shape">[512, 64, 448]</span><span class="flow-count">14,680,960 elements for the complete <code>kv_b_proj</code> per layer</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>key slice of <code>kv_b_proj</code> <span class="shape">[512, 64, 192]</span>; value slice <span class="shape">[512, 64, 256]</span>; together they form the complete projection <span class="shape">[512, 64, 448]</span><span class="flow-count">14,680,960 elements for the complete combined <code>kv_b_proj</code> per layer</span></div>
   </div>
 
 </li><li class="flow-step group has-children">
