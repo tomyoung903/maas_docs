@@ -430,6 +430,39 @@ pre {
   font-weight: 800;
   line-height: 1.2;
 }
+.column-toggle {
+  appearance: none;
+  gap: 6px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, opacity .14s ease;
+}
+.column-toggle::before {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  content: "\2713";
+  font-size: .65rem;
+  line-height: 1;
+}
+.logic-badge.column-toggle[aria-pressed="false"] {
+  border-color: #aab6b3;
+  background: #fff;
+  color: #66736f;
+  opacity: .78;
+}
+.logic-badge.column-toggle[aria-pressed="false"]::before { content: ""; }
+.column-toggle:hover { opacity: 1; }
+.column-toggle:focus-visible {
+  outline: 3px solid rgba(11, 107, 102, .32);
+  outline-offset: 2px;
+}
 .logic-badge.tensor { border-color: var(--tree-tensor-border); background: var(--tree-tensor-bg); color: var(--tree-tensor-text); }
 .logic-badge.state { border-color: var(--tree-state-border); background: var(--tree-state-bg); color: var(--tree-state-text); }
 .logic-badge.flops { border-color: var(--tree-flops-border); background: var(--tree-flops-bg); color: var(--tree-flops-text); }
@@ -714,12 +747,75 @@ pre {
     "io state";
   grid-template-columns: minmax(230px, 1.05fr) minmax(190px, .95fr);
 }
+.flow-tree.hide-io .flow-io,
+.flow-tree.hide-state .flow-state,
+.flow-tree.hide-flops .flow-flops { display: none; }
+@media (min-width: 1401px) {
+  .flow-tree.hide-io:not(.hide-state):not(.hide-flops) .flow-row {
+    grid-template-areas: "main state flops";
+    grid-template-columns: minmax(260px, 1.15fr) minmax(210px, .86fr) minmax(190px, .72fr);
+  }
+  .flow-tree.hide-state:not(.hide-io):not(.hide-flops) .flow-row {
+    grid-template-areas: "main io flops";
+    grid-template-columns: minmax(260px, 1.15fr) minmax(220px, 1fr) minmax(190px, .72fr);
+  }
+  .flow-tree.hide-flops:not(.hide-io):not(.hide-state) .flow-row {
+    grid-template-areas: "main io state";
+    grid-template-columns: minmax(260px, 1.15fr) minmax(220px, 1fr) minmax(210px, .86fr);
+  }
+  .flow-tree.hide-io.hide-state:not(.hide-flops) .flow-row {
+    grid-template-areas: "main flops";
+    grid-template-columns: minmax(280px, 1.3fr) minmax(210px, .7fr);
+  }
+  .flow-tree.hide-io.hide-flops:not(.hide-state) .flow-row {
+    grid-template-areas: "main state";
+    grid-template-columns: minmax(280px, 1.3fr) minmax(220px, .7fr);
+  }
+  .flow-tree.hide-state.hide-flops:not(.hide-io) .flow-row {
+    grid-template-areas: "main io";
+    grid-template-columns: minmax(280px, 1.15fr) minmax(240px, .85fr);
+  }
+  .flow-tree.hide-io.hide-state.hide-flops .flow-row {
+    grid-template-areas: "main";
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 @media (max-width: 1400px) {
   .flow-row {
     grid-template-areas:
       "main flops"
       "io state";
     grid-template-columns: minmax(230px, 1.05fr) minmax(190px, .95fr);
+  }
+}
+@media (min-width: 721px) and (max-width: 1400px) {
+  .flow-tree.hide-io:not(.hide-state):not(.hide-flops) .flow-row {
+    grid-template-areas:
+      "main state"
+      "flops flops";
+  }
+  .flow-tree.hide-state:not(.hide-io):not(.hide-flops) .flow-row {
+    grid-template-areas:
+      "main io"
+      "flops flops";
+  }
+  .flow-tree.hide-flops:not(.hide-io):not(.hide-state) .flow-row {
+    grid-template-areas:
+      "main io"
+      "state state";
+  }
+  .flow-tree.hide-io.hide-state:not(.hide-flops) .flow-row {
+    grid-template-areas: "main flops";
+  }
+  .flow-tree.hide-io.hide-flops:not(.hide-state) .flow-row {
+    grid-template-areas: "main state";
+  }
+  .flow-tree.hide-state.hide-flops:not(.hide-io) .flow-row {
+    grid-template-areas: "main io";
+  }
+  .flow-tree.hide-io.hide-state.hide-flops .flow-row {
+    grid-template-areas: "main";
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 720px) {
@@ -759,10 +855,10 @@ pre {
 <p class="lead">A model-level map of one 100,000-token prefill, ordered exactly as hidden states move through embedding, the repeated decoder layer, final normalization, and the next-token output projection. Every tree row now aligns its tensor flow and logical parameter state with the same 100K-prefill FLOP scope.</p>
 <div class="grid"><section class="card"><div class="label">prefill input</div><div class="value">100,000 token IDs</div></section><section class="card"><div class="label">decoder stack</div><div class="value">78 ordered layers</div></section><section class="card"><div class="label">sparse selection</div><div class="value">TopK = 2,048</div></section><section class="card"><div class="label">logical 100K FLOPs</div><div class="value">10.95 PFLOP</div></section><section class="card"><div class="label">logical target state</div><div class="value">743.422B elements</div></section></div>
 <div class="tree-legend" aria-label="Execution tree color legend">
-  <div class="legend-group" aria-label="Node column colors">
-    <span class="logic-badge tensor">Tensor input &darr; tensor output</span>
-    <span class="logic-badge state">Logical parameter state</span>
-    <span class="logic-badge flops">100K prefill FLOPs</span>
+  <div class="legend-group" role="group" aria-label="Visible execution tree columns">
+    <button type="button" class="logic-badge column-toggle tensor" data-column="io" aria-controls="execution-flow-tree" aria-label="Tensor input to tensor output column" aria-pressed="true">Tensor input &darr; tensor output</button>
+    <button type="button" class="logic-badge column-toggle state" data-column="state" aria-controls="execution-flow-tree" aria-label="Logical parameter state column" aria-pressed="true">Logical parameter state</button>
+    <button type="button" class="logic-badge column-toggle flops" data-column="flops" aria-controls="execution-flow-tree" aria-label="100K prefill FLOPs column" aria-pressed="true">100K prefill FLOPs</button>
   </div>
   <div class="legend-group" aria-label="Layer-dependent branch colors">
     <span class="legend-group-label">Layer-dependent branches</span>
@@ -775,7 +871,7 @@ pre {
 <h2 id="execution-tree">Collapsed Execution Tree</h2>
 <p>Read from top to bottom. Indentation means ownership: the decoder stack owns a repeated decoder layer, the layer owns an attention sublayer and feed-forward sublayer, and each sublayer owns its calculation-ordered operations. Parent FLOP cells are subtotals; expanded leaf cells reconcile those subtotals without counting parent and child values twice.</p>
 <div class="note"><strong>Expanded arithmetic convention:</strong> one scalar add, multiply, divide, reciprocal square root, or exponential counts as one operation; a multiply-add remains two FLOPs. This makes norms, RoPE, softmax, SiLU, routing arithmetic, residuals, and the output head part of the total. TopK comparisons, gathers, permutations, ID writes, and communication are displayed as auxiliary work because they are not floating-point operations.</div>
-<ol class="flow-tree" aria-label="Logical 100K prefill execution tree with FLOP accounting"><li class="flow-step group has-children">
+<ol id="execution-flow-tree" class="flow-tree" aria-label="Logical 100K prefill execution tree with FLOP accounting"><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
@@ -1326,6 +1422,29 @@ pre {
 (() => {
   const tree = document.querySelector(".flow-tree");
   if (!tree) return;
+
+  const columnLabels = {
+    io: "Tensor input to tensor output",
+    state: "Logical parameter state",
+    flops: "100K prefill FLOPs",
+  };
+
+  document.querySelectorAll(".column-toggle[data-column]").forEach((button) => {
+    const column = button.dataset.column;
+    const label = columnLabels[column];
+    if (!label) return;
+
+    const setVisible = (visible) => {
+      tree.classList.toggle(`hide-${column}`, !visible);
+      button.setAttribute("aria-pressed", String(visible));
+      button.title = `${visible ? "Hide" : "Show"} ${label} column`;
+    };
+
+    setVisible(button.getAttribute("aria-pressed") !== "false");
+    button.addEventListener("click", () => {
+      setVisible(button.getAttribute("aria-pressed") !== "true");
+    });
+  });
 
   const setExpanded = (step, expanded) => {
     const children = step.querySelector(":scope > .flow-children");
