@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Static technical documentation for GLM-5.2 10K Prefill Execution Tree.">
+  <meta name="description" content="Static technical documentation for GLM-5.2 100K Prefill Execution Tree.">
   <meta name="robots" content="noindex">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">
   <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">
-  <title>GLM-5.2 10K Prefill Execution Tree</title>
+  <title>GLM-5.2 100K Prefill Execution Tree</title>
   <style>
 :root {
   --bg: #f4f7f6;
@@ -382,6 +382,9 @@ pre {
   --tree-state-border: #667386;
   --tree-state-bg: #edf0f4;
   --tree-state-text: #364152;
+  --tree-flops-border: #a32678;
+  --tree-flops-bg: #f9e7f2;
+  --tree-flops-text: #70204f;
   --tree-refresh-border: #7551b2;
   --tree-refresh-bg: #f0ebfa;
   --tree-refresh-text: #4d347a;
@@ -429,6 +432,7 @@ pre {
 }
 .logic-badge.tensor { border-color: var(--tree-tensor-border); background: var(--tree-tensor-bg); color: var(--tree-tensor-text); }
 .logic-badge.state { border-color: var(--tree-state-border); background: var(--tree-state-bg); color: var(--tree-state-text); }
+.logic-badge.flops { border-color: var(--tree-flops-border); background: var(--tree-flops-bg); color: var(--tree-flops-text); }
 .logic-badge.branch-refresh { border-color: var(--tree-refresh-border); background: var(--tree-refresh-bg); color: var(--tree-refresh-text); }
 .logic-badge.branch-reuse { border-color: var(--tree-reuse-border); background: var(--tree-reuse-bg); color: var(--tree-reuse-text); }
 .logic-badge.branch-dense { border-color: var(--tree-dense-border); background: var(--tree-dense-bg); color: var(--tree-dense-text); }
@@ -440,7 +444,7 @@ pre {
   list-style: none;
 }
 .flow-tree {
-  max-width: 1050px;
+  max-width: 1250px;
   margin: 20px 0 30px;
 }
 .flow-step {
@@ -474,7 +478,8 @@ pre {
 }
 .flow-row {
   display: grid;
-  grid-template-columns: minmax(250px, 1.15fr) minmax(245px, 1fr) minmax(220px, .85fr);
+  grid-template-areas: "main io state flops";
+  grid-template-columns: minmax(230px, 1.15fr) minmax(0, 1fr) minmax(0, .86fr) minmax(165px, .72fr);
   gap: 18px;
   align-items: start;
   padding: 13px 14px;
@@ -503,7 +508,7 @@ pre {
   border-left-color: var(--tree-moe-border);
   background: var(--tree-moe-bg);
 }
-.flow-main { min-width: 0; }
+.flow-main { grid-area: main; min-width: 0; }
 .flow-heading {
   display: flex;
   gap: 8px;
@@ -576,13 +581,15 @@ pre {
   white-space: normal;
 }
 .flow-io,
-.flow-state {
+.flow-state,
+.flow-flops {
   min-width: 0;
   font-size: .82rem;
   line-height: 1.42;
 }
-.flow-io { color: var(--tree-tensor-text); }
-.flow-state { color: var(--tree-state-text); }
+.flow-io { grid-area: io; color: var(--tree-tensor-text); }
+.flow-state { grid-area: state; color: var(--tree-state-text); }
+.flow-flops { grid-area: flops; color: var(--tree-flops-text); }
 .flow-label {
   display: block;
   margin-bottom: 3px;
@@ -593,7 +600,8 @@ pre {
   text-transform: uppercase;
 }
 .flow-io > .flow-label,
-.flow-state > .flow-label {
+.flow-state > .flow-label,
+.flow-flops > .flow-label {
   display: flex;
   width: fit-content;
   padding: 2px 5px;
@@ -611,9 +619,66 @@ pre {
   background: var(--tree-state-bg);
   color: var(--tree-state-text);
 }
+.flow-flops > .flow-label {
+  border-color: var(--tree-flops-border);
+  background: var(--tree-flops-bg);
+  color: var(--tree-flops-text);
+}
 .flow-io .shape { color: var(--tree-tensor-text); }
 .flow-state .shape,
 .flow-state .flow-count { color: var(--tree-state-text); }
+.flop-value {
+  display: block;
+  color: var(--tree-flops-text);
+  font-size: .95rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.flop-value.outside { font-size: .84rem; }
+.flop-formula,
+.flop-note {
+  display: block;
+  margin-top: 5px;
+  color: #675062;
+  font-size: .73rem;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+}
+.flop-formula { font-variant-numeric: tabular-nums; }
+.flop-status {
+  display: inline-flex;
+  padding: 2px 5px;
+  border: 1px solid #c9aabd;
+  border-radius: 3px;
+  background: #fff8fc;
+  color: #6e3858;
+  font-size: .72rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.flop-breakdown {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #d9b7cb;
+}
+.flop-breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  color: #675062;
+  font-size: .69rem;
+  line-height: 1.25;
+}
+.flop-breakdown-row strong { font-weight: 720; }
+.flop-breakdown-row span {
+  color: var(--tree-flops-text);
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
 .flow-arrow {
   display: block;
   margin: 5px 0;
@@ -642,16 +707,26 @@ pre {
   color: var(--muted);
   font-size: .88rem;
 }
+/* Deep operation rows need more vertical room than top-level summary rows. */
+.flow-children .flow-children .flow-row {
+  grid-template-areas:
+    "main flops"
+    "io state";
+  grid-template-columns: minmax(230px, 1.05fr) minmax(190px, .95fr);
+}
 @media (max-width: 1400px) {
   .flow-row {
-    grid-template-columns: minmax(230px, 1fr) minmax(210px, .9fr);
+    grid-template-areas:
+      "main flops"
+      "io state";
+    grid-template-columns: minmax(230px, 1.05fr) minmax(190px, .95fr);
   }
-  .flow-state { grid-column: 1 / -1; padding-left: 39px; }
 }
 @media (max-width: 720px) {
   .flow-row { display: block; padding: 12px; }
   .flow-io,
-  .flow-state { margin-top: 12px; padding-left: 39px; }
+  .flow-state,
+  .flow-flops { margin-top: 12px; padding-left: 39px; }
   .flow-children { margin-left: 12px; padding-left: 18px; }
   .flow-children > .flow-step::before { left: -18px; width: 12px; }
   .flow-step-id { min-width: 36px; height: 28px; }
@@ -662,13 +737,14 @@ pre {
   .flow-children { margin-left: 5px; padding-left: 13px; }
   .flow-children > .flow-step::before { left: -13px; width: 8px; }
   .flow-io,
-  .flow-state { padding-left: 0; }
+  .flow-state,
+  .flow-flops { padding-left: 0; }
 }
 </style>
 </head>
 <body>
 <main>
-<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_10k_prefill_execution_tree.html">10K Prefill Tree</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">Public URL</a></nav>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_10k_prefill_execution_tree.html">100K Prefill Tree</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">Public URL</a></nav>
 <div class="doc-shell">
 <aside class="content-overview" aria-label="Content overview">
   <div class="content-overview-title">On this page</div>
@@ -679,13 +755,14 @@ pre {
 </aside>
 <article class="doc-content">
 
-<h1>GLM-5.2 10K Prefill Execution Tree</h1>
-<p class="lead">A model-level map of one 10,000-token prefill, ordered exactly as hidden states move through embedding, the repeated decoder layer, final normalization, and the next-token output projection.</p>
-<div class="grid"><section class="card"><div class="label">prefill input</div><div class="value">10,000 token IDs</div></section><section class="card"><div class="label">decoder stack</div><div class="value">78 ordered layers</div></section><section class="card"><div class="label">sparse selection</div><div class="value">TopK = 2,048</div></section><section class="card"><div class="label">logical target state</div><div class="value">743.422B elements</div></section></div>
+<h1>GLM-5.2 100K Prefill Execution Tree</h1>
+<p class="lead">A model-level map of one 100,000-token prefill, ordered exactly as hidden states move through embedding, the repeated decoder layer, final normalization, and the next-token output projection. Every tree row now aligns its tensor flow and logical parameter state with the same 100K-prefill FLOP scope.</p>
+<div class="grid"><section class="card"><div class="label">prefill input</div><div class="value">100,000 token IDs</div></section><section class="card"><div class="label">decoder stack</div><div class="value">78 ordered layers</div></section><section class="card"><div class="label">sparse selection</div><div class="value">TopK = 2,048</div></section><section class="card"><div class="label">logical 100K FLOPs</div><div class="value">10.938013 PFLOP</div></section><section class="card"><div class="label">logical target state</div><div class="value">743.422B elements</div></section></div>
 <div class="tree-legend" aria-label="Execution tree color legend">
   <div class="legend-group" aria-label="Node column colors">
     <span class="logic-badge tensor">Tensor input &darr; tensor output</span>
     <span class="logic-badge state">Logical parameter state</span>
+    <span class="logic-badge flops">100K prefill FLOPs</span>
   </div>
   <div class="legend-group" aria-label="Layer-dependent branch colors">
     <span class="legend-group-label">Layer-dependent branches</span>
@@ -696,28 +773,30 @@ pre {
   </div>
 </div>
 <h2 id="execution-tree">Collapsed Execution Tree</h2>
-<p>Read from top to bottom. Indentation means ownership: the decoder stack owns a repeated decoder layer, the layer owns an attention sublayer and feed-forward sublayer, and each sublayer owns its calculation-ordered operations. Repeat badges collapse identical structure without flattening it.</p>
-<ol class="flow-tree" aria-label="Logical 10K prefill execution tree"><li class="flow-step group has-children">
+<p>Read from top to bottom. Indentation means ownership: the decoder stack owns a repeated decoder layer, the layer owns an attention sublayer and feed-forward sublayer, and each sublayer owns its calculation-ordered operations. Parent FLOP cells are subtotals; expanded leaf cells reconcile those subtotals without counting parent and child values twice.</p>
+<ol class="flow-tree" aria-label="Logical 100K prefill execution tree with FLOP accounting"><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
         <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-40" aria-label="Collapse child modules under step M" data-step="M" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">M</span>
-        <span class="flow-title-wrap"><span class="flow-title">GLM-5.2 target forward</span><span class="flow-role">The complete logical calculation for one 10K-token prefill and one next-token logits row.</span><span class="repeat-badge">one prefill</span></span>
+        <span class="flow-title-wrap"><span class="flow-title">GLM-5.2 target forward</span><span class="flow-role">The complete logical calculation for one 100K-token prefill and one next-token logits row.</span><span class="repeat-badge">one prefill</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 154880]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 154880]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>embedding, 78 decoder layers, final norm, and untied output head<span class="flow-count">743,422,270,536 logical elements total</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">10.938013 PFLOP</span><span class="flop-formula">six-term logical GEMM and attention-scan ledger</span><span class="flop-note">Excludes the separately shown last-token lm_head and named non-GEMM operations.</span><span class="flop-breakdown"><span class="flop-breakdown-row"><strong>Attention projections</strong><span>2.574307</span></span><span class="flop-breakdown-row"><strong>Dense MLPs</strong><span>0.135895</span></span><span class="flop-breakdown-row"><strong>Active MoE + routers</strong><span>5.119672</span></span><span class="flop-breakdown-row"><strong>Indexer setup</strong><span>0.039361</span></span><span class="flop-breakdown-row"><strong>Indexer scoring</strong><span>0.866889</span></span><span class="flop-breakdown-row"><strong>MLA selected-key scan</strong><span>2.201889</span></span></span></div>
   </div>
 <ol id="flow-children-40" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
     <div class="flow-main">
       <div class="flow-heading">
         <span class="flow-step-id">1</span>
-        <span class="flow-title-wrap"><span class="flow-title"><code>embed_tokens</code></span><span class="flow-role">Look up one hidden vector for each of the 10,000 token IDs. This is a row lookup, not a vocabulary-wide matrix multiplication.</span><span class="repeat-badge">once</span></span>
+        <span class="flow-title-wrap"><span class="flow-title"><code>embed_tokens</code></span><span class="flow-role">Look up one hidden vector for each of the 100,000 token IDs. This is a row lookup, not a vocabulary-wide matrix multiplication.</span><span class="repeat-badge">once</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one embedding matrix <span class="shape">[154880, 6144]</span><span class="flow-count">951,582,720 elements</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Embedding is a row lookup, not a vocabulary GEMM.</span></div>
   </div>
 
 </li><li class="flow-step group has-children">
@@ -728,8 +807,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Decoder stack</span><span class="flow-role">Feed the updated residual stream through 78 decoder layers in order; each layer completes attention before its feed-forward branch.</span><span class="repeat-badge">78 sequential layers</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>78 ordered decoder-layer parameter sets</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">10.938013 PFLOP</span><span class="flop-formula">78 attention sublayers + 3 dense MLPs + 75 sparse MoE layers</span><span class="flop-note">This is the complete six-term ledger subtotal.</span></div>
   </div>
 <ol id="flow-children-37" class="flow-children"><li class="flow-step group has-children">
   <div class="flow-row">
@@ -739,8 +819,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Attention sublayer</span><span class="flow-role">Normalize, prepare MLA latents, obtain selected positions, scan selected KV entries, project the result, and add the attention residual.</span><span class="repeat-badge">78 layers</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>MLA projection state in every decoder layer; DSA indexer state only in refresh layers</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.682446 PFLOP</span><span class="flop-formula">attention projections + indexer + selected-key MLA scan</span><span class="flop-note">Subtotal across all 78 attention sublayers.</span></div>
   </div>
 <ol id="flow-children-32" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -750,8 +831,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Input RMSNorm</span><span class="flow-role">Normalize the incoming residual stream before attention.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one norm vector <span class="shape">[6144]</span><span class="flow-count">6,144 elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">RMSNorm arithmetic is excluded.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -762,8 +844,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title"><code>fused_qkv_a_proj_with_mqa</code></span><span class="flow-role">Project each normalized hidden state once, then split the result into query latent, KV latent, and shared RoPE key paths.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> + <span class="shape">[10000, 512]</span> + <span class="shape">[10000, 64]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 2048]</span> + <span class="shape">[100000, 512]</span> + <span class="shape">[100000, 64]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[6144, 2624]</span> + FP8 scale grid <span class="shape">[48, 21]</span><span class="flow-count">16,122,864 elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.251501 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 6,144 &times; 2,624</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -774,8 +857,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Query/KV latent RMSNorm</span><span class="flow-role">Normalize the two latent branches independently before query expansion, selection, and KV caching.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 2048]</span> query latent + <span class="shape">[10000, 512]</span> KV latent<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> normalized query + <span class="shape">[10000, 512]</span> normalized KV</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 2048]</span> query latent + <span class="shape">[100000, 512]</span> KV latent<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 2048]</span> normalized query + <span class="shape">[100000, 512]</span> normalized KV</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>norm vectors <span class="shape">[2048]</span> and <span class="shape">[512]</span><span class="flow-count">2,560 elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Latent RMSNorm arithmetic is excluded.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -786,8 +870,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title"><code>q_b_proj</code>: expand all MLA queries</span><span class="flow-role">Expand the query latent into 64 heads, then split each head into 192 content coordinates and 64 RoPE coordinates.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 2048]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 192]</span> content + <span class="shape">[10000, 64, 64]</span> RoPE</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 2048]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 192]</span> content + <span class="shape">[100000, 64, 64]</span> RoPE</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[2048, 16384]</span> + FP8 scales<span class="flow-count">33,556,480 elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.523449 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 2,048 &times; 16,384</span></div>
   </div>
 
 </li><li class="flow-step group has-children">
@@ -798,8 +883,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Choose the selected-position source</span><span class="flow-role">Exactly one branch supplies the position IDs consumed by this layer's sparse MLA scan.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span>normalized query latent, hidden states, or the prior selected list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>normalized query latent, hidden states, or the prior selected list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 2048]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>The refresh branch owns learned state; the reuse branch does not</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.906250 PFLOP</span><span class="flop-formula">21 refresh-layer selectors + 57 zero-recompute reuse layers</span><span class="flop-note">Indexer subtotal; children A1 and A2 reconcile it.</span></div>
   </div>
 <ol id="flow-children-13" class="flow-children"><li class="flow-step branch-refresh has-children">
   <div class="flow-row">
@@ -809,8 +895,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Refresh selected positions</span><span class="flow-role">Compute a new DSA selection from this layer's hidden states and normalized query latent.</span><span class="repeat-badge">21 layers</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> hidden states + <span class="shape">[10000, 2048]</span> query latent<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> selected position IDs</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span> hidden states + <span class="shape">[100000, 2048]</span> query latent<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 2048]</span> selected position IDs</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one learned indexer in each of 21 refresh layers<span class="flow-count">9,372,464 elements per refresh layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.906250 PFLOP</span><span class="flop-formula">indexer setup + candidate scoring</span><span class="flop-note">Subtotal for all 21 selector-refresh layers.</span></div>
   </div>
 <ol id="flow-children-4" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -820,8 +907,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Indexer projections</span><span class="flow-role">Build 32 index queries, one index key per token, and 32 head gates. The positional part of the index query/key path is rotated before scoring.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 2048]</span> query latent + <span class="shape">[10000, 6144]</span> hidden states<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 32, 128]</span> queries + <span class="shape">[10000, 128]</span> keys + <span class="shape">[10000, 32]</span> gates</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 2048]</span> query latent + <span class="shape">[100000, 6144]</span> hidden states<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 32, 128]</span> queries + <span class="shape">[100000, 128]</span> keys + <span class="shape">[100000, 32]</span> gates</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>query <span class="shape">[2048, 32, 128]</span>; key <span class="shape">[6144, 128]</span>; gate <span class="shape">[6144, 32]</span><span class="flow-count">included in the refresh-branch total</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.039361 PFLOP</span><span class="flop-formula">21 refresh layers &times; 100,000 tokens &times; 18,743,296</span><span class="flop-note">Query, key, and gate projection GEMMs.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -832,8 +920,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Causal candidate scoring</span><span class="flow-role">Compare each query token with all legal earlier positions, combine the 32 gated index-head scores, and preserve the causal boundary.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 32, 128]</span> queries + cached index keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, causal prefix]</span> candidate scores</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 32, 128]</span> queries + cached index keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, causal prefix]</span> candidate scores</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.866889 PFLOP</span><span class="flop-formula">21 &times; 5,000,050,000 causal pairs &times; 8,256</span><span class="flop-note">Dot products plus gated head combination.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -844,8 +933,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">TopK selection</span><span class="flow-role">Keep at most 2,048 causal positions for every query token.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, causal prefix]</span> candidate scores<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> selected position IDs</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, causal prefix]</span> candidate scores<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 2048]</span> selected position IDs</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">TopK comparisons and index movement are intentionally excluded.</span></div>
   </div>
 
 </li></ol>
@@ -857,8 +947,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Reuse selected positions</span><span class="flow-role">Carry forward the latest selected-position list; the layer still performs its own MLA projections and attention scan.</span><span class="repeat-badge">57 layers</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span>previous <span class="shape">[10000, 2048]</span> selected position IDs<span class="flow-arrow" aria-hidden="true">&darr;</span>current <span class="shape">[10000, 2048]</span> selected position IDs</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>previous <span class="shape">[100000, 2048]</span> selected position IDs<span class="flow-arrow" aria-hidden="true">&darr;</span>current <span class="shape">[100000, 2048]</span> selected position IDs</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No indexer parameters in these layers</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0 PFLOP</span><span class="flop-formula">57 reuse layers &times; 0 selector recomputations</span><span class="flop-note">These layers reuse the preceding TopK IDs.</span></div>
   </div>
 
 </li></ol>
@@ -870,8 +961,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Prepare the absorbed MLA query</span><span class="flow-role">Use the 192-coordinate key slice of <code>kv_b_proj</code> to map each content query into the 512-coordinate KV-latent space, and rotate the separate query/key positional coordinates.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 192]</span> content + <span class="shape">[10000, 64, 64]</span> query RoPE + <span class="shape">[10000, 1, 64]</span> key RoPE<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 512]</span> absorbed content + rotated RoPE paths</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, 192]</span> content + <span class="shape">[100000, 64, 64]</span> query RoPE + <span class="shape">[100000, 1, 64]</span> key RoPE<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 512]</span> absorbed content + rotated RoPE paths</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>key slice of <code>kv_b_proj</code> <span class="shape">[512, 64, 192]</span>; value slice <span class="shape">[512, 64, 256]</span>; together they form the complete projection <span class="shape">[512, 64, 448]</span><span class="flow-count">14,680,960 elements for the complete combined <code>kv_b_proj</code> per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.098147 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 64 &times; 192 &times; 512</span><span class="flop-note">Counts only the absorbed key-view BMM; RoPE is excluded.</span></div>
   </div>
 
 </li><li class="flow-step group has-children">
@@ -882,8 +974,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Selected sparse MLA scan</span><span class="flow-role">Score selected cached positions, normalize their scores, and accumulate values while they are still in the 512-coordinate latent space.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span>absorbed queries + <span class="shape">[10000, 2048]</span> selected IDs + latent KV cache<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 512]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>absorbed queries + <span class="shape">[100000, 2048]</span> selected IDs + latent KV cache<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 512]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional projection matrix</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">2.201889 PFLOP</span><span class="flop-formula">selected score dot products + latent-value accumulation</span><span class="flop-note">All 78 layers; softmax excluded.</span></div>
   </div>
 <ol id="flow-children-15" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -893,8 +986,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Selected score dot products</span><span class="flow-role">For every query head, score only the chosen causal positions using 512 absorbed content coordinates plus 64 rotated coordinates.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 576]</span> effective queries + selected cached keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, &le;2048]</span> attention scores</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, 576]</span> effective queries + selected cached keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, &le;2048]</span> attention scores</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix; uses cached latents and selected IDs</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.165706 PFLOP</span><span class="flop-formula">78 layers &times; 202,703,872 selected pairs &times; 64 heads &times; 2 &times; 576</span><span class="flop-note">512 content plus 64 RoPE score coordinates.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -905,8 +999,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Causal softmax</span><span class="flow-role">Normalize the selected scores within each query/head row.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, &le;2048]</span> scores<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, &le;2048]</span> probabilities</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, &le;2048]</span> scores<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, &le;2048]</span> probabilities</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Softmax reductions and exponentials are outside this ledger.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -917,8 +1012,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Latent-value accumulation</span><span class="flow-role">Weight and sum the selected 512-coordinate cached value latents for every query head.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span>attention probabilities + selected <span class="shape">[512]</span> cached latents<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 512]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>attention probabilities + selected <span class="shape">[512]</span> cached latents<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 512]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix; the cached KV payload supplies the values</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.036183 PFLOP</span><span class="flop-formula">78 layers &times; 202,703,872 selected pairs &times; 64 heads &times; 2 &times; 512</span><span class="flop-note">Weighted latent-value accumulation.</span></div>
   </div>
 
 </li></ol>
@@ -930,8 +1026,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Latent-value expansion</span><span class="flow-role">Apply the value view of the same <code>kv_b_proj</code> object after accumulation, converting each 512-coordinate head result to value width 256.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 512]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 256]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, 512]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 256]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>value view of the same <code>kv_b_proj</code> state counted at step 2.1.6<span class="flow-count">no second parameter count</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.130862 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 64 &times; 512 &times; 256</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -942,8 +1039,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title"><code>o_proj</code></span><span class="flow-role">Concatenate all 64 value heads and project them back to the residual width.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 256]</span> = <span class="shape">[10000, 16384]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, 256]</span> = <span class="shape">[100000, 16384]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[16384, 6144]</span> + FP8 scales<span class="flow-count">100,669,440 elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.570347 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 16,384 &times; 6,144</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -954,8 +1052,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Attention residual add</span><span class="flow-role">Add the attention output to the saved layer input.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> saved residual + <span class="shape">[10000, 6144]</span> attention output<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span> saved residual + <span class="shape">[100000, 6144]</span> attention output<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Residual additions are excluded.</span></div>
   </div>
 
 </li></ol>
@@ -967,8 +1066,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Post-attention RMSNorm</span><span class="flow-role">Normalize the attention-updated residual before the feed-forward branch.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one norm vector <span class="shape">[6144]</span><span class="flow-count">6,144 elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Post-attention RMSNorm arithmetic is excluded.</span></div>
   </div>
 
 </li><li class="flow-step group has-children">
@@ -979,8 +1079,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Choose the feed-forward branch</span><span class="flow-role">The layer ID determines whether hidden states pass through the dense SwiGLU path or the sparse MoE path.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>Exactly one branch executes in each decoder layer</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.255568 PFLOP</span><span class="flop-formula">3 dense MLPs + 75 active sparse-MoE layers</span><span class="flop-note">Both child branch totals cover disjoint layer families.</span></div>
   </div>
 <ol id="flow-children-34" class="flow-children"><li class="flow-step branch-dense has-children">
   <div class="flow-row">
@@ -990,8 +1091,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Dense SwiGLU branch</span><span class="flow-role">Used by layers 0-2.</span><span class="repeat-badge">3 layers</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one dense gate/up matrix and one dense down matrix per layer</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.135895 PFLOP</span><span class="flop-formula">3 dense layers: merged gate/up + down projections</span></div>
   </div>
 <ol id="flow-children-30" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1001,8 +1103,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Merged gate/up projection</span><span class="flow-role">Produce the gate and up branches in one matrix multiplication.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 24576]</span> = <span class="shape">[10000, 12288]</span> gate + <span class="shape">[10000, 12288]</span> up</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 24576]</span> = <span class="shape">[100000, 12288]</span> gate + <span class="shape">[100000, 12288]</span> up</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[6144, 24576]</span> + FP8 scales<span class="flow-count">151,004,160 elements per dense layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.090597 PFLOP</span><span class="flop-formula">3 layers &times; 100,000 &times; 2 &times; 6,144 &times; 24,576</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1013,8 +1116,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">SiLU and multiply</span><span class="flow-role">Apply SiLU to the gate branch and multiply it elementwise by the up branch.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span>two <span class="shape">[10000, 12288]</span> branches<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 12288]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>two <span class="shape">[100000, 12288]</span> branches<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 12288]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">SiLU and elementwise multiplication are excluded.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1025,8 +1129,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Down projection</span><span class="flow-role">Return the dense intermediate activations to hidden width.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 12288]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 12288]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[12288, 6144]</span> + FP8 scales<span class="flow-count">75,502,080 elements per dense layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.045298 PFLOP</span><span class="flop-formula">3 layers &times; 100,000 &times; 2 &times; 12,288 &times; 6,144</span></div>
   </div>
 
 </li></ol>
@@ -1038,8 +1143,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Sparse MoE branch</span><span class="flow-role">Used by layers 3-77.</span><span class="repeat-badge">75 layers</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>router plus 257 logical expert parameter sets per layer</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.119672 PFLOP</span><span class="flop-formula">75 router GEMMs + nine active expert paths per token</span></div>
   </div>
 <ol id="flow-children-31" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1049,8 +1155,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Router scores</span><span class="flow-role">Score all 256 routed experts for every token.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 256]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 256]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>router <span class="shape">[6144, 256]</span> + <span class="shape">[256]</span> correction scalars<span class="flow-count">1,573,120 elements per sparse layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.023593 PFLOP</span><span class="flop-formula">75 layers &times; 100,000 &times; 2 &times; 6,144 &times; 256</span><span class="flop-note">Router GEMM only; correction and selection are excluded.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1061,8 +1168,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Expert TopK</span><span class="flow-role">Select eight routed experts and add the shared-expert path for each token.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 256]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 9]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 256]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 9]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Expert TopK comparisons are excluded.</span></div>
   </div>
 
 </li><li class="flow-step group has-children">
@@ -1073,8 +1181,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Active expert computation</span><span class="flow-role">Execute only the selected expert paths, while the logical model still owns all 257 expert parameter sets in this layer.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> hidden states + route list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span> hidden states + route list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>257 experts; each has merged gate/up and down projections<span class="flow-count">9,702,017,280 elements per sparse layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.096079 PFLOP</span><span class="flop-formula">active expert gate/up + active expert down</span><span class="flop-note">Counts eight routed experts plus one shared expert per token.</span></div>
   </div>
 <ol id="flow-children-29" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1084,8 +1193,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Dispatch selected token rows</span><span class="flow-role">Group each token row with the eight routed experts plus the shared expert assigned to process it.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> hidden states + <span class="shape">[10000, 9]</span> routes<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span> grouped expert inputs</div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span> hidden states + <span class="shape">[100000, 9]</span> routes<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span> grouped expert inputs</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Dispatch and permutation operations are excluded.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1098,6 +1208,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 4096]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>each expert owns <span class="shape">[6144, 4096]</span> + FP8 scales</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">3.397386 PFLOP</span><span class="flop-formula">75 layers &times; 100,000 tokens &times; 9 active experts &times; 2 &times; 6,144 &times; 4,096</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1110,6 +1221,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 4096]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 2048]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Expert SiLU and elementwise multiplication are excluded.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1122,6 +1234,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 2048]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>each expert owns <span class="shape">[2048, 6144]</span> + FP8 scales</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.698693 PFLOP</span><span class="flop-formula">75 layers &times; 100,000 tokens &times; 9 active experts &times; 2 &times; 2,048 &times; 6,144</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1132,8 +1245,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Weighted expert combine</span><span class="flow-role">Apply route weights and sum the nine active expert outputs belonging to each token.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Route weighting and expert-output reduction are excluded.</span></div>
   </div>
 
 </li></ol>
@@ -1147,8 +1261,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Feed-forward residual add</span><span class="flow-role">Add the feed-forward output to the residual saved after attention.</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> saved residual + <span class="shape">[10000, 6144]</span> feed-forward output<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span> saved residual + <span class="shape">[100000, 6144]</span> feed-forward output<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Feed-forward residual additions are excluded.</span></div>
   </div>
 
 </li></ol>
@@ -1160,8 +1275,9 @@ pre {
         <span class="flow-title-wrap"><span class="flow-title">Final RMSNorm</span><span class="flow-role">Normalize the decoder stack output.</span><span class="repeat-badge">once</span></span>
       </div>
     </div>
-    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one norm vector <span class="shape">[6144]</span><span class="flow-count">6,144 elements</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-status">Not in ledger</span><span class="flop-note">Final RMSNorm arithmetic is excluded.</span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1174,11 +1290,12 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[1, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 154880]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one untied output matrix <span class="shape">[154880, 6144]</span><span class="flow-count">951,582,720 elements</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value outside">1.903 GFLOP</span><span class="flop-status">Outside total</span><span class="flop-note">One last-token vocabulary GEMM is shown for completeness but is not included in 10.938013 PFLOP.</span></div>
   </div>
 
 </li></ol>
 </li></ol>
-<p class="tree-caption">A branch label means the layer follows one of the shown paths. It does not mean both paths execute in one layer. Shapes describe the complete logical model, and parameter counts include checkpoint-backed FP8 scale tensors where present.</p>
+<p class="tree-caption">A branch label means the layer follows one of the shown paths. It does not mean both paths execute in one layer. Shapes and FLOPs both use 100,000 prefill tokens. The magenta column counts the six-term logical GEMM and attention-scan ledger; every excluded operation is labeled explicitly.</p>
 <h2 id="layer-families">Expand The 78 Layers</h2>
 <p>Only three decoder patterns are needed to reconstruct the full stack. Every layer still executes its own MLA selected-key attention; the distinction is whether the layer refreshes DSA TopK positions and whether its feed-forward block is dense or sparse.</p>
 <table><tr><th>Layer family</th><th>Layer IDs</th><th>Copies</th><th>Attention path</th><th>Feed-forward path</th></tr><tr><td>Dense + selector refresh</td><td>0, 1, 2</td><td>3</td><td>Run a new DSA indexer and selected-key MLA</td><td>Dense SwiGLU MLP</td></tr>
@@ -1192,16 +1309,16 @@ pre {
 <div class="eq-block"><div class="eq-title">Target-state accounting</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>target</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub>c</sub> <span class="math-var">P<sub>c</sub></span></div><div class="eq-note">743,422,270,536</div></div><div class="eq-comment">The index c runs over the component families below. Every matrix, norm vector, scalar state object, and FP8 scale tensor is counted exactly once in the logical architecture.</div></div>
 <div class="parameter-table-scroll" role="region" aria-label="Logical checkpoint parameter accounting" tabindex="0"><table class="parameter-table logical-parameter-table"><colgroup><col class="param-col-component"><col class="param-col-shape"><col class="param-col-expansion"><col class="param-col-logical"></colgroup><thead><tr><th>Component</th><th>Architecture shape or object</th><th>Logical-count formula</th><th>Logical element count</th></tr></thead><tbody aria-labelledby="param-group-0"><tr class="param-group"><th id="param-group-0" colspan="4"><span class="param-group-title">Feed-forward networks</span><span class="param-group-note">Dense warm-up MLP and sparse MoE parameter families</span></th></tr><tr class="param-subgroup"><th colspan="4">Sparse MoE body - layers 3-77</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Expert gate/up/down projections</th><td>75 sparse layers; 257 experts per layer; each expert has merged gate/up <span class="shape">[6144]</span> &rarr; <span class="shape">[4096]</span> and down <span class="shape">[2048]</span> &rarr; <span class="shape">[6144]</span></td><td>75 layers &times; 257 experts &times; ([6,144 &times; 4,096 weights + 48 &times; 32 FP8 scales] + [2,048 &times; 6,144 weights + 16 &times; 48 FP8 scales])</td><td><span class="param-count">727,651,296,000</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MoE gate/router</th><td>75 router matrices <span class="shape">[6144, 256]</span> with 256 correction scalars per sparse layer</td><td>75 sparse layers &times; (6,144 hidden &times; 256 routed experts + 256 correction scalars)</td><td><span class="param-count">117,984,000</span></td></tr><tr class="param-subgroup"><th colspan="4">Dense warm-up - layers 0-2</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Gate/up projection</th><td>3 merged projections; each maps <span class="shape">[6144]</span> to <span class="shape">[24576]</span> = <span class="shape">[12288, 12288]</span> gate and up channels</td><td>3 layers &times; [6,144 hidden &times; 24,576 merged output + 48 &times; 192 FP8 scales]</td><td><span class="param-count">453,012,480</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Down projection</th><td>3 projections; each maps <span class="shape">[12288]</span> to <span class="shape">[6144]</span></td><td>3 layers &times; [12,288 intermediate &times; 6,144 hidden + 96 &times; 48 FP8 scales]</td><td><span class="param-count">226,506,240</span></td></tr></tbody><tbody aria-labelledby="param-group-1"><tr class="param-group"><th id="param-group-1" colspan="4"><span class="param-group-title">Attention and sparse selection</span><span class="param-group-note">MLA projections and the learned DSA selector</span></th></tr><tr class="param-subgroup"><th colspan="4">MLA projections - all 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>fused_qkv_a_proj_with_mqa</code></th><td>78 projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span> = <span class="shape">[2048, 512, 64]</span> query latent, KV latent, and shared RoPE key</td><td>78 layers &times; [6,144 hidden &times; (2,048 query latent + 512 KV latent + 64 RoPE key) + 48 &times; 21 FP8 scales]</td><td><span class="param-count">1,257,583,392</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>q_b_proj</code></th><td>78 projections; each maps <span class="shape">[2048]</span> to <span class="shape">[64, 256]</span> = <span class="shape">[16384]</span> (192 content + 64 RoPE per head)</td><td>78 layers &times; [2,048 query latent &times; (64 heads &times; (192 content + 64 RoPE)) + 16 &times; 128 FP8 scales]</td><td><span class="param-count">2,617,405,440</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>kv_b_proj</code></th><td>78 projections; each maps <span class="shape">[512]</span> to <span class="shape">[64, 448]</span> = <span class="shape">[28672]</span> (192 key + 256 value per head)</td><td>78 layers &times; [512 KV latent &times; (64 heads &times; (192 key + 256 value)) + 4 &times; 224 FP8 scales]</td><td><span class="param-count">1,145,114,880</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>o_proj</code></th><td>78 projections; each maps all value heads <span class="shape">[64, 256]</span> to <span class="shape">[6144]</span></td><td>78 layers &times; [(64 heads &times; 256 value dim) &times; 6,144 hidden + 128 &times; 48 FP8 scales]</td><td><span class="param-count">7,852,216,320</span></td></tr><tr class="param-subgroup"><th colspan="4">DSA TopK refresh - 21 of 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component">DSA indexer</th><td>21 selector modules with 32 index heads of width 128; 57 layers reuse prior TopK indices</td><td>21 refresh layers &times; [2,048 query latent &times; (32 heads &times; 128 width) + 6,144 hidden &times; 128 key width + 6,144 hidden &times; 32 head gates + 2 &times; 128 key-norm weight/bias + (32 &times; 16 + 1 &times; 48) FP8 scales]</td><td><span class="param-count">196,821,744</span></td></tr></tbody><tbody aria-labelledby="param-group-2"><tr class="param-group"><th id="param-group-2" colspan="4"><span class="param-group-title">Token input and output</span><span class="param-group-note">Untied vocabulary embedding and language-model head</span></th></tr><tr class="param-subgroup"><th colspan="4">Vocabulary tensors</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>embed_tokens</code></th><td>one embedding matrix <span class="shape">[154880, 6144]</span></td><td>154,880 configured vocabulary rows &times; 6,144 hidden</td><td><span class="param-count">951,582,720</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>lm_head</code></th><td>one untied output matrix <span class="shape">[154880, 6144]</span></td><td>154,880 configured vocabulary rows &times; 6,144 hidden</td><td><span class="param-count">951,582,720</span></td></tr></tbody><tbody aria-labelledby="param-group-3"><tr class="param-group"><th id="param-group-3" colspan="4"><span class="param-group-title">Normalization and scalar state</span><span class="param-group-note">Normalization vectors and scalar state outside the major projections</span></th></tr><tr class="param-subgroup"><th colspan="4">Layer and model normalization</th></tr><tr class="param-leaf"><th scope="row" class="param-component">RMSNorms, final norm, and attention scales</th><td>per-layer input, post-attention, query, and KV norm vectors; final model norm; scalar attention quantization state</td><td>78 layers &times; (6,144 input norm + 6,144 post-attention norm + 2,048 query norm + 512 KV norm + 4 MQA/MHA key/value scales) + 6,144 final model norm</td><td><span class="param-count">1,164,600</span></td></tr></tbody></table></div>
 <h2 id="mfu-handoff">MFU Handoff</h2>
-<p>The tree supplies operation order, full tensor dimensions, and execution multiplicity. A prefill FLOP model should apply an operation-specific formula to each leaf and then sum the leaves; parameter count alone is not a FLOP count.</p>
-<table><tr><th>Execution term</th><th>Logical multiplicity and shape</th><th>Prefill FLOP treatment</th></tr><tr><td>Embedding</td><td>Lookup count and <span class="shape">[10000, 6144]</span> output</td><td>Memory lookup; do not charge the full vocabulary matrix as a GEMM</td></tr>
-<tr><td>Linear projections</td><td>10,000 token rows and the full matrix dimensions shown in the tree</td><td>For a matrix product, use 2 &times; <span class="math-var">m</span> &times; <span class="math-var">k</span> &times; <span class="math-var">n</span> FLOPs</td></tr>
-<tr><td>DSA selector</td><td>21 refresh layers with <span class="shape">[10000, 2048]</span> selected-position output</td><td>Count selector projections and causal candidate scoring only in refresh layers; include TopK separately if the MFU convention requires it</td></tr>
+<p>The tree now applies the operation-specific formulas directly at 100K tokens. Summing included leaves yields 10.938013 PFLOP; parameter count remains a separate description of learned state and is not used as a blanket FLOP multiplier.</p>
+<table><tr><th>Execution term</th><th>Logical multiplicity and shape</th><th>Prefill FLOP treatment</th></tr><tr><td>Embedding</td><td>Lookup count and <span class="shape">[100000, 6144]</span> output</td><td>Memory lookup; do not charge the full vocabulary matrix as a GEMM</td></tr>
+<tr><td>Linear projections</td><td>100,000 token rows and the full matrix dimensions shown in the tree</td><td>For a matrix product, use 2 &times; <span class="math-var">m</span> &times; <span class="math-var">k</span> &times; <span class="math-var">n</span> FLOPs</td></tr>
+<tr><td>DSA selector</td><td>21 refresh layers with <span class="shape">[100000, 2048]</span> selected-position output</td><td>Count selector projections and causal candidate scoring only in refresh layers; include TopK separately if the MFU convention requires it</td></tr>
 <tr><td>MLA selected-key scan</td><td>64 heads; selected positions capped at 2,048 in all 78 layers</td><td>Count both score dot products and latent-value accumulation using the causal selected-pair sum</td></tr>
 <tr><td>Dense MLP</td><td>3 layers with intermediate width 12,288</td><td>Count merged gate/up and down matrix multiplications, then state separately whether elementwise SiLU is included</td></tr>
-<tr><td>Sparse MoE</td><td>75 layers; router <span class="shape">[10000, 256]</span>; active routes <span class="shape">[10000, 9]</span></td><td>Charge 8 routed experts plus 1 shared expert per token, not all 257 logical experts</td></tr>
-<tr><td>Output head</td><td>One projected hidden row, then <span class="shape">[1, 154880]</span> full-vocabulary logits</td><td>Charge one vocabulary projection row, not all 10K hidden rows</td></tr>
+<tr><td>Sparse MoE</td><td>75 layers; router <span class="shape">[100000, 256]</span>; active routes <span class="shape">[100000, 9]</span></td><td>Charge 8 routed experts plus 1 shared expert per token, not all 257 logical experts</td></tr>
+<tr><td>Output head</td><td>One projected hidden row, then <span class="shape">[1, 154880]</span> full-vocabulary logits</td><td>Shown as 1.903 GFLOP outside the six-term total; it is one row, not all 100K hidden rows</td></tr>
 <tr><td>Norm, RoPE, softmax, routing</td><td>Shapes and repetition are explicit tree leaves</td><td>Keep as named non-GEMM terms; include or exclude explicitly instead of hiding them inside a parameter multiplier</td></tr></table>
-<div class="note"><strong>MFU-ready boundary:</strong> this page establishes logical operation scope, repetition, tensor dimensions, and parameter ownership. A later calculation can add operation-specific FLOPs and measured prefill time without reconstructing the model tree.</div>
+<div class="note"><strong>MFU-ready boundary:</strong> the 10.938013 PFLOP total includes attention projections, dense MLP GEMMs, active MoE/router GEMMs, indexer setup, indexer candidate scoring, and the selected-key MLA score/value scan. TopK, norms, RoPE, softmax, activations, residual operations, communication, and runtime inefficiency remain named exclusions.</div>
 
 <script>
 (() => {
