@@ -376,10 +376,22 @@ pre {
 }
 
 .tree-legend {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 24px;
+}
+.legend-group {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 16px 0 24px;
+  align-items: center;
+}
+.legend-group-label {
+  color: #52635f;
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
 .logic-badge,
 .repeat-badge {
@@ -397,7 +409,10 @@ pre {
 }
 .logic-badge.tensor { border-color: #78968f; background: #e6efed; }
 .logic-badge.state { border-color: #8d91a8; background: #ececf3; color: #41465f; }
-.logic-badge.branch { border-color: #b49a5a; background: #f5f0df; color: #5f4b18; }
+.logic-badge.branch-refresh { border-color: #6c57a2; background: #f2eff8; color: #493875; }
+.logic-badge.branch-reuse { border-color: #9b7b29; background: #f8f4e8; color: #5f4b18; }
+.logic-badge.branch-dense { border-color: #3f7b62; background: #edf5f1; color: #2e604b; }
+.logic-badge.branch-moe { border-color: #9a4f49; background: #f8efee; color: #733c37; }
 .flow-tree,
 .flow-children {
   margin: 0;
@@ -543,10 +558,11 @@ pre {
 .flow-io,
 .flow-state {
   min-width: 0;
-  color: #334944;
   font-size: .82rem;
   line-height: 1.42;
 }
+.flow-io { color: #29453f; }
+.flow-state { color: #41465f; }
 .flow-label {
   display: block;
   margin-bottom: 3px;
@@ -556,6 +572,28 @@ pre {
   letter-spacing: .04em;
   text-transform: uppercase;
 }
+.flow-io > .flow-label,
+.flow-state > .flow-label {
+  display: flex;
+  width: fit-content;
+  padding: 2px 5px;
+  border: 1px solid;
+  border-radius: 3px;
+  line-height: 1.2;
+}
+.flow-io > .flow-label {
+  border-color: #78968f;
+  background: #e6efed;
+  color: #29453f;
+}
+.flow-state > .flow-label {
+  border-color: #8d91a8;
+  background: #ececf3;
+  color: #41465f;
+}
+.flow-io .shape { color: #29453f; }
+.flow-state .shape,
+.flow-state .flow-count { color: #41465f; }
 .flow-arrow {
   display: block;
   margin: 5px 0;
@@ -624,10 +662,18 @@ pre {
 <h1>GLM-5.2 10K Prefill Execution Tree</h1>
 <p class="lead">A model-level map of one 10,000-token prefill, ordered exactly as hidden states move through embedding, the repeated decoder layer, final normalization, and the next-token output projection.</p>
 <div class="grid"><section class="card"><div class="label">prefill input</div><div class="value">10,000 token IDs</div></section><section class="card"><div class="label">decoder stack</div><div class="value">78 ordered layers</div></section><section class="card"><div class="label">sparse selection</div><div class="value">TopK = 2,048</div></section><section class="card"><div class="label">logical target state</div><div class="value">743.422B elements</div></section></div>
-<div class="tree-legend" aria-label="Execution tree legend">
-  <span class="logic-badge tensor">Tensor input &darr; tensor output</span>
-  <span class="logic-badge state">Logical parameter state</span>
-  <span class="logic-badge branch">Layer-dependent branch</span>
+<div class="tree-legend" aria-label="Execution tree color legend">
+  <div class="legend-group" aria-label="Node column colors">
+    <span class="logic-badge tensor">Tensor input &darr; tensor output</span>
+    <span class="logic-badge state">Logical parameter state</span>
+  </div>
+  <div class="legend-group" aria-label="Layer-dependent branch colors">
+    <span class="legend-group-label">Layer-dependent branches</span>
+    <span class="logic-badge branch-refresh">Selector refresh</span>
+    <span class="logic-badge branch-reuse">Selector reuse</span>
+    <span class="logic-badge branch-dense">Dense MLP</span>
+    <span class="logic-badge branch-moe">Sparse MoE</span>
+  </div>
 </div>
 <h2 id="execution-tree">Collapsed Execution Tree</h2>
 <p>Read from top to bottom. Indentation means ownership: the decoder stack owns a repeated decoder layer, the layer owns an attention sublayer and feed-forward sublayer, and each sublayer owns its calculation-ordered operations. Repeat badges collapse identical structure without flattening it.</p>
