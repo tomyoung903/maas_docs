@@ -375,140 +375,199 @@ pre {
   }
 }
 
-.tree-table-scroll {
-  max-width: 100%;
-  margin: 18px 0 26px;
-  overflow-x: auto;
+.tree-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 24px;
 }
-.tree-table {
-  width: 100%;
-  min-width: 1180px;
-  margin: 0;
-  table-layout: fixed;
-}
-.tree-table .tree-col-module { width: 25%; }
-.tree-table .tree-col-runs { width: 9%; }
-.tree-table .tree-col-object { width: 22%; }
-.tree-table .tree-col-input { width: 13%; }
-.tree-table .tree-col-output { width: 16%; }
-.tree-table .tree-col-params { width: 15%; }
-.tree-table .tree-group th,
-.tree-table .tree-group td {
-  background: #d7e6e2;
-  border-top-width: 2px;
-  color: var(--ink);
-  font-weight: 750;
-}
-.tree-table .tree-group.depth-2 th,
-.tree-table .tree-group.depth-2 td { background: #e9f1ef; }
-.tree-module {
-  position: relative;
-  display: block;
-  min-width: 220px;
-}
-.tree-module.depth-1 { padding-left: 18px; }
-.tree-module.depth-2 { padding-left: 36px; }
-.tree-module.depth-3 { padding-left: 54px; }
-.tree-module.depth-1::before,
-.tree-module.depth-2::before,
-.tree-module.depth-3::before {
-  position: absolute;
-  top: .72em;
-  height: 1px;
-  background: #8fa9a3;
-  content: "";
-}
-.tree-module.depth-1::before { left: 4px; width: 9px; }
-.tree-module.depth-2::before { left: 21px; width: 10px; }
-.tree-module.depth-3::before { left: 38px; width: 11px; }
-.tree-name { display: block; font-weight: 800; }
-.tree-name code { font-size: .78rem; line-height: 1.25; }
-.tree-role {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: .81rem;
-  font-weight: 550;
-  line-height: 1.3;
-}
-.repeat-badge,
-.trust-badge {
-  display: inline-block;
-  padding: 3px 7px;
+.logic-badge,
+.repeat-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
   border: 1px solid #9db8b1;
   border-radius: 4px;
   background: #edf4f2;
   color: #29453f;
-  font-size: .78rem;
+  font-size: .76rem;
   font-weight: 800;
-  white-space: nowrap;
+  line-height: 1.2;
 }
-.trust-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 14px 0 22px;
-}
-.trust-badge.observed { border-color: #6e9d92; background: #e5f1ed; }
-.trust-badge.audited { border-color: #7d8fa3; background: #e9eef3; }
-.trust-badge.pending { border-color: #b49a5a; background: #f5f0df; }
-.rank-object { color: #344c47; font-size: .87rem; line-height: 1.35; }
-.count-primary {
-  display: block;
-  color: var(--ink);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.count-scope {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: .8rem;
-  line-height: 1.25;
-}
-.combined-parameter-table { min-width: 1420px; }
-.combined-parameter-table .param-col-component { width: 15%; }
-.combined-parameter-table .param-col-logical-shape { width: 20%; }
-.combined-parameter-table .param-col-rank-shape { width: 19%; }
-.combined-parameter-table .param-col-rank-count { width: 11%; }
-.combined-parameter-table .param-col-formula { width: 25%; }
-.combined-parameter-table .param-col-logical-count { width: 10%; }
-.combined-parameter-table .param-leaf td:nth-child(4),
-.combined-parameter-table .param-leaf td:last-child {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.source-facts {
-  display: grid;
-  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
-  max-width: 860px;
-  margin: 18px 0 26px;
-  border-top: 1px solid var(--line);
-}
-.source-facts dt,
-.source-facts dd {
+.logic-badge.tensor { border-color: #78968f; background: #e6efed; }
+.logic-badge.state { border-color: #8d91a8; background: #ececf3; color: #41465f; }
+.logic-badge.branch { border-color: #b49a5a; background: #f5f0df; color: #5f4b18; }
+.flow-tree,
+.flow-children {
   margin: 0;
-  padding: 9px 10px;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  padding: 0;
+  list-style: none;
 }
-.source-facts dt {
-  border-left: 1px solid var(--line);
-  background: #edf3f1;
+.flow-tree {
+  max-width: 1050px;
+  margin: 20px 0 30px;
+}
+.flow-step {
+  position: relative;
+  margin: 0 0 10px;
+}
+.flow-children {
+  position: relative;
+  margin: 10px 0 2px 22px;
+  padding-left: 30px;
+  border-left: 2px solid #a8beb8;
+}
+.flow-children > .flow-step::before {
+  position: absolute;
+  top: 29px;
+  left: -30px;
+  width: 22px;
+  border-top: 2px solid #a8beb8;
+  content: "";
+}
+.flow-row {
+  display: grid;
+  grid-template-columns: minmax(250px, 1.15fr) minmax(245px, 1fr) minmax(220px, .85fr);
+  gap: 18px;
+  align-items: start;
+  padding: 13px 14px;
+  border: 1px solid #cad7d3;
+  border-left: 4px solid #789b93;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .86);
+}
+.flow-step.group > .flow-row {
+  border-left-color: var(--accent);
+  background: #eaf2f0;
+}
+.flow-step.branch-refresh > .flow-row {
+  border-left-color: #6c57a2;
+  background: #f2eff8;
+}
+.flow-step.branch-reuse > .flow-row {
+  border-left-color: #9b7b29;
+  background: #f8f4e8;
+}
+.flow-step.branch-dense > .flow-row {
+  border-left-color: #3f7b62;
+  background: #edf5f1;
+}
+.flow-step.branch-moe > .flow-row {
+  border-left-color: #9a4f49;
+  background: #f8efee;
+}
+.flow-main { min-width: 0; }
+.flow-heading {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.flow-step-id {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 38px;
+  height: 30px;
+  padding: 0 6px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #86a69f;
+  border-radius: 4px;
+  background: #fff;
+  color: #27514a;
+  font-size: .72rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+.flow-title-wrap { min-width: 0; }
+.flow-title {
+  display: block;
+  color: var(--ink);
+  font-size: .96rem;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.flow-title code { font-size: .82rem; }
+.flow-role {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.38;
+}
+.repeat-badge {
+  margin-top: 8px;
+  border-color: #9fb2ad;
+  background: #fff;
+  color: #445b56;
+  white-space: normal;
+}
+.flow-io,
+.flow-state {
+  min-width: 0;
+  color: #334944;
+  font-size: .82rem;
+  line-height: 1.42;
+}
+.flow-label {
+  display: block;
+  margin-bottom: 3px;
+  color: #52635f;
+  font-size: .67rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.flow-arrow {
+  display: block;
+  margin: 5px 0;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 850;
+}
+.flow-count {
+  display: block;
+  margin-top: 5px;
   color: var(--ink);
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
-.source-facts dd { background: var(--paper); color: var(--muted); }
-@media (max-width: 980px) {
-  .parameter-table-scroll .combined-parameter-table {
-    width: 1420px;
-    min-width: 1420px;
+.flow-choice-note {
+  max-width: 1050px;
+  margin: 10px 0 18px 52px;
+  padding: 8px 12px;
+  border-left: 3px solid #b49a5a;
+  color: #5b523d;
+  font-size: .84rem;
+}
+.tree-caption {
+  max-width: 950px;
+  margin: -4px 0 22px;
+  color: var(--muted);
+  font-size: .88rem;
+}
+@media (max-width: 1120px) {
+  .flow-row {
+    grid-template-columns: minmax(230px, 1fr) minmax(210px, .9fr);
   }
+  .flow-state { grid-column: 1 / -1; padding-left: 39px; }
 }
-@media (max-width: 600px) {
-  .source-facts { grid-template-columns: 1fr; }
-  .source-facts dt { border-right: 1px solid var(--line); }
+@media (max-width: 720px) {
+  .flow-row { display: block; padding: 12px; }
+  .flow-io,
+  .flow-state { margin-top: 12px; padding-left: 39px; }
+  .flow-children { margin-left: 12px; padding-left: 18px; }
+  .flow-children > .flow-step::before { left: -18px; width: 12px; }
+  .flow-step-id { min-width: 36px; height: 28px; }
+  .flow-choice-note { margin-left: 30px; }
+}
+@media (max-width: 430px) {
+  .flow-children { margin-left: 5px; padding-left: 13px; }
+  .flow-children > .flow-step::before { left: -13px; width: 8px; }
+  .flow-io,
+  .flow-state { padding-left: 0; }
 }
 </style>
 </head>
@@ -518,62 +577,528 @@ pre {
 <div class="doc-shell">
 <aside class="content-overview" aria-label="Content overview">
   <div class="content-overview-title">On this page</div>
-  <a class="depth-1" href="#reading-model">Reading Model</a>
-<a class="depth-1" href="#execution-tree">Execution Tree</a>
+  <a class="depth-1" href="#execution-tree">Execution Tree</a>
 <a class="depth-1" href="#layer-families">Layer Families</a>
-<a class="depth-1" href="#parameter-ledger">Parameter Ledger</a>
+<a class="depth-1" href="#parameter-ledger">Logical Parameters</a>
 <a class="depth-1" href="#mfu-handoff">MFU Handoff</a>
 </aside>
 <article class="doc-content">
 
 <h1>GLM-5.2 10K Prefill Execution Tree</h1>
-<p class="lead">A compact, rank-aware rendering of the instrumented TorchInfo prefill run. It keeps the useful module hierarchy and observed tensor shapes, collapses repeated decoder blocks, and replaces TorchInfo's invalid aggregate parameter and mult-add totals with audited GLM-5.2 accounting.</p>
-<div class="grid"><section class="card"><div class="label">observed request</div><div class="value">1 &times; 10,000 prefill tokens</div></section><section class="card"><div class="label">parallel view</div><div class="value">TP=8, rank 0</div></section><section class="card"><div class="label">target decoder</div><div class="value">78 layers: 3 dense + 75 MoE</div></section><section class="card"><div class="label">audited target state</div><div class="value">743.422B logical elements</div></section></div>
-<div class="trust-row" aria-label="Data provenance legend">
-  <span class="trust-badge observed">Observed runtime shape</span>
-  <span class="trust-badge audited">Audited parameter state</span>
-  <span class="trust-badge pending">MFU term to derive</span>
+<p class="lead">A model-level map of one 10,000-token prefill, ordered exactly as hidden states move through embedding, the repeated decoder layer, final normalization, and the next-token output projection.</p>
+<div class="grid"><section class="card"><div class="label">prefill input</div><div class="value">10,000 token IDs</div></section><section class="card"><div class="label">decoder stack</div><div class="value">78 ordered layers</div></section><section class="card"><div class="label">sparse selection</div><div class="value">TopK = 2,048</div></section><section class="card"><div class="label">logical target state</div><div class="value">743.422B elements</div></section></div>
+<div class="tree-legend" aria-label="Execution tree legend">
+  <span class="logic-badge tensor">Tensor input &darr; tensor output</span>
+  <span class="logic-badge state">Logical parameter state</span>
+  <span class="logic-badge branch">Layer-dependent branch</span>
 </div>
-<h2 id="reading-model">How To Read This Page</h2>
-<p>The source report is valuable as an execution trace: it shows the actual rank-0 module path and the shapes produced by a 10,000-token prefill. It is not a trustworthy model-accounting engine. Shared module references caused recursive rows, every decoder layer was printed separately, embedding lookup was treated like dense arithmetic, and all resident MoE experts were charged as active work.</p>
-<p>This page therefore joins two sources without mixing their meanings: runtime shapes come from the instrumented run, while parameter state comes from the audited GLM-5.2 architecture inventory. Repeat badges expand each distinct row back to the complete target stack.</p>
-<dl class="source-facts">
-  <dt>Model snapshot</dt><dd><code>zai-org/GLM-5.2-FP8</code></dd>
-  <dt>Runtime view</dt><dd>TP8 rank 0; batch size 1; input length 10,000; one output-logits row</dd>
-  <dt>TorchInfo depth</dt><dd>6 module levels</dd>
-  <dt>Instrumentation time</dt><dd>199.610 seconds; this includes TorchInfo instrumentation and is not serving TTFT</dd>
-  <dt>Source artifact</dt><dd><code>torchinfo_rank0.txt</code> from the July 9 GLM-5.2 logits-patched run</dd>
-</dl>
-<div class="note"><strong>Deliberately excluded:</strong> the report's <code>Total params: 185,753,300,946</code>, its <code>Total mult-adds</code>, activation-memory estimate, and repeated <code>(recursive)</code> rows. None is suitable as an MFU numerator or denominator.</div>
 <h2 id="execution-tree">Collapsed Execution Tree</h2>
-<p>The tree is ordered by forward execution. Parameter objects and counts are for one TP8 rank. Counts include checkpoint-backed FP8 scales where the serving model stores them; parent rows are structural and are not summed.</p>
-<div class="tree-table-scroll" role="region" aria-label="Collapsed 10K prefill execution tree" tabindex="0"><table class="tree-table"><colgroup><col class="tree-col-module"><col class="tree-col-runs"><col class="tree-col-object"><col class="tree-col-input"><col class="tree-col-output"><col class="tree-col-params"></colgroup><thead><tr>
-<th>Module and operation</th><th>Executes</th><th>Parameter object on rank 0</th>
-<th>10K input</th><th>10K output</th><th>Rank-0 elements</th>
-</tr></thead><tbody><tr class="tree-group depth-0"><th scope="row"><span class="tree-module depth-0"><span class="tree-name"><code>TorchinfoPrefillWrapper</code></span><span class="tree-role">One instrumented prefill request and one output-token logits row.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object">request wrapper</td><td><span class="shape">[1, 10000]</span></td><td><span class="shape">[1, 154880]</span></td><td><span class="count-primary">--</span></td></tr><tr class="tree-group depth-1"><th scope="row"><span class="tree-module depth-1"><span class="tree-name"><code>GlmMoeDsaForCausalLM</code></span><span class="tree-role">Target model path observed by rank 0; the separate nextn draft layer is not executed.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object">target stack</td><td><span class="shape">[10000]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span></td></tr><tr class="tree-leaf depth-2"><th scope="row"><span class="tree-module depth-2"><span class="tree-name"><code>embed_tokens</code></span><span class="tree-role">Vocabulary-parallel embedding lookup; this is not a dense matrix multiplication.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object"><span class="shape">[19360, 6144]</span> local vocabulary shard</td><td><span class="shape">[10000]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">118,947,840</span><span class="count-scope">rank-local shard</span></td></tr><tr class="tree-group depth-2"><th scope="row"><span class="tree-module depth-2"><span class="tree-name"><code>layers</code></span><span class="tree-role">The repeated decoder stack, collapsed into common attention plus dense and MoE feed-forward families.</span></span></th><td><span class="repeat-badge">78 layers</span></td><td class="rank-object">decoder layer stack</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span></td></tr><tr class="tree-group depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>self_attn</code></span><span class="tree-role">MLA projection, optional DSA TopK refresh, selected-key attention, and output projection.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object">common attention path</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span><span class="count-scope">every target layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>input_layernorm</code></span><span class="tree-role">Normalize the residual stream before attention.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">6,144</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>fused_qkv_a_proj_with_mqa</code></span><span class="tree-role">Produce query latent, KV latent, and shared RoPE key in one replicated projection.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[6144, 2624]</span> weights + <span class="shape">[48, 21]</span> FP8 scales</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 2624]</span> = <span class="shape">[10000, 2048]</span> + <span class="shape">[10000, 512]</span> + <span class="shape">[10000, 64]</span></td><td><span class="count-primary">16,122,864</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>q_a_layernorm</code></span><span class="tree-role">Normalize the 2,048-dimensional query latent.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[2048]</span></td><td><span class="shape">[10000, 2048]</span></td><td><span class="shape">[10000, 2048]</span></td><td><span class="count-primary">2,048</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>kv_a_layernorm</code></span><span class="tree-role">Normalize the 512-dimensional cached KV latent.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[512]</span></td><td><span class="shape">[10000, 512]</span></td><td><span class="shape">[10000, 512]</span></td><td><span class="count-primary">512</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>q_b_proj</code></span><span class="tree-role">Expand the query latent into eight rank-local heads, each with 192 content and 64 RoPE coordinates.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[2048, 2048]</span> weights + <span class="shape">[16, 16]</span> FP8 scales</td><td><span class="shape">[10000, 2048]</span></td><td><span class="shape">[10000, 2048]</span> = <span class="shape">[10000, 8, 256]</span></td><td><span class="count-primary">4,194,560</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>kv_b_proj / absorbed views</code></span><span class="tree-role">Checkpoint weight becomes rank-local key-absorption and latent-value expansion views after loading.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[512, 8, 448]</span> weights + <span class="shape">[4, 28]</span> FP8 scales</td><td><span class="shape">[10000, 8, 192]</span> or <span class="shape">[10000, 8, 512]</span></td><td><span class="shape">[10000, 8, 512]</span> or <span class="shape">[10000, 8, 256]</span></td><td><span class="count-primary">1,835,120</span><span class="count-scope">per layer; hidden by TorchInfo post-load views</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>indexer</code></span><span class="tree-role">Project index queries, keys, and gates, score causal candidates, then return TopK positions.</span></span></th><td><span class="repeat-badge">21&times;</span></td><td class="rank-object"><span class="shape">[2048, 32, 128]</span> query + <span class="shape">[6144, 128]</span> key + <span class="shape">[6144, 32]</span> gate</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 2048]</span></td><td><span class="count-primary">9,372,464</span><span class="count-scope">only selector-refresh layers</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>rotary_emb</code></span><span class="tree-role">Apply position rotation to the DSA index query and the eight rank-local MLA query heads.</span></span></th><td><span class="repeat-badge">21 + 78&times;</span></td><td class="rank-object">no learned state</td><td><span class="shape">[10000]</span></td><td><span class="shape">[10000, 32, 64]</span> or <span class="shape">[10000, 8, 64]</span></td><td><span class="count-primary">0</span><span class="count-scope">two semantic paths</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>attn_mqa</code></span><span class="tree-role">Score selected keys, apply softmax, and accumulate latent values; scan work depends on causal TopK pairs.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object">uses cached latent KV; no separately owned matrix</td><td><span class="shape">[10000, 8, 512]</span></td><td><span class="shape">[10000, 1, 8, 512]</span></td><td><span class="count-primary">0</span><span class="count-scope">scales counted with attention state</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>o_proj</code></span><span class="tree-role">Merge eight local value heads back into the replicated residual width.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[2048, 6144]</span> weights + <span class="shape">[16, 48]</span> FP8 scales</td><td><span class="shape">[10000, 2048]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">12,583,680</span><span class="count-scope">per layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>post_attention_layernorm</code></span><span class="tree-role">Normalize the residual stream before the feed-forward block.</span></span></th><td><span class="repeat-badge">78&times;</span></td><td class="rank-object"><span class="shape">[6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">6,144</span><span class="count-scope">per layer</span></td></tr><tr class="tree-group depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>dense mlp</code></span><span class="tree-role">SwiGLU feed-forward path used only by warm-up layers 0-2.</span></span></th><td><span class="repeat-badge">3&times;</span></td><td class="rank-object">TP-sharded dense MLP</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span><span class="count-scope">layers 0-2</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>gate_up_proj</code></span><span class="tree-role">Generate rank-local gate and up channels in one projection.</span></span></th><td><span class="repeat-badge">3&times;</span></td><td class="rank-object"><span class="shape">[6144, 3072]</span> weights + <span class="shape">[48, 24]</span> FP8 scales</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 3072]</span></td><td><span class="count-primary">18,875,520</span><span class="count-scope">per dense layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>SiluAndMul</code></span><span class="tree-role">Apply SiLU to the gate half and multiply it by the up half.</span></span></th><td><span class="repeat-badge">3&times;</span></td><td class="rank-object">no learned state</td><td><span class="shape">[10000, 3072]</span></td><td><span class="shape">[10000, 1536]</span></td><td><span class="count-primary">0</span><span class="count-scope">per dense layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>down_proj</code></span><span class="tree-role">Project the rank-local intermediate shard back to hidden width and reduce across TP ranks.</span></span></th><td><span class="repeat-badge">3&times;</span></td><td class="rank-object"><span class="shape">[1536, 6144]</span> weights + <span class="shape">[12, 48]</span> FP8 scales</td><td><span class="shape">[10000, 1536]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">9,437,760</span><span class="count-scope">per dense layer</span></td></tr><tr class="tree-group depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>sparse moe</code></span><span class="tree-role">Route through eight selected experts plus one shared expert in layers 3-77.</span></span></th><td><span class="repeat-badge">75&times;</span></td><td class="rank-object">router + 257 resident experts</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">--</span><span class="count-scope">layers 3-77</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>gate</code></span><span class="tree-role">Compute router scores for all 256 routed experts.</span></span></th><td><span class="repeat-badge">75&times;</span></td><td class="rank-object"><span class="shape">[6144, 256]</span> weights + <span class="shape">[256]</span> correction bias</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 256]</span></td><td><span class="count-primary">1,573,120</span><span class="count-scope">per MoE layer</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>topk</code></span><span class="tree-role">Select eight routed experts and append the shared expert path.</span></span></th><td><span class="repeat-badge">75&times;</span></td><td class="rank-object">no learned state</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 9]</span></td><td><span class="count-primary">0</span><span class="count-scope">per MoE layer; hidden states observed by the wrapper</span></td></tr><tr class="tree-leaf depth-3"><th scope="row"><span class="tree-module depth-3"><span class="tree-name"><code>experts</code></span><span class="tree-role">Dispatch tokens to active experts, execute fused gate/up/down projections, and combine outputs.</span></span></th><td><span class="repeat-badge">75&times;</span></td><td class="rank-object">257 &times; (<span class="shape">[6144, 512]</span> gate/up + <span class="shape">[256, 6144]</span> down + FP8 scales)</td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">1,212,752,160</span><span class="count-scope">resident per MoE layer; only 9 experts active per token</span></td></tr><tr class="tree-leaf depth-2"><th scope="row"><span class="tree-module depth-2"><span class="tree-name"><code>norm</code></span><span class="tree-role">Apply the final target-model RMS normalization.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object"><span class="shape">[6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="shape">[10000, 6144]</span></td><td><span class="count-primary">6,144</span><span class="count-scope">final norm</span></td></tr><tr class="tree-leaf depth-1"><th scope="row"><span class="tree-module depth-1"><span class="tree-name"><code>lm_head via LogitsProcessor</code></span><span class="tree-role">Select the last prefill hidden row, project the local vocabulary shard, and gather full logits.</span></span></th><td><span class="repeat-badge">once</span></td><td class="rank-object"><span class="shape">[19360, 6144]</span></td><td>observed wrapper positions <span class="shape">[10000]</span>; projected hidden <span class="shape">[1, 6144]</span></td><td><span class="shape">[1, 154880]</span></td><td><span class="count-primary">118,947,840</span><span class="count-scope">untied vocabulary head</span></td></tr></tbody></table></div>
+<p>Read from top to bottom. Indentation means ownership: the decoder stack owns a repeated decoder layer, the layer owns an attention sublayer and feed-forward sublayer, and each sublayer owns its calculation-ordered operations. Repeat badges collapse identical structure without flattening it.</p>
+<ol class="flow-tree" aria-label="Logical 10K prefill execution tree"><li class="flow-step group">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M</span>
+        <span class="flow-title-wrap"><span class="flow-title">GLM-5.2 target forward</span><span class="flow-role">The complete logical calculation for one 10K-token prefill and one next-token logits row.</span><span class="repeat-badge">one prefill</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 154880]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>embedding, 78 decoder layers, final norm, and untied output head<span class="flow-count">743,422,270,536 logical elements total</span></div>
+  </div>
+<ol class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">1</span>
+        <span class="flow-title-wrap"><span class="flow-title"><code>embed_tokens</code></span><span class="flow-role">Look up one hidden vector for each of the 10,000 token IDs. This is a row lookup, not a vocabulary-wide matrix multiplication.</span><span class="repeat-badge">once</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>one embedding matrix <span class="shape">[154880, 6144]</span><span class="flow-count">951,582,720 elements</span></div>
+  </div>
+
+</li><li class="flow-step group">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Decoder stack</span><span class="flow-role">Feed the updated residual stream through 78 decoder layers in order; each layer completes attention before its feed-forward branch.</span><span class="repeat-badge">78 sequential layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>78 ordered decoder-layer parameter sets</div>
+  </div>
+<ol class="flow-children"><li class="flow-step group">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Attention sublayer</span><span class="flow-role">Normalize, prepare MLA latents, obtain selected positions, scan selected KV entries, project the result, and add the attention residual.</span><span class="repeat-badge">78 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>MLA projection state in every decoder layer; DSA indexer state only in refresh layers</div>
+  </div>
+<ol class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Input RMSNorm</span><span class="flow-role">Normalize the incoming residual stream before attention.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>one norm vector <span class="shape">[6144]</span><span class="flow-count">6,144 elements per layer</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.2</span>
+        <span class="flow-title-wrap"><span class="flow-title"><code>fused_qkv_a_proj_with_mqa</code></span><span class="flow-role">Project each normalized hidden state once, then split the result into query latent, KV latent, and shared RoPE key paths.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> + <span class="shape">[10000, 512]</span> + <span class="shape">[10000, 64]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[6144, 2624]</span> + FP8 scale grid <span class="shape">[48, 21]</span><span class="flow-count">16,122,864 elements per layer</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Query/KV latent RMSNorm</span><span class="flow-role">Normalize the two latent branches independently before query expansion, selection, and KV caching.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 2048]</span> query latent + <span class="shape">[10000, 512]</span> KV latent<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> normalized query + <span class="shape">[10000, 512]</span> normalized KV</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>norm vectors <span class="shape">[2048]</span> and <span class="shape">[512]</span><span class="flow-count">2,560 elements per layer</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.4</span>
+        <span class="flow-title-wrap"><span class="flow-title"><code>q_b_proj</code>: expand all MLA queries</span><span class="flow-role">Expand the query latent into 64 heads, then split each head into 192 content coordinates and 64 RoPE coordinates.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 2048]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 192]</span> content + <span class="shape">[10000, 64, 64]</span> RoPE</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[2048, 16384]</span> + FP8 scales<span class="flow-count">33,556,480 elements per layer</span></div>
+  </div>
+
+</li><li class="flow-step group">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.5</span>
+        <span class="flow-title-wrap"><span class="flow-title">Choose the selected-position source</span><span class="flow-role">Exactly one branch supplies the position IDs consumed by this layer's sparse MLA scan.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>normalized query latent, hidden states, or the prior selected list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>The refresh branch owns learned state; the reuse branch does not</div>
+  </div>
+<ol class="flow-children"><li class="flow-step branch-refresh">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A</span>
+        <span class="flow-title-wrap"><span class="flow-title">Refresh selected positions</span><span class="flow-role">Compute a new DSA selection from this layer's hidden states and normalized query latent.</span><span class="repeat-badge">21 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> hidden states + <span class="shape">[10000, 2048]</span> query latent<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> selected position IDs</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>one learned indexer in each of 21 refresh layers<span class="flow-count">9,372,464 elements per refresh layer</span></div>
+  </div>
+<ol class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Indexer projections</span><span class="flow-role">Build 32 index queries, one index key per token, and 32 head gates. The positional part of the index query/key path is rotated before scoring.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 2048]</span> query latent + <span class="shape">[10000, 6144]</span> hidden states<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 32, 128]</span> queries + <span class="shape">[10000, 128]</span> keys + <span class="shape">[10000, 32]</span> gates</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>query <span class="shape">[2048, 32, 128]</span>; key <span class="shape">[6144, 128]</span>; gate <span class="shape">[6144, 32]</span><span class="flow-count">included in the refresh-branch total</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Causal candidate scoring</span><span class="flow-role">Compare each query token with all legal earlier positions, combine the 32 gated index-head scores, and preserve the causal boundary.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 32, 128]</span> queries + cached index keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, causal prefix]</span> candidate scores</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional learned state</div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A3</span>
+        <span class="flow-title-wrap"><span class="flow-title">TopK selection</span><span class="flow-role">Keep at most 2,048 causal positions for every query token.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, causal prefix]</span> candidate scores<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 2048]</span> selected position IDs</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional learned state</div>
+  </div>
+
+</li></ol>
+</li><li class="flow-step branch-reuse">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">B</span>
+        <span class="flow-title-wrap"><span class="flow-title">Reuse selected positions</span><span class="flow-role">Carry forward the latest selected-position list; the layer still performs its own MLA projections and attention scan.</span><span class="repeat-badge">57 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>previous <span class="shape">[10000, 2048]</span> selected position IDs<span class="flow-arrow" aria-hidden="true">&darr;</span>current <span class="shape">[10000, 2048]</span> selected position IDs</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No indexer parameters in these layers</div>
+  </div>
+
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.6</span>
+        <span class="flow-title-wrap"><span class="flow-title">Prepare the absorbed MLA query</span><span class="flow-role">Map each 192-coordinate content query into the 512-coordinate KV-latent space, and rotate the separate query/key positional coordinates.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 192]</span> content + <span class="shape">[10000, 64, 64]</span> query RoPE + <span class="shape">[10000, 1, 64]</span> key RoPE<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 512]</span> absorbed content + rotated RoPE paths</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>key view of <code>kv_b_proj</code> <span class="shape">[512, 64, 448]</span><span class="flow-count">14,680,960 elements for the complete <code>kv_b_proj</code> per layer</span></div>
+  </div>
+
+</li><li class="flow-step group">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.7</span>
+        <span class="flow-title-wrap"><span class="flow-title">Selected sparse MLA scan</span><span class="flow-role">Score selected cached positions, normalize their scores, and accumulate values while they are still in the 512-coordinate latent space.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>absorbed queries + <span class="shape">[10000, 2048]</span> selected IDs + latent KV cache<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 512]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional projection matrix</div>
+  </div>
+<ol class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.7a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Selected score dot products</span><span class="flow-role">For every query head, score only the chosen causal positions using 512 absorbed content coordinates plus 64 rotated coordinates.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 576]</span> effective queries + selected cached keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, &le;2048]</span> attention scores</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix; uses cached latents and selected IDs</div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.7b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Causal softmax</span><span class="flow-role">Normalize the selected scores within each query/head row.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, &le;2048]</span> scores<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, &le;2048]</span> probabilities</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.7c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Latent-value accumulation</span><span class="flow-role">Weight and sum the selected 512-coordinate cached value latents for every query head.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>attention probabilities + selected <span class="shape">[512]</span> cached latents<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 512]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix; the cached KV payload supplies the values</div>
+  </div>
+
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.8</span>
+        <span class="flow-title-wrap"><span class="flow-title">Latent-value expansion</span><span class="flow-role">Apply the value view of the same <code>kv_b_proj</code> object after accumulation, converting each 512-coordinate head result to value width 256.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 512]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 64, 256]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>value view of the same <code>kv_b_proj</code> state counted at step 2.1.6<span class="flow-count">no second parameter count</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.9</span>
+        <span class="flow-title-wrap"><span class="flow-title"><code>o_proj</code></span><span class="flow-role">Concatenate all 64 value heads and project them back to the residual width.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 64, 256]</span> = <span class="shape">[10000, 16384]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[16384, 6144]</span> + FP8 scales<span class="flow-count">100,669,440 elements per layer</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1.10</span>
+        <span class="flow-title-wrap"><span class="flow-title">Attention residual add</span><span class="flow-role">Add the attention output to the saved layer input.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> saved residual + <span class="shape">[10000, 6144]</span> attention output<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+  </div>
+
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Post-attention RMSNorm</span><span class="flow-role">Normalize the attention-updated residual before the feed-forward branch.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>one norm vector <span class="shape">[6144]</span><span class="flow-count">6,144 elements per layer</span></div>
+  </div>
+
+</li><li class="flow-step group">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Choose the feed-forward branch</span><span class="flow-role">The layer ID determines whether hidden states pass through the dense SwiGLU path or the sparse MoE path.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>Exactly one branch executes in each decoder layer</div>
+  </div>
+<ol class="flow-children"><li class="flow-step branch-dense">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">D</span>
+        <span class="flow-title-wrap"><span class="flow-title">Dense SwiGLU branch</span><span class="flow-role">Used by layers 0-2.</span><span class="repeat-badge">3 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>one dense gate/up matrix and one dense down matrix per layer</div>
+  </div>
+<ol class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">D1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Merged gate/up projection</span><span class="flow-role">Produce the gate and up branches in one matrix multiplication.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 24576]</span> = <span class="shape">[10000, 12288]</span> gate + <span class="shape">[10000, 12288]</span> up</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[6144, 24576]</span> + FP8 scales<span class="flow-count">151,004,160 elements per dense layer</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">D2</span>
+        <span class="flow-title-wrap"><span class="flow-title">SiLU and multiply</span><span class="flow-role">Apply SiLU to the gate branch and multiply it elementwise by the up branch.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>two <span class="shape">[10000, 12288]</span> branches<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 12288]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">D3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Down projection</span><span class="flow-role">Return the dense intermediate activations to hidden width.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 12288]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[12288, 6144]</span> + FP8 scales<span class="flow-count">75,502,080 elements per dense layer</span></div>
+  </div>
+
+</li></ol>
+</li><li class="flow-step branch-moe">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M</span>
+        <span class="flow-title-wrap"><span class="flow-title">Sparse MoE branch</span><span class="flow-role">Used by layers 3-77.</span><span class="repeat-badge">75 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>router plus 257 logical expert parameter sets per layer</div>
+  </div>
+<ol class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Router scores</span><span class="flow-role">Score all 256 routed experts for every token.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 256]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>router <span class="shape">[6144, 256]</span> + <span class="shape">[256]</span> correction scalars<span class="flow-count">1,573,120 elements per sparse layer</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Expert TopK</span><span class="flow-role">Select eight routed experts and add the shared-expert path for each token.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 256]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 9]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+  </div>
+
+</li><li class="flow-step group">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Active expert computation</span><span class="flow-role">Execute only the selected expert paths, while the logical model still owns all 257 expert parameter sets in this layer.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> hidden states + route list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>257 experts; each has merged gate/up and down projections<span class="flow-count">9,702,017,280 elements per sparse layer</span></div>
+  </div>
+<ol class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Dispatch selected token rows</span><span class="flow-role">Group each token row with the eight routed experts plus the shared expert assigned to process it.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> hidden states + <span class="shape">[10000, 9]</span> routes<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span> grouped expert inputs</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Expert merged gate/up</span><span class="flow-role">For each active expert assignment, produce 2,048 gate and 2,048 up coordinates.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 4096]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>each expert owns <span class="shape">[6144, 4096]</span> + FP8 scales</div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Expert SiLU and multiply</span><span class="flow-role">Activate the gate half and multiply by the up half.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 4096]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 2048]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3d</span>
+        <span class="flow-title-wrap"><span class="flow-title">Expert down projection</span><span class="flow-role">Map every active expert result back to hidden width.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 2048]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>each expert owns <span class="shape">[2048, 6144]</span> + FP8 scales</div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3e</span>
+        <span class="flow-title-wrap"><span class="flow-title">Weighted expert combine</span><span class="flow-role">Apply route weights and sum the nine active expert outputs belonging to each token.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional learned state</div>
+  </div>
+
+</li></ol>
+</li></ol>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.4</span>
+        <span class="flow-title-wrap"><span class="flow-title">Feed-forward residual add</span><span class="flow-role">Add the feed-forward output to the residual saved after attention.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span> saved residual + <span class="shape">[10000, 6144]</span> feed-forward output<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+  </div>
+
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Final RMSNorm</span><span class="flow-role">Normalize the decoder stack output.</span><span class="repeat-badge">once</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[10000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[10000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>one norm vector <span class="shape">[6144]</span><span class="flow-count">6,144 elements</span></div>
+  </div>
+
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">4</span>
+        <span class="flow-title-wrap"><span class="flow-title">Last-token <code>lm_head</code></span><span class="flow-role">Select the final prefill hidden row and project it to the full vocabulary for next-token logits.</span><span class="repeat-badge">once</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[1, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 154880]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>one untied output matrix <span class="shape">[154880, 6144]</span><span class="flow-count">951,582,720 elements</span></div>
+  </div>
+
+</li></ol>
+</li></ol>
+<p class="tree-caption">A branch label means the layer follows one of the shown paths. It does not mean both paths execute in one layer. Shapes describe the complete logical model, and parameter counts include checkpoint-backed FP8 scale tensors where present.</p>
 <h2 id="layer-families">Expand The 78 Layers</h2>
 <p>Only three decoder patterns are needed to reconstruct the full stack. Every layer still executes its own MLA selected-key attention; the distinction is whether the layer refreshes DSA TopK positions and whether its feed-forward block is dense or sparse.</p>
 <table><tr><th>Layer family</th><th>Layer IDs</th><th>Copies</th><th>Attention path</th><th>Feed-forward path</th></tr><tr><td>Dense + selector refresh</td><td>0, 1, 2</td><td>3</td><td>Run a new DSA indexer and selected-key MLA</td><td>Dense SwiGLU MLP</td></tr>
 <tr><td>MoE + selector refresh</td><td>6, 10, 14, ..., 74</td><td>18</td><td>Run a new DSA indexer and selected-key MLA</td><td>Sparse MoE: top-8 routed + one shared</td></tr>
 <tr><td>MoE + selector reuse</td><td>3-5, 7-9, ..., 75-77</td><td>57</td><td>Reuse the latest TopK positions; still run layer-local MLA</td><td>Sparse MoE: top-8 routed + one shared</td></tr>
 <tr><td>Target total</td><td>0-77</td><td>78</td><td>21 refresh + 57 reuse</td><td>3 dense + 75 MoE</td></tr></table>
-<div class="note">The raw report's repeated detours through layer 77 are Python module-sharing artifacts exposed by TorchInfo recursion. They are not extra forward passes and are removed from this hierarchy.</div>
-<h2 id="parameter-ledger">One Parameter Ledger</h2>
-<p>This combined table replaces separate logical and per-rank inventories. The logical column counts each checkpoint object once, independent of GPU layout. The rank-0 column shows the state resident on one TP8 worker after tensor-parallel sharding and replication.</p>
-<div class="grid"><section class="card"><div class="label">logical target stack</div><div class="value">743.422B</div></section><section class="card"><div class="label">one TP8 rank</div><div class="value">94.305B</div></section><section class="card"><div class="label">sharded slice / rank</div><div class="value">92.731B</div></section><section class="card"><div class="label">replicated / rank</div><div class="value">1.574B</div></section></div>
-<div class="eq-block"><div class="eq-title">Target-state accounting</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>target</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">P<sub>shardable</sub></span> + <span class="math-var">P<sub>replicated</sub></span></div><div class="eq-note">743,422,270,536</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>rank</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-var">P<sub>shardable</sub></span> &divide; 8 + <span class="math-var">P<sub>replicated</sub></span></div><div class="eq-note">94,304,643,336</div></div><div class="eq-comment">These are checkpoint-state counts, not active parameters per token. Summing eight physical ranks would count replicated tensors eight times.</div></div>
-<div class="parameter-table-scroll" role="region" aria-label="Combined logical and TP8 parameter accounting" tabindex="0"><table class="parameter-table combined-parameter-table"><colgroup><col class="param-col-component"><col class="param-col-logical-shape"><col class="param-col-rank-shape"><col class="param-col-rank-count"><col class="param-col-formula"><col class="param-col-logical-count"></colgroup><thead><tr><th>Component</th><th>Logical architecture object</th><th>Object on one TP8 rank</th><th>Elements on one rank</th><th>Logical-count formula</th><th>Logical elements</th></tr></thead><tbody aria-labelledby="prefill-param-group-0"><tr class="param-group"><th id="prefill-param-group-0" colspan="6"><span class="param-group-title">Token input and output</span><span class="param-group-note">Untied vocabulary embedding and language-model head</span></th></tr><tr class="param-subgroup"><th colspan="6">Vocabulary tensors</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>embed_tokens</code></th><td>one embedding matrix <span class="shape">[154880, 6144]</span></td><td>vocab-parallel shard: 19,360 of 154,880 vocabulary rows; each row has 6,144 hidden weights</td><td><span class="param-count">118,947,840</span></td><td>154,880 configured vocabulary rows &times; 6,144 hidden</td><td><span class="param-count">951,582,720</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>lm_head</code></th><td>one untied output matrix <span class="shape">[154880, 6144]</span></td><td>vocab-parallel shard: 19,360 of 154,880 vocabulary rows; each row has 6,144 hidden weights</td><td><span class="param-count">118,947,840</span></td><td>154,880 configured vocabulary rows &times; 6,144 hidden</td><td><span class="param-count">951,582,720</span></td></tr></tbody><tbody aria-labelledby="prefill-param-group-1"><tr class="param-group"><th id="prefill-param-group-1" colspan="6"><span class="param-group-title">Attention and sparse selection</span><span class="param-group-note">MLA projections and the learned DSA selector</span></th></tr><tr class="param-subgroup"><th colspan="6">MLA projections - all 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>fused_qkv_a_proj_with_mqa</code></th><td>78 projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span> = <span class="shape">[2048, 512, 64]</span> query latent, KV latent, and shared RoPE key</td><td>78 full projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span> = <span class="shape">[2048, 512, 64]</span> query latent, KV latent, and shared RoPE key</td><td><span class="param-count">1,257,583,392</span></td><td>78 layers &times; [6,144 hidden &times; (2,048 query latent + 512 KV latent + 64 RoPE key) + 48 &times; 21 FP8 scales]</td><td><span class="param-count">1,257,583,392</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>q_b_proj</code></th><td>78 projections; each maps <span class="shape">[2048]</span> to <span class="shape">[64, 256]</span> = <span class="shape">[16384]</span> (192 content + 64 RoPE per head)</td><td>78 rank-local projections; each maps <span class="shape">[2048]</span> to <span class="shape">[8, 256]</span> = <span class="shape">[2048]</span> (192 content + 64 RoPE per head)</td><td><span class="param-count">327,175,680</span></td><td>78 layers &times; [2,048 query latent &times; (64 heads &times; (192 content + 64 RoPE)) + 16 &times; 128 FP8 scales]</td><td><span class="param-count">2,617,405,440</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>kv_b_proj</code></th><td>78 projections; each maps <span class="shape">[512]</span> to <span class="shape">[64, 448]</span> = <span class="shape">[28672]</span> (192 key + 256 value per head)</td><td>78 rank-local projections; each maps <span class="shape">[512]</span> to <span class="shape">[8, 448]</span> = <span class="shape">[3584]</span> (192 key + 256 value per head)</td><td><span class="param-count">143,139,360</span></td><td>78 layers &times; [512 KV latent &times; (64 heads &times; (192 key + 256 value)) + 4 &times; 224 FP8 scales]</td><td><span class="param-count">1,145,114,880</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>o_proj</code></th><td>78 projections; each maps all value heads <span class="shape">[64, 256]</span> to <span class="shape">[6144]</span></td><td>78 rank-local projections; each maps local heads <span class="shape">[8, 256]</span> back to <span class="shape">[6144]</span></td><td><span class="param-count">981,527,040</span></td><td>78 layers &times; [(64 heads &times; 256 value dim) &times; 6,144 hidden + 128 &times; 48 FP8 scales]</td><td><span class="param-count">7,852,216,320</span></td></tr><tr class="param-subgroup"><th colspan="6">DSA TopK refresh - 21 of 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component">DSA indexer</th><td>21 selector modules with 32 index heads of width 128; 57 layers reuse prior TopK indices</td><td>21 checkpoint-backed selector modules at layers 0, 1, 2, then every fourth layer through 74; 57 layers reuse prior TopK indices</td><td><span class="param-count">196,821,744</span></td><td>21 refresh layers &times; [2,048 query latent &times; (32 heads &times; 128 width) + 6,144 hidden &times; 128 key width + 6,144 hidden &times; 32 head gates + 2 &times; 128 key-norm weight/bias + (32 &times; 16 + 1 &times; 48) FP8 scales]</td><td><span class="param-count">196,821,744</span></td></tr></tbody><tbody aria-labelledby="prefill-param-group-2"><tr class="param-group"><th id="prefill-param-group-2" colspan="6"><span class="param-group-title">Feed-forward networks</span><span class="param-group-note">Dense warm-up MLP and sparse MoE parameter families</span></th></tr><tr class="param-subgroup"><th colspan="6">Dense warm-up - layers 0-2</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Gate/up projection</th><td>3 merged projections; each maps <span class="shape">[6144]</span> to <span class="shape">[24576]</span> = <span class="shape">[12288, 12288]</span> gate and up channels</td><td>3 dense layers; merged rank-local output maps <span class="shape">[6144]</span> to <span class="shape">[3072]</span> (1,536 gate + 1,536 up)</td><td><span class="param-count">56,626,560</span></td><td>3 layers &times; [6,144 hidden &times; 24,576 merged output + 48 &times; 192 FP8 scales]</td><td><span class="param-count">453,012,480</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Down projection</th><td>3 projections; each maps <span class="shape">[12288]</span> to <span class="shape">[6144]</span></td><td>3 dense layers; rank-local input shard maps <span class="shape">[1536]</span> to <span class="shape">[6144]</span></td><td><span class="param-count">28,313,280</span></td><td>3 layers &times; [12,288 intermediate &times; 6,144 hidden + 96 &times; 48 FP8 scales]</td><td><span class="param-count">226,506,240</span></td></tr><tr class="param-subgroup"><th colspan="6">Sparse MoE body - layers 3-77</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Expert gate/up/down projections</th><td>75 sparse layers; 257 experts per layer; each expert has merged gate/up <span class="shape">[6144]</span> &rarr; <span class="shape">[4096]</span> and down <span class="shape">[2048]</span> &rarr; <span class="shape">[6144]</span></td><td>75 sparse layers; 256 routed + 1 shared expert; rank-local TP slices of merged gate/up and down weights</td><td><span class="param-count">90,956,412,000</span></td><td>75 layers &times; 257 experts &times; ([6,144 &times; 4,096 weights + 48 &times; 32 FP8 scales] + [2,048 &times; 6,144 weights + 16 &times; 48 FP8 scales])</td><td><span class="param-count">727,651,296,000</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MoE gate/router</th><td>75 router matrices <span class="shape">[6144, 256]</span> with 256 correction scalars per sparse layer</td><td>75 replicated router matrices over 256 routed experts</td><td><span class="param-count">117,984,000</span></td><td>75 sparse layers &times; (6,144 hidden &times; 256 routed experts + 256 correction scalars)</td><td><span class="param-count">117,984,000</span></td></tr></tbody><tbody aria-labelledby="prefill-param-group-3"><tr class="param-group"><th id="prefill-param-group-3" colspan="6"><span class="param-group-title">Normalization and scalar state</span><span class="param-group-note">Normalization vectors and scalar state outside the major projections</span></th></tr><tr class="param-subgroup"><th colspan="6">Layer and model normalization</th></tr><tr class="param-leaf"><th scope="row" class="param-component">RMSNorms, final norm, and attention scales</th><td>per-layer input, post-attention, query, and KV norm vectors; final model norm; scalar attention quantization state</td><td>replicated per-layer norm vectors, final model norm, and scalar attention quantization state</td><td><span class="param-count">1,164,600</span></td><td>78 layers &times; (6,144 input norm + 6,144 post-attention norm + 2,048 query norm + 512 KV norm + 4 MQA/MHA key/value scales) + 6,144 final model norm</td><td><span class="param-count">1,164,600</span></td></tr></tbody></table></div>
+<div class="note"><strong>Reconstruction rule:</strong> execute layers 0 through 77 in numerical order. At every layer, follow the common attention path, choose refresh or reuse according to the table, then choose the dense or sparse feed-forward branch.</div>
+<h2 id="parameter-ledger">Logical Parameter Ledger</h2>
+<p>The ledger counts each target-model parameter object once. It is architectural state, not active arithmetic: all expert weights belong to the model even though each token uses only eight routed experts plus one shared expert.</p>
+<div class="grid"><section class="card"><div class="label">logical target stack</div><div class="value">743.422B</div></section><section class="card"><div class="label">decoder layers</div><div class="value">78</div></section><section class="card"><div class="label">selector modules</div><div class="value">21</div></section><section class="card"><div class="label">experts per sparse layer</div><div class="value">257</div></section></div>
+<div class="eq-block"><div class="eq-title">Target-state accounting</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">P<sub>target</sub></span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub>c</sub> <span class="math-var">P<sub>c</sub></span></div><div class="eq-note">743,422,270,536</div></div><div class="eq-comment">The index c runs over the component families below. Every matrix, norm vector, scalar state object, and FP8 scale tensor is counted exactly once in the logical architecture.</div></div>
+<div class="parameter-table-scroll" role="region" aria-label="Logical checkpoint parameter accounting" tabindex="0"><table class="parameter-table logical-parameter-table"><colgroup><col class="param-col-component"><col class="param-col-shape"><col class="param-col-expansion"><col class="param-col-logical"></colgroup><thead><tr><th>Component</th><th>Architecture shape or object</th><th>Logical-count formula</th><th>Logical element count</th></tr></thead><tbody aria-labelledby="param-group-0"><tr class="param-group"><th id="param-group-0" colspan="4"><span class="param-group-title">Feed-forward networks</span><span class="param-group-note">Dense warm-up MLP and sparse MoE parameter families</span></th></tr><tr class="param-subgroup"><th colspan="4">Sparse MoE body - layers 3-77</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Expert gate/up/down projections</th><td>75 sparse layers; 257 experts per layer; each expert has merged gate/up <span class="shape">[6144]</span> &rarr; <span class="shape">[4096]</span> and down <span class="shape">[2048]</span> &rarr; <span class="shape">[6144]</span></td><td>75 layers &times; 257 experts &times; ([6,144 &times; 4,096 weights + 48 &times; 32 FP8 scales] + [2,048 &times; 6,144 weights + 16 &times; 48 FP8 scales])</td><td><span class="param-count">727,651,296,000</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MoE gate/router</th><td>75 router matrices <span class="shape">[6144, 256]</span> with 256 correction scalars per sparse layer</td><td>75 sparse layers &times; (6,144 hidden &times; 256 routed experts + 256 correction scalars)</td><td><span class="param-count">117,984,000</span></td></tr><tr class="param-subgroup"><th colspan="4">Dense warm-up - layers 0-2</th></tr><tr class="param-leaf"><th scope="row" class="param-component">Gate/up projection</th><td>3 merged projections; each maps <span class="shape">[6144]</span> to <span class="shape">[24576]</span> = <span class="shape">[12288, 12288]</span> gate and up channels</td><td>3 layers &times; [6,144 hidden &times; 24,576 merged output + 48 &times; 192 FP8 scales]</td><td><span class="param-count">453,012,480</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Down projection</th><td>3 projections; each maps <span class="shape">[12288]</span> to <span class="shape">[6144]</span></td><td>3 layers &times; [12,288 intermediate &times; 6,144 hidden + 96 &times; 48 FP8 scales]</td><td><span class="param-count">226,506,240</span></td></tr></tbody><tbody aria-labelledby="param-group-1"><tr class="param-group"><th id="param-group-1" colspan="4"><span class="param-group-title">Attention and sparse selection</span><span class="param-group-note">MLA projections and the learned DSA selector</span></th></tr><tr class="param-subgroup"><th colspan="4">MLA projections - all 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>fused_qkv_a_proj_with_mqa</code></th><td>78 projections; each maps <span class="shape">[6144]</span> to <span class="shape">[2624]</span> = <span class="shape">[2048, 512, 64]</span> query latent, KV latent, and shared RoPE key</td><td>78 layers &times; [6,144 hidden &times; (2,048 query latent + 512 KV latent + 64 RoPE key) + 48 &times; 21 FP8 scales]</td><td><span class="param-count">1,257,583,392</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>q_b_proj</code></th><td>78 projections; each maps <span class="shape">[2048]</span> to <span class="shape">[64, 256]</span> = <span class="shape">[16384]</span> (192 content + 64 RoPE per head)</td><td>78 layers &times; [2,048 query latent &times; (64 heads &times; (192 content + 64 RoPE)) + 16 &times; 128 FP8 scales]</td><td><span class="param-count">2,617,405,440</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>kv_b_proj</code></th><td>78 projections; each maps <span class="shape">[512]</span> to <span class="shape">[64, 448]</span> = <span class="shape">[28672]</span> (192 key + 256 value per head)</td><td>78 layers &times; [512 KV latent &times; (64 heads &times; (192 key + 256 value)) + 4 &times; 224 FP8 scales]</td><td><span class="param-count">1,145,114,880</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>o_proj</code></th><td>78 projections; each maps all value heads <span class="shape">[64, 256]</span> to <span class="shape">[6144]</span></td><td>78 layers &times; [(64 heads &times; 256 value dim) &times; 6,144 hidden + 128 &times; 48 FP8 scales]</td><td><span class="param-count">7,852,216,320</span></td></tr><tr class="param-subgroup"><th colspan="4">DSA TopK refresh - 21 of 78 layers</th></tr><tr class="param-leaf"><th scope="row" class="param-component">DSA indexer</th><td>21 selector modules with 32 index heads of width 128; 57 layers reuse prior TopK indices</td><td>21 refresh layers &times; [2,048 query latent &times; (32 heads &times; 128 width) + 6,144 hidden &times; 128 key width + 6,144 hidden &times; 32 head gates + 2 &times; 128 key-norm weight/bias + (32 &times; 16 + 1 &times; 48) FP8 scales]</td><td><span class="param-count">196,821,744</span></td></tr></tbody><tbody aria-labelledby="param-group-2"><tr class="param-group"><th id="param-group-2" colspan="4"><span class="param-group-title">Token input and output</span><span class="param-group-note">Untied vocabulary embedding and language-model head</span></th></tr><tr class="param-subgroup"><th colspan="4">Vocabulary tensors</th></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>embed_tokens</code></th><td>one embedding matrix <span class="shape">[154880, 6144]</span></td><td>154,880 configured vocabulary rows &times; 6,144 hidden</td><td><span class="param-count">951,582,720</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component"><code>lm_head</code></th><td>one untied output matrix <span class="shape">[154880, 6144]</span></td><td>154,880 configured vocabulary rows &times; 6,144 hidden</td><td><span class="param-count">951,582,720</span></td></tr></tbody><tbody aria-labelledby="param-group-3"><tr class="param-group"><th id="param-group-3" colspan="4"><span class="param-group-title">Normalization and scalar state</span><span class="param-group-note">Normalization vectors and scalar state outside the major projections</span></th></tr><tr class="param-subgroup"><th colspan="4">Layer and model normalization</th></tr><tr class="param-leaf"><th scope="row" class="param-component">RMSNorms, final norm, and attention scales</th><td>per-layer input, post-attention, query, and KV norm vectors; final model norm; scalar attention quantization state</td><td>78 layers &times; (6,144 input norm + 6,144 post-attention norm + 2,048 query norm + 512 KV norm + 4 MQA/MHA key/value scales) + 6,144 final model norm</td><td><span class="param-count">1,164,600</span></td></tr></tbody></table></div>
 <h2 id="mfu-handoff">MFU Handoff</h2>
-<p>The execution tree is now suitable as the structural input to a prefill FLOP model. The next calculation must derive arithmetic from each operation rather than copy TorchInfo's mult-add column.</p>
-<table><tr><th>Execution term</th><th>Use from this page</th><th>Prefill FLOP treatment</th></tr><tr><td>Embedding</td><td>Lookup count and <span class="shape">[10000, 6144]</span> output</td><td>Memory lookup; do not charge the full vocabulary matrix as a GEMM</td></tr>
-<tr><td>Linear projections</td><td>Observed token rows and rank-local matrix shapes</td><td>For a matrix product, use 2 &times; <span class="math-var">m</span> &times; <span class="math-var">k</span> &times; <span class="math-var">n</span> FLOPs</td></tr>
-<tr><td>Dense MLP</td><td>3 layers with rank-local widths 3,072 and 1,536</td><td>Count gate/up and down GEMMs, then decide separately whether to include elementwise SiLU</td></tr>
-<tr><td>Sparse MoE</td><td>75 layers; router output <span class="shape">[10000, 256]</span>; TopK output <span class="shape">[10000, 9]</span></td><td>Charge eight routed experts plus one shared expert per token, not all 257 resident experts</td></tr>
+<p>The tree supplies operation order, full tensor dimensions, and execution multiplicity. A prefill FLOP model should apply an operation-specific formula to each leaf and then sum the leaves; parameter count alone is not a FLOP count.</p>
+<table><tr><th>Execution term</th><th>Logical multiplicity and shape</th><th>Prefill FLOP treatment</th></tr><tr><td>Embedding</td><td>Lookup count and <span class="shape">[10000, 6144]</span> output</td><td>Memory lookup; do not charge the full vocabulary matrix as a GEMM</td></tr>
+<tr><td>Linear projections</td><td>10,000 token rows and the full matrix dimensions shown in the tree</td><td>For a matrix product, use 2 &times; <span class="math-var">m</span> &times; <span class="math-var">k</span> &times; <span class="math-var">n</span> FLOPs</td></tr>
 <tr><td>DSA selector</td><td>21 refresh layers with <span class="shape">[10000, 2048]</span> selected-position output</td><td>Count selector projections and causal candidate scoring only in refresh layers; include TopK separately if the MFU convention requires it</td></tr>
-<tr><td>MLA selected-key scan</td><td>Rank-local 8 heads; selected positions capped at 2,048</td><td>Count score and value accumulation in all 78 layers using the causal selected-pair sum</td></tr>
-<tr><td>Output head</td><td>One projected hidden row, then <span class="shape">[1, 154880]</span> gathered logits</td><td>Charge one vocabulary projection row, not all 10K hidden rows</td></tr>
-<tr><td>Norm, RoPE, softmax, routing</td><td>Observed shapes and execution counts</td><td>Keep as named non-GEMM terms; include or exclude explicitly instead of hiding them inside a parameter multiplier</td></tr></table>
-<div class="note"><strong>MFU-ready boundary:</strong> this page establishes module scope, repetition, tensor dimensions, and parameter ownership. A later page can now add operation-specific FLOPs and measured prefill time without revisiting the architecture tree.</div>
+<tr><td>MLA selected-key scan</td><td>64 heads; selected positions capped at 2,048 in all 78 layers</td><td>Count both score dot products and latent-value accumulation using the causal selected-pair sum</td></tr>
+<tr><td>Dense MLP</td><td>3 layers with intermediate width 12,288</td><td>Count merged gate/up and down matrix multiplications, then state separately whether elementwise SiLU is included</td></tr>
+<tr><td>Sparse MoE</td><td>75 layers; router <span class="shape">[10000, 256]</span>; active routes <span class="shape">[10000, 9]</span></td><td>Charge 8 routed experts plus 1 shared expert per token, not all 257 logical experts</td></tr>
+<tr><td>Output head</td><td>One projected hidden row, then <span class="shape">[1, 154880]</span> full-vocabulary logits</td><td>Charge one vocabulary projection row, not all 10K hidden rows</td></tr>
+<tr><td>Norm, RoPE, softmax, routing</td><td>Shapes and repetition are explicit tree leaves</td><td>Keep as named non-GEMM terms; include or exclude explicitly instead of hiding them inside a parameter multiplier</td></tr></table>
+<div class="note"><strong>MFU-ready boundary:</strong> this page establishes logical operation scope, repetition, tensor dimensions, and parameter ownership. A later calculation can add operation-specific FLOPs and measured prefill time without reconstructing the model tree.</div>
 
 <p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_10k_prefill_execution_tree.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
 </article>
