@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Static technical documentation for the Kimi K2.5 100K prefill execution tree.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/kimi25-flops/kimi25_100k_prefill_execution_tree.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/kimi25-flops/kimi25_100k_prefill_execution_tree.html">
+  <meta property="og:title" content="Kimi K2.5 100K Prefill Execution Tree">
+  <meta property="og:description" content="A calculation-ordered Kimi K2.5 execution tree for one uncached 100K prefill.">
+  <meta property="og:type" content="article">
+  <title>Kimi K2.5 100K Prefill Execution Tree</title>
+  <style>
+:root {
+  --tree-bg: #f4f7f6;
+  --tree-paper: #ffffff;
+  --tree-ink: #18211f;
+  --tree-muted: #596865;
+  --tree-line: #c9d6d2;
+  --tree-accent: #0b6b66;
+  --tree-scan: #8a3a6d;
+  --tree-moe: #7a4b12;
+  --tree-soft: #e8f2ef;
+  --tree-code-bg: #10201f;
+  --tree-code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 330px), var(--tree-bg);
+  color: var(--tree-ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  width: min(100vw - 36px, 1380px);
+  margin: 0 auto;
+  padding: 42px 0 80px;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--tree-line);
+  border-radius: 8px;
+  background: var(--tree-paper);
+  color: var(--tree-accent);
+  font-weight: 750;
+  text-decoration: none;
+}
+h1, h2, h3 {
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 940px;
+  margin: 0 0 14px;
+  font-size: clamp(2.15rem, 5vw, 4.4rem);
+}
+h2 {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--tree-line);
+  font-size: 1.5rem;
+}
+h3 { color: var(--tree-accent); }
+p { max-width: 900px; color: var(--tree-muted); }
+a { color: var(--tree-accent); }
+code, pre {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--tree-code-bg);
+  color: var(--tree-code);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  background: var(--tree-paper);
+}
+th, td {
+  border: 1px solid var(--tree-line);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: var(--tree-soft); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.06rem;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 24px 0 28px;
+}
+.metric {
+  min-height: 112px;
+  padding: 16px;
+  border: 1px solid var(--tree-line);
+  border-radius: 8px;
+  background: var(--tree-paper);
+}
+.metric strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--tree-muted);
+  font-size: .78rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.metric span {
+  display: block;
+  color: var(--tree-ink);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.metric small {
+  display: block;
+  margin-top: 6px;
+  color: var(--tree-muted);
+}
+.note {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border-left: 5px solid var(--tree-accent);
+  background: var(--tree-soft);
+  color: var(--tree-ink);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--tree-line);
+  border-radius: 999px;
+  background: var(--tree-paper);
+  color: var(--tree-muted);
+  font-size: .84rem;
+  font-weight: 750;
+}
+.badge.linear { color: var(--tree-accent); }
+.badge.scan { color: var(--tree-scan); }
+.badge.moe { color: var(--tree-moe); }
+.flow-tree,
+.flow-tree ol {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+.flow-tree ol {
+  margin-top: 10px;
+  padding-left: 22px;
+  border-left: 2px solid rgba(11, 107, 102, .22);
+}
+.flow-node {
+  margin: 12px 0;
+}
+.flow-card {
+  border: 1px solid var(--tree-line);
+  border-left: 6px solid var(--tree-accent);
+  border-radius: 8px;
+  background: var(--tree-paper);
+  overflow: hidden;
+}
+.flow-node.scan > .flow-card { border-left-color: var(--tree-scan); }
+.flow-node.moe > .flow-card { border-left-color: var(--tree-moe); }
+.flow-node.excluded > .flow-card { border-left-color: #8a8f8d; }
+.flow-heading {
+  display: grid;
+  grid-template-columns: minmax(70px, auto) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--tree-line);
+  background: #fbfdfc;
+}
+.flow-step {
+  color: var(--tree-accent);
+  font-weight: 850;
+}
+.flow-node.scan .flow-step { color: var(--tree-scan); }
+.flow-node.moe .flow-step { color: var(--tree-moe); }
+.flow-title {
+  display: block;
+  color: var(--tree-ink);
+  font-weight: 850;
+}
+.flow-role {
+  display: block;
+  margin-top: 3px;
+  color: var(--tree-muted);
+  font-size: .93rem;
+}
+.flow-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(0, 1.1fr);
+  gap: 0;
+}
+.flow-cell {
+  padding: 12px 14px;
+  border-right: 1px solid var(--tree-line);
+  color: var(--tree-muted);
+}
+.flow-cell:last-child { border-right: 0; }
+.flow-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--tree-ink);
+  font-size: .76rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.flop-value {
+  display: block;
+  color: var(--tree-ink);
+  font-size: 1.08rem;
+  font-weight: 850;
+}
+.flop-formula {
+  display: block;
+  margin-top: 4px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: .84rem;
+  color: var(--tree-muted);
+}
+.footer {
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--tree-line);
+  font-size: .92rem;
+}
+@media (max-width: 860px) {
+  main { width: min(100vw - 20px, 1380px); padding-top: 24px; }
+  .flow-heading,
+  .flow-grid { grid-template-columns: 1fr; }
+  .flow-cell {
+    border-right: 0;
+    border-bottom: 1px solid var(--tree-line);
+  }
+  .flow-cell:last-child { border-bottom: 0; }
+  .flow-tree ol { padding-left: 12px; }
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="index.html">Overview</a><a href="kimi25_full_model_architecture.html">Architecture</a><a href="kimi25_100k_prefill_execution_tree.html">100K Prefill Tree</a><a href="kimi25_linear_flops_constant.html">Linear FLOPs</a><a href="kimi25_attention_scan_flops_constant.html">Attention Scan</a><a href="kimi25_mla_attention_tutorial.html">MLA Tutorial</a><a href="kimi25_mlp_moe_router_equations.html">MoE Equations</a><a href="https://tomyoung903.github.io/maas_docs/kimi25-flops/kimi25_100k_prefill_execution_tree.html">Public URL</a></nav>
+
+<h1>Kimi K2.5 100K Prefill Execution Tree</h1>
+<p class="lead">A calculation-ordered map for one uncached 100,000-token prefill under the same Kimi FLOPs convention used by this pack: major transformer-block matmuls only, with linear-token work separated from causal attention-pair scan work.</p>
+<div class="metric-grid"><div class="metric"><strong>prefill input</strong><span>100,000 tokens</span><small>one uncached prompt</small></div><div class="metric"><strong>causal pairs</strong><span>5,000,050,000</span><small>N * (N + 1) / 2</small></div><div class="metric"><strong>linear-token FLOPs</strong><span>6.102 PFLOP</span><small>61,023,322,112 FLOPs/token</small></div><div class="metric"><strong>attention-scan FLOPs</strong><span>42.48 PFLOP</span><small>8,495,104 FLOPs/pair</small></div><div class="metric"><strong>model total</strong><span>48.58 PFLOP</span><small>linear + scan</small></div></div>
+<div class="legend" aria-label="Execution tree legend">
+  <span class="badge linear">Linear-token matmuls</span>
+  <span class="badge scan">Causal MLA scan</span>
+  <span class="badge moe">Dense/ sparse feed-forward</span>
+  <span class="badge">Excluded runtime work</span>
+</div>
+<div class="note"><strong>Accounting boundary:</strong> this page intentionally follows the existing Kimi K2.5 pack. It excludes RMSNorm, RoPE elementwise rotation, scale/softmax scalar math, TopK comparisons, dispatch movement, communication, quantization bookkeeping, <code>lm_head</code>, and sampling. The GLM page uses a broader expanded ledger; this Kimi tree keeps the already-published Kimi constants consistent.</div>
+<h2 id="execution-tree">Collapsed Execution Tree</h2>
+<p>Read top to bottom. Parent rows are subtotals; child rows reconcile them. The largest 100K-prefill term is dense causal attention scan because Kimi K2.5 uses MLA without a DSA sparse-selector cap in this baseline.</p>
+<ol class="flow-tree"><li class="flow-node excluded">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">1</span>
+      <span><span class="flow-title">Token embedding lookup</span><span class="flow-role">Convert 100K token IDs into hidden rows before the transformer stack.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000] token IDs &rarr; [100,000 x 7,168] hidden rows</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>Embedding table lookup; movement, not floating-point arithmetic.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0 FLOP</span><span class="flop-formula">Excluded from this model-FLOP convention.</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node linear">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2</span>
+      <span><span class="flow-title">Decoder stack</span><span class="flow-role">Repeated Kimi K2.5 transformer blocks: MLA attention plus dense/ sparse feed-forward.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 7,168] &rarr; [100,000 x 7,168]</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>61 layers: 1 dense MLP layer and 60 MoE layers</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">48.58 PFLOP</span><span class="flop-formula">6.102 PFLOP linear-token + 42.48 PFLOP attention-scan</span></div>
+    </div>
+  </div>
+<ol><li class="flow-node linear">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.1</span>
+      <span><span class="flow-title">MLA projection work</span><span class="flow-role">Per-forward-token projection GEMMs charged by the linear FLOP constant.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 7,168] hidden rows through 61 attention blocks</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>qkv_a, q_b, absorbed kv_b views, and o_proj in every layer</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.234 PFLOP</span><span class="flop-formula">100,000 tokens &times; 61 layers &times; 202,244,096 FLOPs/layer</span></div>
+    </div>
+  </div>
+<ol><li class="flow-node linear">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.1.1</span>
+      <span><span class="flow-title"><code>qkv_a</code></span><span class="flow-role">Project each hidden row to query latent, KV latent, and shared RoPE-key branch.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 7,168] &rarr; [100,000 x 2,112]</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>61 weights of [7,168 x 2,112]</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">184.7 TFLOP</span><span class="flop-formula">100,000 tokens &times; 61 layers &times; 2 &times; 7,168 &times; 2,112</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node linear">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.1.2</span>
+      <span><span class="flow-title"><code>q_b</code></span><span class="flow-role">Expand the query latent into 64 MLA query heads with content and RoPE coordinates.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 1,536] &rarr; [100,000 x 64 x 192]</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>61 weights of [1,536 x 12,288]</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">230.3 TFLOP</span><span class="flop-formula">100,000 &times; 61 &times; 2 &times; 1,536 &times; 12,288</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node linear">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.1.3</span>
+      <span><span class="flow-title">Absorbed content-query projection <code>W_KC</code></span><span class="flow-role">Map each content query into the 512-wide latent KV space before the scan.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 64 x 128] &rarr; [100,000 x 64 x 512]</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>content view of <code>kv_b_proj</code>, [512 x 64 x 128]</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">51.17 TFLOP</span><span class="flop-formula">100,000 &times; 61 &times; 2 &times; 64 &times; 128 &times; 512</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node linear">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.1.4</span>
+      <span><span class="flow-title">Absorbed latent-value projection <code>W_VC</code></span><span class="flow-role">Project accumulated latent values into the 128-wide value-head space.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 64 x 512] &rarr; [100,000 x 64 x 128]</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>value view of <code>kv_b_proj</code>, [512 x 64 x 128]</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">51.17 TFLOP</span><span class="flop-formula">100,000 &times; 61 &times; 2 &times; 64 &times; 512 &times; 128</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node linear">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.1.5</span>
+      <span><span class="flow-title"><code>o_proj</code></span><span class="flow-role">Concatenate all value heads and project back to the residual width.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 8,192] &rarr; [100,000 x 7,168]</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>61 weights of [8,192 x 7,168]</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">716.4 TFLOP</span><span class="flop-formula">100,000 &times; 61 &times; 2 &times; 8,192 &times; 7,168</span></div>
+    </div>
+  </div>
+
+</li></ol>
+</li><li class="flow-node scan">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.2</span>
+      <span><span class="flow-title">Dense causal MLA scan</span><span class="flow-role">Every token attends to its causal prefix; Kimi K2.5 has MLA but no DSA sparse selector in this accounting.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>5,000,050,000 causal query-context pairs</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>Cached latent KV tensors, no DSA indexer state.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">42.48 PFLOP</span><span class="flop-formula">5,000,050,000 pairs &times; 8,495,104 FLOPs/pair</span></div>
+    </div>
+  </div>
+<ol><li class="flow-node scan">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.2.1</span>
+      <span><span class="flow-title">Latent-content score dot products</span><span class="flow-role">For every causal pair and head, score 512 latent content coordinates.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>5,000,050,000 causal pairs &times; 64 heads</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>Uses cached latent KV content, no new learned matrix.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">19.99 PFLOP</span><span class="flop-formula">5,000,050,000 pairs &times; 61 layers &times; 2 &times; 64 &times; 512</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node scan">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.2.2</span>
+      <span><span class="flow-title">RoPE score dot products</span><span class="flow-role">Add positional score contribution from the 64-dimensional RoPE branch.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>5,000,050,000 causal pairs &times; 64 heads</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>Uses the shared key-side RoPE branch and per-head query RoPE coordinates.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">2.499 PFLOP</span><span class="flop-formula">5,000,050,000 pairs &times; 61 layers &times; 2 &times; 64 &times; 64</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node scan">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.2.3</span>
+      <span><span class="flow-title">Latent-value accumulation</span><span class="flow-role">Weight and sum cached 512-wide value latents before <code>W_VC</code> expands the result.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>attention probabilities + cached [512] latents</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>No new learned matrix; the learned value view is counted in 2.1.4.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">19.99 PFLOP</span><span class="flop-formula">5,000,050,000 pairs &times; 61 layers &times; 2 &times; 64 &times; 512</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node excluded">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.2.4</span>
+      <span><span class="flow-title">Scale, mask, and softmax</span><span class="flow-role">Runtime scalar work required by attention.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x causal prefix x 64] score rows</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>No learned state.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0 FLOP</span><span class="flop-formula">Excluded by this pack's matmul-style model-FLOP convention.</span></div>
+    </div>
+  </div>
+
+</li></ol>
+</li><li class="flow-node moe">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.3</span>
+      <span><span class="flow-title">Feed-forward stack</span><span class="flow-role">Layer 0 is dense; layers 1-60 use router plus active sparse MoE experts.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 7,168] hidden rows through MLP/MoE blocks</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>Dense MLP state, router state, and full expert bank state.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">4.869 PFLOP</span><span class="flop-formula">79.27 TFLOP dense + 33.03 TFLOP router + 4.756 PFLOP active experts</span></div>
+    </div>
+  </div>
+<ol><li class="flow-node moe">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.3.1</span>
+      <span><span class="flow-title">Dense SwiGLU MLP layer 0</span><span class="flow-role">Run gate, up, SiLU-times-up, and down projections for the one dense layer.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 7,168] &rarr; [100,000 x 7,168]</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>one dense MLP with intermediate width 18,432</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">79.27 TFLOP</span><span class="flop-formula">100,000 &times; 1 layer &times; 6 &times; 7,168 &times; 18,432</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node moe">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.3.2</span>
+      <span><span class="flow-title">MoE router scores</span><span class="flow-role">Score all 384 routed experts before top-k selection in layers 1-60.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 7,168] &rarr; [100,000 x 384] logits</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>60 router matrices of [7,168 x 384]</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">33.03 TFLOP</span><span class="flop-formula">100,000 &times; 60 layers &times; 2 &times; 7,168 &times; 384</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node moe">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.3.3</span>
+      <span><span class="flow-title">Active MoE experts</span><span class="flow-role">Run eight routed experts plus one shared expert, not all 384 routed experts.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 9 x 7,168] active expert inputs &rarr; combined [100,000 x 7,168]</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>60 layers own 384 routed experts plus 1 shared expert; 9 active per token</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">4.756 PFLOP</span><span class="flop-formula">100,000 &times; 60 layers &times; 9 experts &times; 6 &times; 7,168 &times; 2,048</span></div>
+    </div>
+  </div>
+
+</li><li class="flow-node excluded">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">2.3.4</span>
+      <span><span class="flow-title">Top-k, dispatch, and combine bookkeeping</span><span class="flow-role">Choose routes, move token rows to expert batches, and combine expert outputs.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>[100,000 x 384] router scores &rarr; [100,000 x 8] routed IDs</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>Integer IDs, routing buffers, and movement state.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0 FLOP</span><span class="flop-formula">Excluded from model FLOPs; report separately for runtime analysis.</span></div>
+    </div>
+  </div>
+
+</li></ol>
+</li></ol>
+</li><li class="flow-node excluded">
+  <div class="flow-card">
+    <div class="flow-heading">
+      <span class="flow-step">3</span>
+      <span><span class="flow-title">Final norm, lm_head, and sampling</span><span class="flow-role">Useful serving work after the decoder stack.</span></span>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-cell"><span class="flow-label">Tensor flow</span>last hidden row &rarr; next-token logits</div>
+      <div class="flow-cell"><span class="flow-label">Logical parameter state</span>Final norm vector, output head, and sampling state.</div>
+      <div class="flow-cell"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0 FLOP</span><span class="flop-formula">Excluded by the existing Kimi FLOPs pack; add separately if the serving MFU boundary changes.</span></div>
+    </div>
+  </div>
+
+</li></ol>
+<h2 id="layer-families">Layer Families</h2>
+<table><tr><th>Layer family</th><th>Layer IDs</th><th>Copies</th><th>Attention path</th><th>Feed-forward path</th></tr><tr><td>Dense layer</td><td>0</td><td>1</td><td>Full causal MLA scan</td><td>Dense SwiGLU MLP, intermediate 18,432</td></tr>
+<tr><td>MoE layers</td><td>1-60</td><td>60</td><td>Full causal MLA scan</td><td>Router over 384 routed experts; run top-8 + 1 shared expert</td></tr>
+<tr><td>Total</td><td>0-60</td><td>61</td><td>5,000,050,000 causal pairs at 100K prefill</td><td>61,023,322,112 linear FLOPs per forward token</td></tr></table>
+<h2 id="mfu-handoff">MFU Handoff</h2>
+<p>The serving-model formula represented by the tree is:</p>
+<pre>Kimi_model_FLOPs =
+  forward_token_count * 61,023,322,112
+  + attention_pair_count * 8,495,104</pre>
+<p>For one uncached 100K prefill:</p>
+<pre>forward_token_count = 100,000
+attention_pair_count = 100,000 * (100,000 + 1) / 2 = 5,000,050,000
+Kimi_model_FLOPs = 48,578,276,966,400,000 = 48.58 PFLOP</pre>
+<div class="note"><strong>Audit warning:</strong> recompute this tree if the runtime switches to DSA/NSA sparse attention, changes the MLA absorption boundary, includes <code>lm_head</code> or softmax in MFU, or applies model-parallel accounting instead of the single logical-model baseline.</div>
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/kimi25-flops/kimi25_100k_prefill_execution_tree.html">https://tomyoung903.github.io/maas_docs/kimi25-flops/kimi25_100k_prefill_execution_tree.html</a><br>Generated from Kimi K2.5 config constants already used by this FLOPs learning pack.</p>
+
+</main>
+</body>
+</html>
