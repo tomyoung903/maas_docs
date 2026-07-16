@@ -137650,5 +137650,685 @@
     "The request used max_new_tokens=1, so the first output token came from the prefill forward and no decode scheduler forward was expected.",
     "NCCL SendRecv durations represent communication or waiting residency, not useful floating-point work.",
     "Kernel launch counts exclude events launched after the persisted response, even though raw capture remained active during validation."
-  ]
+  ],
+  "pp2_execution_tree": {
+    "rank": 2,
+    "scope": "PP2-local kernel ordinals in chronological launch order",
+    "total": {
+      "launch_count": 469,
+      "aggregate_kernel_ms": 634.692415,
+      "first_launch_ms": 11.506602,
+      "last_finish_ms": 1416.303282,
+      "wall_span_ms": 1404.79668
+    },
+    "equation": "469 = 2 allocation/token-pool + 2 incoming NCCL + 24 metadata + (3 x 55 refresh layers) + (7 x 39 reuse layers) + 3 outgoing NCCL",
+    "decoder_equation": "438 = 3 x 55 + 7 x 39",
+    "phases": [
+      {
+        "phase": "Request allocation and token-pool write",
+        "pp2_ordinals": "1-2",
+        "launch_count": 2,
+        "aggregate_kernel_ms": 0.015392,
+        "first_launch_ms": 11.506602,
+        "last_finish_ms": 11.899435,
+        "wall_span_ms": 0.392833,
+        "evidence": "alloc_extend_kernel; write_req_to_token_pool_triton"
+      },
+      {
+        "phase": "Incoming pipeline communication",
+        "pp2_ordinals": "3-4",
+        "launch_count": 2,
+        "aggregate_kernel_ms": 262.379905,
+        "first_launch_ms": 641.462108,
+        "last_finish_ms": 903.845245,
+        "wall_span_ms": 262.383137,
+        "evidence": "2 x ncclDevKernel_SendRecv"
+      },
+      {
+        "phase": "Batch and sparse-attention metadata",
+        "pp2_ordinals": "5-28",
+        "launch_count": 24,
+        "aggregate_kernel_ms": 3.329581,
+        "first_launch_ms": 903.864829,
+        "last_finish_ms": 907.242378,
+        "wall_span_ms": 3.377549,
+        "evidence": "position, scan, page-table, and get_mla_metadata kernels"
+      },
+      {
+        "phase": "Decoder layers 18-27",
+        "pp2_ordinals": "29-466",
+        "launch_count": 438,
+        "aggregate_kernel_ms": 367.276907,
+        "first_launch_ms": 907.242698,
+        "last_finish_ms": 1414.607372,
+        "wall_span_ms": 507.364674,
+        "evidence": "3 refresh motifs x 55 + 7 reuse motifs x 39"
+      },
+      {
+        "phase": "Outgoing pipeline handoff",
+        "pp2_ordinals": "467-469",
+        "launch_count": 3,
+        "aggregate_kernel_ms": 1.69063,
+        "first_launch_ms": 1414.609676,
+        "last_finish_ms": 1416.303282,
+        "wall_span_ms": 1.693606,
+        "evidence": "3 x ncclDevKernel_SendRecv"
+      }
+    ],
+    "layers": [
+      {
+        "layer_id": 18,
+        "selector_mode": "refresh",
+        "pp2_ordinal_range": "29-83",
+        "max_launchless_gap_ms": 119.833414,
+        "launch_count": 55,
+        "aggregate_kernel_ms": 36.538407,
+        "first_launch_ms": 907.242698,
+        "last_finish_ms": 1083.269605,
+        "wall_span_ms": 176.026907
+      },
+      {
+        "layer_id": 19,
+        "selector_mode": "reuse",
+        "pp2_ordinal_range": "84-122",
+        "max_launchless_gap_ms": 0.012576,
+        "launch_count": 39,
+        "aggregate_kernel_ms": 33.77728,
+        "first_launch_ms": 1083.270053,
+        "last_finish_ms": 1117.103173,
+        "wall_span_ms": 33.83312
+      },
+      {
+        "layer_id": 20,
+        "selector_mode": "reuse",
+        "pp2_ordinal_range": "123-161",
+        "max_launchless_gap_ms": 0.004544,
+        "launch_count": 39,
+        "aggregate_kernel_ms": 36.483178,
+        "first_launch_ms": 1117.103653,
+        "last_finish_ms": 1153.633743,
+        "wall_span_ms": 36.53009
+      },
+      {
+        "layer_id": 21,
+        "selector_mode": "reuse",
+        "pp2_ordinal_range": "162-200",
+        "max_launchless_gap_ms": 0.00448,
+        "launch_count": 39,
+        "aggregate_kernel_ms": 36.871308,
+        "first_launch_ms": 1153.634159,
+        "last_finish_ms": 1190.554619,
+        "wall_span_ms": 36.92046
+      },
+      {
+        "layer_id": 22,
+        "selector_mode": "refresh",
+        "pp2_ordinal_range": "201-255",
+        "max_launchless_gap_ms": 0.069344,
+        "launch_count": 55,
+        "aggregate_kernel_ms": 39.664407,
+        "first_launch_ms": 1190.555003,
+        "last_finish_ms": 1230.354482,
+        "wall_span_ms": 39.799479
+      },
+      {
+        "layer_id": 23,
+        "selector_mode": "reuse",
+        "pp2_ordinal_range": "256-294",
+        "max_launchless_gap_ms": 0.005024,
+        "launch_count": 39,
+        "aggregate_kernel_ms": 36.142024,
+        "first_launch_ms": 1230.354834,
+        "last_finish_ms": 1266.542459,
+        "wall_span_ms": 36.187625
+      },
+      {
+        "layer_id": 24,
+        "selector_mode": "reuse",
+        "pp2_ordinal_range": "295-333",
+        "max_launchless_gap_ms": 0.005504,
+        "launch_count": 39,
+        "aggregate_kernel_ms": 36.050825,
+        "first_launch_ms": 1266.542811,
+        "last_finish_ms": 1302.6377,
+        "wall_span_ms": 36.094889
+      },
+      {
+        "layer_id": 25,
+        "selector_mode": "reuse",
+        "pp2_ordinal_range": "334-372",
+        "max_launchless_gap_ms": 0.004384,
+        "launch_count": 39,
+        "aggregate_kernel_ms": 36.001191,
+        "first_launch_ms": 1302.63802,
+        "last_finish_ms": 1338.682252,
+        "wall_span_ms": 36.044232
+      },
+      {
+        "layer_id": 26,
+        "selector_mode": "refresh",
+        "pp2_ordinal_range": "373-427",
+        "max_launchless_gap_ms": 0.066945,
+        "launch_count": 55,
+        "aggregate_kernel_ms": 39.198516,
+        "first_launch_ms": 1338.682892,
+        "last_finish_ms": 1378.010369,
+        "wall_span_ms": 39.327477
+      },
+      {
+        "layer_id": 27,
+        "selector_mode": "reuse",
+        "pp2_ordinal_range": "428-466",
+        "max_launchless_gap_ms": 0.004672,
+        "launch_count": 39,
+        "aggregate_kernel_ms": 36.549771,
+        "first_launch_ms": 1378.011041,
+        "last_finish_ms": 1414.607372,
+        "wall_span_ms": 36.596331
+      }
+    ],
+    "decoder_tree": {
+      "id": "2",
+      "title": "Decoder stack on PP2",
+      "role": "Ten sequential GLM-5.2 layers: 18-27. Parent metrics are inclusive; leaf metrics are the additive 438-launch ledger.",
+      "metric_mode": "inclusive",
+      "launch_count": 438,
+      "aggregate_kernel_ms": 367.276907,
+      "first_launch_ms": 907.242698,
+      "last_finish_ms": 1414.607372,
+      "wall_span_ms": 507.364674,
+      "pp2_ordinals": "29-466",
+      "kernel_evidence": [
+        "3 x 55-launch refresh layers",
+        "7 x 39-launch reuse layers"
+      ],
+      "children": [
+        {
+          "id": "2.1",
+          "title": "Sparse MLA attention sublayer",
+          "role": "All local attention work, including fused residual/RMSNorm boundaries and selector refreshes.",
+          "metric_mode": "inclusive",
+          "launch_count": 238,
+          "aggregate_kernel_ms": 196.397029,
+          "first_launch_ms": 907.242698,
+          "last_finish_ms": 1397.506123,
+          "wall_span_ms": 490.263425,
+          "pp2_ordinals": "29-63, 84-102, 123-141, 162-180, 201-235, 256-274, 295-313, 334-352, 373-407, 428-446",
+          "kernel_evidence": [
+            "238 launches across ten layers"
+          ],
+          "children": [
+            {
+              "id": "2.1.1",
+              "title": "Predecessor FF residual add + input RMSNorm",
+              "role": "One fused boundary kernel starts each local layer motif; for layer 18 it completes layer 17 across the PP boundary.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 10,
+              "aggregate_kernel_ms": 1.958953,
+              "first_launch_ms": 907.242698,
+              "last_finish_ms": 1378.20685,
+              "wall_span_ms": 470.964152,
+              "pp2_ordinals": "29, 84, 123, 162, 201, 256, 295, 334, 373, 428",
+              "kernel_evidence": [
+                "fused_add_rmsnorm"
+              ]
+            },
+            {
+              "id": "2.1.2",
+              "title": "fused_qkv_a_proj_with_mqa",
+              "role": "Quantize the residual-width input and project query/KV latents in one DeepGEMM.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 20,
+              "aggregate_kernel_ms": 4.749393,
+              "first_launch_ms": 907.440683,
+              "last_finish_ms": 1378.683844,
+              "wall_span_ms": 471.243161,
+              "pp2_ordinals": "30-31, 85-86, 124-125, 163-164, 202-203, 257-258, 296-297, 335-336, 374-375, 429-430",
+              "kernel_evidence": [
+                "per_token_group_quant_8bit_v2",
+                "deep_gemm::sm90_fp8_gemm_1d2d_impl"
+              ]
+            },
+            {
+              "id": "2.1.3",
+              "title": "Query/KV latent RMSNorm",
+              "role": "Normalize the 2,048-wide query latent and 512-wide KV latent.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 20,
+              "aggregate_kernel_ms": 0.41485,
+              "first_launch_ms": 908.407759,
+              "last_finish_ms": 1378.726564,
+              "wall_span_ms": 470.318805,
+              "pp2_ordinals": "32-33, 87-88, 126-127, 165-166, 204-205, 259-260, 298-299, 337-338, 376-377, 431-432",
+              "kernel_evidence": [
+                "RMSNormKernel<...2048...>",
+                "RMSNormKernel<...512...>"
+              ]
+            },
+            {
+              "id": "2.1.4",
+              "title": "q_b_proj",
+              "role": "Quantize and expand all MLA query heads.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 20,
+              "aggregate_kernel_ms": 8.470654,
+              "first_launch_ms": 909.120017,
+              "last_finish_ms": 1379.602183,
+              "wall_span_ms": 470.482166,
+              "pp2_ordinals": "34-35, 89-90, 128-129, 167-168, 206-207, 261-262, 300-301, 339-340, 378-379, 433-434",
+              "kernel_evidence": [
+                "per_token_group_quant_8bit_v2",
+                "deep_gemm::sm90_fp8_gemm_1d2d_impl"
+              ]
+            },
+            {
+              "id": "2.1.5",
+              "title": "Choose the selected-position source",
+              "role": "Layers 18, 22, and 26 refresh the selector; the other seven layers reuse the prior selected IDs.",
+              "metric_mode": "inclusive",
+              "launch_count": 48,
+              "aggregate_kernel_ms": 8.818688,
+              "first_launch_ms": 910.711607,
+              "last_finish_ms": 1343.218109,
+              "wall_span_ms": 432.506502,
+              "pp2_ordinals": "36-51, 208-223, 380-395",
+              "kernel_evidence": [
+                "3 refresh layers x 16 launches",
+                "7 reuse layers x 0 launches"
+              ],
+              "children": [
+                {
+                  "id": "A",
+                  "title": "Refresh selected positions",
+                  "role": "Inclusive selector branch for layers 18, 22, and 26.",
+                  "branch": "refresh",
+                  "metric_mode": "inclusive",
+                  "launch_count": 48,
+                  "aggregate_kernel_ms": 8.818688,
+                  "first_launch_ms": 910.711607,
+                  "last_finish_ms": 1343.218109,
+                  "wall_span_ms": 432.506502,
+                  "pp2_ordinals": "36-51, 208-223, 380-395",
+                  "kernel_evidence": [
+                    "A1 + A2 + A3"
+                  ],
+                  "children": [
+                    {
+                      "id": "A1",
+                      "title": "Indexer projections and transforms",
+                      "role": "Build index queries, keys, gates, RoPE/Hadamard transforms, and cache the index keys.",
+                      "branch": "refresh",
+                      "metric_mode": "exclusive",
+                      "launch_count": 36,
+                      "aggregate_kernel_ms": 2.515175,
+                      "first_launch_ms": 910.711607,
+                      "last_finish_ms": 1341.098933,
+                      "wall_span_ms": 430.387326,
+                      "pp2_ordinals": "36-47, 208-219, 380-391",
+                      "kernel_evidence": [
+                        "FP8 quant + DeepGEMM",
+                        "LayerNorm + fused RoPE",
+                        "Hadamard x2",
+                        "fused_store_indexer_cache",
+                        "gate projection + scale"
+                      ]
+                    },
+                    {
+                      "id": "A2",
+                      "title": "Causal candidate scoring",
+                      "role": "Initialize score state, obtain ragged K/S bounds, and score legal candidates.",
+                      "branch": "refresh",
+                      "metric_mode": "exclusive",
+                      "launch_count": 9,
+                      "aggregate_kernel_ms": 3.681103,
+                      "first_launch_ms": 1033.51476,
+                      "last_finish_ms": 1342.365114,
+                      "wall_span_ms": 308.850354,
+                      "pp2_ordinals": "48-50, 220-222, 392-394",
+                      "kernel_evidence": [
+                        "FillFunctor<int>",
+                        "_get_k_and_s_triton_kernel",
+                        "deep_gemm::sm90_fp8_mqa_logits"
+                      ]
+                    },
+                    {
+                      "id": "A3",
+                      "title": "TopK selection",
+                      "role": "Transform candidate scores into the selected-position list.",
+                      "branch": "refresh",
+                      "metric_mode": "exclusive",
+                      "launch_count": 3,
+                      "aggregate_kernel_ms": 2.62241,
+                      "first_launch_ms": 1041.722728,
+                      "last_finish_ms": 1343.218109,
+                      "wall_span_ms": 301.495381,
+                      "pp2_ordinals": "51, 223, 395",
+                      "kernel_evidence": [
+                        "topk_transform_prefill_kernel"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "B",
+                  "title": "Reuse selected positions",
+                  "role": "Layers 19-21, 23-25, and 27 carry the latest selected IDs without selector kernels.",
+                  "branch": "reuse",
+                  "metric_mode": "exclusive",
+                  "launch_count": 0,
+                  "aggregate_kernel_ms": 0.0,
+                  "first_launch_ms": null,
+                  "last_finish_ms": null,
+                  "wall_span_ms": null,
+                  "pp2_ordinals": "none",
+                  "kernel_evidence": [
+                    "0 selector launches"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "2.1.6",
+              "title": "Prepare absorbed MLA query and KV cache",
+              "role": "Apply the absorbed query projection and RoPE, then copy/quantize/write KV state and concatenate the MLA query.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 60,
+              "aggregate_kernel_ms": 11.750283,
+              "first_launch_ms": 1045.150292,
+              "last_finish_ms": 1380.80222,
+              "wall_span_ms": 335.651928,
+              "pp2_ordinals": "52-57, 91-96, 130-135, 169-174, 224-229, 263-268, 302-307, 341-346, 396-401, 435-440",
+              "kernel_evidence": [
+                "nvjet ... 256x128",
+                "fused_rope_kernel",
+                "_quantize_k_cache_fast_kernel",
+                "set_mla_kv_buffer",
+                "concat_mla_absorb_q"
+              ]
+            },
+            {
+              "id": "2.1.7",
+              "title": "Selected sparse MLA scan",
+              "role": "The sparse FlashMLA kernel fuses scoring, scaling, softmax, and latent-value accumulation; a second kernel combines splits.",
+              "metric_mode": "exclusive",
+              "launch_count": 20,
+              "aggregate_kernel_ms": 128.868043,
+              "first_launch_ms": 1050.935754,
+              "last_finish_ms": 1394.336095,
+              "wall_span_ms": 343.400341,
+              "pp2_ordinals": "58-59, 97-98, 136-137, 175-176, 230-231, 269-270, 308-309, 347-348, 402-403, 441-442",
+              "kernel_evidence": [
+                "sparse_fp8::flash_fwd_splitkv_mla",
+                "flash_fwd_mla_combine"
+              ],
+              "children": [
+                {
+                  "id": "2.1.7a",
+                  "title": "Selected score dot products",
+                  "role": "Executed inside the sparse FlashMLA launch.",
+                  "metric_mode": "fused_semantic",
+                  "launch_count": null,
+                  "aggregate_kernel_ms": null,
+                  "pp2_ordinals": "fused inside 2.1.7",
+                  "kernel_evidence": [
+                    "no separately attributable launch"
+                  ]
+                },
+                {
+                  "id": "2.1.7b",
+                  "title": "Causal softmax",
+                  "role": "Executed inside the same fused sparse FlashMLA launch.",
+                  "metric_mode": "fused_semantic",
+                  "launch_count": null,
+                  "aggregate_kernel_ms": null,
+                  "pp2_ordinals": "fused inside 2.1.7",
+                  "kernel_evidence": [
+                    "no separately attributable launch"
+                  ]
+                },
+                {
+                  "id": "2.1.7c",
+                  "title": "Latent-value accumulation",
+                  "role": "Executed inside the same fused sparse FlashMLA launch.",
+                  "metric_mode": "fused_semantic",
+                  "launch_count": null,
+                  "aggregate_kernel_ms": null,
+                  "pp2_ordinals": "fused inside 2.1.7",
+                  "kernel_evidence": [
+                    "no separately attributable launch"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "2.1.8",
+              "title": "Latent-value expansion",
+              "role": "Expand each 512-coordinate latent result to the value-head width.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 10,
+              "aggregate_kernel_ms": 4.82488,
+              "first_launch_ms": 1062.581334,
+              "last_finish_ms": 1394.833121,
+              "wall_span_ms": 332.251787,
+              "pp2_ordinals": "60, 99, 138, 177, 232, 271, 310, 349, 404, 443",
+              "kernel_evidence": [
+                "nvjet ... 128x256"
+              ]
+            },
+            {
+              "id": "2.1.9",
+              "title": "o_proj",
+              "role": "Quantize and project concatenated attention heads back to residual width.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 20,
+              "aggregate_kernel_ms": 24.592318,
+              "first_launch_ms": 1063.047768,
+              "last_finish_ms": 1397.31025,
+              "wall_span_ms": 334.262482,
+              "pp2_ordinals": "61-62, 100-101, 139-140, 178-179, 233-234, 272-273, 311-312, 350-351, 405-406, 444-445",
+              "kernel_evidence": [
+                "per_token_group_quant_8bit_v2",
+                "deep_gemm::sm90_fp8_gemm_1d2d_impl"
+              ]
+            },
+            {
+              "id": "2.1.10 + 2.2",
+              "title": "Attention residual add + post-attention RMSNorm",
+              "role": "One fused kernel performs both logical execution-tree steps.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 10,
+              "aggregate_kernel_ms": 1.948967,
+              "first_launch_ms": 1065.485473,
+              "last_finish_ms": 1397.506123,
+              "wall_span_ms": 332.02065,
+              "pp2_ordinals": "63, 102, 141, 180, 235, 274, 313, 352, 407, 446",
+              "kernel_evidence": [
+                "fused_add_rmsnorm"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2.3",
+          "title": "Sparse MoE feed-forward branch",
+          "role": "All ten PP2 layers are sparse MoE layers.",
+          "branch": "moe",
+          "metric_mode": "inclusive",
+          "launch_count": 200,
+          "aggregate_kernel_ms": 170.879878,
+          "first_launch_ms": 1065.681026,
+          "last_finish_ms": 1414.607372,
+          "wall_span_ms": 348.926346,
+          "pp2_ordinals": "64-83, 103-122, 142-161, 181-200, 236-255, 275-294, 314-333, 353-372, 408-427, 447-466",
+          "kernel_evidence": [
+            "20 launches per layer"
+          ],
+          "children": [
+            {
+              "id": "M1",
+              "title": "Router scores",
+              "role": "Project to expert logits and apply the router sigmoid path.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 20,
+              "aggregate_kernel_ms": 0.861732,
+              "first_launch_ms": 1065.681026,
+              "last_finish_ms": 1397.597035,
+              "wall_span_ms": 331.916009,
+              "pp2_ordinals": "64-65, 103-104, 142-143, 181-182, 236-237, 275-276, 314-315, 353-354, 408-409, 447-448",
+              "kernel_evidence": [
+                "nvjet ... 128x256",
+                "fused_add_sigmoid_unsqueeze"
+              ]
+            },
+            {
+              "id": "M2",
+              "title": "Expert TopK",
+              "role": "Select and post-process routed experts for every token.",
+              "branch": null,
+              "metric_mode": "exclusive",
+              "launch_count": 100,
+              "aggregate_kernel_ms": 6.302775,
+              "first_launch_ms": 1065.766083,
+              "last_finish_ms": 1398.25467,
+              "wall_span_ms": 332.488587,
+              "pp2_ordinals": "66-75, 105-114, 144-153, 183-192, 238-247, 277-286, 316-325, 355-364, 410-419, 449-458",
+              "kernel_evidence": [
+                "gatherTopK",
+                "bitonicSortKVInPlace",
+                "masked_fill",
+                "router post-processing Triton kernels"
+              ]
+            },
+            {
+              "id": "M3",
+              "title": "Run active experts",
+              "role": "Dispatch, gate/up, activation, down, and weighted combine.",
+              "metric_mode": "inclusive",
+              "launch_count": 80,
+              "aggregate_kernel_ms": 163.715371,
+              "first_launch_ms": 1066.354341,
+              "last_finish_ms": 1414.607372,
+              "wall_span_ms": 348.253031,
+              "pp2_ordinals": "76-83, 115-122, 154-161, 193-200, 248-255, 287-294, 326-333, 365-372, 420-427, 459-466",
+              "kernel_evidence": [
+                "8 launches per layer"
+              ],
+              "children": [
+                {
+                  "id": "M3a",
+                  "title": "Dispatch selected token rows",
+                  "role": "Align and sort rows by expert.",
+                  "branch": null,
+                  "metric_mode": "exclusive",
+                  "launch_count": 20,
+                  "aggregate_kernel_ms": 0.64925,
+                  "first_launch_ms": 1066.354341,
+                  "last_finish_ms": 1398.320558,
+                  "wall_span_ms": 331.966217,
+                  "pp2_ordinals": "76-77, 115-116, 154-155, 193-194, 248-249, 287-288, 326-327, 365-366, 420-421, 459-460",
+                  "kernel_evidence": [
+                    "moe_align_block_size_kernel",
+                    "count_and_sort_expert_tokens_kernel"
+                  ]
+                },
+                {
+                  "id": "M3b",
+                  "title": "Active-expert gate/up projections",
+                  "role": "Quantize dispatched rows and execute fused gate/up expert GEMMs.",
+                  "branch": null,
+                  "metric_mode": "exclusive",
+                  "launch_count": 20,
+                  "aggregate_kernel_ms": 95.766922,
+                  "first_launch_ms": 1066.424357,
+                  "last_finish_ms": 1407.859026,
+                  "wall_span_ms": 341.434669,
+                  "pp2_ordinals": "78-79, 117-118, 156-157, 195-196, 250-251, 289-290, 328-329, 367-368, 422-423, 461-462",
+                  "kernel_evidence": [
+                    "per_token_group_quant_8bit_v2",
+                    "fused_moe_kernel"
+                  ]
+                },
+                {
+                  "id": "M3c",
+                  "title": "SiLU and gate multiplication",
+                  "role": "Apply the expert activation and multiply gate/up paths.",
+                  "branch": null,
+                  "metric_mode": "exclusive",
+                  "launch_count": 10,
+                  "aggregate_kernel_ms": 4.114449,
+                  "first_launch_ms": 1076.478027,
+                  "last_finish_ms": 1408.271444,
+                  "wall_span_ms": 331.793417,
+                  "pp2_ordinals": "80, 119, 158, 197, 252, 291, 330, 369, 424, 463",
+                  "kernel_evidence": [
+                    "act_and_mul_kernel"
+                  ]
+                },
+                {
+                  "id": "M3d",
+                  "title": "Active-expert down projections",
+                  "role": "Quantize activated rows and execute fused down expert GEMMs.",
+                  "branch": null,
+                  "metric_mode": "exclusive",
+                  "launch_count": 20,
+                  "aggregate_kernel_ms": 58.606619,
+                  "first_launch_ms": 1076.887981,
+                  "last_finish_ms": 1414.149706,
+                  "wall_span_ms": 337.261725,
+                  "pp2_ordinals": "81-82, 120-121, 159-160, 198-199, 253-254, 292-293, 331-332, 370-371, 425-426, 464-465",
+                  "kernel_evidence": [
+                    "per_token_group_quant_8bit_v2",
+                    "fused_moe_kernel"
+                  ]
+                },
+                {
+                  "id": "M3e",
+                  "title": "Weighted expert combine",
+                  "role": "Reduce active expert outputs into one token result.",
+                  "branch": null,
+                  "metric_mode": "exclusive",
+                  "launch_count": 10,
+                  "aggregate_kernel_ms": 4.578131,
+                  "first_launch_ms": 1082.811491,
+                  "last_finish_ms": 1414.607372,
+                  "wall_span_ms": 331.795881,
+                  "pp2_ordinals": "83, 122, 161, 200, 255, 294, 333, 372, 427, 466",
+                  "kernel_evidence": [
+                    "moe_sum_reduce_warp_per_token_vec_kernel"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2.4",
+          "title": "Feed-forward residual add",
+          "role": "No standalone PP2 launch: it is deferred into the next layer's fused 2.1.1 boundary. Layer 27 crosses to PP3 before that fusion.",
+          "metric_mode": "fused_semantic",
+          "launch_count": 0,
+          "aggregate_kernel_ms": 0.0,
+          "pp2_ordinals": "accounted at the following 2.1.1 boundary",
+          "kernel_evidence": [
+            "fused_add_rmsnorm on the next layer/rank"
+          ]
+        }
+      ]
+    },
+    "method": {
+      "basis": "Deterministic PP2 launch order, repeated per-layer kernel motifs, kernel names, and the GLM-5.2 module execution order.",
+      "validation": "All 469 launches are assigned once at the phase level; all 438 decoder launches are assigned once to additive leaf buckets.",
+      "limitation": "The capture has no module NVTX ranges. Alignment is a trace reconstruction, and fused kernels span multiple logical module boundaries as labeled.",
+      "duration_note": "Aggregate kernel ms sums event durations. It is not wall time and excludes idle gaps between launches."
+    }
+  }
 }
