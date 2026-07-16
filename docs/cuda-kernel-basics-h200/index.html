@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A practical mental model for CUDA streams, kernel launches, thread blocks, SMs, warps, shared memory, occupancy, and profiler timelines on NVIDIA H200 GPUs.">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/cuda-kernel-basics-h200/">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/cuda-kernel-basics-h200/">
+  <meta property="og:title" content="CUDA Kernel Fundamentals on H200">
+  <meta property="og:description" content="How PyTorch and SGLang launches become streams, kernels, blocks, warps, and shared-memory allocations on an H200.">
+  <title>CUDA Kernel Fundamentals on H200</title>
+  <style>
+    :root {
+      --bg: #f4f7f7;
+      --paper: #ffffff;
+      --ink: #182220;
+      --muted: #5b6966;
+      --line: #ccd7d4;
+      --line-strong: #99aaa6;
+      --soft: #eef3f2;
+      --stream: #0f766e;
+      --stream-soft: #dff1ed;
+      --kernel: #315f99;
+      --kernel-soft: #e5ecf6;
+      --block: #a04432;
+      --block-soft: #f5e6e2;
+      --sm: #786019;
+      --sm-soft: #f3edd8;
+      --memory: #6e4f7f;
+      --memory-soft: #eee7f1;
+      --good: #276749;
+      --good-soft: #e3f1e8;
+      --warning: #82520d;
+      --warning-soft: #f6eedc;
+      --link: #245f9e;
+      --shadow: 0 7px 22px rgba(24, 34, 32, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--link);
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -48px;
+      left: 18px;
+      z-index: 20;
+      border-radius: 6px;
+      background: var(--ink);
+      padding: 8px 12px;
+      color: #ffffff;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .skip-link:focus {
+      top: 12px;
+    }
+
+    .site-header {
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    .site-header-inner {
+      display: flex;
+      width: min(1400px, calc(100% - 44px));
+      min-height: 58px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 0 auto;
+    }
+
+    .brand {
+      color: var(--ink);
+      font-weight: 850;
+      text-decoration: none;
+    }
+
+    .site-context {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+      text-align: right;
+    }
+
+    .doc-shell {
+      display: grid;
+      grid-template-columns: minmax(195px, 235px) minmax(0, 1fr);
+      width: min(1400px, calc(100% - 44px));
+      align-items: start;
+      gap: 32px;
+      margin: 0 auto;
+      padding: 34px 0 76px;
+    }
+
+    .content-overview {
+      position: sticky;
+      top: 20px;
+      border-left: 4px solid var(--line-strong);
+      padding: 9px 0 9px 15px;
+    }
+
+    .overview-title {
+      margin-bottom: 9px;
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .content-overview a {
+      display: block;
+      padding: 5px 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.3;
+      text-decoration: none;
+    }
+
+    .content-overview a:hover,
+    .content-overview a:focus {
+      color: var(--link);
+      text-decoration: underline;
+    }
+
+    article {
+      min-width: 0;
+    }
+
+    .page-header {
+      max-width: 1050px;
+      padding-bottom: 10px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 980px;
+      font-size: 43px;
+    }
+
+    h2 {
+      margin-top: 46px;
+      padding-top: 27px;
+      border-top: 1px solid var(--line);
+      font-size: 27px;
+      scroll-margin-top: 18px;
+    }
+
+    h3 {
+      margin-top: 27px;
+      font-size: 20px;
+      scroll-margin-top: 18px;
+    }
+
+    p {
+      max-width: 980px;
+      margin: 10px 0 0;
+      color: var(--muted);
+    }
+
+    .lead {
+      max-width: 940px;
+      font-size: 18px;
+    }
+
+    .meta-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .meta-line span {
+      border-left: 3px solid var(--line-strong);
+      padding-left: 9px;
+    }
+
+    code,
+    pre {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    code {
+      border-radius: 4px;
+      background: var(--soft);
+      padding: 1px 4px;
+      color: #20302e;
+      font-size: 0.92em;
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      max-width: 100%;
+      margin: 14px 0 0;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--stream);
+      border-radius: 8px;
+      background: #f9fbfb;
+      padding: 17px 18px;
+      color: #243431;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    pre code {
+      background: transparent;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    .callout {
+      max-width: 100%;
+      margin: 24px 0;
+      border-left: 5px solid var(--stream);
+      background: var(--stream-soft);
+      padding: 16px 18px;
+      color: #224b46;
+    }
+
+    .callout strong {
+      color: var(--ink);
+    }
+
+    .callout.warning {
+      border-left-color: var(--warning);
+      background: var(--warning-soft);
+      color: #5c431e;
+    }
+
+    .callout.memory {
+      border-left-color: var(--memory);
+      background: var(--memory-soft);
+      color: #503b5d;
+    }
+
+    .execution-flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 28px;
+      margin: 24px 0 12px;
+    }
+
+    .flow-step {
+      position: relative;
+      min-width: 0;
+      min-height: 158px;
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .flow-step:not(:last-child)::after {
+      position: absolute;
+      top: 58px;
+      right: -23px;
+      width: 18px;
+      color: var(--line-strong);
+      content: "\2192";
+      font-size: 23px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .flow-step.stream {
+      border-top-color: var(--stream);
+    }
+
+    .flow-step.kernel {
+      border-top-color: var(--kernel);
+    }
+
+    .flow-step.block {
+      border-top-color: var(--block);
+    }
+
+    .flow-step.sm {
+      border-top-color: var(--sm);
+    }
+
+    .flow-step.memory {
+      border-top-color: var(--memory);
+    }
+
+    .flow-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .flow-step strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 17px;
+    }
+
+    .flow-step p {
+      margin-top: 7px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .relationship-line {
+      margin-top: 14px;
+      color: var(--ink);
+      font-weight: 750;
+    }
+
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .concept {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .concept:nth-child(5) {
+      grid-column: 1 / -1;
+    }
+
+    .concept-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .concept-mark {
+      display: inline-flex;
+      width: 14px;
+      height: 14px;
+      flex: 0 0 14px;
+      border-radius: 3px;
+      background: var(--line-strong);
+    }
+
+    .concept.stream .concept-mark {
+      background: var(--stream);
+    }
+
+    .concept.kernel .concept-mark {
+      background: var(--kernel);
+    }
+
+    .concept.block .concept-mark {
+      background: var(--block);
+    }
+
+    .concept.sm .concept-mark {
+      background: var(--sm);
+    }
+
+    .concept.memory .concept-mark {
+      background: var(--memory);
+    }
+
+    .concept h3 {
+      margin: 0;
+      font-size: 19px;
+    }
+
+    .concept p {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .fact-pair {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 6px 10px;
+      margin-top: 13px;
+      font-size: 13px;
+    }
+
+    .fact-pair dt {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .fact-pair dd {
+      min-width: 0;
+      margin: 0;
+      color: var(--ink);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 28px;
+      align-items: start;
+      margin-top: 20px;
+    }
+
+    .step-list {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .step-list li {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 11px;
+      align-items: start;
+    }
+
+    .step-number {
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: var(--soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .step-copy strong {
+      display: block;
+      line-height: 1.35;
+    }
+
+    .step-copy p {
+      margin-top: 3px;
+      font-size: 14px;
+      line-height: 1.48;
+    }
+
+    .timeline-demo {
+      margin-top: 24px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .timeline-title {
+      margin-bottom: 13px;
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .lane {
+      display: grid;
+      grid-template-columns: 115px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      margin-top: 9px;
+    }
+
+    .lane:first-of-type {
+      margin-top: 0;
+    }
+
+    .lane-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .lane-track {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      min-height: 42px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--soft);
+    }
+
+    .lane-segment {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      justify-content: center;
+      border-right: 2px solid #ffffff;
+      padding: 5px;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .lane-segment.kernel-a {
+      grid-column: 1 / 5;
+      background: var(--kernel);
+    }
+
+    .lane-segment.kernel-b {
+      grid-column: 5 / 9;
+      background: #5579a8;
+    }
+
+    .lane-segment.kernel-c {
+      grid-column: 9 / 13;
+      background: #708aaa;
+    }
+
+    .lane-segment.compute {
+      grid-column: 1 / 10;
+      background: var(--kernel);
+    }
+
+    .lane-segment.nccl {
+      grid-column: 4 / 12;
+      background: var(--stream);
+    }
+
+    .lane-empty {
+      background: transparent;
+    }
+
+    .timeline-note {
+      margin-top: 11px;
+      font-size: 13px;
+    }
+
+    .grid-to-sm {
+      display: grid;
+      grid-template-columns: minmax(230px, 0.8fr) 56px minmax(0, 1.2fr);
+      gap: 16px;
+      align-items: center;
+      margin-top: 22px;
+    }
+
+    .grid-box,
+    .sm-pool {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .diagram-label {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .block-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .thread-block {
+      display: flex;
+      min-width: 0;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #c98374;
+      border-radius: 6px;
+      background: var(--block-soft);
+      color: #74372b;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .dispatch-arrow {
+      color: var(--line-strong);
+      font-size: 31px;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .sm-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .sm-unit {
+      min-width: 0;
+      min-height: 135px;
+      border: 2px solid #a88b3e;
+      border-radius: 7px;
+      background: var(--sm-soft);
+      padding: 9px;
+    }
+
+    .sm-unit strong {
+      display: block;
+      color: #614d12;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .resident-block {
+      margin-top: 7px;
+      border: 1px solid #c98374;
+      border-radius: 5px;
+      background: var(--block-soft);
+      padding: 6px 4px;
+      color: #74372b;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .diagram-caption {
+      margin-top: 11px;
+      font-size: 13px;
+    }
+
+    .sm-anatomy {
+      display: grid;
+      grid-template-columns: minmax(210px, 0.7fr) minmax(0, 1.3fr);
+      gap: 22px;
+      margin-top: 22px;
+      align-items: stretch;
+    }
+
+    .anatomy-shell {
+      border: 2px solid #a88b3e;
+      border-radius: 8px;
+      background: var(--sm-soft);
+      padding: 16px;
+    }
+
+    .anatomy-title {
+      color: #614d12;
+      font-size: 15px;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .anatomy-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .anatomy-part {
+      display: flex;
+      min-height: 58px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #c9b878;
+      border-radius: 6px;
+      background: #fffdf7;
+      padding: 8px;
+      color: #5c4a18;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .anatomy-part.memory {
+      grid-column: 1 / -1;
+      border-color: #ad91ba;
+      background: var(--memory-soft);
+      color: #584064;
+    }
+
+    .anatomy-copy {
+      align-self: center;
+    }
+
+    .anatomy-copy ul,
+    .plain-list,
+    .check-list,
+    .source-list {
+      margin: 13px 0 0;
+      padding-left: 21px;
+    }
+
+    .anatomy-copy li,
+    .plain-list li,
+    .check-list li,
+    .source-list li {
+      margin-top: 7px;
+      color: var(--muted);
+    }
+
+    .table-wrap {
+      max-width: 100%;
+      margin-top: 20px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--soft);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    td {
+      color: var(--muted);
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td strong {
+      color: var(--ink);
+    }
+
+    .math-block {
+      display: grid;
+      grid-template-columns: minmax(120px, auto) 28px minmax(0, 1fr);
+      gap: 9px;
+      align-items: baseline;
+      max-width: 920px;
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--memory);
+      border-radius: 8px;
+      background: #fbf9fc;
+      padding: 18px;
+      overflow-x: auto;
+      color: var(--ink);
+    }
+
+    .math-lhs,
+    .math-op,
+    .math-rhs {
+      white-space: nowrap;
+    }
+
+    .math-lhs,
+    .math-rhs {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 19px;
+    }
+
+    .math-lhs {
+      font-style: italic;
+      font-weight: 700;
+    }
+
+    .math-op {
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .math-var {
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+    }
+
+    .math-upright {
+      font-style: normal;
+    }
+
+    .math-note {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .example-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 19px;
+    }
+
+    .example {
+      border-top: 4px solid var(--memory);
+      background: var(--paper);
+      padding: 14px 15px 15px;
+    }
+
+    .example strong {
+      display: block;
+      font-size: 16px;
+    }
+
+    .example p {
+      margin-top: 5px;
+      font-size: 13px;
+      line-height: 1.48;
+    }
+
+    .example.bad {
+      border-top-color: var(--block);
+    }
+
+    .example.good {
+      border-top-color: var(--good);
+    }
+
+    .truth-true,
+    .truth-false,
+    .truth-context {
+      display: inline-flex;
+      min-width: 56px;
+      justify-content: center;
+      border-radius: 5px;
+      padding: 3px 7px;
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .truth-true {
+      background: var(--good-soft);
+      color: var(--good);
+    }
+
+    .truth-false {
+      background: var(--block-soft);
+      color: #7a3327;
+    }
+
+    .truth-context {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .term-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .term {
+      border-top: 4px solid var(--line-strong);
+      padding-top: 12px;
+    }
+
+    .term strong {
+      display: block;
+      font-size: 16px;
+    }
+
+    .term p {
+      margin-top: 4px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .case-study {
+      margin-top: 21px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 15px;
+    }
+
+    .rank {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--kernel);
+      border-radius: 7px;
+      background: #fafcfd;
+      padding: 10px;
+    }
+
+    .rank strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .rank span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .doc-link {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      margin-top: 17px;
+      border: 1px solid #9db7d4;
+      border-radius: 7px;
+      background: #f5f9fd;
+      padding: 9px 12px;
+      color: var(--link);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .doc-link:hover,
+    .doc-link:focus {
+      text-decoration: underline;
+    }
+
+    .check-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 28px;
+      padding-left: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      position: relative;
+      min-width: 0;
+      margin-top: 0;
+      padding-left: 25px;
+    }
+
+    .check-list li::before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      color: var(--good);
+      content: "\2713";
+      font-weight: 900;
+    }
+
+    .source-list a {
+      font-weight: 700;
+    }
+
+    footer {
+      margin-top: 46px;
+      border-top: 1px solid var(--line);
+      padding-top: 19px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1120px) {
+      .execution-flow {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .flow-step:not(:last-child)::after {
+        display: none;
+      }
+
+      .grid-to-sm {
+        grid-template-columns: 1fr;
+      }
+
+      .dispatch-arrow {
+        transform: rotate(90deg);
+      }
+
+      .rank-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 840px) {
+      .site-header-inner,
+      .doc-shell {
+        width: min(100% - 32px, 1400px);
+      }
+
+      .site-context {
+        display: none;
+      }
+
+      .doc-shell {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 22px;
+        padding-top: 24px;
+      }
+
+      .content-overview {
+        position: static;
+        column-count: 2;
+        column-gap: 24px;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 13px 15px;
+      }
+
+      .overview-title {
+        column-span: all;
+      }
+
+      h1 {
+        font-size: 37px;
+      }
+
+      .split,
+      .sm-anatomy {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .execution-flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .term-grid,
+      .example-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 620px) {
+      .site-header-inner {
+        min-height: 52px;
+      }
+
+      .doc-shell {
+        padding-bottom: 52px;
+      }
+
+      .content-overview {
+        column-count: 1;
+      }
+
+      h1 {
+        font-size: 32px;
+      }
+
+      h2 {
+        margin-top: 38px;
+        padding-top: 23px;
+        font-size: 24px;
+      }
+
+      .lead {
+        font-size: 16px;
+      }
+
+      .execution-flow,
+      .concept-grid,
+      .check-list,
+      .rank-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .concept:nth-child(5) {
+        grid-column: auto;
+      }
+
+      .flow-step {
+        min-height: 0;
+      }
+
+      .sm-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .lane {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 5px;
+      }
+
+      .lane-segment {
+        font-size: 10px;
+      }
+
+      .math-block {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 3px;
+      }
+
+      .math-op {
+        text-align: left;
+      }
+
+      .math-lhs,
+      .math-rhs {
+        white-space: normal;
+      }
+
+      .math-rhs {
+        font-size: 17px;
+        overflow-wrap: anywhere;
+      }
+
+      th,
+      td {
+        padding: 11px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="../">MaaS Docs</a>
+      <span class="site-context">CUDA execution foundations &middot; NVIDIA H200</span>
+    </div>
+  </header>
+
+  <div class="doc-shell">
+    <nav class="content-overview" aria-label="Page overview">
+      <div class="overview-title">On this page</div>
+      <a href="#mental-model">Mental model</a>
+      <a href="#concepts">Five concepts</a>
+      <a href="#launch-path">Launch path</a>
+      <a href="#blocks-and-sms">Blocks and SMs</a>
+      <a href="#shared-memory">Shared memory</a>
+      <a href="#occupancy">Occupancy</a>
+      <a href="#streams">Stream concurrency</a>
+      <a href="#profiler">Read a profiler</a>
+      <a href="#sglang-case">SGLang PP case</a>
+      <a href="#checklist">Analysis checklist</a>
+      <a href="#sources">Sources</a>
+    </nav>
+
+    <article id="main">
+      <header class="page-header">
+        <p class="eyebrow">CUDA execution foundations</p>
+        <h1>CUDA Kernel Fundamentals on H200</h1>
+        <p class="lead">A practical model of how PyTorch and SGLang work becomes CUDA streams, kernel launches, thread blocks, warps, SM occupancy, and per-block shared-memory allocations on an NVIDIA H200.</p>
+        <div class="meta-line" role="group" aria-label="Document metadata">
+          <span>Audience: inference engineers</span>
+          <span>Hardware: Hopper / H200</span>
+          <span>Updated: July 16, 2026</span>
+        </div>
+      </header>
+
+      <section id="mental-model">
+        <h2>One Mental Model</h2>
+        <div class="callout">
+          <strong>The complete relationship:</strong> a stream orders kernel launches; one kernel launch creates a grid of thread blocks; CUDA assigns those blocks to SMs; each block executes as warps and receives a private shared-memory allocation from its resident SM.
+        </div>
+
+        <div class="execution-flow" role="group" aria-label="CUDA execution hierarchy">
+          <div class="flow-step stream">
+            <span class="flow-kicker">Ordering</span>
+            <strong>CUDA stream</strong>
+            <p>A software command queue. Operations in one stream observe stream ordering.</p>
+          </div>
+          <div class="flow-step kernel">
+            <span class="flow-kicker">Invocation</span>
+            <strong>Kernel launch</strong>
+            <p>One invocation of GPU code, represented as a grid containing many blocks.</p>
+          </div>
+          <div class="flow-step block">
+            <span class="flow-kicker">Work unit</span>
+            <strong>Thread block</strong>
+            <p>A cooperating group of threads that must remain on one SM.</p>
+          </div>
+          <div class="flow-step sm">
+            <span class="flow-kicker">Hardware</span>
+            <strong>SM</strong>
+            <p>A physical execution engine that schedules warps from resident blocks.</p>
+          </div>
+          <div class="flow-step memory">
+            <span class="flow-kicker">On-chip storage</span>
+            <strong>Shared memory</strong>
+            <p>Fast scratch space allocated per block from the SM where that block resides.</p>
+          </div>
+        </div>
+
+        <p class="relationship-line">Supporting hierarchy: kernel grid &rarr; thread blocks &rarr; 32-thread warps &rarr; individual threads.</p>
+      </section>
+
+      <section id="concepts">
+        <h2>The Five Concepts</h2>
+        <div class="concept-grid">
+          <article class="concept stream">
+            <div class="concept-head"><span class="concept-mark" aria-hidden="true"></span><h3>Stream</h3></div>
+            <p>A CUDA stream is an ordered queue of commands such as kernel launches, memory copies, event records, and waits. It is a CUDA concept; PyTorch wraps it with <code>torch.cuda.Stream</code>.</p>
+            <dl class="fact-pair">
+              <dt>Owns</dt><dd>Ordering and dependency relationships.</dd>
+              <dt>Does not own</dt><dd>An SM, fixed cores, or a physical execution lane.</dd>
+              <dt>Profiler</dt><dd>Usually appears as a lane containing ordered operations.</dd>
+            </dl>
+          </article>
+
+          <article class="concept kernel">
+            <div class="concept-head"><span class="concept-mark" aria-hidden="true"></span><h3>Kernel</h3></div>
+            <p>A kernel is a GPU function invocation. Its launch describes a grid of blocks, the block shape, dynamic shared-memory bytes, and the destination stream.</p>
+            <dl class="fact-pair">
+              <dt>Owns</dt><dd>A grid containing zero or more waves of blocks.</dd>
+              <dt>Does not mean</dt><dd>One thread, one block, or one SM.</dd>
+              <dt>Profiler</dt><dd>One event spanning that invocation's GPU execution interval.</dd>
+            </dl>
+          </article>
+
+          <article class="concept block">
+            <div class="concept-head"><span class="concept-mark" aria-hidden="true"></span><h3>Thread Block</h3></div>
+            <p>A block is a group of threads that can synchronize and exchange data through shared memory. CUDA places the complete block on one SM for its lifetime.</p>
+            <dl class="fact-pair">
+              <dt>Contains</dt><dd>Threads grouped by hardware into 32-thread warps.</dd>
+              <dt>Can</dt><dd>Share data and synchronize internally.</dd>
+              <dt>Cannot</dt><dd>Split across SMs or depend on arbitrary block execution order.</dd>
+            </dl>
+          </article>
+
+          <article class="concept sm">
+            <div class="concept-head"><span class="concept-mark" aria-hidden="true"></span><h3>Streaming Multiprocessor</h3></div>
+            <p>An SM is a physical processor inside the H200. It contains warp schedulers, Tensor Cores, arithmetic pipelines, load/store units, registers, and the unified L1/shared-memory resource.</p>
+            <dl class="fact-pair">
+              <dt>Hosts</dt><dd>One or more resident blocks when resources permit.</dd>
+              <dt>Executes</dt><dd>Ready warps selected from those resident blocks.</dd>
+              <dt>Reuses</dt><dd>Freed capacity as blocks complete and new blocks arrive.</dd>
+            </dl>
+          </article>
+
+          <article class="concept memory">
+            <div class="concept-head"><span class="concept-mark" aria-hidden="true"></span><h3>Shared Memory</h3></div>
+            <p>Shared memory is programmable, low-latency on-chip storage. The storage physically belongs to an SM, but CUDA allocates a private region to each resident block. That region disappears when the block completes.</p>
+            <dl class="fact-pair">
+              <dt>Scope</dt><dd>Threads in one block; Hopper clusters provide an explicit distributed-shared-memory extension.</dd>
+              <dt>Purpose</dt><dd>Reuse tiles, exchange values, stage HBM data, and reduce global-memory traffic.</dd>
+              <dt>Not</dt><dd>The H200's 141 GB HBM3e model and KV-cache storage.</dd>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section id="launch-path">
+        <h2>From SGLang To Hardware</h2>
+        <p>SGLang decides which stream to use, PyTorch exposes the stream API and launches operators, and CUDA implements the queue and schedules the resulting blocks on hardware.</p>
+
+        <div class="split">
+          <div>
+            <pre><code># SGLang asks PyTorch for a CUDA stream.
+forward_stream = torch.cuda.Stream()
+
+# This context makes it the current stream.
+with torch.cuda.stream(forward_stream):
+    output = model(inputs)</code></pre>
+            <p class="timeline-note">Operators called inside the context normally launch their CUDA kernels into the current stream. Libraries may also use coordinated auxiliary streams.</p>
+          </div>
+          <ol class="step-list">
+            <li><span class="step-number">1</span><div class="step-copy"><strong>SGLang chooses the policy.</strong><p>For example, one dominant forward stream per PP rank plus scheduler, copy, and communication streams.</p></div></li>
+            <li><span class="step-number">2</span><div class="step-copy"><strong>PyTorch creates a wrapper.</strong><p><code>torch.cuda.Stream()</code> requests an underlying CUDA stream from the runtime.</p></div></li>
+            <li><span class="step-number">3</span><div class="step-copy"><strong>An operator selects a kernel.</strong><p>Shape, dtype, architecture, and backend determine the GEMM, attention, routing, or elementwise variant.</p></div></li>
+            <li><span class="step-number">4</span><div class="step-copy"><strong>CUDA enqueues the launch.</strong><p>The launch carries grid dimensions, block dimensions, shared-memory requirements, and the stream.</p></div></li>
+            <li><span class="step-number">5</span><div class="step-copy"><strong>Hardware schedules blocks.</strong><p>Available SMs accept blocks when dependencies are satisfied and sufficient registers, warps, and shared memory remain.</p></div></li>
+          </ol>
+        </div>
+
+        <div class="callout warning">
+          <strong>A stream is not hardware.</strong> It has no permanent mapping to an SM. Successive kernels from one stream may use every SM, a subset of SMs, or wait without executing because an earlier dependency has not completed.
+        </div>
+      </section>
+
+      <section id="blocks-and-sms">
+        <h2>One Kernel, Many Blocks, Many SMs</h2>
+        <p>The kernel grid is usually much larger than the immediately available hardware. CUDA dispatches blocks in waves. A block stays on one SM, but different blocks from the same kernel can occupy many SMs simultaneously.</p>
+
+        <div class="grid-to-sm" role="group" aria-label="Illustrative block scheduling diagram">
+          <div class="grid-box">
+            <div class="diagram-label">One kernel grid</div>
+            <div class="block-grid">
+              <div class="thread-block">Block 0</div><div class="thread-block">Block 1</div><div class="thread-block">Block 2</div><div class="thread-block">Block 3</div>
+              <div class="thread-block">Block 4</div><div class="thread-block">Block 5</div><div class="thread-block">Block 6</div><div class="thread-block">Block 7</div>
+              <div class="thread-block">Block 8</div><div class="thread-block">Block 9</div><div class="thread-block">Block 10</div><div class="thread-block">Block 11</div>
+            </div>
+          </div>
+          <div class="dispatch-arrow" aria-hidden="true">&rarr;</div>
+          <div class="sm-pool">
+            <div class="diagram-label">Illustrative subset of H200 SMs</div>
+            <div class="sm-grid">
+              <div class="sm-unit"><strong>SM 0</strong><div class="resident-block">Block 0</div><div class="resident-block">Block 4</div></div>
+              <div class="sm-unit"><strong>SM 1</strong><div class="resident-block">Block 1</div><div class="resident-block">Block 5</div></div>
+              <div class="sm-unit"><strong>SM 2</strong><div class="resident-block">Block 2</div><div class="resident-block">Block 6</div></div>
+              <div class="sm-unit"><strong>SM 3</strong><div class="resident-block">Block 3</div><div class="resident-block">Block 7</div></div>
+            </div>
+          </div>
+        </div>
+        <p class="diagram-caption">Only a small subset is drawn. Blocks 8&ndash;11 wait for capacity in this example; as a resident block finishes, CUDA can dispatch another. Actual assignment order is not guaranteed.</p>
+
+        <div class="sm-anatomy">
+          <div class="anatomy-shell" role="group" aria-label="Simplified SM anatomy">
+            <div class="anatomy-title">One H200 SM</div>
+            <div class="anatomy-grid">
+              <div class="anatomy-part">Warp schedulers</div>
+              <div class="anatomy-part">Register file</div>
+              <div class="anatomy-part">Tensor Cores</div>
+              <div class="anatomy-part">Load / store units</div>
+              <div class="anatomy-part memory">Unified L1 cache / shared-memory resource</div>
+            </div>
+          </div>
+          <div class="anatomy-copy">
+            <h3>What actually executes?</h3>
+            <ul>
+              <li>A block's threads are divided into warps of 32 threads.</li>
+              <li>Warp schedulers select ready warps from all resident blocks.</li>
+              <li>Tensor Cores and arithmetic pipelines execute instructions issued by those warps.</li>
+              <li>A stalled warp does not necessarily stall the SM; another ready warp may issue.</li>
+              <li>A single active kernel can therefore contain thousands of simultaneous threads across many SMs.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="shared-memory">
+        <h2>Shared Memory Is Not HBM</h2>
+        <p>H200's global HBM and an SM's shared memory serve different roles. The difference explains why a kernel can fail its shared-memory launch shape even while tens of gigabytes of HBM remain free.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Resource</th><th>Physical scope</th><th>Typical use</th><th>H200 context</th></tr></thead>
+            <tbody>
+              <tr><td><strong>HBM3e / global memory</strong></td><td>GPU-wide, off chip</td><td>Model weights, activations, KV cache, large tensors</td><td>141 GB and 4.8 TB/s for H200 SXM/NVL product specifications</td></tr>
+              <tr><td><strong>L2 cache</strong></td><td>Shared by the GPU's SMs</td><td>Hardware-managed reuse and traffic reduction</td><td>Between HBM and each SM's local data path</td></tr>
+              <tr><td><strong>L1 / shared-memory pool</strong></td><td>Private to each SM</td><td>L1 caching or programmer-managed block scratch space</td><td>256 KiB combined resource; configurable shared-memory carveout up to 228 KiB</td></tr>
+              <tr><td><strong>Shared allocation</strong></td><td>Private to one block</td><td>Matrix tiles, reductions, staging, cross-thread exchange</td><td>At most 227 KiB addressable by one block</td></tr>
+              <tr><td><strong>Registers</strong></td><td>Private values per thread, allocated from one SM</td><td>Operands, accumulators, addresses, local state</td><td>64K 32-bit registers per SM</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout memory">
+          <strong>Lifetime:</strong> when CUDA places a block on an SM, it reserves that block's registers and shared memory. The allocation remains resident until the block finishes, then becomes available to another block. It is not a persistent cache of request data.
+        </div>
+
+        <h3>The measured low-shared-memory fallback</h3>
+        <div class="math-block" role="group" aria-label="Shared memory requirement comparison">
+          <span class="math-lhs"><span class="math-var">S</span><sub>requested</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">327,684 bytes &asymp; 320 KiB &gt; 232,448 bytes = 227 KiB</span>
+        </div>
+        <p class="math-note">The 16,384-token kernel variant requested more shared memory for one block than Hopper permits. Selecting a low-shared-memory variant was therefore a kernel-configuration fallback, not a 141 GB HBM out-of-memory condition.</p>
+      </section>
+
+      <section id="occupancy">
+        <h2>Residency And Occupancy</h2>
+        <p>An SM can host multiple blocks concurrently only when all resource constraints fit. Shared memory is one constraint; registers, threads, warps, block limits, barriers, and cluster rules also matter.</p>
+
+        <div class="math-block" role="group" aria-label="First-order resident-block upper bound">
+          <span class="math-lhs"><span class="math-var">N</span><sub>resident</sub></span>
+          <span class="math-op">&le;</span>
+          <span class="math-rhs"><span class="math-upright">min</span>(32, &lfloor;64 / <span class="math-var">W</span><sub>block</sub>&rfloor;, &lfloor;65,536 / <span class="math-var">R</span><sub>block</sub>&rfloor;, &lfloor;228 KiB / <span class="math-var">S</span><sub>block</sub>&rfloor;)</span>
+        </div>
+        <p class="math-note"><span class="math-var">W</span><sub>block</sub> is warps per block, <span class="math-var">R</span><sub>block</sub> is total 32-bit registers allocated to the block, and <span class="math-var">S</span><sub>block</sub> is shared memory per block. This is a first-order upper bound; allocation granularity and other architectural constraints can lower the actual result.</p>
+
+        <div class="example-grid">
+          <div class="example good"><strong>64 KiB per block</strong><p>Shared memory alone permits at most three resident blocks per SM: &lfloor;228 / 64&rfloor; = 3.</p></div>
+          <div class="example"><strong>200 KiB per block</strong><p>Shared memory alone permits only one resident block per SM. The kernel can run, but co-residency is restricted.</p></div>
+          <div class="example bad"><strong>More than 227 KiB</strong><p>One block exceeds Hopper's addressable per-block limit. That launch shape cannot run and needs another kernel variant.</p></div>
+        </div>
+
+        <div class="term-grid">
+          <div class="term"><strong>Resident</strong><p>Hardware state and resources are allocated. A resident warp or NCCL kernel may still be waiting rather than issuing useful instructions.</p></div>
+          <div class="term"><strong>Occupancy</strong><p>Active resident warps relative to the architectural maximum. It is a latency-hiding capacity metric, not direct useful-work utilization.</p></div>
+          <div class="term"><strong>Utilization</strong><p>How busy a hardware resource is over time. Tensor Core, memory-bandwidth, and SM-active utilization answer different questions.</p></div>
+        </div>
+      </section>
+
+      <section id="streams">
+        <h2>Streams Express Ordering, Not Guaranteed Parallelism</h2>
+
+        <h3>One stream</h3>
+        <div class="timeline-demo">
+          <div class="timeline-title">Same-stream operations preserve order</div>
+          <div class="lane">
+            <div class="lane-label">Forward stream</div>
+            <div class="lane-track">
+              <div class="lane-segment kernel-a">Attention</div>
+              <div class="lane-segment kernel-b">MoE</div>
+              <div class="lane-segment kernel-c">Norm</div>
+            </div>
+          </div>
+          <p class="timeline-note">The model's dependent layers naturally serialize: the next layer needs the previous layer's output. Intra-kernel blocks still run broadly across the H200.</p>
+        </div>
+
+        <h3>Different streams</h3>
+        <div class="timeline-demo">
+          <div class="timeline-title">Different streams may overlap</div>
+          <div class="lane">
+            <div class="lane-label">Compute stream</div>
+            <div class="lane-track"><div class="lane-segment compute">Model kernel</div><div class="lane-empty"></div></div>
+          </div>
+          <div class="lane">
+            <div class="lane-label">NCCL stream</div>
+            <div class="lane-track"><div class="lane-empty"></div><div class="lane-segment nccl">Send / receive</div><div class="lane-empty"></div></div>
+          </div>
+          <p class="timeline-note">Overlap is possible only when dependencies allow it and the first operation has not consumed every required SM, register, shared-memory, or communication resource. Different streams do not guarantee overlap.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Statement</th><th>Result</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td>One stream maps to one SM.</td><td><span class="truth-false">False</span></td><td>A stream is a software ordering queue with no fixed SM ownership.</td></tr>
+              <tr><td>One kernel equals one block.</td><td><span class="truth-false">False</span></td><td>A kernel launch normally contains a grid of many blocks.</td></tr>
+              <tr><td>One block can span several SMs.</td><td><span class="truth-false">False</span></td><td>The complete block executes on one SM.</td></tr>
+              <tr><td>Blocks from one kernel can occupy many SMs.</td><td><span class="truth-true">True</span></td><td>CUDA distributes independent blocks across available SMs.</td></tr>
+              <tr><td>Different streams always execute concurrently.</td><td><span class="truth-false">False</span></td><td>Dependencies and resource availability control actual overlap.</td></tr>
+              <tr><td>Only one kernel can execute on a GPU at a time.</td><td><span class="truth-false">False</span></td><td>Concurrent kernels are possible, although a workload may serialize effectively.</td></tr>
+              <tr><td>Shared memory is visible to the entire GPU.</td><td><span class="truth-false">False</span></td><td>Ordinary shared memory is block-scoped and physically local to an SM.</td></tr>
+              <tr><td>A large shared-memory request means HBM is full.</td><td><span class="truth-false">False</span></td><td>Shared memory and HBM are separate storage resources with different limits.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="profiler">
+        <h2>How To Read A Kernel Timeline</h2>
+        <p>A profiler rectangle is an execution interval for one kernel launch on one GPU. Its width alone does not reveal how many SMs were active, how many blocks were resident, or whether every resident warp was doing useful work.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>What you see</th><th>What it means</th><th>What it does not prove</th></tr></thead>
+            <tbody>
+              <tr><td><strong>One long GEMM rectangle</strong></td><td>One kernel invocation remained active for that interval.</td><td>It does not mean one block or one SM was working.</td></tr>
+              <tr><td><strong>Back-to-back kernels on one stream</strong></td><td>The stream and data dependencies serialized those launches.</td><td>It does not mean the H200 lacks concurrent-kernel support.</td></tr>
+              <tr><td><strong>Long NCCL SendRecv rectangle</strong></td><td>The communication kernel was resident for that interval.</td><td>It does not mean payload bytes moved usefully for the entire interval.</td></tr>
+              <tr><td><strong>White gap with no GPU kernel</strong></td><td>No retained GPU kernel event covered the interval.</td><td>It does not prove the process was idle; CPU scheduling, JIT compilation, synchronization, or uncollected activity may be present.</td></tr>
+              <tr><td><strong>Tiny apparent overlap</strong></td><td>Profiler timestamps overlap by a small interval.</td><td>Microsecond boundary effects do not necessarily establish useful concurrent execution.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout warning">
+          <strong>Ask a second question after duration:</strong> how many blocks and warps were active, which SM resources were limiting residency, and whether the kernel was computing, transferring, or waiting?
+        </div>
+      </section>
+
+      <section id="sglang-case">
+        <h2>SGLang PP=8 Case Study</h2>
+        <p>In the measured GLM-5.2 prefill run, each PP rank was a separate process bound to one H200. Each process had one dominant model-forward stream, plus separate scheduler, copy, NCCL, and occasional helper streams.</p>
+
+        <div class="case-study">
+          <div class="rank-grid" role="group" aria-label="Eight independent pipeline ranks">
+            <div class="rank"><strong>PP0 / H200 0</strong><span>Own process and forward stream</span></div>
+            <div class="rank"><strong>PP1 / H200 1</strong><span>Own process and forward stream</span></div>
+            <div class="rank"><strong>PP2 / H200 2</strong><span>Own process and forward stream</span></div>
+            <div class="rank"><strong>PP3 / H200 3</strong><span>Own process and forward stream</span></div>
+            <div class="rank"><strong>PP4 / H200 4</strong><span>Own process and forward stream</span></div>
+            <div class="rank"><strong>PP5 / H200 5</strong><span>Own process and forward stream</span></div>
+            <div class="rank"><strong>PP6 / H200 6</strong><span>Own process and forward stream</span></div>
+            <div class="rank"><strong>PP7 / H200 7</strong><span>Own process and forward stream</span></div>
+          </div>
+          <ul class="plain-list">
+            <li>The eight ranks did not share one CUDA stream; stream identifiers are local to each process.</li>
+            <li>Within a rank, dependent model kernels ran almost entirely on its dominant forward stream.</li>
+            <li>Across ranks, a downstream NCCL receive could remain resident while the upstream GPU computed.</li>
+            <li>With one request and one microbatch, useful model compute advanced mostly stage by stage instead of filling the pipeline.</li>
+          </ul>
+          <a class="doc-link" href="../tmp/basic-kernel-understanding-first/#timeline-section">Open the measured GLM-5.2 kernel timeline</a>
+        </div>
+      </section>
+
+      <section id="checklist">
+        <h2>Kernel Analysis Checklist</h2>
+        <p>Use this sequence when a timeline looks surprising:</p>
+        <ul class="check-list">
+          <li>Which process, GPU, and CUDA stream launched the kernel?</li>
+          <li>What dependency prevents the next operation from starting?</li>
+          <li>How many blocks are in the grid, and how many threads are in each block?</li>
+          <li>How many warps, registers, and shared-memory bytes does one block consume?</li>
+          <li>How many blocks can reside on one SM under those constraints?</li>
+          <li>Does the grid contain enough blocks to occupy the available SMs?</li>
+          <li>Is the kernel compute-bound, memory-bound, communication-bound, or waiting?</li>
+          <li>Does a long duration represent useful work or merely residency?</li>
+          <li>Could another stream overlap, or are data dependencies decisive?</li>
+          <li>Was the exact shape warmed up before profiling, including compiled paths?</li>
+        </ul>
+      </section>
+
+      <section id="sources">
+        <h2>Primary Sources</h2>
+        <ul class="source-list">
+          <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html">NVIDIA CUDA Programming Guide: programming and hardware model</a></li>
+          <li><a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/">NVIDIA Hopper Tuning Guide: occupancy, shared memory, TMA, and block clusters</a></li>
+          <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/compute-capabilities.html">NVIDIA CUDA Programming Guide: compute capability resource limits</a></li>
+          <li><a href="https://www.nvidia.com/en-us/data-center/h200/">NVIDIA H200 product specifications</a></li>
+          <li><a href="https://docs.pytorch.org/docs/stable/notes/cuda.html#cuda-streams">PyTorch CUDA semantics: CUDA streams</a></li>
+        </ul>
+      </section>
+
+      <footer>
+        MaaS Docs &middot; CUDA execution foundations for inference profiling
+      </footer>
+    </article>
+  </div>
+</body>
+</html>
