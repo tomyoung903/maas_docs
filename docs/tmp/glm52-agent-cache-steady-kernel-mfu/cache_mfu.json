@@ -1,0 +1,85 @@
+{
+  "contract": {
+    "gpu_count": 8,
+    "dense_fp8_peak_tflops_per_gpu": 1979,
+    "cluster_dense_fp8_peak_pflops_per_second": 15.832,
+    "logical_work": "For request i, W_i = F(prompt_i) - F(cached_prefix_i), with the final LM head included once. Cached-prefix model work is excluded; new suffix queries still attend over their full causal context.",
+    "stable_allocation": "Scale scheduler PP0 new-token work to remove page padding, then multiply by the context-aware FLOPs/new-token ratio of requests completing in the stable interval."
+  },
+  "requests": {
+    "count": 760,
+    "prompt_tokens": 103943384,
+    "cached_tokens": 45963584,
+    "uncached_tokens": 57979800,
+    "cache_hit_rate": 0.44219826439362414,
+    "logical_flops": 7092740470214083992,
+    "logical_pflops": 7092.740470214084,
+    "flops_per_uncached_token": 122331233812.70863,
+    "flops_per_uncached_token_distribution": {
+      "min": 108509318325.03133,
+      "p10": 113580573778.54492,
+      "median": 116905657610.33041,
+      "p90": 124341609368.47525,
+      "max": 153888442649.9128
+    }
+  },
+  "scheduler": {
+    "log_counts": {
+      "receive": 760,
+      "prefill": 56648,
+      "finish": 760,
+      "http_post": 760
+    },
+    "stage_prefill_rows": {
+      "0": 7081,
+      "1": 7081,
+      "2": 7081,
+      "3": 7081,
+      "4": 7081,
+      "5": 7081,
+      "6": 7081,
+      "7": 7081
+    },
+    "logical_pp0_rows": 7081,
+    "raw_new_tokens": 58002816,
+    "exact_client_uncached_tokens": 57979800,
+    "raw_minus_exact_new_tokens": 23016,
+    "page_padding_scale": 0.9996031916795212,
+    "raw_cached_tokens": 45963584
+  },
+  "stable": {
+    "origin_epoch_ns": 1784281821317620736,
+    "end_epoch_ns": 1784283648002159872,
+    "start_epoch_ns": 1784282505317620736,
+    "end_stable_epoch_ns": 1784282710317620736,
+    "start_offset_seconds": 684,
+    "end_offset_seconds": 889,
+    "duration_seconds": 205.0,
+    "queue_floor": 76,
+    "reference_pp0_new_tokens_per_second": 32768.0,
+    "rolling_window_seconds": 15,
+    "rate_tolerance_fraction": 0.1,
+    "raw_pp0_new_tokens": 6553600,
+    "raw_pp0_cached_tokens": 4825408,
+    "pp0_rows": 800,
+    "queue_start": 473,
+    "queue_end": 390,
+    "method": "longest interval whose trailing 15-second PP0 new-token rate stays within 10% of the deep-queue median, all eight PP stages log work in every second, and queue depth stays above 10% of issued requests (minimum 16)",
+    "effective_uncached_tokens": 6550999.47699091,
+    "service_cohort_requests": 81,
+    "service_cohort_prompt_tokens": 11337559,
+    "service_cohort_cached_tokens": 4825408,
+    "service_cohort_cache_hit_rate": 0.42561260320673966,
+    "service_cohort_flops_per_uncached_token": 121446416359.2394,
+    "allocated_logical_flops": 7.955954100517976e+17,
+    "cluster_pflops_per_second": 3.8809532197648666,
+    "per_gpu_useful_tflops": 485.1191524706083,
+    "cluster_mfu": 0.24513347775169697,
+    "sensitivity": {
+      "completion_accounting_mfu": 0.24367979693496258,
+      "global_mix_scheduler_mfu": 0.24691943723940002,
+      "primary_minus_completion_mfu_points": 0.1453680816734384,
+      "primary_minus_global_mix_mfu_points": -0.1785959487703028
+    }
+  }
+}
