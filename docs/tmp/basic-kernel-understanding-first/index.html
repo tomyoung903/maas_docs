@@ -179,7 +179,7 @@
     .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
     .canvas-wrap { position: relative; width: 100%; overflow: hidden; background: #fff; }
     canvas { display: block; width: 100%; }
-    #timeline { height: 388px; }
+    #timeline { height: 520px; }
     #density { height: 250px; }
     .tooltip {
       position: fixed;
@@ -403,7 +403,7 @@
       .flow-metric { display: inline-flex; align-items: baseline; gap: 5px; text-align: left; }
       .flow-metric strong { display: inline; font-size: 15px; }
       h1 { font-size: 34px; }
-      #timeline { height: 370px; }
+      #timeline { height: 520px; }
     }
   </style>
 </head>
@@ -523,10 +523,10 @@
 
       <section class="band" id="timeline-section">
         <h2>Kernel Launch Timeline</h2>
-        <p class="lede">Each mark is one recorded kernel execution on one rank. Horizontal position is launch time relative to the client beginning the single <code>/generate</code> request; mark width is event duration.</p>
+        <p class="lede">Each mark is one recorded kernel execution on one rank. Every PP rank is split into logical Compute and Communication stripes; the tooltip preserves the physical CUDA stream ID. Horizontal position is launch time relative to the client beginning the single <code>/generate</code> request, and mark width is event duration.</p>
         <div class="tool">
           <div class="tool-head">
-            <div><h3>PP0–PP7 event lanes</h3><p>Request-relative launch offsets; the vertical red line is t = 0.</p></div>
+            <div><h3>PP0–PP7 compute / communication lanes</h3><p>Non-NCCL kernels use Compute; NCCL kernels use Communication. The vertical red line is t = 0.</p></div>
             <div class="segmented" id="rank-segments" aria-label="Rank filter"></div>
           </div>
           <div class="toolbar">
@@ -539,7 +539,7 @@
             <label class="control">Width <input id="window-width" type="range"><output id="window-width-value"></output></label>
           </div>
           <div class="toolbar family-controls" id="family-controls"></div>
-          <div class="canvas-wrap"><canvas id="timeline" aria-label="Kernel launch timeline"></canvas></div>
+          <div class="canvas-wrap"><canvas id="timeline" data-lane-mode="compute-communication" aria-label="Compute and communication kernel launch timeline by PP rank"></canvas></div>
           <div class="status-line" id="timeline-status"></div>
         </div>
         <div id="event-tooltip" class="tooltip" role="tooltip"></div>
@@ -781,18 +781,21 @@
     }
     function drawTimeline() {
       const {ctx,width,height} = setupCanvas(timeline, parseFloat(getComputedStyle(timeline).height));
-      const margin = {left:64,right:16,top:35,bottom:24};
+      const margin = {left:112,right:16,top:35,bottom:24};
       const plotW = Math.max(1,width-margin.left-margin.right);
-      const laneH = (height-margin.top-margin.bottom)/8;
+      const rankH = (height-margin.top-margin.bottom)/8;
+      const stripeH = rankH/2;
       ctx.clearRect(0,0,width,height); ctx.fillStyle='#fff'; ctx.fillRect(0,0,width,height);
       ctx.font='11px system-ui'; ctx.textBaseline='middle';
       for (let rank=0; rank<8; rank++) {
-        const y=margin.top+rank*laneH;
-        ctx.fillStyle=rank%2?'#fafbfb':'#f4f6f7'; ctx.fillRect(margin.left,y,plotW,laneH);
-        ctx.strokeStyle='#e2e6e8'; ctx.beginPath(); ctx.moveTo(margin.left,y+laneH); ctx.lineTo(width-margin.right,y+laneH); ctx.stroke();
-        ctx.fillStyle='#48515a'; ctx.fillText(`PP${rank}`,14,y+laneH/2);
+        const y=margin.top+rank*rankH;
+        ctx.fillStyle=rank%2?'#fafbfb':'#f4f6f7'; ctx.fillRect(margin.left,y,plotW,rankH);
+        ctx.strokeStyle='#e2e6e8'; ctx.beginPath(); ctx.moveTo(margin.left,y+rankH); ctx.lineTo(width-margin.right,y+rankH); ctx.stroke();
+        ctx.strokeStyle='#e8ebee'; ctx.beginPath(); ctx.moveTo(margin.left,y+stripeH); ctx.lineTo(width-margin.right,y+stripeH); ctx.stroke();
+        ctx.fillStyle='#344047'; ctx.font='600 11px system-ui'; ctx.fillText(`PP${rank}`,10,y+rankH/2);
+        ctx.fillStyle='#5e6870'; ctx.font='10px system-ui'; ctx.fillText('Compute',44,y+stripeH/2); ctx.fillText('Comm',44,y+stripeH+stripeH/2);
       }
-      ctx.textBaseline='alphabetic';
+      ctx.font='11px system-ui'; ctx.textBaseline='alphabetic';
       const tickCount=Math.max(2,Math.min(6,Math.floor(plotW/145)));
       for (let i=0;i<=tickCount;i++) {
         const x=margin.left+plotW*i/tickCount; const t=viewStart+viewWidth*i/tickCount;
@@ -804,19 +807,23 @@
         const x=margin.left+(0-viewStart)/viewWidth*plotW;
         ctx.strokeStyle='#b23b3b'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(x,margin.top-6); ctx.lineTo(x,height-margin.bottom); ctx.stroke(); ctx.lineWidth=1;
       }
-      drawnEvents=[]; let visible=0;
+      drawnEvents=[]; let visible=0, computeVisible=0, communicationVisible=0;
       for (let index=0; index<D.events.length; index++) {
         const e=D.events[index], rank=e[0], start=ms(e[1]), duration=ms(e[2]), end=start+duration;
         const meta=names[e[3]];
         if (!enabledRanks.has(rank) || !enabledCategories.has(meta.category) || end<viewStart || start>viewStart+viewWidth) continue;
-        const x=margin.left+(start-viewStart)/viewWidth*plotW;
-        const x2=margin.left+(end-viewStart)/viewWidth*plotW;
-        const y=margin.top+rank*laneH+5;
+        const clippedStart=Math.max(start,viewStart), clippedEnd=Math.min(end,viewStart+viewWidth);
+        const x=margin.left+(clippedStart-viewStart)/viewWidth*plotW;
+        const x2=margin.left+(clippedEnd-viewStart)/viewWidth*plotW;
+        const communication=meta.category==='nccl_sync', stripePad=3;
+        const y=margin.top+rank*rankH+(communication?stripeH:0)+stripePad;
         const w=Math.max(1, x2-x);
-        ctx.fillStyle=colors[meta.category]; ctx.globalAlpha=.78; ctx.fillRect(x,y,w,Math.max(2,laneH-10)); ctx.globalAlpha=1;
-        drawnEvents.push({index,x,w,y,h:Math.max(2,laneH-10)}); visible++;
+        const h=Math.max(2,stripeH-stripePad*2);
+        ctx.fillStyle=colors[meta.category]; ctx.globalAlpha=.78; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
+        drawnEvents.push({index,x,w,y,h,logicalLane:communication?'Communication':'Compute'}); visible++;
+        if (communication) communicationVisible++; else computeVisible++;
       }
-      $('timeline-status').textContent=`${intFmt.format(visible)} visible launches · window ${decFmt.format(viewStart)} to ${decFmt.format(viewStart+viewWidth)} ms · ${enabledRanks.size} rank(s) · ${enabledCategories.size} families`;
+      $('timeline-status').textContent=`${intFmt.format(visible)} visible launches (${intFmt.format(computeVisible)} compute, ${intFmt.format(communicationVisible)} communication) · window ${decFmt.format(viewStart)} to ${decFmt.format(viewStart+viewWidth)} ms · ${enabledRanks.size} rank(s) · ${enabledCategories.size} families`;
     }
     const tooltip=$('event-tooltip');
     timeline.addEventListener('mousemove', event => {
@@ -825,7 +832,7 @@
       for (let i=drawnEvents.length-1;i>=0;i--) { const d=drawnEvents[i]; if (y>=d.y&&y<=d.y+d.h&&x>=d.x-2&&x<=d.x+d.w+2){hit=d;break;} }
       if (!hit) { tooltip.style.display='none'; return; }
       const e=D.events[hit.index], meta=names[e[3]];
-      tooltip.innerHTML=`<strong>PP${e[0]} · ${esc(categoryLabels[meta.category])}</strong><br>launch ${intFmt.format(e[1])} ns (${decFmt.format(ms(e[1]))} ms)<br>duration ${decFmt.format(e[2]/1e3)} µs<br><span class="mono">${esc(meta.name)}</span>`;
+      tooltip.innerHTML=`<strong>PP${e[0]} · ${hit.logicalLane} · ${esc(categoryLabels[meta.category])}</strong><br>launch ${intFmt.format(e[1])} ns (${decFmt.format(ms(e[1]))} ms)<br>duration ${decFmt.format(e[2]/1e3)} µs · physical stream ${intFmt.format(e[4])}<br><span class="mono">${esc(meta.name)}</span>`;
       tooltip.style.display='block'; tooltip.style.left=Math.min(event.clientX+12,window.innerWidth-tooltip.offsetWidth-8)+'px'; tooltip.style.top=Math.min(event.clientY+12,window.innerHeight-tooltip.offsetHeight-8)+'px';
     });
     timeline.addEventListener('mouseleave',()=>tooltip.style.display='none');
