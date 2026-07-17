@@ -86,6 +86,26 @@
     .segments button { min-height: 32px; padding: 6px 10px; border: 1px solid var(--line-strong); border-right: 0; background: var(--paper); color: #40524e; cursor: pointer; font: inherit; font-size: 12px; }
     .segments button:first-child { border-radius: 5px 0 0 5px; } .segments button:last-child { border-right: 1px solid var(--line-strong); border-radius: 0 5px 5px 0; }
     .segments button[aria-pressed="true"] { background: #183c35; color: white; }
+    .timeline-tool { overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+    .timeline-tool-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 13px 15px; border-bottom: 1px solid var(--line); background: #f7faf9; }
+    .timeline-tool-head h3 { margin: 0; font-size: 15px; }
+    .timeline-tool-head p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+    .timeline-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-bottom: 1px solid #e1e8e5; background: var(--paper); }
+    .icon-button { width: 32px; height: 32px; padding: 0; border: 1px solid var(--line-strong); border-radius: 4px; color: #344642; background: var(--paper); cursor: pointer; font: 18px/1 system-ui; }
+    .icon-button:hover { border-color: #637c75; background: #edf3f1; }
+    .icon-button:focus-visible, .timeline-segmented button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+    .timeline-control { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+    .timeline-control input[type="range"] { width: 150px; accent-color: var(--green); }
+    .timeline-control output { min-width: 74px; color: #344642; font-variant-numeric: tabular-nums; }
+    .timeline-segmented { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 5px; overflow: hidden; }
+    .timeline-segmented button { min-width: 38px; height: 30px; padding: 0 8px; border: 0; border-right: 1px solid var(--line-strong); color: #465954; background: var(--paper); cursor: pointer; font-size: 12px; }
+    .timeline-segmented button:last-child { border-right: 0; }
+    .timeline-segmented button.active { color: white; background: #183c35; }
+    .family-controls { gap: 7px 12px; }
+    .family-controls label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+    .canvas-wrap { position: relative; width: 100%; overflow: hidden; background: var(--paper); }
+    .timeline-status { padding: 8px 14px; border-top: 1px solid #e1e8e5; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
     .checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 20px; padding: 0; list-style: none; }
     .checks li { display: flex; gap: 8px; align-items: flex-start; } .check { color: var(--green); font-weight: 800; }
     .definition-grid { display: grid; grid-template-columns: 170px minmax(0, 1fr); border-top: 1px solid var(--line); }
@@ -106,6 +126,8 @@
       .stat { border-right: 0; border-bottom: 1px solid var(--line); } .stat:last-child { border-bottom: 0; }
       .equation { grid-template-columns: auto 20px minmax(360px, 1fr); } .definition-grid { grid-template-columns: 1fr; }
       .definition-grid dt { border-bottom: 0; } .chunk-row { grid-template-columns: 62px minmax(0, 1fr) 93px; }
+      .timeline-tool-head { flex-direction: column; } .timeline-segmented { max-width: 100%; overflow-x: auto; }
+      .timeline-control input[type="range"] { width: 105px; }
     }
   </style>
 </head>
@@ -156,7 +178,7 @@
           <dt>Generation</dt><dd><code>max_new_tokens=1</code>. The first output token comes from prefill; the measured window contains zero decode scheduler rows.</dd>
           <dt>Cache</dt><dd>Radix cache disabled, cache flushed before release, and a distinct first token for every request. Reported cached tokens: 0.</dd>
           <dt>Offered work</dt><dd>65,536,000 prompt tokens. At four bytes per token ID, the raw ID arrays represent 250 MiB before JSON syntax and transport overhead.</dd>
-          <dt>Queue</dt><dd>PP0 queue depth falls from 943 to 909 during the common profile window; it never approaches drain.</dd>
+          <dt>Queue</dt><dd>PP0 queue depth falls from 943 to 909 during the 59.021-second common profile window, so this MFU interval remains saturated. The queue drains later, and all 1,000 requests finish over the full 1,950.535-second client lifecycle.</dd>
         </dl>
         <div class="two-col" style="margin-top:20px">
           <div class="panel"><div class="panel-head"><h3>Completion curve</h3><p>All responses from burst release to final EOF</p></div><div class="panel-body"><div class="chart-wrap"><canvas id="completion-chart" aria-label="Request completion curve"></canvas></div></div></div>
@@ -234,7 +256,24 @@
       <section id="timeline" class="timeline">
         <h2>Representative launch timeline</h2>
         <p class="lede">A bounded 250 ms slice from the middle of the steady interval preserves individual kernel start, duration, stream, rank, and category without embedding millions of full-window events.</p>
-        <div class="panel"><div class="panel-head"><h3>PP0-PP7 kernel launches</h3><p>4,262 events; hover details use exact Nsight timestamps</p></div><div class="panel-body"><div class="chart-wrap"><canvas id="timeline-chart" aria-label="Representative kernel timeline by PP rank"></canvas></div></div></div>
+        <div class="timeline-tool">
+          <div class="timeline-tool-head">
+            <div><h3>PP0-PP7 event lanes</h3><p>Slice-relative launch offsets; the vertical red line is t = 0.</p></div>
+            <div class="timeline-segmented" id="rank-segments" aria-label="Rank filter"></div>
+          </div>
+          <div class="timeline-toolbar">
+            <button class="icon-button" id="pan-left" title="Pan earlier" aria-label="Pan earlier">&larr;</button>
+            <button class="icon-button" id="zoom-out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+            <button class="icon-button" id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+            <button class="icon-button" id="pan-right" title="Pan later" aria-label="Pan later">&rarr;</button>
+            <button class="icon-button" id="reset-view" title="Reset timeline" aria-label="Reset timeline">&#8634;</button>
+            <label class="timeline-control">Start <input id="window-start" type="range"><output id="window-start-value"></output></label>
+            <label class="timeline-control">Width <input id="window-width" type="range"><output id="window-width-value"></output></label>
+          </div>
+          <div class="timeline-toolbar family-controls" id="family-controls"></div>
+          <div class="canvas-wrap"><canvas id="timeline-chart" aria-label="Representative kernel timeline by PP rank"></canvas></div>
+          <div class="timeline-status" id="timeline-status"></div>
+        </div>
       </section>
 
       <section id="validation">
@@ -277,6 +316,12 @@
     const data = JSON.parse(document.getElementById('timeline-data').textContent);
     const tooltip = document.getElementById('tooltip');
     const colors = data.kernels.category_colors;
+    const categories = Object.keys(colors);
+    const categoryLabels = {
+      nccl_sync:'NCCL sync', attention:'Attention', gemm_moe:'GEMM / MoE',
+      moe_routing:'MoE routing', norm_rope_quant:'Norm / RoPE / quant',
+      memory_elementwise:'Memory / elementwise', other:'Other'
+    };
     const dpr = Math.max(1, window.devicePixelRatio || 1);
     const charts = [];
 
@@ -313,9 +358,58 @@
     stackedChart(document.getElementById('residency-chart'), [{label:'non-NCCL',color:'#16845b',values:kernelBins.map(x=>x.non_nccl_gpu_ms)},{label:'NCCL',color:'#2563eb',values:kernelBins.map(x=>x.nccl_gpu_ms)}], {yLabel:'aggregate GPU-ms'});
     lineChart(document.getElementById('launch-chart'), [{label:'kernel launches',color:'#714b8f',values:kernelBins.map(x=>x.launches)}], {yLabel:'launches / s'});
 
-    const timeline=document.getElementById('timeline-chart'); let hit=[];
-    const drawTimeline=()=>{const {ctx,width,height}=setup(timeline,390);const pad={l:55,r:16,t:24,b:34};const events=data.kernels.detail.events;const span=data.kernels.detail.window_seconds*1000;ctx.clearRect(0,0,width,height);ctx.font='11px system-ui';hit=[];for(let rank=0;rank<8;rank++){const y=pad.t+rank*(height-pad.t-pad.b)/8;ctx.fillStyle=rank%2?'#f5f8f7':'#edf3f1';ctx.fillRect(pad.l,y,width-pad.l-pad.r,(height-pad.t-pad.b)/8);ctx.fillStyle='#43534f';ctx.fillText(`PP${rank}`,10,y+(height-pad.t-pad.b)/16+4);}events.forEach(ev=>{const x=pad.l+(width-pad.l-pad.r)*ev.start_offset_ms/span;const w=Math.max(1,(width-pad.l-pad.r)*(ev.duration_us/1000)/span);const y=pad.t+ev.rank*(height-pad.t-pad.b)/8+5;const h=(height-pad.t-pad.b)/8-10;ctx.fillStyle=colors[ev.category]||'#667085';ctx.fillRect(x,y,w,h);hit.push({x,y,w,h,ev});});ctx.strokeStyle='#82948f';ctx.strokeRect(pad.l,pad.t,width-pad.l-pad.r,height-pad.t-pad.b);ctx.fillStyle='#5b6966';ctx.fillText('0 ms',pad.l,height-10);ctx.textAlign='right';ctx.fillText(`${span.toFixed(0)} ms`,width-pad.r,height-10);ctx.textAlign='left';};drawTimeline();charts.push(drawTimeline);
-    timeline.addEventListener('mousemove',event=>{const rect=timeline.getBoundingClientRect();const x=event.clientX-rect.left,y=event.clientY-rect.top;const found=hit.findLast?.(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h)||[...hit].reverse().find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);if(!found){tooltip.style.display='none';return;}const ev=found.ev;tooltip.innerHTML=`<strong>PP${ev.rank}</strong> &middot; ${ev.category.replaceAll('_',' ')}<br>${ev.name}<br>${ev.start_offset_ms.toFixed(3)} ms &middot; ${ev.duration_us.toFixed(3)} &micro;s &middot; stream ${ev.stream_id}`;tooltip.style.display='block';tooltip.style.left=`${Math.min(innerWidth-410,event.clientX+14)}px`;tooltip.style.top=`${event.clientY+14}px`;});timeline.addEventListener('mouseleave',()=>tooltip.style.display='none');
+    const timeline=document.getElementById('timeline-chart');
+    const timelineEvents=data.kernels.detail.events;
+    const allRanks=new Set(Array.from({length:8},(_,rank)=>rank));
+    let enabledRanks=new Set(allRanks);
+    let enabledCategories=new Set(categories);
+    document.getElementById('rank-segments').innerHTML=`<button type="button" data-rank="all" class="active">All</button>`+Array.from({length:8},(_,rank)=>`<button type="button" data-rank="${rank}">PP${rank}</button>`).join('');
+    document.getElementById('rank-segments').addEventListener('click',event=>{
+      const button=event.target.closest('button[data-rank]');if(!button)return;const value=button.dataset.rank;
+      enabledRanks=value==='all'?new Set(allRanks):new Set([Number(value)]);
+      document.querySelectorAll('#rank-segments button').forEach(item=>item.classList.toggle('active',item===button));drawTimeline();
+    });
+    document.getElementById('family-controls').innerHTML=categories.map(category=>`<label><input type="checkbox" value="${category}" checked><span class="swatch" style="background:${colors[category]}"></span>${categoryLabels[category]}</label>`).join('');
+    document.getElementById('family-controls').addEventListener('change',()=>{enabledCategories=new Set([...document.querySelectorAll('#family-controls input:checked')].map(input=>input.value));drawTimeline();});
+
+    const eventMinMs=Math.min(0,...timelineEvents.map(event=>event.start_offset_ms));
+    const eventMaxMs=Math.max(data.kernels.detail.window_seconds*1000,...timelineEvents.map(event=>event.start_offset_ms+event.duration_us/1000));
+    const fullSpanMs=Math.max(.001,eventMaxMs-eventMinMs);
+    let viewStart=eventMinMs;let viewWidth=fullSpanMs;
+    const startSlider=document.getElementById('window-start');const widthSlider=document.getElementById('window-width');
+    startSlider.min=eventMinMs;startSlider.max=eventMaxMs;startSlider.step=fullSpanMs/2000;startSlider.value=viewStart;
+    widthSlider.min=Math.max(.05,fullSpanMs/500);widthSlider.max=fullSpanMs;widthSlider.step=fullSpanMs/1000;widthSlider.value=viewWidth;
+    function clampTimelineView(){
+      viewWidth=Math.max(Number(widthSlider.min),Math.min(fullSpanMs,viewWidth));
+      viewStart=Math.max(eventMinMs,Math.min(eventMaxMs-viewWidth,viewStart));
+      startSlider.max=Math.max(eventMinMs,eventMaxMs-viewWidth);startSlider.value=viewStart;widthSlider.value=viewWidth;
+      document.getElementById('window-start-value').textContent=`${viewStart.toFixed(3)} ms`;
+      document.getElementById('window-width-value').textContent=`${viewWidth.toFixed(3)} ms`;
+    }
+    function zoomTimeline(factor){const center=viewStart+viewWidth/2;viewWidth*=factor;viewStart=center-viewWidth/2;clampTimelineView();drawTimeline();}
+    function panTimeline(fraction){viewStart+=viewWidth*fraction;clampTimelineView();drawTimeline();}
+    document.getElementById('zoom-in').onclick=()=>zoomTimeline(.5);document.getElementById('zoom-out').onclick=()=>zoomTimeline(2);
+    document.getElementById('pan-left').onclick=()=>panTimeline(-.25);document.getElementById('pan-right').onclick=()=>panTimeline(.25);
+    document.getElementById('reset-view').onclick=()=>{viewStart=eventMinMs;viewWidth=fullSpanMs;clampTimelineView();drawTimeline();};
+    startSlider.oninput=()=>{viewStart=Number(startSlider.value);clampTimelineView();drawTimeline();};
+    widthSlider.oninput=()=>{const center=viewStart+viewWidth/2;viewWidth=Number(widthSlider.value);viewStart=center-viewWidth/2;clampTimelineView();drawTimeline();};
+    clampTimelineView();
+
+    let hit=[];
+    function drawTimeline(){
+      const {ctx,width,height}=setup(timeline,390);const pad={l:64,r:16,t:35,b:24};const plotW=Math.max(1,width-pad.l-pad.r);const laneH=(height-pad.t-pad.b)/8;
+      ctx.clearRect(0,0,width,height);ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.font='11px system-ui';ctx.textBaseline='middle';
+      for(let rank=0;rank<8;rank++){const y=pad.t+rank*laneH;ctx.fillStyle=rank%2?'#fafbfb':'#f4f6f7';ctx.fillRect(pad.l,y,plotW,laneH);ctx.strokeStyle='#e1e8e5';ctx.beginPath();ctx.moveTo(pad.l,y+laneH);ctx.lineTo(width-pad.r,y+laneH);ctx.stroke();ctx.fillStyle='#43534f';ctx.fillText(`PP${rank}`,14,y+laneH/2);}
+      ctx.textBaseline='alphabetic';const tickCount=Math.max(2,Math.min(6,Math.floor(plotW/145)));
+      for(let index=0;index<=tickCount;index++){const x=pad.l+plotW*index/tickCount;const offset=viewStart+viewWidth*index/tickCount;ctx.strokeStyle='#d8e1de';ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,height-pad.b);ctx.stroke();ctx.textAlign=index===tickCount?'right':(index===0?'left':'center');ctx.fillStyle='#5b6966';ctx.fillText(`${offset.toFixed(3)} ms`,x,22);}
+      if(viewStart<=0&&viewStart+viewWidth>=0){const x=pad.l+(0-viewStart)/viewWidth*plotW;ctx.strokeStyle='#a43f3f';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,pad.t-6);ctx.lineTo(x,height-pad.b);ctx.stroke();ctx.lineWidth=1;}
+      hit=[];let visible=0;
+      timelineEvents.forEach(event=>{const start=event.start_offset_ms;const end=start+event.duration_us/1000;if(!enabledRanks.has(event.rank)||!enabledCategories.has(event.category)||end<viewStart||start>viewStart+viewWidth)return;const clippedStart=Math.max(start,viewStart);const clippedEnd=Math.min(end,viewStart+viewWidth);const x=pad.l+(clippedStart-viewStart)/viewWidth*plotW;const x2=pad.l+(clippedEnd-viewStart)/viewWidth*plotW;const y=pad.t+event.rank*laneH+5;const w=Math.max(1,x2-x);const h=Math.max(2,laneH-10);ctx.fillStyle=colors[event.category]||'#667085';ctx.globalAlpha=.78;ctx.fillRect(x,y,w,h);ctx.globalAlpha=1;hit.push({x,y,w,h,event});visible++;});
+      ctx.strokeStyle='#82948f';ctx.strokeRect(pad.l,pad.t,plotW,height-pad.t-pad.b);ctx.textAlign='left';
+      document.getElementById('timeline-status').textContent=`${visible.toLocaleString()} visible launches · window ${viewStart.toFixed(3)} to ${(viewStart+viewWidth).toFixed(3)} ms · ${enabledRanks.size} rank(s) · ${enabledCategories.size} families`;
+    }
+    drawTimeline();charts.push(drawTimeline);
+    timeline.addEventListener('mousemove',event=>{const rect=timeline.getBoundingClientRect();const x=event.clientX-rect.left,y=event.clientY-rect.top;const found=hit.findLast?.(item=>x>=item.x-2&&x<=item.x+item.w+2&&y>=item.y&&y<=item.y+item.h)||[...hit].reverse().find(item=>x>=item.x-2&&x<=item.x+item.w+2&&y>=item.y&&y<=item.y+item.h);if(!found){tooltip.style.display='none';return;}const item=found.event;tooltip.innerHTML=`<strong>PP${item.rank} &middot; ${categoryLabels[item.category]}</strong><br>launch ${item.start_offset_ms.toFixed(6)} ms<br>duration ${item.duration_us.toFixed(3)} &micro;s &middot; stream ${item.stream_id}<br>${item.name}`;tooltip.style.display='block';tooltip.style.left=`${Math.min(innerWidth-tooltip.offsetWidth-8,event.clientX+14)}px`;tooltip.style.top=`${Math.min(innerHeight-tooltip.offsetHeight-8,event.clientY+14)}px`;});timeline.addEventListener('mouseleave',()=>tooltip.style.display='none');
 
     document.querySelectorAll('.segments button').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.segments button').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));const filter=button.dataset.filter;document.querySelectorAll('#kernel-table tbody tr').forEach(row=>row.hidden=filter!=='all'&&row.dataset.category!==filter);}));
     const tocLinks=[...document.querySelectorAll('.toc a')];const observer=new IntersectionObserver(entries=>{entries.filter(e=>e.isIntersecting).forEach(entry=>{tocLinks.forEach(link=>link.classList.toggle('active',link.getAttribute('href')===`#${entry.target.id}`));});},{rootMargin:'-15% 0px -72% 0px'});document.querySelectorAll('article section').forEach(section=>observer.observe(section));
