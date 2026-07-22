@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Operation-by-operation explanation of how DP8, TP8, and EP8 share one eight-GPU node during GLM-5.2 decode.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-decode-dp8-tp8-ep8-execution-tree/">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/tmp/glm52-decode-dp8-tp8-ep8-execution-tree/">
+  <title>GLM-5.2 Decode: DP8, TP8, and EP8 on Eight GPUs</title>
+  <style>
+    :root {
+      --bg: #edf1f2;
+      --paper: #ffffff;
+      --ink: #182321;
+      --muted: #5c6a67;
+      --line: #cbd5d3;
+      --line-strong: #9eaeaa;
+      --accent: #12645f;
+      --accent-soft: #e3f0ed;
+      --dp: #176b9b;
+      --dp-soft: #e4f1f8;
+      --tp: #9a4f17;
+      --tp-soft: #faecdf;
+      --ep: #7b3f8f;
+      --ep-soft: #f1e8f4;
+      --comm: #a1363e;
+      --comm-soft: #f8e7e8;
+      --neutral-soft: #edf0f1;
+      --code-bg: #152321;
+      --code-ink: #e7f4f0;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.56;
+    }
+
+    a { color: var(--accent); }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      overflow-wrap: anywhere;
+    }
+
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 22px 80px;
+    }
+
+    .top-nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 26px;
+    }
+
+    .top-nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      color: var(--accent);
+      font-size: .9rem;
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    .top-nav a:hover,
+    .top-nav a:focus-visible {
+      border-color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .doc-shell {
+      display: grid;
+      grid-template-columns: minmax(190px, 225px) minmax(0, 1fr);
+      gap: 30px;
+      align-items: start;
+    }
+
+    .content-overview {
+      position: sticky;
+      top: 18px;
+      padding: 10px 0 10px 14px;
+      border-left: 4px solid #8eb9b3;
+    }
+
+    .content-overview-title {
+      margin: 0 0 10px;
+      color: var(--ink);
+      font-size: .76rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .content-overview a {
+      display: block;
+      padding: 5px 0;
+      color: var(--muted);
+      font-size: .88rem;
+      font-weight: 700;
+      line-height: 1.25;
+      text-decoration: none;
+    }
+
+    .content-overview a:hover,
+    .content-overview a:focus-visible {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .doc-content { min-width: 0; }
+
+    .hero {
+      padding: 10px 0 30px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .eyebrow {
+      margin: 0 0 9px;
+      color: var(--accent);
+      font-size: .78rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 940px;
+      margin: 0 0 14px;
+      font-size: clamp(2rem, 4vw, 3.35rem);
+    }
+
+    h2 {
+      margin: 38px 0 14px;
+      padding-top: 26px;
+      border-top: 1px solid var(--line);
+      font-size: 1.55rem;
+    }
+
+    h3 {
+      margin: 24px 0 10px;
+      color: var(--accent);
+      font-size: 1.12rem;
+    }
+
+    p { max-width: 920px; color: var(--muted); }
+
+    .lead {
+      max-width: 980px;
+      margin: 0;
+      color: #3e4f4b;
+      font-size: 1.08rem;
+    }
+
+    .run-basis {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .chip,
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 26px;
+      padding: 4px 8px;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: .74rem;
+      font-weight: 800;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .badge.dp { border-color: #88b9d3; background: var(--dp-soft); color: #125477; }
+    .badge.tp { border-color: #d4a172; background: var(--tp-soft); color: #743b12; }
+    .badge.ep { border-color: #bf91ca; background: var(--ep-soft); color: #643374; }
+    .badge.comm { border-color: #d39196; background: var(--comm-soft); color: #7f2830; }
+    .badge.local { border-color: #aeb9b7; background: var(--neutral-soft); color: #465451; }
+
+    .callout {
+      margin: 22px 0;
+      padding: 16px 18px;
+      border-left: 5px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--ink);
+    }
+
+    .callout strong { color: #0d4f4b; }
+
+    .formula-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 22px 0;
+    }
+
+    .formula-card {
+      min-height: 132px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+    }
+
+    .formula-card .label {
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .formula-card .value {
+      margin: 9px 0 6px;
+      color: var(--ink);
+      font-size: 1.18rem;
+      font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+
+    .formula-card .meaning {
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.35;
+    }
+
+    .rank-views {
+      display: grid;
+      gap: 12px;
+      margin: 20px 0 8px;
+    }
+
+    .rank-view {
+      display: grid;
+      grid-template-columns: minmax(125px, 170px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+    }
+
+    .rank-view-label strong { display: block; }
+    .rank-view-label span { color: var(--muted); font-size: .82rem; }
+
+    .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(42px, 1fr));
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .rank {
+      display: grid;
+      place-items: center;
+      min-height: 45px;
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      background: var(--neutral-soft);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .rank-view.dp-view .rank { border-color: #74acca; background: var(--dp-soft); color: #125477; }
+    .rank-view.tp-view .rank { border-color: #d39b64; background: var(--tp-soft); color: #743b12; }
+    .rank-view.ep-view .rank { border-color: #b988c5; background: var(--ep-soft); color: #643374; }
+
+    .rank-view.tp-view .rank:not(:last-child),
+    .rank-view.ep-view .rank:not(:last-child) { border-right-width: 0; }
+
+    .phase-line {
+      display: grid;
+      grid-template-columns: 1.25fr .9fr 1.35fr .9fr;
+      gap: 8px;
+      margin: 22px 0;
+    }
+
+    .phase {
+      position: relative;
+      min-height: 118px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-top-width: 5px;
+      border-radius: 6px;
+      background: var(--paper);
+    }
+
+    .phase:not(:last-child)::after {
+      position: absolute;
+      top: 44px;
+      right: -10px;
+      z-index: 2;
+      color: #70817d;
+      content: "\2192";
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .phase.dp-phase { border-top-color: var(--dp); }
+    .phase.tp-phase { border-top-color: var(--tp); }
+    .phase.ep-phase { border-top-color: var(--ep); }
+    .phase.return-phase { border-top-color: var(--accent); }
+
+    .phase .phase-id { color: var(--muted); font-size: .74rem; font-weight: 850; }
+    .phase strong { display: block; margin: 3px 0 5px; }
+    .phase span { display: block; color: var(--muted); font-size: .82rem; line-height: 1.38; }
+
+    .branch-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+
+    .branch-band {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-left-width: 5px;
+      border-radius: 6px;
+      background: var(--paper);
+    }
+
+    .branch-band.dense { border-left-color: var(--tp); }
+    .branch-band.sparse { border-left-color: var(--ep); }
+    .branch-band p { margin-bottom: 0; font-size: .9rem; }
+
+    .tree-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 18px 0 10px;
+    }
+
+    .tree-legend {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .tree-actions { display: flex; gap: 7px; }
+
+    button {
+      font: inherit;
+    }
+
+    .tree-actions button {
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: .82rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .tree-actions button:hover,
+    .tree-actions button:focus-visible { border-color: var(--accent); color: var(--accent); }
+
+    .execution-tree {
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: var(--paper);
+      overflow: hidden;
+    }
+
+    .tree-head,
+    .tree-row {
+      display: grid;
+      grid-template-columns: minmax(290px, 1.15fr) minmax(180px, .65fr) minmax(340px, 1.3fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .tree-head {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line-strong);
+      background: #dfe7e5;
+      color: #354440;
+      font-size: .74rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .execution-tree details,
+    .execution-tree .tree-leaf { border-top: 1px solid #e1e7e5; }
+
+    .execution-tree > details:first-of-type { border-top: 0; }
+
+    .execution-tree details > summary {
+      list-style: none;
+      cursor: pointer;
+    }
+
+    .execution-tree summary::-webkit-details-marker { display: none; }
+
+    .tree-row {
+      min-height: 60px;
+      padding: 11px 14px;
+    }
+
+    summary.tree-row:hover,
+    summary.tree-row:focus-visible { background: #f6f8f7; outline: none; }
+
+    .tree-operation {
+      display: grid;
+      grid-template-columns: 27px minmax(48px, auto) minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      min-width: 0;
+    }
+
+    .tree-leaf .tree-operation { grid-template-columns: 27px minmax(48px, auto) minmax(0, 1fr); }
+
+    .disclosure {
+      display: inline-grid;
+      place-items: center;
+      width: 25px;
+      height: 25px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: .8rem;
+      font-weight: 900;
+    }
+
+    details[open] > summary .disclosure::before { content: "\25BE"; }
+    details:not([open]) > summary .disclosure::before { content: "\25B8"; }
+    .tree-leaf .disclosure { border-color: transparent; color: #9aa7a4; }
+    .tree-leaf .disclosure::before { content: "\2022"; }
+
+    .step-id {
+      padding-top: 2px;
+      color: var(--accent);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .82rem;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .operation-title { min-width: 0; }
+    .operation-title strong { display: block; color: var(--ink); overflow-wrap: anywhere; }
+    .operation-title span { display: block; margin-top: 2px; color: var(--muted); font-size: .82rem; line-height: 1.35; }
+
+    .parallel-role {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      padding-top: 1px;
+    }
+
+    .rank-behavior {
+      color: var(--muted);
+      font-size: .84rem;
+      line-height: 1.42;
+    }
+
+    .tree-children {
+      margin-left: 22px;
+      border-left: 3px solid #d8e1df;
+    }
+
+    .tree-children .tree-children { margin-left: 19px; border-left-color: #e3e8e7; }
+
+    .tree-row.is-dp { box-shadow: inset 4px 0 0 var(--dp); }
+    .tree-row.is-tp { box-shadow: inset 4px 0 0 var(--tp); }
+    .tree-row.is-ep { box-shadow: inset 4px 0 0 var(--ep); }
+    .tree-row.is-comm { box-shadow: inset 4px 0 0 var(--comm); }
+
+    .runtime-node { background: #fff8f3; }
+
+    .runtime-note {
+      display: inline-block;
+      margin-top: 5px;
+      color: #8a4314;
+      font-size: .73rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .walk {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 9px;
+      margin: 20px 0;
+      counter-reset: walk;
+    }
+
+    .walk-step {
+      min-height: 165px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      counter-increment: walk;
+    }
+
+    .walk-step::before {
+      display: grid;
+      place-items: center;
+      width: 25px;
+      height: 25px;
+      margin-bottom: 9px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fff;
+      content: counter(walk);
+      font-size: .75rem;
+      font-weight: 850;
+    }
+
+    .walk-step strong { display: block; margin-bottom: 5px; }
+    .walk-step span { color: var(--muted); font-size: .84rem; line-height: 1.4; }
+
+    .table-wrap {
+      margin: 18px 0 28px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: .86rem;
+    }
+
+    th {
+      background: #dfe7e5;
+      color: #354440;
+      font-size: .74rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td { color: var(--muted); }
+    td:first-child { color: var(--ink); font-weight: 750; }
+
+    pre {
+      margin: 16px 0 24px;
+      padding: 16px 18px;
+      border-radius: 6px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      overflow: auto;
+      line-height: 1.5;
+    }
+
+    .sources {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .source-link {
+      display: block;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      text-decoration: none;
+    }
+
+    .source-link strong { display: block; color: var(--ink); }
+    .source-link span { display: block; margin-top: 3px; color: var(--muted); font-size: .82rem; }
+    .source-link:hover strong,
+    .source-link:focus-visible strong { color: var(--accent); text-decoration: underline; }
+
+    footer {
+      margin-top: 42px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line-strong);
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    @media (max-width: 1120px) {
+      .formula-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .phase-line { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .phase:nth-child(2)::after { display: none; }
+      .walk { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tree-head,
+      .tree-row { grid-template-columns: minmax(270px, 1fr) minmax(160px, .55fr) minmax(260px, 1fr); }
+    }
+
+    @media (max-width: 820px) {
+      main { padding: 18px 14px 60px; }
+      .doc-shell { display: block; }
+      .content-overview {
+        position: static;
+        margin-bottom: 20px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-left: 4px solid #8eb9b3;
+        border-radius: 5px;
+        background: var(--paper);
+      }
+      .content-overview a { display: inline-block; margin-right: 12px; }
+      h1 { font-size: 2.15rem; }
+      .rank-view { grid-template-columns: 1fr; }
+      .rank-grid { grid-template-columns: repeat(4, minmax(44px, 1fr)); }
+      .branch-split,
+      .sources { grid-template-columns: 1fr; }
+      .execution-tree { overflow-x: auto; }
+      .tree-head,
+      .tree-row { min-width: 900px; }
+      .tree-children { margin-left: 12px; }
+    }
+
+    @media (max-width: 560px) {
+      .formula-grid,
+      .phase-line,
+      .walk { grid-template-columns: 1fr; }
+      .phase::after { display: none; }
+      .rank-grid { grid-template-columns: repeat(4, minmax(38px, 1fr)); }
+      .run-basis .chip { white-space: normal; }
+      .tree-toolbar { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <nav class="top-nav" aria-label="Related documents">
+    <a href="../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree">Original 100K prefill tree</a>
+    <a href="../basic-kernel-understanding-decode-first/">Standard decode profile</a>
+  </nav>
+
+  <div class="doc-shell">
+    <aside class="content-overview" aria-label="Page overview">
+      <div class="content-overview-title">Overview</div>
+      <a href="#answer">Short answer</a>
+      <a href="#rank-views">Same ranks, three views</a>
+      <a href="#handoffs">Layer handoffs</a>
+      <a href="#execution-tree">Numbered execution tree</a>
+      <a href="#one-token">One-token walk</a>
+      <a href="#trace">Profiler expectations</a>
+      <a href="#evidence">Configuration and evidence</a>
+    </aside>
+
+    <article class="doc-content">
+      <header class="hero">
+        <p class="eyebrow">GLM-5.2 standard decode topology</p>
+        <h1>How DP8, TP8, and EP8 share one eight-GPU node</h1>
+        <p class="lead">DP8, TP8, and EP8 are not three independent dimensions multiplied into 512 GPUs. In this run, the same physical ranks 0&ndash;7 change roles as each decoder layer moves from attention to dense FFN or sparse MoE and back to local decode output.</p>
+        <div class="run-basis" aria-label="Experiment basis">
+          <span class="chip">8&times; H200</span>
+          <span class="chip">TP=8 / DP=8 / EP=8 / PP=1</span>
+          <span class="chip">DP attention + DP LM head</span>
+          <span class="chip">DeepEP low-latency</span>
+          <span class="chip">standard decode, no EAGLE</span>
+        </div>
+      </header>
+
+      <section id="answer">
+        <h2>Short Answer</h2>
+        <div class="callout"><strong>The important correction:</strong> it would be inaccurate to label <code>2.1.2</code> as DP and <code>2.1.3</code> as TP. Under this topology, both are DP-local attention work because the effective attention TP group has size one. TP8 first appears at the dense FFN boundary; EP8 first appears at sparse-MoE dispatch.</div>
+
+        <div class="formula-grid">
+          <div class="formula-card">
+            <div class="label">Physical world</div>
+            <div class="value"><code>8 = TP8 &times; PP1</code></div>
+            <div class="meaning">The process world contains exactly eight GPU ranks.</div>
+          </div>
+          <div class="formula-card">
+            <div class="label">Attention group</div>
+            <div class="value"><code>attn_TP = 8 / 8 / 1 = 1</code></div>
+            <div class="meaning">Each DP rank has a complete attention copy and owns its local token rows.</div>
+          </div>
+          <div class="formula-card">
+            <div class="label">MoE expert tensor group</div>
+            <div class="value"><code>MoE_TP = 8 / 8 / 1 = 1</code></div>
+            <div class="meaning">An expert is owned whole by one EP rank; its matrices are not split across eight ranks.</div>
+          </div>
+          <div class="formula-card">
+            <div class="label">Expert group</div>
+            <div class="value"><code>EP group = ranks 0..7</code></div>
+            <div class="meaning">Because EP equals TP, SGLang reuses the same eight-rank group.</div>
+          </div>
+        </div>
+
+        <p>DP describes which rank owns each request/token row for attention and output. TP describes how dense FFN weight matrices are split. EP describes which ranks own the MoE experts and where selected token rows must travel. These are data-layout and ownership roles, not three separate pools of hardware.</p>
+      </section>
+
+      <section id="rank-views">
+        <h2>Same Ranks, Three Views</h2>
+        <p>Every row below is the same physical node. Only the grouping semantics change.</p>
+
+        <div class="rank-views">
+          <div class="rank-view dp-view">
+            <div class="rank-view-label"><strong>Attention DP8</strong><span>Eight groups of one rank</span></div>
+            <div class="rank-grid" aria-label="Eight independent attention DP ranks">
+              <span class="rank">DP0</span><span class="rank">DP1</span><span class="rank">DP2</span><span class="rank">DP3</span>
+              <span class="rank">DP4</span><span class="rank">DP5</span><span class="rank">DP6</span><span class="rank">DP7</span>
+            </div>
+          </div>
+          <div class="rank-view tp-view">
+            <div class="rank-view-label"><strong>Dense TP8</strong><span>One eight-rank tensor group</span></div>
+            <div class="rank-grid" aria-label="One dense TP group containing eight ranks">
+              <span class="rank">T0</span><span class="rank">T1</span><span class="rank">T2</span><span class="rank">T3</span>
+              <span class="rank">T4</span><span class="rank">T5</span><span class="rank">T6</span><span class="rank">T7</span>
+            </div>
+          </div>
+          <div class="rank-view ep-view">
+            <div class="rank-view-label"><strong>Sparse EP8</strong><span>One eight-rank expert group</span></div>
+            <div class="rank-grid" aria-label="One expert group containing eight ranks">
+              <span class="rank">E0</span><span class="rank">E1</span><span class="rank">E2</span><span class="rank">E3</span>
+              <span class="rank">E4</span><span class="rank">E5</span><span class="rank">E6</span><span class="rank">E7</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="handoffs">
+        <h2>Layer Handoffs</h2>
+        <p>Every decoder layer starts with local attention. The feed-forward branch then selects one of two layouts. Layers 0&ndash;2 take the dense TP path; layers 3&ndash;77 take the sparse EP path.</p>
+
+        <div class="phase-line" aria-label="Decode layer phase sequence">
+          <div class="phase dp-phase">
+            <span class="phase-id">2.1 through 2.2</span>
+            <strong>DP-local attention</strong>
+            <span>The token-owning rank runs the complete norm, Q/K/V, DSA, MLA, output projection, residual, and post-attention norm.</span>
+          </div>
+          <div class="phase tp-phase">
+            <span class="phase-id">Dense layers 0&ndash;2</span>
+            <strong>TP8 FFN</strong>
+            <span>Gather DP rows, run sharded gate/up and down matrices on all ranks, then reduce-scatter.</span>
+          </div>
+          <div class="phase ep-phase">
+            <span class="phase-id">Sparse layers 3&ndash;77</span>
+            <strong>EP8 MoE</strong>
+            <span>Route locally, dispatch token copies to expert owners, run whole local experts, then combine back.</span>
+          </div>
+          <div class="phase return-phase">
+            <span class="phase-id">2.4, then next layer</span>
+            <strong>Return to DP-local</strong>
+            <span>The local residual path resumes. After layer 77, final norm and LM head remain local.</span>
+          </div>
+        </div>
+
+        <div class="branch-split">
+          <div class="branch-band dense">
+            <strong>Dense branch: DP rows &rarr; TP8 &rarr; DP rows</strong>
+            <p>The all-gather is a data-layout bridge, not a model layer. Each rank receives the global token rows, computes its weight shard, and the down-projection partials are summed while the rows are scattered back to their DP owners.</p>
+          </div>
+          <div class="branch-band sparse">
+            <strong>Sparse branch: DP rows &rarr; EP8 &rarr; DP rows</strong>
+            <p>No full-row all-gather is needed. Each source DP rank computes routing for its own rows. DeepEP dispatches selected copies directly to expert owners and combines their weighted outputs back to the source rank.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="execution-tree">
+        <h2>Numbered Decode Execution Tree</h2>
+        <p>This recreates the operation IDs from the 100K prefill execution tree and overlays the decode parallel layout. <code>D0</code> and <code>D4</code> are explicitly added runtime bridges; they are not new GLM model operators.</p>
+
+        <div class="tree-toolbar">
+          <div class="tree-legend" aria-label="Parallel role legend">
+            <span class="badge dp">DP-local</span>
+            <span class="badge tp">TP8</span>
+            <span class="badge ep">EP8</span>
+            <span class="badge comm">communication</span>
+            <span class="badge local">rank-local kernel</span>
+          </div>
+          <div class="tree-actions">
+            <button type="button" id="expand-all" title="Expand every tree branch">+ Expand all</button>
+            <button type="button" id="collapse-all" title="Collapse every tree branch">&minus; Collapse all</button>
+          </div>
+        </div>
+
+        <div class="execution-tree" id="decode-tree">
+          <div class="tree-head" aria-hidden="true">
+            <span>Model operation</span><span>Parallel role</span><span>What the eight ranks do</span>
+          </div>
+
+          <details open>
+            <summary class="tree-row">
+              <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M</span><span class="operation-title"><strong>GLM-5.2 target-model decode forward</strong><span>One autoregressive decode step through the complete target model.</span></span></span>
+              <span class="parallel-role"><span class="badge dp">DP8</span><span class="badge tp">TP8</span><span class="badge ep">EP8</span></span>
+              <span class="rank-behavior">The same eight ranks alternate roles. PP=1 means every rank contains all 78 decoder layers.</span>
+            </summary>
+            <div class="tree-children">
+              <div class="tree-leaf">
+                <div class="tree-row is-dp">
+                  <span class="tree-operation"><span class="disclosure"></span><span class="step-id">1</span><span class="operation-title"><strong><code>embed_tokens</code></strong><span>Lookup the current decode-token embedding.</span></span></span>
+                  <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">attn TP1</span></span>
+                  <span class="rank-behavior">Each rank embeds only its local token rows. The embedding uses the size-one attention-TP group under DP attention.</span>
+                </div>
+              </div>
+
+              <details open>
+                <summary class="tree-row">
+                  <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2</span><span class="operation-title"><strong>Decoder stack &times;78</strong><span>Each layer contains attention, one FFN branch, and residual updates.</span></span></span>
+                  <span class="parallel-role"><span class="badge dp">DP-local attention</span><span class="badge tp">dense TP</span><span class="badge ep">sparse EP</span></span>
+                  <span class="rank-behavior">The attention-to-FFN-to-attention layout transition repeats once per layer.</span>
+                </summary>
+                <div class="tree-children">
+                  <details open>
+                    <summary class="tree-row is-dp">
+                      <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1</span><span class="operation-title"><strong>Attention sublayer</strong><span>Complete DSA + sparse MLA path for local decode rows.</span></span></span>
+                      <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">attn TP1</span></span>
+                      <span class="rank-behavior">Attention weights are replicated across DP ranks. There is no eight-way tensor split inside this sublayer.</span>
+                    </summary>
+                    <div class="tree-children">
+                      <div class="tree-leaf"><div class="tree-row is-dp">
+                        <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.1</span><span class="operation-title"><strong>Input RMSNorm</strong><span>Normalize the local token row and update the residual state.</span></span></span>
+                        <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">one rank per row</span></span>
+                        <span class="rank-behavior">Only the owning DP rank has the real row; CUDA-graph padding can still make idle ranks launch shape-compatible kernels.</span>
+                      </div></div>
+
+                      <div class="tree-leaf"><div class="tree-row is-dp">
+                        <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.2</span><span class="operation-title"><strong><code>fused_qkv_a_proj_with_mqa</code></strong><span>Create query latent, KV latent, and RoPE key coordinates.</span></span></span>
+                        <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">replicated linear</span></span>
+                        <span class="rank-behavior">This projection is explicitly replicated. It is not TP8 in this topology.</span>
+                      </div></div>
+
+                      <div class="tree-leaf"><div class="tree-row is-dp">
+                        <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.3</span><span class="operation-title"><strong>Query/KV latent RMSNorm</strong><span>Normalize the low-rank query and KV latent states.</span></span></span>
+                        <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">rank-local</span></span>
+                        <span class="rank-behavior">This remains on the same token-owning rank as 2.1.2; no parallel-layout handoff occurs here.</span>
+                      </div></div>
+
+                      <div class="tree-leaf"><div class="tree-row is-dp">
+                        <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.4</span><span class="operation-title"><strong><code>q_b_proj</code>: expand MLA queries</strong><span>Expand the query latent into all query heads.</span></span></span>
+                        <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">attn TP1</span></span>
+                        <span class="rank-behavior">The class is column-parallel, but its configured group size is one, so every DP rank holds all attention heads.</span>
+                      </div></div>
+
+                      <details open>
+                        <summary class="tree-row is-dp">
+                          <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.5</span><span class="operation-title"><strong>Choose selected-position source</strong><span>Refresh DSA positions in 21 layers or reuse them in 57 layers.</span></span></span>
+                          <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                          <span class="rank-behavior">Selection metadata belongs to the local sequence; refresh and reuse do not invoke the dense TP or MoE EP groups.</span>
+                        </summary>
+                        <div class="tree-children">
+                          <details open>
+                            <summary class="tree-row is-dp">
+                              <span class="tree-operation"><span class="disclosure"></span><span class="step-id">A</span><span class="operation-title"><strong>Refresh selected positions</strong><span>Run the DSA indexer for this layer.</span></span></span>
+                              <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                              <span class="rank-behavior">Indexer weights are replicated and score the local request history.</span>
+                            </summary>
+                            <div class="tree-children">
+                              <div class="tree-leaf"><div class="tree-row is-dp">
+                                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">A1</span><span class="operation-title"><strong>Indexer projections</strong><span>Build indexer query, key, and per-head weights.</span></span></span>
+                                <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">replicated</span></span>
+                                <span class="rank-behavior">The token-owning rank performs the complete projection path.</span>
+                              </div></div>
+                              <div class="tree-leaf"><div class="tree-row is-dp">
+                                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">A2</span><span class="operation-title"><strong>Causal candidate scoring</strong><span>Score historical positions against the current query.</span></span></span>
+                                <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">DSA kernel</span></span>
+                                <span class="rank-behavior">The local KV/index cache is scanned on its owning rank.</span>
+                              </div></div>
+                              <div class="tree-leaf"><div class="tree-row is-dp">
+                                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">A3</span><span class="operation-title"><strong>TopK selection</strong><span>Choose the sparse set of historical positions.</span></span></span>
+                                <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">TopK</span></span>
+                                <span class="rank-behavior">Selected position IDs remain local sequence state.</span>
+                              </div></div>
+                            </div>
+                          </details>
+                          <div class="tree-leaf"><div class="tree-row is-dp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">B</span><span class="operation-title"><strong>Reuse selected positions</strong><span>Consume IDs produced by the previous refresh layer.</span></span></span>
+                            <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                            <span class="rank-behavior">No indexer recomputation and no cross-rank exchange.</span>
+                          </div></div>
+                        </div>
+                      </details>
+
+                      <div class="tree-leaf"><div class="tree-row is-dp">
+                        <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.6</span><span class="operation-title"><strong>Prepare absorbed MLA query</strong><span>Transform the query for latent-cache attention.</span></span></span>
+                        <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">attn TP1</span></span>
+                        <span class="rank-behavior">All query heads are available on the local rank because attention TP is one.</span>
+                      </div></div>
+
+                      <details open>
+                        <summary class="tree-row is-dp">
+                          <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.7</span><span class="operation-title"><strong>Selected sparse MLA scan</strong><span>Attend over the DSA-selected historical positions.</span></span></span>
+                          <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">local KV cache</span></span>
+                          <span class="rank-behavior">The request KV cache and selected IDs stay with their DP owner.</span>
+                        </summary>
+                        <div class="tree-children">
+                          <div class="tree-leaf"><div class="tree-row is-dp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.7a</span><span class="operation-title"><strong>Selected score dot products</strong><span>Compute attention scores for selected positions.</span></span></span>
+                            <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                            <span class="rank-behavior">Local attention kernel on the owning GPU.</span>
+                          </div></div>
+                          <div class="tree-leaf"><div class="tree-row is-dp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.7b</span><span class="operation-title"><strong>Causal softmax</strong><span>Normalize selected attention scores.</span></span></span>
+                            <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                            <span class="rank-behavior">No collective because a complete attention head set is local.</span>
+                          </div></div>
+                          <div class="tree-leaf"><div class="tree-row is-dp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.7c</span><span class="operation-title"><strong>Latent-value accumulation</strong><span>Accumulate selected compressed values.</span></span></span>
+                            <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                            <span class="rank-behavior">Produces the local latent attention result.</span>
+                          </div></div>
+                        </div>
+                      </details>
+
+                      <div class="tree-leaf"><div class="tree-row is-dp">
+                        <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.8</span><span class="operation-title"><strong>Latent-value expansion</strong><span>Expand the compressed attention result into value-head space.</span></span></span>
+                        <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">attn TP1</span></span>
+                        <span class="rank-behavior">The complete expansion is local to the request owner.</span>
+                      </div></div>
+
+                      <div class="tree-leaf"><div class="tree-row is-dp">
+                        <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.9</span><span class="operation-title"><strong><code>o_proj</code></strong><span>Project attention output back to hidden size.</span></span></span>
+                        <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">attn TP1</span></span>
+                        <span class="rank-behavior">The class is row-parallel, but group size one means no attention all-reduce.</span>
+                      </div></div>
+
+                      <div class="tree-leaf"><div class="tree-row is-dp">
+                        <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.1.10</span><span class="operation-title"><strong>Attention residual add</strong><span>Add the local attention output to the residual path.</span></span></span>
+                        <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                        <span class="rank-behavior">The row remains under the same DP owner.</span>
+                      </div></div>
+                    </div>
+                  </details>
+
+                  <div class="tree-leaf"><div class="tree-row is-dp">
+                    <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.2</span><span class="operation-title"><strong>Post-attention RMSNorm</strong><span>Normalize before entering the chosen FFN branch.</span></span></span>
+                    <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                    <span class="rank-behavior">SGLang applies this norm before gathering dense-layer rows; sparse layers remain scattered.</span>
+                  </div></div>
+
+                  <details open>
+                    <summary class="tree-row">
+                      <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.3</span><span class="operation-title"><strong>Choose feed-forward branch</strong><span>Dense SwiGLU in three layers or sparse MoE in 75 layers.</span></span></span>
+                      <span class="parallel-role"><span class="badge tp">dense TP8</span><span class="badge ep">sparse EP8</span></span>
+                      <span class="rank-behavior">This is the first point where the layer changes away from DP-local attention layout.</span>
+                    </summary>
+                    <div class="tree-children">
+                      <details open>
+                        <summary class="tree-row is-tp">
+                          <span class="tree-operation"><span class="disclosure"></span><span class="step-id">D</span><span class="operation-title"><strong>Dense SwiGLU branch</strong><span>Executed by layers 0&ndash;2.</span></span></span>
+                          <span class="parallel-role"><span class="badge tp">TP8</span></span>
+                          <span class="rank-behavior">All eight ranks cooperate on sharded dense matrices for the gathered token rows.</span>
+                        </summary>
+                        <div class="tree-children">
+                          <div class="tree-leaf"><div class="tree-row is-comm runtime-node">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">D0</span><span class="operation-title"><strong>DP-row all-gather</strong><span>Replicate the global token-row batch across the TP group.</span><span class="runtime-note">Runtime bridge added to this tree</span></span></span>
+                            <span class="parallel-role"><span class="badge comm">all-gather</span><span class="badge tp">enter TP8</span></span>
+                            <span class="rank-behavior">Each rank receives every DP rank's rows so the dense tensor-parallel matrices see the same row batch.</span>
+                          </div></div>
+                          <div class="tree-leaf"><div class="tree-row is-tp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">D1</span><span class="operation-title"><strong>Merged gate/up projection</strong><span>Column-parallel first dense GEMM.</span></span></span>
+                            <span class="parallel-role"><span class="badge tp">TP8 column split</span></span>
+                            <span class="rank-behavior">Every rank sees the gathered rows and computes one eighth of the gate/up output features.</span>
+                          </div></div>
+                          <div class="tree-leaf"><div class="tree-row is-tp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">D2</span><span class="operation-title"><strong>SiLU and multiply</strong><span>Apply the activation to each local intermediate shard.</span></span></span>
+                            <span class="parallel-role"><span class="badge tp">TP shard-local</span><span class="badge local">pointwise</span></span>
+                            <span class="rank-behavior">No communication: each rank transforms its own one-eighth feature shard.</span>
+                          </div></div>
+                          <div class="tree-leaf"><div class="tree-row is-tp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">D3</span><span class="operation-title"><strong>Down projection</strong><span>Row-parallel second dense GEMM.</span></span></span>
+                            <span class="parallel-role"><span class="badge tp">TP8 row split</span></span>
+                            <span class="rank-behavior">Each rank computes a partial hidden-state contribution from its intermediate shard.</span>
+                          </div></div>
+                          <div class="tree-leaf"><div class="tree-row is-comm runtime-node">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">D4</span><span class="operation-title"><strong>TP reduce-scatter</strong><span>Sum down-projection partials and return local rows to DP owners.</span><span class="runtime-note">Runtime bridge added to this tree</span></span></span>
+                            <span class="parallel-role"><span class="badge comm">reduce-scatter</span><span class="badge dp">return to DP</span></span>
+                            <span class="rank-behavior">Reduction reconstructs the complete hidden vector while scattering only each rank's owned token rows back.</span>
+                          </div></div>
+                        </div>
+                      </details>
+
+                      <details open>
+                        <summary class="tree-row is-ep">
+                          <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M</span><span class="operation-title"><strong>Sparse MoE branch</strong><span>Executed by layers 3&ndash;77.</span></span></span>
+                          <span class="parallel-role"><span class="badge dp">local router</span><span class="badge ep">EP8 experts</span></span>
+                          <span class="rank-behavior">Rows stay local through routing, travel only to selected experts, then return to their source DP rank.</span>
+                        </summary>
+                        <div class="tree-children">
+                          <div class="tree-leaf"><div class="tree-row is-dp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M1</span><span class="operation-title"><strong>Router scores</strong><span>Score the local token against all routed experts.</span></span></span>
+                            <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">replicated router</span></span>
+                            <span class="rank-behavior">The source rank computes routing logits for its own real token rows.</span>
+                          </div></div>
+                          <div class="tree-leaf"><div class="tree-row is-dp">
+                            <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M2</span><span class="operation-title"><strong>Expert TopK</strong><span>Select routed experts and weights for each local token.</span></span></span>
+                            <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">TopK</span></span>
+                            <span class="rank-behavior">The source rank determines destinations before any token data moves.</span>
+                          </div></div>
+                          <details open>
+                            <summary class="tree-row is-ep">
+                              <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M3</span><span class="operation-title"><strong>Active expert computation</strong><span>Dispatch, execute selected experts, and combine.</span></span></span>
+                              <span class="parallel-role"><span class="badge ep">EP8</span><span class="badge comm">DeepEP</span></span>
+                              <span class="rank-behavior">MoE TP is one, so EP selects whole expert owners rather than shards of one expert.</span>
+                            </summary>
+                            <div class="tree-children">
+                              <div class="tree-leaf"><div class="tree-row is-comm">
+                                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M3a</span><span class="operation-title"><strong>Dispatch selected token rows</strong><span>Send one token copy to each selected expert owner.</span></span></span>
+                                <span class="parallel-role"><span class="badge comm">DeepEP dispatch</span><span class="badge ep">EP8</span></span>
+                                <span class="rank-behavior">Communication is sparse and destination-driven; it is not a full token-row all-gather.</span>
+                              </div></div>
+                              <div class="tree-leaf"><div class="tree-row is-ep">
+                                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M3b</span><span class="operation-title"><strong>Expert gate/up projection</strong><span>First GEMM of each selected expert.</span></span></span>
+                                <span class="parallel-role"><span class="badge ep">expert owner</span><span class="badge local">MoE TP1</span></span>
+                                <span class="rank-behavior">Each destination rank executes the complete matrix of the experts it owns.</span>
+                              </div></div>
+                              <div class="tree-leaf"><div class="tree-row is-ep">
+                                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M3c</span><span class="operation-title"><strong>Expert SiLU and multiply</strong><span>Local activation inside each selected expert.</span></span></span>
+                                <span class="parallel-role"><span class="badge ep">expert owner</span><span class="badge local">pointwise</span></span>
+                                <span class="rank-behavior">No collective occurs within an expert because MoE TP is one.</span>
+                              </div></div>
+                              <div class="tree-leaf"><div class="tree-row is-ep">
+                                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M3d</span><span class="operation-title"><strong>Expert down projection</strong><span>Second GEMM of each selected expert.</span></span></span>
+                                <span class="parallel-role"><span class="badge ep">expert owner</span><span class="badge local">MoE TP1</span></span>
+                                <span class="rank-behavior">The expert owner produces one output contribution per dispatched token copy.</span>
+                              </div></div>
+                              <div class="tree-leaf"><div class="tree-row is-comm">
+                                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">M3e</span><span class="operation-title"><strong>Weighted expert combine</strong><span>Return and sum selected expert outputs.</span></span></span>
+                                <span class="parallel-role"><span class="badge comm">DeepEP combine</span><span class="badge dp">return to source</span></span>
+                                <span class="rank-behavior">DeepEP returns contributions to the source DP rank, where routing weights produce one local hidden row.</span>
+                              </div></div>
+                            </div>
+                          </details>
+                        </div>
+                      </details>
+                    </div>
+                  </details>
+
+                  <div class="tree-leaf"><div class="tree-row is-dp">
+                    <span class="tree-operation"><span class="disclosure"></span><span class="step-id">2.4</span><span class="operation-title"><strong>Feed-forward residual add</strong><span>Add the selected FFN branch output to the local residual.</span></span></span>
+                    <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                    <span class="rank-behavior">Dense reduce-scatter or MoE combine has restored token ownership before the next layer starts.</span>
+                  </div></div>
+                </div>
+              </details>
+
+              <div class="tree-leaf"><div class="tree-row is-dp">
+                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">3</span><span class="operation-title"><strong>Final RMSNorm</strong><span>Normalize the final local hidden row.</span></span></span>
+                <span class="parallel-role"><span class="badge dp">DP-local</span></span>
+                <span class="rank-behavior">The final layer returns the row to its DP owner before this norm.</span>
+              </div></div>
+
+              <div class="tree-leaf"><div class="tree-row is-dp">
+                <span class="tree-operation"><span class="disclosure"></span><span class="step-id">4</span><span class="operation-title"><strong>Last-token <code>lm_head</code></strong><span>Compute next-token logits and sample.</span></span></span>
+                <span class="parallel-role"><span class="badge dp">DP-local</span><span class="badge local">attn TP1 vocab</span></span>
+                <span class="rank-behavior"><code>--enable-dp-lm-head</code> uses the size-one attention-TP group, avoiding a logits all-gather across all eight DP ranks.</span>
+              </div></div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section id="one-token">
+        <h2>One Real Decode Token</h2>
+        <p>Assume one real token is assigned to DP rank 3. The rank number is only an example; the scheduler can choose any DP rank.</p>
+
+        <div class="walk">
+          <div class="walk-step"><strong>Local attention</strong><span>Rank 3 owns the token, KV cache, DSA selection, and complete attention path for all 78 layers.</span></div>
+          <div class="walk-step"><strong>Dense layers</strong><span>For layers 0&ndash;2, the row is gathered to all eight ranks. Each computes a dense weight shard.</span></div>
+          <div class="walk-step"><strong>Sparse layers</strong><span>For layers 3&ndash;77, rank 3 routes locally. Token copies travel only to the selected expert owners.</span></div>
+          <div class="walk-step"><strong>Return to owner</strong><span>Reduce-scatter or DeepEP combine reconstructs the output and returns it to rank 3 after each FFN.</span></div>
+          <div class="walk-step"><strong>Local logits</strong><span>Rank 3 runs final norm and its local full-vocabulary LM head, then emits the next token.</span></div>
+        </div>
+
+        <div class="callout"><strong>Logical ownership is not the same as profiler visibility.</strong> Only one DP rank owns the real token in this example, but full CUDA-graph capture, padding, and required collectives can still produce kernels on all eight GPUs. A kernel on an otherwise idle rank does not imply that rank owns another real request.</div>
+      </section>
+
+      <section id="trace">
+        <h2>Profiler Expectations</h2>
+        <p>The standard no-EAGLE trace does not carry module-level NVTX labels, so the execution tree is reconstructed from stable kernel and communication motifs. These are the signatures that should appear.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tree region</th><th>Data layout</th><th>Expected communication</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td><code>1</code>, <code>2.1.*</code>, <code>2.2</code></td><td>DP-local; attention TP1</td><td>No eight-rank attention TP collective</td><td>Complete attention work is replicated by weight and partitioned by token ownership.</td></tr>
+              <tr><td><code>D0&ndash;D4</code>, layers 0&ndash;2</td><td>DP rows &rarr; TP8 &rarr; DP rows</td><td>Paired all-gather and reduce-scatter</td><td>Three dense layers temporarily recruit all eight ranks for matrix shards.</td></tr>
+              <tr><td><code>M1&ndash;M2</code>, layers 3&ndash;77</td><td>DP-local routing</td><td>None before dispatch</td><td>Routing scores and expert choices are computed where each token originates.</td></tr>
+              <tr><td><code>M3a&ndash;M3e</code>, layers 3&ndash;77</td><td>EP8 selected-token exchange</td><td>DeepEP dispatch and combine</td><td>Selected token copies move to whole-expert owners and return to source ranks.</td></tr>
+              <tr><td><code>3&ndash;4</code></td><td>DP-local; LM-head group1</td><td>No full-TP logits all-gather</td><td>The DP LM head keeps output computation with the request owner.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="evidence">
+        <h2>Configuration And Evidence</h2>
+        <p>The mapping above is specific to the recovered <code>optim_exp2</code> standard-decode launch. Changing any of these flags can change the group arithmetic and therefore the tree labels.</p>
+
+        <pre><code>--tp-size 8
+--dp-size 8
+--ep-size 8
+--pp-size 1
+--enable-dp-attention
+--enable-dp-lm-head
+--moe-a2a-backend deepep
+--deepep-mode low_latency
+--cuda-graph-bs-decode 1</code></pre>
+
+        <div class="sources">
+          <a class="source-link" href="../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree"><strong>Original numbered model tree</strong><span>Architecture operation IDs, branch structure, and layer counts.</span></a>
+          <a class="source-link" href="../basic-kernel-understanding-decode-first/"><strong>Standard decode kernel report</strong><span>Eight-GPU, no-EAGLE trace that shows dense and DeepEP communication motifs.</span></a>
+          <a class="source-link" href="https://git.luchentech.com/platform/sglang/-/blob/5f71c13474b6b45e908fd6ccf185289d51e81536/python/sglang/srt/distributed/parallel_state.py"><strong>SGLang parallel group construction</strong><span>World-size, attention TP, MoE TP, and EP-group formulas.</span></a>
+          <a class="source-link" href="https://git.luchentech.com/platform/sglang/-/blob/5f71c13474b6b45e908fd6ccf185289d51e81536/python/sglang/srt/layers/communicator.py"><strong>SGLang layer communicator</strong><span>DP gather, dense reduce-scatter, scattered MoE, and layer-layout transitions.</span></a>
+          <a class="source-link" href="https://git.luchentech.com/platform/sglang/-/blob/5f71c13474b6b45e908fd6ccf185289d51e81536/python/sglang/srt/models/deepseek_v2.py"><strong>GLM/DeepSeek decoder implementation</strong><span>Attention projections, dense MLP, router, DeepEP path, and model ordering.</span></a>
+          <a class="source-link" href="https://git.luchentech.com/platform/sglang/-/blob/5f71c13474b6b45e908fd6ccf185289d51e81536/python/sglang/srt/layers/logits_processor.py"><strong>DP LM-head implementation</strong><span>Attention-TP vocabulary group and logits gather behavior.</span></a>
+        </div>
+      </section>
+
+      <footer>Topology explanation generated from the recovered standard-decode run and SGLang source at commit <code>5f71c13474b6b45e908fd6ccf185289d51e81536</code>. The original 100K prefill execution-tree file was not modified.</footer>
+    </article>
+  </div>
+</main>
+
+<script>
+  (() => {
+    const tree = document.getElementById("decode-tree");
+    const setAll = (open) => {
+      tree.querySelectorAll("details").forEach((node) => {
+        node.open = open;
+      });
+    };
+
+    document.getElementById("expand-all").addEventListener("click", () => setAll(true));
+    document.getElementById("collapse-all").addEventListener("click", () => setAll(false));
+  })();
+</script>
+</body>
+</html>
