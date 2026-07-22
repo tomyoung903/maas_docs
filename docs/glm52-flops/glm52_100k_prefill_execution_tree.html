@@ -919,12 +919,13 @@ pre {
 <a class="depth-1" href="#parameter-ledger">Logical Parameters</a>
 <a class="depth-1" href="#mfu-handoff">MFU Handoff</a>
 <a class="depth-2" href="#selected-mla-precision">MLA Precision</a>
+<a class="depth-2" href="#verified-precision-rollup">Parent Rollup</a>
 </aside>
 <article class="doc-content">
 
 <h1>GLM-5.2 100K Prefill Execution Tree</h1>
 <p class="lead">A model-level map of one 100,000-token prefill, ordered exactly as hidden states move through embedding, the repeated decoder layer, final normalization, and the next-token output projection. Every tree row now aligns its tensor flow and logical parameter state with the same 100K-prefill FLOP scope.</p>
-<div class="grid"><section class="card"><div class="label">prefill input</div><div class="value">100,000 token IDs</div></section><section class="card"><div class="label">decoder stack</div><div class="value">78 ordered layers</div></section><section class="card"><div class="label">sparse selection</div><div class="value">TopK = 2,048</div></section><section class="card"><div class="label">logical 100K FLOPs</div><div class="value">10.95 PFLOP</div></section><section class="card"><div class="label">logical target state</div><div class="value">743.422B elements</div></section></div>
+<div class="grid"><section class="card"><div class="label">prefill input</div><div class="value">100,000 token IDs</div></section><section class="card"><div class="label">decoder stack</div><div class="value">78 ordered layers</div></section><section class="card"><div class="label">sparse selection</div><div class="value">TopK = 2,048</div></section><section class="card"><div class="label">logical 100K FLOPs</div><div class="value">10.95 PFLOP</div></section><section class="card"><div class="label">verified FP8-equivalent</div><div class="value">12.847940 PFLOP-eq</div></section><section class="card"><div class="label">separate raw work</div><div class="value">0.299270 PFLOP</div></section><section class="card"><div class="label">logical target state</div><div class="value">743.422B elements</div></section></div>
 <div class="tree-legend" aria-label="Execution tree color legend">
   <div class="legend-group" role="group" aria-label="Visible execution tree columns">
     <button type="button" class="logic-badge column-toggle tensor" data-column="io" aria-controls="execution-flow-tree" aria-label="Tensor input to tensor output column" aria-pressed="true">Tensor input &darr; tensor output</button>
@@ -948,7 +949,7 @@ pre {
 </div>
 <h2 id="execution-tree">Collapsed Execution Tree</h2>
 <p>Read from top to bottom. Indentation means ownership: the decoder stack owns a repeated decoder layer, the layer owns an attention sublayer and feed-forward sublayer, and each sublayer owns its calculation-ordered operations. Parent FLOP cells are subtotals; expanded leaf cells reconcile those subtotals without counting parent and child values twice.</p>
-<div class="note"><strong>Expanded arithmetic convention:</strong> one scalar add, multiply, divide, reciprocal square root, or exponential counts as one operation; a multiply-add remains two FLOPs. This makes norms, RoPE, softmax, SiLU, routing arithmetic, residuals, and the output head part of the total. TopK comparisons, gathers, permutations, ID writes, and communication are displayed as auxiliary work because they are not floating-point operations.<br><strong>Precision display:</strong> the main FLOP value remains the additive raw-logical ledger. At verified nodes, the inline H200 precision view converts only Tensor-Core work to FP8-equivalent units and keeps FP32 scalar/SFU work separate.</div>
+<div class="note"><strong>Expanded arithmetic convention:</strong> one scalar add, multiply, divide, reciprocal square root, or exponential counts as one operation; a multiply-add remains two FLOPs. This makes norms, RoPE, softmax, SiLU, routing arithmetic, residuals, and the output head part of the total. TopK comparisons, gathers, permutations, ID writes, and communication are displayed as auxiliary work because they are not floating-point operations.<br><strong>Precision display:</strong> the main FLOP value preserves the additive raw-logical ledger. The inline H200 view converts verified Tensor-Core leaves, sums their FP8-equivalent values through every enclosing parent, and leaves scalar, SFU, or unresolved work as a separate raw remainder.</div>
 <ol id="execution-flow-tree" class="flow-tree" aria-label="Logical 100K prefill execution tree with FLOP accounting"><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
@@ -959,7 +960,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 154880]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>embedding, 78 decoder layers, final norm, and untied output head<span class="flow-count">743,422,270,536 logical elements total</span></div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">10.95 PFLOP</span><span class="flop-formula">expanded logical arithmetic ledger</span><span class="flop-note">All countable floating arithmetic is included; comparison and movement work is reported separately in the relevant leaves.</span><span class="flop-breakdown"><span class="flop-breakdown-row"><strong>MLA projection GEMMs</strong><span>2.574 PFLOP</span></span><span class="flop-breakdown-row"><strong>Dense MLP GEMMs</strong><span>0.1359 PFLOP</span></span><span class="flop-breakdown-row"><strong>MoE + router GEMMs</strong><span>5.120 PFLOP</span></span><span class="flop-breakdown-row"><strong>Indexer candidate scoring</strong><span>0.8669 PFLOP</span></span><span class="flop-breakdown-row"><strong>MLA score + value scan</strong><span>2.202 PFLOP</span></span></span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">10.95 PFLOP</span><span class="flop-formula">expanded logical arithmetic ledger</span><span class="flop-note">All countable floating arithmetic is included; comparison and movement work is reported separately in the relevant leaves.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">12.847940 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.299270 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span><span class="flop-breakdown"><span class="flop-breakdown-row"><strong>MLA projection GEMMs</strong><span>2.574 PFLOP</span></span><span class="flop-breakdown-row"><strong>Dense MLP GEMMs</strong><span>0.1359 PFLOP</span></span><span class="flop-breakdown-row"><strong>MoE + router GEMMs</strong><span>5.120 PFLOP</span></span><span class="flop-breakdown-row"><strong>Indexer candidate scoring</strong><span>0.8669 PFLOP</span></span><span class="flop-breakdown-row"><strong>MLA score + value scan</strong><span>2.202 PFLOP</span></span></span></div>
   </div>
 <ol id="flow-children-40" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -984,7 +985,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>78 ordered decoder-layer parameter sets</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">10.95 PFLOP</span><span class="flop-formula">78 expanded attention sublayers + 3 dense MLPs + 75 sparse MoE layers</span><span class="flop-note">Final RMSNorm and the last-token output head follow this subtotal.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">10.95 PFLOP</span><span class="flop-formula">78 expanded attention sublayers + 3 dense MLPs + 75 sparse MoE layers</span><span class="flop-note">Final RMSNorm and the last-token output head follow this subtotal.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">12.847940 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.299266 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-37" class="flow-children"><li class="flow-step group has-children">
   <div class="flow-row">
@@ -996,7 +997,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>MLA projection state in every decoder layer; DSA indexer state only in refresh layers</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.688 PFLOP</span><span class="flop-formula">norms + projections + expanded indexer + RoPE + selected-key MLA + residual</span><span class="flop-note">Subtotal across all 78 attention sublayers, including scalar arithmetic.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.688 PFLOP</span><span class="flop-formula">norms + projections + expanded indexer + RoPE + selected-key MLA + residual</span><span class="flop-note">Subtotal across all 78 attention sublayers, including scalar arithmetic.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">7.615965 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.273932 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-32" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1021,7 +1022,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 2048]</span> + <span class="shape">[100000, 512]</span> + <span class="shape">[100000, 64]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[6144, 2624]</span> + FP8 scale grid <span class="shape">[48, 21]</span><span class="flow-count">16,122,864 elements per layer</span></div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.2515 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 6,144 &times; 2,624</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.2515 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 6,144 &times; 2,624</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">0.251501 PFLOP-eq</span><span class="flop-precision-mode">FP8 GEMM &times;1</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1047,7 +1048,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 2048]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 192]</span> content + <span class="shape">[100000, 64, 64]</span> RoPE</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[2048, 16384]</span> + FP8 scales<span class="flow-count">33,556,480 elements per layer</span></div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.5234 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 2,048 &times; 16,384</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.5234 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 2,048 &times; 16,384</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">0.523449 PFLOP-eq</span><span class="flop-precision-mode">FP8 GEMM &times;1</span></span></span></div>
   </div>
 
 </li><li class="flow-step group has-children">
@@ -1060,7 +1061,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span>normalized query latent, hidden states, or the prior selected list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 2048]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>The refresh branch owns learned state; the reuse branch does not</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.9063 PFLOP</span><span class="flop-formula">21 expanded refresh-layer selectors + 57 zero-recompute reuse layers</span><span class="flop-note">A1 and A2 reconcile the FLOP subtotal; A3 reports non-FLOP TopK work.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.9063 PFLOP</span><span class="flop-formula">21 expanded refresh-layer selectors + 57 zero-recompute reuse layers</span><span class="flop-note">A1 and A2 reconcile the FLOP subtotal; A3 reports non-FLOP TopK work.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">0.866889 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.039447 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-13" class="flow-children"><li class="flow-step branch-refresh has-children">
   <div class="flow-row">
@@ -1072,7 +1073,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span> hidden states + <span class="shape">[100000, 2048]</span> query latent<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 2048]</span> selected position IDs</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one learned indexer in each of 21 refresh layers<span class="flow-count">9,372,464 elements per refresh layer</span></div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.9063 PFLOP</span><span class="flop-formula">expanded indexer setup + candidate scoring</span><span class="flop-note">Subtotal for all 21 selector-refresh layers; TopK comparison work is shown separately in A3.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.9063 PFLOP</span><span class="flop-formula">expanded indexer setup + candidate scoring</span><span class="flop-note">Subtotal for all 21 selector-refresh layers; TopK comparison work is shown separately in A3.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">0.866889 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.039447 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-4" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1097,7 +1098,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 32, 128]</span> queries + cached index keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, causal prefix]</span> candidate scores</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional learned state</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.8669 PFLOP</span><span class="flop-formula">21 &times; 5,000,050,000 causal pairs &times; 8,256</span><span class="flop-note">Dot products plus gated head combination.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.8669 PFLOP</span><span class="flop-formula">21 &times; 5,000,050,000 causal pairs &times; 8,256</span><span class="flop-note">Dot products plus gated head combination.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">0.866889 PFLOP-eq</span><span class="flop-precision-mode">FP8 GEMM &times;1</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1151,7 +1152,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span>absorbed queries + <span class="shape">[100000, 2048]</span> selected IDs + latent KV cache<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 512]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional projection matrix</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">2.207 PFLOP</span><span class="flop-formula">selected score dot products + score scaling + softmax + latent-value accumulation</span><span class="flop-note">All 78 layers; children 2.1.7a-c reconcile the expanded subtotal.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">4.403779 PFLOP-eq</span><span class="flop-precision-mode">BF16 Tensor-Core work &times;2</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.005059 PFLOP</span><span class="flop-precision-mode">FP32 scalar/SFU work; separate, not converted</span></span></span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">2.207 PFLOP</span><span class="flop-formula">selected score dot products + score scaling + softmax + latent-value accumulation</span><span class="flop-note">All 78 layers; children 2.1.7a-c reconcile the expanded subtotal.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">4.403779 PFLOP-eq</span><span class="flop-precision-mode">BF16 Tensor-Core work &times;2</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.005059 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-15" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1163,7 +1164,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, 576]</span> effective queries + selected cached keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, &le;2048]</span> attention scores</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix; uses cached latents and selected IDs</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.167 PFLOP</span><span class="flop-formula">score dot products + one scale multiplication per selected score</span><span class="flop-note">1,165,706,183,835,648 BF16&times;BF16&rarr;FP32 MMA FLOPs plus 1,011,897,729,024 FP32 score-scale FLOPs.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">2.331412 PFLOP-eq</span><span class="flop-precision-mode">BF16 QK MMA &times;2</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.001012 PFLOP</span><span class="flop-precision-mode">FP32 score scaling; separate, not converted</span></span></span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.167 PFLOP</span><span class="flop-formula">score dot products + one scale multiplication per selected score</span><span class="flop-note">1,165,706,183,835,648 BF16&times;BF16&rarr;FP32 MMA FLOPs plus 1,011,897,729,024 FP32 score-scale FLOPs.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">2.331412 PFLOP-eq</span><span class="flop-precision-mode">BF16 QK MMA &times;2</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.001012 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1216,7 +1217,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, 256]</span> = <span class="shape">[100000, 16384]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[16384, 6144]</span> + FP8 scales<span class="flow-count">100,669,440 elements per layer</span></div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.570 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 16,384 &times; 6,144</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.570 PFLOP</span><span class="flop-formula">78 &times; 100,000 &times; 2 &times; 16,384 &times; 6,144</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">1.570347 PFLOP-eq</span><span class="flop-precision-mode">FP8 GEMM &times;1</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1256,7 +1257,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>Exactly one branch executes in each decoder layer</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.257 PFLOP</span><span class="flop-formula">3 expanded dense MLPs + 75 expanded sparse-MoE layers</span><span class="flop-note">Both child branch totals cover disjoint layer families.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.257 PFLOP</span><span class="flop-formula">3 expanded dense MLPs + 75 expanded sparse-MoE layers</span><span class="flop-note">Both child branch totals cover disjoint layer families.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">5.231975 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.025094 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-34" class="flow-children"><li class="flow-step branch-dense has-children">
   <div class="flow-row">
@@ -1268,7 +1269,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>one dense gate/up matrix and one dense down matrix per layer</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.1359 PFLOP</span><span class="flop-formula">3 dense layers: merged gate/up + SiLU/multiply + down projections</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.1359 PFLOP</span><span class="flop-formula">3 dense layers: merged gate/up + SiLU/multiply + down projections</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">0.135895 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.000018 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-30" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1280,7 +1281,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 24576]</span> = <span class="shape">[100000, 12288]</span> gate + <span class="shape">[100000, 12288]</span> up</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[6144, 24576]</span> + FP8 scales<span class="flow-count">151,004,160 elements per dense layer</span></div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.09060 PFLOP</span><span class="flop-formula">3 layers &times; 100,000 &times; 2 &times; 6,144 &times; 24,576</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.09060 PFLOP</span><span class="flop-formula">3 layers &times; 100,000 &times; 2 &times; 6,144 &times; 24,576</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">0.090597 PFLOP-eq</span><span class="flop-precision-mode">FP8 GEMM &times;1</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1306,7 +1307,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 12288]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>weight <span class="shape">[12288, 6144]</span> + FP8 scales<span class="flow-count">75,502,080 elements per dense layer</span></div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.04530 PFLOP</span><span class="flop-formula">3 layers &times; 100,000 &times; 2 &times; 12,288 &times; 6,144</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">0.04530 PFLOP</span><span class="flop-formula">3 layers &times; 100,000 &times; 2 &times; 12,288 &times; 6,144</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">0.045298 PFLOP-eq</span><span class="flop-precision-mode">FP8 GEMM &times;1</span></span></span></div>
   </div>
 
 </li></ol>
@@ -1320,7 +1321,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>router plus 257 logical expert parameter sets per layer</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.121 PFLOP</span><span class="flop-formula">75 router paths + nine active expert paths per token</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.121 PFLOP</span><span class="flop-formula">75 router paths + nine active expert paths per token</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">5.096079 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.025075 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-31" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1358,7 +1359,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span> hidden states + route list<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>257 experts; each has merged gate/up and down projections<span class="flow-count">9,702,017,280 elements per sparse layer</span></div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.098 PFLOP</span><span class="flop-formula">active expert gate/up + SiLU/multiply + down + weighted combine</span><span class="flop-note">Counts eight routed experts plus one shared expert per token; dispatch is reported separately.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">5.098 PFLOP</span><span class="flop-formula">active expert gate/up + SiLU/multiply + down + weighted combine</span><span class="flop-note">Counts eight routed experts plus one shared expert per token; dispatch is reported separately.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">5.096079 PFLOP-eq</span><span class="flop-precision-mode">Additive verified Tensor-Core subtotal</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.001475 PFLOP</span><span class="flop-precision-mode">Raw scalar or unresolved work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-29" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1383,7 +1384,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 4096]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>each expert owns <span class="shape">[6144, 4096]</span> + FP8 scales</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">3.397 PFLOP</span><span class="flop-formula">75 layers &times; 100,000 tokens &times; 9 active experts &times; 2 &times; 6,144 &times; 4,096</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">3.397 PFLOP</span><span class="flop-formula">75 layers &times; 100,000 tokens &times; 9 active experts &times; 2 &times; 6,144 &times; 4,096</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">3.397386 PFLOP-eq</span><span class="flop-precision-mode">FP8 GEMM &times;1</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1409,7 +1410,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 2048]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[<span class="math-var">N<sub>active</sub></span>, 6144]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>each expert owns <span class="shape">[2048, 6144]</span> + FP8 scales</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.699 PFLOP</span><span class="flop-formula">75 layers &times; 100,000 tokens &times; 9 active experts &times; 2 &times; 2,048 &times; 6,144</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.699 PFLOP</span><span class="flop-formula">75 layers &times; 100,000 tokens &times; 9 active experts &times; 2 &times; 2,048 &times; 6,144</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">1.698693 PFLOP-eq</span><span class="flop-precision-mode">FP8 GEMM &times;1</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1492,6 +1493,13 @@ pre {
 <tr><td>2.1.7b softmax</td><td>0.004047 PFLOP</td><td>FP32/SFU</td><td>Separate; not converted</td></tr>
 <tr><td>2.1.7c P&times;V</td><td>1.036183 PFLOP</td><td>BF16&times;BF16&rarr;FP32 MMA</td><td>2.072367 PFLOP-eq</td></tr>
 <tr><td>2.1.7 parent</td><td>2.201889 PFLOP BF16 + 0.005059 PFLOP scalar</td><td>Mixed</td><td>4.403779 PFLOP-eq Tensor-Core work</td></tr></table>
+<h3 id="verified-precision-rollup">Additive Parent Rollup</h3>
+<p>These are additive subtotals, not annotations confined to the MLA leaves. The 2.331412 PFLOP-eq QK value first joins P&times;V at node 2.1.7, then continues through attention, decoder, and root. FP8 GEMMs contribute at &times;1; the BF16 MLA MMA contributes at &times;2.</p>
+<table><tr><th>Parent node</th><th>Verified raw Tensor-Core work</th><th>H200 FP8-equivalent subtotal</th></tr><tr><td>A / 2.1.5 selector</td><td>0.866889 PFLOP</td><td>0.866889 PFLOP-eq</td></tr>
+<tr><td>2.1 attention</td><td>5.414076 PFLOP</td><td>7.615965 PFLOP-eq</td></tr>
+<tr><td>2.3 feed-forward</td><td>5.231975 PFLOP</td><td>5.231975 PFLOP-eq</td></tr>
+<tr><td>2 decoder / M root</td><td>10.646050 PFLOP</td><td>12.847940 PFLOP-eq</td></tr></table>
+<div class="note"><strong>Root reconciliation:</strong> 10.646050 raw PFLOP of verified Tensor-Core work normalizes to 12.847940 PFLOP-eq. The remaining 0.299270 raw PFLOP stays separate rather than receiving a guessed conversion factor.</div>
 <div class="note"><strong>Comparison-unit rule:</strong> FP8 GEMM &times;1; BF16/FP16 GEMM or attention MMA &times;2; TF32 MMA &times;4. FP8-equivalent work is a peak-throughput normalization, not a claim that FP8 instructions executed.</div>
 <table><tr><th>Execution term</th><th>Logical multiplicity and shape</th><th>Prefill FLOP treatment</th></tr><tr><td>Embedding</td><td>Lookup count and <span class="shape">[100000, 6144]</span> output</td><td>0 FLOPs; report the gathered elements as auxiliary memory work</td></tr>
 <tr><td>Linear projections</td><td>100,000 token rows and the full matrix dimensions shown in the tree</td><td>For a matrix product, use 2 &times; <span class="math-var">m</span> &times; <span class="math-var">k</span> &times; <span class="math-var">n</span> FLOPs</td></tr>
