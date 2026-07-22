@@ -470,6 +470,8 @@ pre {
 .logic-badge.branch-reuse { border-color: var(--tree-reuse-border); background: var(--tree-reuse-bg); color: var(--tree-reuse-text); }
 .logic-badge.branch-dense { border-color: var(--tree-dense-border); background: var(--tree-dense-bg); color: var(--tree-dense-text); }
 .logic-badge.branch-moe { border-color: var(--tree-moe-border); background: var(--tree-moe-bg); color: var(--tree-moe-text); }
+.logic-badge.precision { border-color: var(--tree-flops-border); background: var(--tree-flops-bg); color: var(--tree-flops-text); }
+.logic-badge.precision-separate { border-color: var(--tree-state-border); background: var(--tree-state-bg); color: var(--tree-state-text); }
 .flow-tree,
 .flow-children {
   margin: 0;
@@ -712,6 +714,52 @@ pre {
   font-weight: 800;
   line-height: 1.25;
 }
+.flop-precision {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #d9b7cb;
+}
+.flop-precision-label {
+  color: #675062;
+  font-size: .65rem;
+  font-weight: 850;
+  letter-spacing: .035em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.flop-precision-row {
+  display: block;
+  padding: 5px 6px;
+  border: 1px solid #c9aabd;
+  border-radius: 3px;
+  background: #fff8fc;
+}
+.flop-precision-row.separate {
+  border-color: #b7c0c9;
+  background: #f5f7f9;
+}
+.flop-precision-value,
+.flop-precision-mode {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.flop-precision-value {
+  color: var(--tree-flops-text);
+  font-size: .76rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+.flop-precision-row.separate .flop-precision-value { color: var(--tree-state-text); }
+.flop-precision-mode {
+  margin-top: 2px;
+  color: #675062;
+  font-size: .67rem;
+  line-height: 1.3;
+}
+.flop-precision-row.separate .flop-precision-mode { color: #52606f; }
 .flop-breakdown {
   display: grid;
   gap: 4px;
@@ -890,10 +938,17 @@ pre {
     <span class="logic-badge branch-dense">Dense MLP</span>
     <span class="logic-badge branch-moe">Sparse MoE</span>
   </div>
+  <div class="legend-group" aria-label="H200 FP8-equivalent normalization rules">
+    <span class="legend-group-label">H200 FP8-equivalent</span>
+    <span class="logic-badge precision">FP8 GEMM &times;1</span>
+    <span class="logic-badge precision">BF16/FP16 MMA &times;2</span>
+    <span class="logic-badge precision">TF32 MMA &times;4</span>
+    <span class="logic-badge precision-separate">FP32/SFU separate</span>
+  </div>
 </div>
 <h2 id="execution-tree">Collapsed Execution Tree</h2>
 <p>Read from top to bottom. Indentation means ownership: the decoder stack owns a repeated decoder layer, the layer owns an attention sublayer and feed-forward sublayer, and each sublayer owns its calculation-ordered operations. Parent FLOP cells are subtotals; expanded leaf cells reconcile those subtotals without counting parent and child values twice.</p>
-<div class="note"><strong>Expanded arithmetic convention:</strong> one scalar add, multiply, divide, reciprocal square root, or exponential counts as one operation; a multiply-add remains two FLOPs. This makes norms, RoPE, softmax, SiLU, routing arithmetic, residuals, and the output head part of the total. TopK comparisons, gathers, permutations, ID writes, and communication are displayed as auxiliary work because they are not floating-point operations.</div>
+<div class="note"><strong>Expanded arithmetic convention:</strong> one scalar add, multiply, divide, reciprocal square root, or exponential counts as one operation; a multiply-add remains two FLOPs. This makes norms, RoPE, softmax, SiLU, routing arithmetic, residuals, and the output head part of the total. TopK comparisons, gathers, permutations, ID writes, and communication are displayed as auxiliary work because they are not floating-point operations.<br><strong>Precision display:</strong> the main FLOP value remains the additive raw-logical ledger. At verified nodes, the inline H200 precision view converts only Tensor-Core work to FP8-equivalent units and keeps FP32 scalar/SFU work separate.</div>
 <ol id="execution-flow-tree" class="flow-tree" aria-label="Logical 100K prefill execution tree with FLOP accounting"><li class="flow-step group has-children">
   <div class="flow-row">
     <div class="flow-main">
@@ -1096,7 +1151,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span>absorbed queries + <span class="shape">[100000, 2048]</span> selected IDs + latent KV cache<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 512]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No additional projection matrix</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">2.207 PFLOP</span><span class="flop-formula">selected score dot products + score scaling + softmax + latent-value accumulation</span><span class="flop-note">All 78 layers; children 2.1.7a-c reconcile the expanded subtotal.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">2.207 PFLOP</span><span class="flop-formula">selected score dot products + score scaling + softmax + latent-value accumulation</span><span class="flop-note">All 78 layers; children 2.1.7a-c reconcile the expanded subtotal.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">4.403779 PFLOP-eq</span><span class="flop-precision-mode">BF16 Tensor-Core work &times;2</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.005059 PFLOP</span><span class="flop-precision-mode">FP32 scalar/SFU work; separate, not converted</span></span></span></div>
   </div>
 <ol id="flow-children-15" class="flow-children"><li class="flow-step leaf">
   <div class="flow-row">
@@ -1108,7 +1163,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, 576]</span> effective queries + selected cached keys<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, &le;2048]</span> attention scores</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix; uses cached latents and selected IDs</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.167 PFLOP</span><span class="flop-formula">score dot products + one scale multiplication per selected score</span><span class="flop-note">1,165,706,183,835,648 BF16&times;BF16&rarr;FP32 MMA FLOPs plus 1,011,897,729,024 FP32 score-scale FLOPs.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.167 PFLOP</span><span class="flop-formula">score dot products + one scale multiplication per selected score</span><span class="flop-note">1,165,706,183,835,648 BF16&times;BF16&rarr;FP32 MMA FLOPs plus 1,011,897,729,024 FP32 score-scale FLOPs.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">2.331412 PFLOP-eq</span><span class="flop-precision-mode">BF16 QK MMA &times;2</span></span><span class="flop-precision-row separate"><span class="flop-precision-value">0.001012 PFLOP</span><span class="flop-precision-mode">FP32 score scaling; separate, not converted</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1121,7 +1176,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 64, &le;2048]</span> scores<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, &le;2048]</span> probabilities</div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">4.047 TFLOP</span><span class="flop-formula">4 &times; 1,011,897,729,024 selected score elements &minus; 499,200,000 rows</span><span class="flop-note">FP32/SFU work. Per row: subtract max, exponential, reduction add, and normalization division; max comparisons are non-FLOP work.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">4.047 TFLOP</span><span class="flop-formula">4 &times; 1,011,897,729,024 selected score elements &minus; 499,200,000 rows</span><span class="flop-note">FP32/SFU work. Per row: subtract max, exponential, reduction add, and normalization division; max comparisons are non-FLOP work.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row separate"><span class="flop-precision-value">0.004047 PFLOP</span><span class="flop-precision-mode">FP32/SFU; separate, not converted</span></span></span></div>
   </div>
 
 </li><li class="flow-step leaf">
@@ -1134,7 +1189,7 @@ pre {
     </div>
     <div class="flow-io"><span class="flow-label">Tensor flow</span>attention probabilities + selected <span class="shape">[512]</span> cached latents<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 64, 512]</span></div>
     <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix; the cached KV payload supplies the values</div>
-    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.036 PFLOP</span><span class="flop-formula">78 layers &times; 202,703,872 selected pairs &times; 64 heads &times; 2 &times; 512</span><span class="flop-note">BF16&times;BF16&rarr;FP32 MMA for weighted latent-value accumulation.</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value">1.036 PFLOP</span><span class="flop-formula">78 layers &times; 202,703,872 selected pairs &times; 64 heads &times; 2 &times; 512</span><span class="flop-note">BF16&times;BF16&rarr;FP32 MMA for weighted latent-value accumulation.</span><span class="flop-precision"><span class="flop-precision-label">H200 precision view; raw logical FLOPs above</span><span class="flop-precision-row"><span class="flop-precision-value">2.072367 PFLOP-eq</span><span class="flop-precision-mode">BF16 P&times;V MMA &times;2</span></span></span></div>
   </div>
 
 </li></ol>
