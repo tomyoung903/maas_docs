@@ -1,0 +1,516 @@
+{
+  "all_completed_variants_same_response": true,
+  "b300_dense_fp8_peak_tflops_per_gpu": 4500.0,
+  "baseline_reference": {
+    "baseline_a_to_b_client_median_drift_percent": 0.176423,
+    "baseline_a_to_b_pp2_kernel_time_drift_percent": 1.02207,
+    "logical_pp2_work_fp8_equivalent_tflop": 207.72342726656,
+    "measured_client_median_ms": 1440.7661699999999,
+    "method": "mean of bracketing baseline medians/semantic aggregates",
+    "pp2_aggregate_kernel_ms": 184.710193,
+    "pp2_attention_and_selector_kernel_ms": 64.267116,
+    "pp2_feed_forward_kernel_ms": 120.443077,
+    "pp2_fp8_equivalent_mfu_percent": 24.990911906410663
+  },
+  "bf16_attention_fp8_equivalent_bonus_tflop": 43.81009248256,
+  "cross_variant_response_text_sha256_values": [
+    "e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629"
+  ],
+  "experiment": "B300 GLM-5.2 FP8 one-request kernel-MFU backend A/B",
+  "fp8_base_tensor_core_tflop": 207.72342726656,
+  "precision_rule": "FP8 TRT-LLM Q/K/V scan x1; BF16 FlashMLA attention MMA x2; scalar, SFU, and unresolved work remains unconverted",
+  "rows": [
+    {
+      "all_cached_tokens_zero": true,
+      "all_responses_identical_within_variant": true,
+      "attention_precision_mode": "FP8 TRT-LLM sparse attention",
+      "client_latency_reduction_vs_baseline_a_percent": 0.0,
+      "client_latency_reduction_vs_baseline_b_percent": 0.176112,
+      "client_latency_reduction_vs_bracketed_baseline_percent": 0.088134,
+      "logical_pp2_work_fp8_equivalent_tflop": 207.72342726656,
+      "measured_client_coefficient_of_variation_percent": 0.124987,
+      "measured_client_max_ms": 1440.95385,
+      "measured_client_mean_ms": 1438.5752211428571,
+      "measured_client_median_ms": 1439.496372,
+      "measured_client_min_ms": 1436.364619,
+      "measured_client_ms": [
+        1439.697817,
+        1436.364619,
+        1440.95385,
+        1439.646955,
+        1436.613538,
+        1439.496372,
+        1437.253397
+      ],
+      "measured_client_sample_stdev_ms": 1.7980271926143299,
+      "measured_server_e2e_median_ms": 1436.566915,
+      "pp2_aggregate_kernel_ms": 183.771059,
+      "pp2_attention_and_selector_kernel_ms": 63.941479,
+      "pp2_attention_and_selector_launch_count": 198,
+      "pp2_attention_and_selector_time_reduction_vs_bracketed_baseline_percent": 0.506693,
+      "pp2_feed_forward_kernel_ms": 119.82958,
+      "pp2_feed_forward_launch_count": 150,
+      "pp2_feed_forward_time_reduction_vs_bracketed_baseline_percent": 0.509367,
+      "pp2_fp8_equivalent_mfu_percent": 25.118624,
+      "pp2_kernel_time_reduction_vs_baseline_a_percent": 0.0,
+      "pp2_kernel_time_reduction_vs_baseline_b_percent": 1.011729,
+      "pp2_kernel_time_reduction_vs_bracketed_baseline_percent": 0.508436,
+      "pp2_launch_count": 348,
+      "pp2_top_kernels": [
+        {
+          "aggregate_kernel_ms": 63.766919,
+          "kernel": "bmm_E4m3_E4m3E4m3_Fp32_t128x64x128u2_s6_et64x64_m64x64x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schPd4x2x2x3_bN_tma_tmaSf_rgTma_clmp_lbW4_dynB_sm100f",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 30.688858,
+          "kernel": "bmm_Bfloat16_E4m3E4m3_Fp32_t128x64x128u2_s6_et64x64_m64x64x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schPd4x2x2x3_bN_rgTma_clmp_dynB_sm100f",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 30.143285,
+          "kernel": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparseP1VarSeqQ64Kv128PersistentKeepsAbForGen",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 16.601799,
+          "kernel": "void deep_gemm::sm100_fp8_fp4_gemm_1d1d_impl<(cute::UMMA::Major)0, (cute::UMMA::Major)0, (unsigned int)128, (unsigned int)128, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)240, (unsigned int)128, (unsigned int)128, (unsigned int)1, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)6, (unsigned int)128, (unsigned int)128, (unsigned int)2, (bool)1, (unsigned int)148, (bool)1, (deep_gemm::GemmType)0, (bool)0, cutlass::float_e4m3_t, cutlass::float_e4m3_t, cutlass::bfloat16_t, deep_gemm::epilogue::transform::EpilogueIdentity>(int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+          "launch_count": 43
+        },
+        {
+          "aggregate_kernel_ms": 15.542812,
+          "kernel": "void moe::dev::activation::activationDeepSeekKernel<moe::dev::activation::KernelParams<cutlass::float_e4m3_t, (int)4, (bool)1>>(T1)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.988288,
+          "kernel": "void flashinfer::RopeQuantizeKernel<(bool)1, (unsigned int)16, (unsigned int)1, __nv_bfloat16, long, __nv_fp8_e4m3>(T4 *, T4 *, T4 *, T4 *, T6 *, T6 *, T6 *, T6 *, float *, T5 *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, float, float)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.170176,
+          "kernel": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)1, (bool)0, (bool)1, unsigned int>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "launch_count": 56
+        },
+        {
+          "aggregate_kernel_ms": 2.733718,
+          "kernel": "void moe::dev::finalize::finalizeKernelVecLoad<moe::dev::finalize::KernelParams<cutlass::bfloat16_t, cutlass::bfloat16_t, (int)4, (bool)1>>(T1)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.556821,
+          "kernel": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.487156,
+          "kernel": "nvjet_sm103_tst_256x256_64x4_2x1_2cta_v_bz_TNT",
+          "launch_count": 10
+        }
+      ],
+      "pp2_wall_span_ms": 184.566907,
+      "profiled_client_ms": 1438.434467,
+      "response_text_sha256_values": [
+        "e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629"
+      ],
+      "status": "complete",
+      "variant": "baseline_auto_a"
+    },
+    {
+      "all_cached_tokens_zero": true,
+      "all_responses_identical_within_variant": true,
+      "attention_precision_mode": "FP8 TRT-LLM sparse attention",
+      "client_latency_reduction_vs_baseline_a_percent": 14.525996,
+      "client_latency_reduction_vs_baseline_b_percent": 14.676526,
+      "client_latency_reduction_vs_bracketed_baseline_percent": 14.601327,
+      "logical_pp2_work_fp8_equivalent_tflop": 207.72342726656,
+      "measured_client_coefficient_of_variation_percent": 0.101068,
+      "measured_client_max_ms": 1231.486177,
+      "measured_client_mean_ms": 1230.0721784285713,
+      "measured_client_median_ms": 1230.395186,
+      "measured_client_min_ms": 1228.027828,
+      "measured_client_ms": [
+        1230.964765,
+        1229.450261,
+        1228.027828,
+        1231.040822,
+        1230.395186,
+        1229.14021,
+        1231.486177
+      ],
+      "measured_client_sample_stdev_ms": 1.243209698172535,
+      "measured_server_e2e_median_ms": 1227.59049,
+      "pp2_aggregate_kernel_ms": 159.021148,
+      "pp2_attention_and_selector_kernel_ms": 66.636036,
+      "pp2_attention_and_selector_launch_count": 198,
+      "pp2_attention_and_selector_time_reduction_vs_bracketed_baseline_percent": -3.686053,
+      "pp2_feed_forward_kernel_ms": 92.385112,
+      "pp2_feed_forward_launch_count": 270,
+      "pp2_feed_forward_time_reduction_vs_bracketed_baseline_percent": 23.295623,
+      "pp2_fp8_equivalent_mfu_percent": 29.028065,
+      "pp2_kernel_time_reduction_vs_baseline_a_percent": 13.467796,
+      "pp2_kernel_time_reduction_vs_baseline_b_percent": 14.343267,
+      "pp2_kernel_time_reduction_vs_bracketed_baseline_percent": 13.907757,
+      "pp2_launch_count": 468,
+      "pp2_top_kernels": [
+        {
+          "aggregate_kernel_ms": 69.959813,
+          "kernel": "void cutlass::device_kernel<cutlass::gemm::kernel::GemmUniversal<cutlass::gemm::GroupProblemShape<cute::tuple<int, int, int>>, cutlass::gemm::collective::CollectiveMma<cutlass::gemm::MainloopSm100ArrayTmaUmmaWarpSpecializedBlockwiseScaling<(int)6, (int)1, (int)4, cute::tuple<cute::C<(int)1>, cute::C<(int)1>, cute::C<(int)1>>>, cute::tuple<cute::C<(int)128>, cute::C<(int)128>, cute::C<(int)128>>, cutlass::float_e4m3_t, cute::tuple<cute::tuple<long, cute::C<(int)1>, cute::C<(int)0>> *, cute::Layout<cute::tuple<cute::tuple<cute::C<(int)1>, int>, cute::tuple<cute::C<(int)128>, int>, int>, cute::tuple<cute::tuple<cute::C<(int)0>, int>, cute::tuple<cute::C<(int)0>, cute::C<(int)1>>, int>> *>, cutlass::float_e4m3_t, cute::tuple<cute::tuple<long, cute::C<(int)1>, cute::C<(int)0>> *, cute::Layout<cute::tuple<cute::tuple<cute::C<(int)128>, int>, cute::tuple<cute::C<(int)128>, int>, int>, cute::tuple<cute::tuple<cute::C<(int)0>, int>, cute::tuple<cute::C<(int)0>, cute::C<(int)1>>, int>> *>, cute::TiledMMA<cute::MMA_Atom<cute::MMA_Traits<cute::SM100_MMA_F8F6F4_SS, cutlass::float_e4m3_t, cutlass::float_e4m3_t, float, cute::C<(int)128>, cute::C<(int)128>, cute::integral_constant<cute::UMMA::Major, (cute::UMMA::Major)0>, cute::integral_constant<cute::UMMA::Major, (cute::UMMA::Major)0>, cute::integral_constant<cute::UMMA::ScaleIn, (cute::UMMA::ScaleIn)0>, cute::integral_constant<cute::UMMA::ScaleIn, (cute::UMMA::ScaleIn)0>>>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::C<(int)0>, cute::C<(int)0>, cute::C<(int)0>>>, cute::tuple<cute::Underscore, cute::Underscore, cute::Underscore>>, cute::tuple<cute::SM90_TMA_LOAD, cute::TiledCopy<cute::Copy_Atom<cute::SM80_CP_ASYNC_CACHEALWAYS<float, float>, float>, cute::Layout<cute::tuple<cute::C<(int)32>, cute::C<(int)1>>, cute::tuple<cute::C<(int)1>, cute::C<(int)0>>>, cute::tuple<cute::C<(int)32>>>>, cute::ComposedLayout<cute::Swizzle<(int)3, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)8>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)1>>>>, void, cute::identity, cute::tuple<cute::SM90_TMA_LOAD, cute::TiledCopy<cute::Copy_Atom<cute::SM80_CP_ASYNC_CACHEALWAYS<float, float>, float>, cute::Layout<cute::tuple<cute::C<(int)32>, cute::C<(int)1>>, cute::tuple<cute::C<(int)1>, cute::C<(int)0>>>, cute::tuple<cute::C<(int)32>>>>, cute::ComposedLayout<cute::Swizzle<(int)3, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)8>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)1>>>>, void, cute::identity>, cutlass::epilogue::collective::CollectiveEpilogue<cutlass::epilogue::Sm100PtrArrayTmaWarpSpecialized<(int)4, (int)2, (int)32, (bool)0, (bool)0>, cute::tuple<cute::C<(int)128>, cute::C<(int)128>, cute::C<(int)128>>, cute::tuple<cute::Layout<cute::C<(int)128>, cute::C<(int)1>>, cute::Layout<cute::C<(int)32>, cute::C<(int)1>>>, void, cute::tuple<long, cute::C<(int)1>, cute::C<(int)0>> *, cutlass::bfloat16_t, cute::tuple<long, cute::C<(int)1>, cute::C<(int)0>> *, cutlass::epilogue::fusion::FusionCallbacks<cutlass::epilogue::Sm100PtrArrayTmaWarpSpecialized<(int)4, (int)2, (int)32, (bool)0, (bool)0>, cutlass::epilogue::fusion::LinearCombination<cutlass::bfloat16_t, float, void, float, (cutlass::FloatRoundStyle)2>, cute::tuple<cute::C<(int)128>, cute::C<(int)128>, cute::C<(int)128>>, cute::tuple<cute::Layout<cute::C<(int)128>, cute::C<(int)1>>, cute::Layout<cute::C<(int)32>, cute::C<(int)1>>>, >, cute::SM100::TMEM::LOAD::SM100_TMEM_LOAD_32dp32b32x, cute::SM90_TMA_LOAD, cute::ComposedLayout<cute::Swizzle<(int)2, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)16>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)32>>, cute::tuple<cute::C<(int)32>, cute::C<(int)1>>>>, cute::AutoVectorizingCopyWithAssumedAlignment<(int)128>, cute::SM90_TMA_STORE, cute::ComposedLayout<cute::Swizzle<(int)2, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)16>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)32>>, cute::tuple<cute::C<(int)32>, cute::C<(int)1>>>>, cute::AutoVectorizingCopyWithAssumedAlignment<(int)128>, cute::AutoVectorizingCopyWithAssumedAlignment<(int)128>>, void, void>>(T1::Params)",
+          "launch_count": 20
+        },
+        {
+          "aggregate_kernel_ms": 31.94625,
+          "kernel": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparseP1VarSeqQ64Kv128PersistentKeepsAbForGen",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 13.056143,
+          "kernel": "void deep_gemm::sm100_fp8_fp4_gemm_1d1d_impl<(cute::UMMA::Major)0, (cute::UMMA::Major)0, (unsigned int)128, (unsigned int)128, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)240, (unsigned int)128, (unsigned int)128, (unsigned int)1, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)6, (unsigned int)128, (unsigned int)128, (unsigned int)2, (bool)1, (unsigned int)148, (bool)1, (deep_gemm::GemmType)0, (bool)0, cutlass::float_e4m3_t, cutlass::float_e4m3_t, cutlass::bfloat16_t, deep_gemm::epilogue::transform::EpilogueIdentity>(int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+          "launch_count": 23
+        },
+        {
+          "aggregate_kernel_ms": 4.976745,
+          "kernel": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "launch_count": 30
+        },
+        {
+          "aggregate_kernel_ms": 4.126851,
+          "kernel": "void flashinfer::RopeQuantizeKernel<(bool)1, (unsigned int)16, (unsigned int)1, __nv_bfloat16, long, __nv_fp8_e4m3>(T4 *, T4 *, T4 *, T4 *, T6 *, T6 *, T6 *, T6 *, float *, T5 *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, float, float)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.360251,
+          "kernel": "void shuffleRowsKernel<__nv_fp8_e4m3>(const T1 *, const int *, T1 *, long, long, long)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.247162,
+          "kernel": "void apply_shuffle_mul_sum_kernel<__nv_bfloat16>(const T1 *, T1 *, const int *, int, int, int, const T1 *)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.119093,
+          "kernel": "void <unnamed>::act_and_mul_kernel<__nv_bfloat16, (<unnamed>::ActivationKind)0, (bool)1, (bool)0>(<unnamed>::ActivationParams)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.627445,
+          "kernel": "nvjet_sm103_tst_256x256_64x4_2x1_2cta_v_bz_TNT",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.545044,
+          "kernel": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+          "launch_count": 10
+        }
+      ],
+      "pp2_wall_span_ms": 159.713258,
+      "profiled_client_ms": 1226.314641,
+      "response_text_sha256_values": [
+        "e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629"
+      ],
+      "status": "complete",
+      "variant": "moe_cutlass"
+    },
+    {
+      "all_cached_tokens_zero": true,
+      "all_responses_identical_within_variant": true,
+      "attention_precision_mode": "FP8 TRT-LLM sparse attention",
+      "client_latency_reduction_vs_baseline_a_percent": -8.442481,
+      "client_latency_reduction_vs_baseline_b_percent": -8.251501,
+      "client_latency_reduction_vs_bracketed_baseline_percent": -8.346907,
+      "logical_pp2_work_fp8_equivalent_tflop": 207.72342726656,
+      "measured_client_coefficient_of_variation_percent": 0.136992,
+      "measured_client_max_ms": 1563.909242,
+      "measured_client_mean_ms": 1560.8265205714285,
+      "measured_client_median_ms": 1561.025581,
+      "measured_client_min_ms": 1557.817745,
+      "measured_client_ms": [
+        1563.909242,
+        1561.06198,
+        1561.025581,
+        1557.817745,
+        1559.023696,
+        1563.005467,
+        1559.941933
+      ],
+      "measured_client_sample_stdev_ms": 2.1382020167881257,
+      "measured_server_e2e_median_ms": 1557.711232,
+      "pp2_aggregate_kernel_ms": 198.636674,
+      "pp2_attention_and_selector_kernel_ms": 77.56371,
+      "pp2_attention_and_selector_launch_count": 198,
+      "pp2_attention_and_selector_time_reduction_vs_bracketed_baseline_percent": -20.689576,
+      "pp2_feed_forward_kernel_ms": 121.072964,
+      "pp2_feed_forward_launch_count": 150,
+      "pp2_feed_forward_time_reduction_vs_bracketed_baseline_percent": -0.522975,
+      "pp2_fp8_equivalent_mfu_percent": 23.238791,
+      "pp2_kernel_time_reduction_vs_baseline_a_percent": -8.089204,
+      "pp2_kernel_time_reduction_vs_baseline_b_percent": -6.995634,
+      "pp2_kernel_time_reduction_vs_bracketed_baseline_percent": -7.539639,
+      "pp2_launch_count": 348,
+      "pp2_top_kernels": [
+        {
+          "aggregate_kernel_ms": 63.481003,
+          "kernel": "bmm_E4m3_E4m3E4m3_Fp32_t128x64x128u2_s6_et64x64_m64x64x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schPd4x2x2x3_bN_tma_tmaSf_rgTma_clmp_lbW4_dynB_sm100f",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 30.451738,
+          "kernel": "bmm_Bfloat16_E4m3E4m3_Fp32_t128x64x128u2_s6_et64x64_m64x64x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schPd4x2x2x3_bN_rgTma_clmp_dynB_sm100f",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 30.01823,
+          "kernel": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparseP1VarSeqQ64Kv128PersistentKeepsAbForGen",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 26.502876,
+          "kernel": "void cutlass::device_kernel<cutlass::gemm::kernel::GemmUniversal<cute::tuple<int, int, int, int>, cutlass::gemm::collective::CollectiveMma<cutlass::gemm::MainloopSm100TmaUmmaWarpSpecializedBlockwiseScaling<(int)5, (int)5, (int)4, cute::tuple<cute::C<(int)1>, cute::C<(int)1>, cute::C<(int)1>>>, cute::tuple<cute::C<(int)128>, cute::C<(int)128>, cute::C<(int)128>>, cutlass::float_e4m3_t, cute::tuple<cute::tuple<long, cute::C<(int)1>, long>, cute::Layout<cute::tuple<cute::tuple<cute::C<(int)1>, int>, cute::tuple<cute::C<(int)128>, int>, int>, cute::tuple<cute::tuple<cute::C<(int)0>, cute::C<(int)1>>, cute::tuple<cute::C<(int)0>, int>, int>>>, cutlass::float_e4m3_t, cute::tuple<cute::tuple<long, cute::C<(int)1>, long>, cute::Layout<cute::tuple<cute::tuple<cute::C<(int)128>, int>, cute::tuple<cute::C<(int)128>, int>, int>, cute::tuple<cute::tuple<cute::C<(int)0>, int>, cute::tuple<cute::C<(int)0>, cute::C<(int)1>>, int>>>, cute::TiledMMA<cute::MMA_Atom<cute::MMA_Traits<cute::SM100_MMA_F8F6F4_SS, cutlass::float_e4m3_t, cutlass::float_e4m3_t, float, cute::C<(int)128>, cute::C<(int)128>, cute::integral_constant<cute::UMMA::Major, (cute::UMMA::Major)0>, cute::integral_constant<cute::UMMA::Major, (cute::UMMA::Major)0>, cute::integral_constant<cute::UMMA::ScaleIn, (cute::UMMA::ScaleIn)0>, cute::integral_constant<cute::UMMA::ScaleIn, (cute::UMMA::ScaleIn)0>>>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::C<(int)0>, cute::C<(int)0>, cute::C<(int)0>>>, cute::tuple<cute::Underscore, cute::Underscore, cute::Underscore>>, cute::tuple<cute::SM90_TMA_LOAD, cute::TiledCopy<cute::Copy_Atom<cute::SM80_CP_ASYNC_CACHEALWAYS<cutlass::uint128_t, cutlass::uint128_t>, float>, cute::Layout<cute::tuple<cute::C<(int)32>, cute::C<(int)4>>, cute::tuple<cute::C<(int)4>, cute::C<(int)1>>>, cute::tuple<cute::C<(int)128>>>>, cute::ComposedLayout<cute::Swizzle<(int)3, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)8>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)1>>>>, void, cute::identity, cute::tuple<cute::SM90_TMA_LOAD, cute::TiledCopy<cute::Copy_Atom<cute::SM80_CP_ASYNC_CACHEALWAYS<float, float>, float>, cute::Layout<cute::tuple<cute::C<(int)32>, cute::C<(int)1>>, cute::tuple<cute::C<(int)1>, cute::C<(int)0>>>, cute::tuple<cute::C<(int)32>>>>, cute::ComposedLayout<cute::Swizzle<(int)3, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)8>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)1>>>>, void, cute::identity>, cutlass::epilogue::collective::CollectiveEpilogue<cutlass::epilogue::Sm100TmaWarpSpecialized<(int)2, (int)2, (int)64, (bool)0, (bool)1>, cute::tuple<cute::C<(int)128>, cute::C<(int)128>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)64>>, void, cute::tuple<long, cute::C<(int)1>, long>, cutlass::bfloat16_t, cute::tuple<long, cute::C<(int)1>, long>, cutlass::epilogue::fusion::FusionCallbacks<cutlass::epilogue::Sm100TmaWarpSpecialized<(int)2, (int)2, (int)64, (bool)0, (bool)1>, cutlass::epilogue::fusion::LinearCombination<cutlass::bfloat16_t, float, void, float, (cutlass::FloatRoundStyle)2>, cute::tuple<cute::C<(int)128>, cute::C<(int)128>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)64>>, >, cute::SM100::TMEM::LOAD::SM100_TMEM_LOAD_32dp32b64x, cute::SM90_TMA_LOAD, cute::ComposedLayout<cute::Swizzle<(int)3, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)16>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)64>>, cute::tuple<cute::C<(int)64>, cute::C<(int)1>>>>, cute::AutoVectorizingCopyWithAssumedAlignment<(int)128>, cute::SM90_TMA_STORE, cute::ComposedLayout<cute::Swizzle<(int)3, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)16>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)64>>, cute::tuple<cute::C<(int)64>, cute::C<(int)1>>>>, cute::AutoVectorizingCopyWithAssumedAlignment<(int)128>, cute::AutoVectorizingCopyWithAssumedAlignment<(int)128>>, cutlass::gemm::PersistentScheduler, void>>(T1::Params)",
+          "launch_count": 46
+        },
+        {
+          "aggregate_kernel_ms": 15.480095,
+          "kernel": "void moe::dev::activation::activationDeepSeekKernel<moe::dev::activation::KernelParams<cutlass::float_e4m3_t, (int)4, (bool)1>>(T1)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 7.460702,
+          "kernel": "_w8a8_block_fp8_matmul",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.981858,
+          "kernel": "void flashinfer::RopeQuantizeKernel<(bool)1, (unsigned int)16, (unsigned int)1, __nv_bfloat16, long, __nv_fp8_e4m3>(T4 *, T4 *, T4 *, T4 *, T6 *, T6 *, T6 *, T6 *, float *, T5 *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, float, float)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.727222,
+          "kernel": "void moe::dev::finalize::finalizeKernelVecLoad<moe::dev::finalize::KernelParams<cutlass::bfloat16_t, cutlass::bfloat16_t, (int)4, (bool)1>>(T1)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.603602,
+          "kernel": "void per_token_group_quant_8bit_kernel<NaiveScheduler, (int)128, (int)8, __nv_bfloat16, c10::Float8_e4m3fn, (bool)1, (bool)0, (bool)0, float>(const T4 *, T5 *, T9 *, const int *, int, int, int, int, int)",
+          "launch_count": 46
+        },
+        {
+          "aggregate_kernel_ms": 2.58623,
+          "kernel": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+          "launch_count": 10
+        }
+      ],
+      "pp2_wall_span_ms": 199.442986,
+      "profiled_client_ms": 1557.567261,
+      "response_text_sha256_values": [
+        "e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629"
+      ],
+      "status": "complete",
+      "variant": "dense_cutlass"
+    },
+    {
+      "all_cached_tokens_zero": true,
+      "all_responses_identical_within_variant": true,
+      "attention_precision_mode": "FP8 TRT-LLM sparse attention",
+      "client_latency_reduction_vs_baseline_a_percent": -52.982749,
+      "client_latency_reduction_vs_baseline_b_percent": -52.713328,
+      "client_latency_reduction_vs_bracketed_baseline_percent": -52.84792,
+      "logical_pp2_work_fp8_equivalent_tflop": 207.72342726656,
+      "measured_client_coefficient_of_variation_percent": 0.32563,
+      "measured_client_max_ms": 2219.793911,
+      "measured_client_mean_ms": 2203.903371285714,
+      "measured_client_median_ms": 2202.181117,
+      "measured_client_min_ms": 2198.513371,
+      "measured_client_ms": [
+        2200.7628,
+        2202.181117,
+        2202.4624,
+        2219.793911,
+        2200.436607,
+        2198.513371,
+        2203.173393
+      ],
+      "measured_client_sample_stdev_ms": 7.176563992993484,
+      "measured_server_e2e_median_ms": 2198.918382,
+      "pp2_aggregate_kernel_ms": 279.366012,
+      "pp2_attention_and_selector_kernel_ms": 140.81788,
+      "pp2_attention_and_selector_launch_count": 198,
+      "pp2_attention_and_selector_time_reduction_vs_bracketed_baseline_percent": -119.113427,
+      "pp2_feed_forward_kernel_ms": 138.548132,
+      "pp2_feed_forward_launch_count": 150,
+      "pp2_feed_forward_time_reduction_vs_bracketed_baseline_percent": -15.032043,
+      "pp2_fp8_equivalent_mfu_percent": 16.523399,
+      "pp2_kernel_time_reduction_vs_baseline_a_percent": -52.018503,
+      "pp2_kernel_time_reduction_vs_baseline_b_percent": -50.480487,
+      "pp2_kernel_time_reduction_vs_bracketed_baseline_percent": -51.245585,
+      "pp2_launch_count": 348,
+      "pp2_top_kernels": [
+        {
+          "aggregate_kernel_ms": 64.604647,
+          "kernel": "gemm_Bfloat16_E4m3E4m3_Fp32_t128x32x128u2_s6_et64x32_m64x32x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schedS_sm100f",
+          "launch_count": 36
+        },
+        {
+          "aggregate_kernel_ms": 61.78024,
+          "kernel": "bmm_E4m3_E4m3E4m3_Fp32_t128x64x128u2_s6_et64x64_m64x64x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schPd4x2x2x3_bN_tma_tmaSf_rgTma_clmp_lbW4_dynB_sm100f",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 54.019143,
+          "kernel": "gemm_Bfloat16_E4m3E4m3_Fp32_t128x16x128u2_s6_et64x16_m64x16x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schedS_sm100f",
+          "launch_count": 20
+        },
+        {
+          "aggregate_kernel_ms": 29.616108,
+          "kernel": "bmm_Bfloat16_E4m3E4m3_Fp32_t128x64x128u2_s6_et64x64_m64x64x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schPd4x2x2x3_bN_rgTma_clmp_dynB_sm100f",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 29.253094,
+          "kernel": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparseP1VarSeqQ64Kv128PersistentKeepsAbForGen",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 15.228392,
+          "kernel": "void moe::dev::activation::activationDeepSeekKernel<moe::dev::activation::KernelParams<cutlass::float_e4m3_t, (int)4, (bool)1>>(T1)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.947301,
+          "kernel": "void flashinfer::RopeQuantizeKernel<(bool)1, (unsigned int)16, (unsigned int)1, __nv_bfloat16, long, __nv_fp8_e4m3>(T4 *, T4 *, T4 *, T4 *, T6 *, T6 *, T6 *, T6 *, float *, T5 *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, float, float)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.628261,
+          "kernel": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "launch_count": 66
+        },
+        {
+          "aggregate_kernel_ms": 2.726426,
+          "kernel": "void moe::dev::finalize::finalizeKernelVecLoad<moe::dev::finalize::KernelParams<cutlass::bfloat16_t, cutlass::bfloat16_t, (int)4, (bool)1>>(T1)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.5422,
+          "kernel": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+          "launch_count": 10
+        }
+      ],
+      "pp2_wall_span_ms": 280.050081,
+      "profiled_client_ms": 2209.166484,
+      "response_text_sha256_values": [
+        "e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629"
+      ],
+      "status": "complete",
+      "variant": "dense_flashinfer_trtllm"
+    },
+    {
+      "failure": "2026-07-22T21:51:23+08:00 variant=dsa_flashmla_auto state=incompatible error=kv_must_have_dtype_torch_kBFloat16",
+      "status": "failed_or_incomplete",
+      "validation_problems": null,
+      "variant": "dsa_flashmla_auto"
+    },
+    {
+      "failure": "2026-07-22T21:55:24+08:00 variant=dsa_flashmla_kv state=incompatible error=k_nope_dtype_must_be_torch_bfloat16",
+      "status": "failed_or_incomplete",
+      "validation_problems": null,
+      "variant": "dsa_flashmla_kv"
+    },
+    {
+      "all_cached_tokens_zero": true,
+      "all_responses_identical_within_variant": true,
+      "attention_precision_mode": "FP8 TRT-LLM sparse attention",
+      "client_latency_reduction_vs_baseline_a_percent": -0.176423,
+      "client_latency_reduction_vs_baseline_b_percent": 0.0,
+      "client_latency_reduction_vs_bracketed_baseline_percent": -0.088134,
+      "logical_pp2_work_fp8_equivalent_tflop": 207.72342726656,
+      "measured_client_coefficient_of_variation_percent": 0.11197,
+      "measured_client_max_ms": 1443.627185,
+      "measured_client_mean_ms": 1441.6960565714287,
+      "measured_client_median_ms": 1442.035968,
+      "measured_client_min_ms": 1439.189273,
+      "measured_client_ms": [
+        1442.035968,
+        1442.551164,
+        1443.627185,
+        1443.013927,
+        1441.489665,
+        1439.189273,
+        1439.965214
+      ],
+      "measured_client_sample_stdev_ms": 1.6142679109337101,
+      "measured_server_e2e_median_ms": 1439.025413,
+      "pp2_aggregate_kernel_ms": 185.649327,
+      "pp2_attention_and_selector_kernel_ms": 64.592753,
+      "pp2_attention_and_selector_launch_count": 198,
+      "pp2_attention_and_selector_time_reduction_vs_bracketed_baseline_percent": -0.506693,
+      "pp2_feed_forward_kernel_ms": 121.056574,
+      "pp2_feed_forward_launch_count": 150,
+      "pp2_feed_forward_time_reduction_vs_bracketed_baseline_percent": -0.509367,
+      "pp2_fp8_equivalent_mfu_percent": 24.864492,
+      "pp2_kernel_time_reduction_vs_baseline_a_percent": -1.02207,
+      "pp2_kernel_time_reduction_vs_baseline_b_percent": 0.0,
+      "pp2_kernel_time_reduction_vs_bracketed_baseline_percent": -0.508436,
+      "pp2_launch_count": 348,
+      "pp2_top_kernels": [
+        {
+          "aggregate_kernel_ms": 64.446576,
+          "kernel": "bmm_E4m3_E4m3E4m3_Fp32_t128x64x128u2_s6_et64x64_m64x64x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schPd4x2x2x3_bN_tma_tmaSf_rgTma_clmp_lbW4_dynB_sm100f",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 30.986271,
+          "kernel": "bmm_Bfloat16_E4m3E4m3_Fp32_t128x64x128u2_s6_et64x64_m64x64x32_c1x1x1_rM_TN_transOut_noShfl_dsFp8_schPd4x2x2x3_bN_rgTma_clmp_dynB_sm100f",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 30.544283,
+          "kernel": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparseP1VarSeqQ64Kv128PersistentKeepsAbForGen",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 16.709738,
+          "kernel": "void deep_gemm::sm100_fp8_fp4_gemm_1d1d_impl<(cute::UMMA::Major)0, (cute::UMMA::Major)0, (unsigned int)128, (unsigned int)128, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)240, (unsigned int)128, (unsigned int)128, (unsigned int)1, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)6, (unsigned int)128, (unsigned int)128, (unsigned int)2, (bool)1, (unsigned int)148, (bool)1, (deep_gemm::GemmType)0, (bool)0, cutlass::float_e4m3_t, cutlass::float_e4m3_t, cutlass::bfloat16_t, deep_gemm::epilogue::transform::EpilogueIdentity>(int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+          "launch_count": 43
+        },
+        {
+          "aggregate_kernel_ms": 15.70506,
+          "kernel": "void moe::dev::activation::activationDeepSeekKernel<moe::dev::activation::KernelParams<cutlass::float_e4m3_t, (int)4, (bool)1>>(T1)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 4.012831,
+          "kernel": "void flashinfer::RopeQuantizeKernel<(bool)1, (unsigned int)16, (unsigned int)1, __nv_bfloat16, long, __nv_fp8_e4m3>(T4 *, T4 *, T4 *, T4 *, T6 *, T6 *, T6 *, T6 *, float *, T5 *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, float, float)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 3.202492,
+          "kernel": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)1, (bool)0, (bool)1, unsigned int>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "launch_count": 56
+        },
+        {
+          "aggregate_kernel_ms": 2.734516,
+          "kernel": "void moe::dev::finalize::finalizeKernelVecLoad<moe::dev::finalize::KernelParams<cutlass::bfloat16_t, cutlass::bfloat16_t, (int)4, (bool)1>>(T1)",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.56034,
+          "kernel": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+          "launch_count": 10
+        },
+        {
+          "aggregate_kernel_ms": 2.51874,
+          "kernel": "nvjet_sm103_tst_256x256_64x4_2x1_2cta_v_bz_TNT",
+          "launch_count": 10
+        }
+      ],
+      "pp2_wall_span_ms": 186.461337,
+      "profiled_client_ms": 1443.085725,
+      "response_text_sha256_values": [
+        "e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629"
+      ],
+      "status": "complete",
+      "variant": "baseline_auto_b"
+    }
+  ]
+}
