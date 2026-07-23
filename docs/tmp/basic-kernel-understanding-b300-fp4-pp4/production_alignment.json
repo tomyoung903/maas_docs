@@ -1,0 +1,25 @@
+{
+  "matched": [
+    "same production image and digest",
+    "nvidia/GLM-5.2-NVFP4 ModelOpt checkpoint",
+    "TP=1, DP=1, PP=4 and [19,19,20,20] layer partition",
+    "1,048,576 context length",
+    "32,768 chunked/max prefill tokens and 80 running requests",
+    "FP8 E4M3 KV cache and page size 64",
+    "automatic FP4 runner, FlashInfer TRT-LLM MoE, TRT-LLM DSA",
+    "fused QK norm/RoPE disabled"
+  ],
+  "deliberate_experiment_differences": [
+    "standalone SGLang instead of Dynamo prefill/decode disaggregation",
+    "cache flushed before every request",
+    "no Mooncake transfer and no hierarchical cache",
+    "decentralized PP scheduler because centralized requires prefill disaggregation",
+    "shared CPFS checkpoint path; weights were fully resident before measurement"
+  ],
+  "measured_batch_evidence": {
+    "cuda_graph": false,
+    "prompt_tokens": 16384,
+    "cached_tokens": 0,
+    "completion_tokens": 1
+  }
+}
