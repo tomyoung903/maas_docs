@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Hardware-counter and analytical MFU audit of the five longest PP2 kernels for one uncached GLM-5.2 prefill request on the Neimeng B300 fleet.">
+  <title>GLM-5.2 Neimeng Top-Five Kernel MFU Audit</title>
+  <style>
+    :root {
+      --ink: #18202a;
+      --muted: #5d6875;
+      --line: #d9dee5;
+      --soft: #f5f7f9;
+      --paper: #ffffff;
+      --nav: #20262e;
+      --red: #bd3f32;
+      --green: #27805d;
+      --blue: #3778a8;
+      --violet: #70558e;
+      --gold: #b47a23;
+      --warn-bg: #fff7e8;
+      --warn-line: #d9a342;
+      --ok-bg: #edf8f3;
+      --ok-line: #67a88d;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.62;
+      letter-spacing: 0;
+    }
+    a { color: #225f8a; text-underline-offset: 3px; }
+    code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.86em;
+      overflow-wrap: anywhere;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 0 28px;
+      color: #f4f6f8;
+      background: var(--nav);
+      border-bottom: 1px solid #101419;
+    }
+    .topbar strong { font-size: 14px; }
+    .topbar a { color: #dce6ee; font-size: 13px; text-decoration: none; }
+    .hero {
+      padding: 58px 32px 48px;
+      background: #f0f3f5;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-inner, .page-shell { max-width: 1320px; margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 920px;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 46px;
+      line-height: 1.08;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    .hero-copy {
+      max-width: 900px;
+      margin: 20px 0 0;
+      color: #394552;
+      font-size: 18px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .page-shell {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 42px;
+      padding: 34px 32px 72px;
+    }
+    .toc {
+      position: sticky;
+      top: 76px;
+      align-self: start;
+      padding: 14px 0;
+      border-top: 2px solid var(--ink);
+      border-bottom: 1px solid var(--line);
+    }
+    .toc strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .toc a {
+      display: block;
+      padding: 5px 0;
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .toc a:hover { color: var(--ink); }
+    main { min-width: 0; }
+    section {
+      padding: 8px 0 44px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 38px;
+    }
+    section:last-child { border-bottom: 0; margin-bottom: 0; }
+    h2 {
+      margin: 0 0 12px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 30px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+    p { max-width: 920px; margin: 10px 0; }
+    .lede { color: #3e4955; font-size: 17px; }
+    .verdict {
+      padding: 20px 22px;
+      margin: 24px 0;
+      border-left: 4px solid var(--red);
+      background: #fbf2f0;
+    }
+    .verdict strong { display: block; margin-bottom: 5px; font-size: 18px; }
+    .note {
+      padding: 14px 16px;
+      margin: 18px 0;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-line);
+      border-radius: 6px;
+    }
+    .note.ok { background: var(--ok-bg); border-color: var(--ok-line); }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 26px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .stat { min-height: 132px; padding: 18px; border-right: 1px solid var(--line); }
+    .stat:last-child { border-right: 0; }
+    .stat-label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .stat-value { margin: 7px 0 3px; font-family: Georgia, "Times New Roman", serif; font-size: 30px; line-height: 1.1; }
+    .stat-note { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .bar-chart { margin: 26px 0; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 190px minmax(180px, 1fr) 90px;
+      gap: 8px 14px;
+      align-items: center;
+      margin: 15px 0;
+    }
+    .bar-label { font-weight: 700; }
+    .bar-track, .mfu-track {
+      position: relative;
+      height: 18px;
+      background: #e9edf1;
+      overflow: hidden;
+      border-radius: 3px;
+    }
+    .bar-fill, .mfu-track span { display: block; height: 100%; }
+    .red { background: var(--red); }
+    .green { background: var(--green); }
+    .blue { background: var(--blue); }
+    .violet { background: var(--violet); }
+    .gold { background: var(--gold); }
+    .bar-value, .mfu-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .bar-detail { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
+    .mfu-chart { margin: 26px 0; }
+    .mfu-row {
+      display: grid;
+      grid-template-columns: 280px minmax(180px, 1fr) 74px;
+      gap: 14px;
+      align-items: center;
+      margin: 17px 0;
+    }
+    .mfu-row strong, .mfu-row span { display: block; }
+    .mfu-row > div:first-child span { color: var(--muted); font-size: 12px; }
+    .equation {
+      display: grid;
+      grid-template-columns: minmax(120px, auto) 24px minmax(0, 1fr);
+      gap: 10px;
+      align-items: baseline;
+      max-width: 920px;
+      margin: 14px 0;
+      padding: 14px 16px;
+      background: var(--soft);
+      border-left: 3px solid var(--blue);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 17px;
+    }
+    .math-var { font-style: italic; }
+    .math-op, .math-unit { font-style: normal; }
+    .math-result { font-weight: 700; color: #8f2e25; }
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin: 24px 0;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .evidence {
+      min-height: 150px;
+      padding: 17px;
+      background: var(--paper);
+    }
+    .evidence strong { display: block; margin-bottom: 7px; }
+    .evidence .number { color: var(--red); font-size: 23px; font-weight: 800; }
+    .evidence p { color: var(--muted); font-size: 13px; }
+    .tree {
+      margin: 22px 0;
+      border-top: 1px solid var(--line);
+    }
+    .tree-row {
+      display: grid;
+      grid-template-columns: 88px minmax(210px, 1fr) 220px;
+      gap: 18px;
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .tree-row.child { padding-left: 30px; }
+    .tree-row.grandchild { padding-left: 54px; }
+    .tree-id { color: var(--muted); font-family: "SFMono-Regular", Consolas, monospace; }
+    .tree-kernel { color: #314657; font-size: 13px; }
+    .table-wrap { overflow-x: auto; margin: 20px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      padding: 10px 9px;
+      color: var(--muted);
+      background: var(--soft);
+      border-bottom: 2px solid #aeb7c1;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    td { padding: 10px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .good { color: #176447; font-weight: 700; }
+    .bad { color: #9d3329; font-weight: 700; }
+    .status {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .status.accepted { color: #176447; background: #e5f4ed; }
+    .status.rejected { color: #9d3329; background: #fae8e5; }
+    .resource {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin: 24px 0;
+    }
+    .resource > div { border-top: 3px solid var(--ink); padding-top: 12px; }
+    .resource ul { padding-left: 20px; }
+    .resource li { margin: 7px 0; }
+    .sources td:last-child { max-width: 500px; }
+    footer {
+      padding: 28px 32px;
+      color: #d0d6dc;
+      background: var(--nav);
+      font-size: 12px;
+    }
+    footer div { max-width: 1320px; margin: 0 auto; }
+    @media (max-width: 980px) {
+      .page-shell { grid-template-columns: 1fr; gap: 18px; }
+      .toc { position: static; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 14px; }
+      .toc strong { grid-column: 1 / -1; }
+      .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stat:nth-child(2) { border-right: 0; }
+      .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .evidence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 680px) {
+      .topbar { padding: 0 16px; }
+      .topbar span { display: none; }
+      .hero { padding: 38px 18px 34px; }
+      h1 { font-size: 36px; }
+      .hero-copy { font-size: 16px; }
+      .page-shell { padding: 24px 18px 54px; }
+      .toc { grid-template-columns: repeat(2, 1fr); }
+      .stat-grid, .evidence-grid, .resource { grid-template-columns: 1fr; }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child { border-bottom: 0; }
+      .bar-row { grid-template-columns: 1fr 72px; }
+      .bar-track { grid-column: 1 / -1; grid-row: 2; }
+      .bar-value { grid-column: 2; grid-row: 1; }
+      .bar-detail { grid-column: 1 / -1; grid-row: 3; }
+      .mfu-row { grid-template-columns: 1fr 62px; }
+      .mfu-track { grid-column: 1 / -1; }
+      .equation { grid-template-columns: 1fr; gap: 3px; }
+      .equation .equals { display: none; }
+      .tree-row { grid-template-columns: 64px 1fr; gap: 8px; }
+      .tree-kernel { grid-column: 2; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="topbar">
+    <strong>GLM-5.2 Kernel Audit</strong>
+    <span>Neimeng B300 fleet / observed NVIDIA L20D</span>
+    <a href="https://tomyoung903.github.io/maas_docs/tmp/basic-kernel-understanding-b300/#pp2-tree">Reference PP2 tree</a>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">One uncached request · PP2 hardware counters · 23 July 2026</p>
+      <h1>Top-Five Kernel MFU Audit on Neimeng</h1>
+      <p class="hero-copy">
+        The sparse MLA scan is the lowest defensible tensor-kernel result at
+        <strong>30.84% B300-normalized MFU</strong>. That number
+        does not mean the GPU is 69% idle: NCU reports 68.25%
+        SM throughput while the kernel mixes sparse data movement, synchronization,
+        softmax work, and useful FP8 MMA.
+      </p>
+      <div class="hero-meta">
+        <span><strong>Node:</strong> gpu-worker-198</span>
+        <span><strong>Shape:</strong> TP=1, DP=1, PP=8</span>
+        <span><strong>Request:</strong> 16,384 input + 1 output token</span>
+        <span><strong>Cache:</strong> 0 reused tokens</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-shell">
+    <aside class="toc" aria-label="Page overview">
+      <strong>On this page</strong>
+      <a href="#answer">Answer</a>
+      <a href="#ranking">Top five</a>
+      <a href="#mfu">MFU ranking</a>
+      <a href="#attention">Why attention is 30.84%</a>
+      <a href="#resources">Resource limits</a>
+      <a href="#tree">Execution tree</a>
+      <a href="#nontensor">Gather and RoPE</a>
+      <a href="#reference">Reference comparison</a>
+      <a href="#method">Method and validity</a>
+    </aside>
+
+    <main>
+      <section id="answer">
+        <h2>Answer First</h2>
+        <div class="verdict">
+          <strong>Lowest meaningful MFU: sparse MLA attention, 30.84%.</strong>
+          For this exact 16,384-token kernel shape, roughly 30% is structurally
+          understandable. It is not a universal lower bound and it is not proof that
+          further optimization is impossible.
+        </div>
+        <p class="lede">
+          The result is constrained by one resident CTA per SM, 220.672
+          KB shared memory per block, 128 registers per thread,
+          24.96% active-warps occupancy, and
+          66.69% long-scoreboard stall share. At the same
+          time, only 8.08% of peak DRAM bandwidth is used
+          and L2 hit rate is 94.37%. This is an irregular
+          latency-and-dependency problem, not an HBM saturation problem.
+        </p>
+        <div class="stat-grid">
+          <div class="stat"><div class="stat-label">Lowest tensor MFU</div><div class="stat-value">30.84%</div><div class="stat-note">Sparse MLA attention</div></div>
+          <div class="stat"><div class="stat-label">Largest time family</div><div class="stat-value">68.881 ms</div><div class="stat-note">Grouped expert GEMMs</div></div>
+          <div class="stat"><div class="stat-label">Top-five coverage</div><div class="stat-value">77.82%</div><div class="stat-note">Of PP2 decoder kernel time</div></div>
+          <div class="stat"><div class="stat-label">Node released</div><div class="stat-value">8 / 8 GPUs</div><div class="stat-note">0 MiB, 0%, no processes or containers</div></div>
+        </div>
+        <div class="note">
+          <strong>Identity and denominator caveat.</strong>
+          Kubernetes calls this the Neimeng B300 fleet, but the runtime reports
+          <code>2</code>; NCU reports compute capability
+          10.3 and 148 SMs. For direct comparison with
+          the linked B300 report, all analytical percentages use 4,500 TFLOP/s dense FP8.
+          NVIDIA publishes 72 PFLOP/s sparse FP8 for an eight-GPU DGX B300 and states that
+          dense is half, yielding 4.5 PFLOP/s per GPU. No public L20D specification was found.
+          The ranking is unchanged by a common denominator change.
+        </div>
+      </section>
+
+      <section id="ranking">
+        <h2>The Five Longest PP2 Kernel Names</h2>
+        <p class="lede">
+          PP2 owns GLM-5.2 layers 18-27. Its decoder region contains
+          468 launches and 157.332 ms of
+          aggregate kernel time. The five names below account for
+          122.439 ms.
+        </p>
+        <div class="bar-chart">
+      <div class="bar-row">
+        <div class="bar-label">CUTLASS grouped MoE</div>
+        <div class="bar-track" aria-label="CUTLASS grouped MoE 68.881 milliseconds">
+          <span class="bar-fill red" style="width:100.000%"></span>
+        </div>
+        <div class="bar-value">68.881 ms</div>
+        <div class="bar-detail">20 launches, 43.78% of PP2 kernel time</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Sparse MLA attention</div>
+        <div class="bar-track" aria-label="Sparse MLA attention 31.566 milliseconds">
+          <span class="bar-fill green" style="width:45.827%"></span>
+        </div>
+        <div class="bar-value">31.566 ms</div>
+        <div class="bar-detail">10 launches, 20.06% of PP2 kernel time</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Dominant DeepGEMM name</div>
+        <div class="bar-track" aria-label="Dominant DeepGEMM name 12.934 milliseconds">
+          <span class="bar-fill blue" style="width:18.776%"></span>
+        </div>
+        <div class="bar-value">12.934 ms</div>
+        <div class="bar-detail">23 launches, 8.22% of PP2 kernel time</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">gatherTopK</div>
+        <div class="bar-track" aria-label="gatherTopK 4.950 milliseconds">
+          <span class="bar-fill violet" style="width:7.187%"></span>
+        </div>
+        <div class="bar-value">4.950 ms</div>
+        <div class="bar-detail">30 launches, 3.15% of PP2 kernel time</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">RopeQuantizeKernel</div>
+        <div class="bar-track" aria-label="RopeQuantizeKernel 4.108 milliseconds">
+          <span class="bar-fill gold" style="width:5.963%"></span>
+        </div>
+        <div class="bar-value">4.108 ms</div>
+        <div class="bar-detail">10 launches, 2.61% of PP2 kernel time</div>
+      </div></div>
+        <p>
+          The first three families contain Tensor-Core model math. The last two do
+          not have a useful dense-FP8 MFU denominator and must not be reported as 0% MFU.
+        </p>
+      </section>
+
+      <section id="mfu">
+        <h2>Comparable MFU Ranking</h2>
+        <p>
+          The numerator is useful GLM-5.2 FP8-equivalent work from the referenced
+          execution-tree ledger. The denominator is only the Nsys time of the named
+          kernel family, multiplied by 4,500 TFLOP/s.
+        </p>
+        <div class="equation">
+          <span><span class="math-var">MFU</span><sub>normalized</sub></span>
+          <span class="equals">=</span>
+          <span>
+            useful FP8-equivalent FLOPs /
+            (<span class="math-var">t</span><sub>kernel</sub> &times;
+            4,500 TFLOP/s)
+          </span>
+        </div>
+        <div class="mfu-chart">
+      <div class="mfu-row">
+        <div>
+          <strong>Sparse MLA attention</strong>
+          <span>lowest defensible tensor-kernel MFU</span>
+        </div>
+        <div class="mfu-track"><span class="red" style="width:30.842%"></span></div>
+        <div class="mfu-value">30.84%</div>
+      </div>
+      <div class="mfu-row">
+        <div>
+          <strong>Grouped MoE, combined</strong>
+          <span>gate/up and down projections</span>
+        </div>
+        <div class="mfu-track"><span class="gold" style="width:35.915%"></span></div>
+        <div class="mfu-value">35.92%</div>
+      </div>
+      <div class="mfu-row">
+        <div>
+          <strong>Dominant DeepGEMM name</strong>
+          <span>q_b, index query, and o_proj dynamic shapes</span>
+        </div>
+        <div class="mfu-track"><span class="green" style="width:76.984%"></span></div>
+        <div class="mfu-value">76.98%</div>
+      </div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Family or subshape</th><th class="num">Useful TFLOP</th><th class="num">Nsys ms</th><th class="num">Normalized MFU</th></tr></thead>
+            <tbody>
+              <tr><td>Sparse MLA scan</td><td class="num">43.810</td><td class="num">31.566</td><td class="num"><strong>30.84</strong></td></tr>
+              <tr><td>Grouped MoE, gate/up</td><td class="num">74.217</td><td class="num">43.167</td><td class="num">38.21</td></tr>
+              <tr><td>Grouped MoE, down</td><td class="num">37.109</td><td class="num">25.715</td><td class="num">32.07</td></tr>
+              <tr><td>Grouped MoE, combined</td><td class="num">111.326</td><td class="num">68.881</td><td class="num">35.92</td></tr>
+              <tr><td>Dominant DeepGEMM compiled name</td><td class="num">44.805</td><td class="num">12.934</td><td class="num">76.98</td></tr>
+              <tr><td>gatherTopK</td><td class="num">N/A</td><td class="num">4.950</td><td class="num">N/A</td></tr>
+              <tr><td>RopeQuantizeKernel</td><td class="num">N/A</td><td class="num">4.108</td><td class="num">N/A</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>One DeepGEMM name, three dynamic operations</h3>
+        <p>
+          The dominant compiled name is reused for different runtime problem sizes.
+          Its 23 launches are ten <code>q_b_proj</code> calls, three indexer query
+          projections, and ten <code>o_proj</code> calls. Treating the name as one
+          fixed GEMM shape would be wrong.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Operation inside dominant name</th><th class="num">Useful TFLOP</th><th class="num">Nsys ms</th><th class="num">Normalized MFU</th></tr></thead>
+            <tbody>
+          <tr>
+            <td>q_b_proj</td>
+            <td class="num">10.995</td>
+            <td class="num">3.302</td>
+            <td class="num">74.00</td>
+          </tr>
+          <tr>
+            <td>Indexer query projection</td>
+            <td class="num">0.825</td>
+            <td class="num">0.272</td>
+            <td class="num">67.45</td>
+          </tr>
+          <tr>
+            <td>o_proj</td>
+            <td class="num">32.985</td>
+            <td class="num">9.360</td>
+            <td class="num">78.31</td>
+          </tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="attention">
+        <h2>Why Sparse Attention Lands Near 30%</h2>
+        <p class="lede">
+          This is the strongest answer to the original question. The analytical
+          numerator, launch resources, and hardware counters tell the same story.
+        </p>
+        <h3>Numerator reconstruction</h3>
+        <div class="equation">
+          <span><span class="math-var">N</span><sub>pairs</sub></span>
+          <span class="equals">=</span>
+          <span>
+            2,048 &times; 2,049 / 2 + 2,048 &times; (16,384 - 2,048)
+            = <span class="math-result">31,458,304</span>
+          </span>
+        </div>
+        <div class="equation">
+          <span><span class="math-var">W</span><sub>attention MMA</sub></span>
+          <span class="equals">=</span>
+          <span>
+            31,458,304 pairs &times; 10 layers &times;
+            64 heads &times; 2 &times; (2 &times; 512 + 64)
+            = <span class="math-result">43.810 TFLOP</span>
+          </span>
+        </div>
+        <div class="equation">
+          <span><span class="math-var">MFU</span><sub>attention</sub></span>
+          <span class="equals">=</span>
+          <span>
+            43.810 /
+            (0.031566 s &times; 4,500 TFLOP/s)
+            = <span class="math-result">30.84%</span>
+          </span>
+        </div>
+        <p>
+          Another 0.1007 TFLOP of score, masking,
+          and softmax-like scalar work is tracked separately. Converting that work
+          to FP8 Tensor-Core equivalents would manufacture precision that the
+          operation does not have.
+        </p>
+
+        <h3>Counter evidence</h3>
+        <div class="evidence-grid">
+          <div class="evidence"><strong>Resident resource ceiling</strong><div class="number">24.96%</div><p>Active warps. One 512-thread CTA provides 16 warps; 220.672 KB shared memory and 128 registers per thread prevent a second CTA.</p></div>
+          <div class="evidence"><strong>Long dependency stalls</strong><div class="number">66.69%</div><p>Warp-active stall share from long scoreboard. Only 0.466 warps are eligible per scheduler cycle.</p></div>
+          <div class="evidence"><strong>SM work is not 30%</strong><div class="number">68.25%</div><p>NCU SM speed-of-light throughput. The difference from MFU is mixed non-MMA work plus latency, not simply idle silicon.</p></div>
+          <div class="evidence"><strong>HBM is not saturated</strong><div class="number">8.08%</div><p>Peak DRAM throughput, approximately 620.5 GB/s during the sampled launch.</p></div>
+          <div class="evidence"><strong>Most traffic hits L2</strong><div class="number">94.37%</div><p>L2 sector hit rate, with 63.43% L1 sector hit rate. Sparse dependency latency remains despite low HBM demand.</p></div>
+          <div class="evidence"><strong>There is enough grid work</strong><div class="number">110.7</div><p>Waves per SM from a 16,384-block grid. The problem is per-SM resident state and dependency hiding, not a grid too small to cover 148 SMs.</p></div>
+        </div>
+        <div class="note ok">
+          <strong>What “inevitable” means here.</strong>
+          With the current 512-thread, 220.672-KB, 128-register kernel, two CTAs
+          would require no more than 116.736 KB shared memory and 64 registers per
+          thread. That is approximately a halving of both resources, not a launch
+          flag. A materially higher MFU therefore requires kernel/data-layout
+          redesign, less sparse latency, or a different algorithm. It is not
+          available from a small scheduler tweak.
+        </div>
+      </section>
+
+      <section id="resources">
+        <h2>Occupancy Is a Constraint, Not the Score</h2>
+        <p>
+          All three tensor families run one persistent CTA per SM, yet their
+          normalized MFU spans 30.84% to 76.98%.
+          DeepGEMM is the counterexample that prevents a simplistic “low occupancy
+          means low utilization” conclusion.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Sampled launch</th><th class="num">Block</th><th class="num">Grid</th><th class="num">Registers/thread</th><th class="num">Shared KB/block</th><th class="num">Active warps</th><th class="num">SM SOL</th><th class="num">DRAM SOL</th></tr></thead>
+            <tbody>
+              <tr><td>Sparse attention</td><td class="num">512</td><td class="num">16,384</td><td class="num">128</td><td class="num">220.672</td><td class="num">24.96</td><td class="num">68.25</td><td class="num">8.08</td></tr>
+              <tr><td>Grouped MoE gate/up sample</td><td class="num">384</td><td class="num">148</td><td class="num">168</td><td class="num">219.136</td><td class="num">14.06</td><td class="num">57.88</td><td class="num">37.48</td></tr>
+              <tr><td>DeepGEMM q_b sample</td><td class="num">256</td><td class="num">148</td><td class="num">42</td><td class="num">209.708</td><td class="num">12.44</td><td class="num">93.21</td><td class="num">33.91</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="resource">
+          <div>
+            <h3>Grouped MoE</h3>
+            <ul>
+              <li>One 384-thread CTA consumes 219.136 KB and 168 registers per thread.</li>
+              <li>Gate/up is 38.21%; down is 32.07%.</li>
+              <li>The 128 by 128 by 128 tile has exact K/N divisibility, but per-expert token counts create M-tail and load-imbalance loss.</li>
+              <li>It is the largest time target even though attention has the lower MFU.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>DeepGEMM</h3>
+            <ul>
+              <li>The sampled q_b launch has only 12.44% active warps but reaches 93.21% SM SOL.</li>
+              <li>Its persistent UMMA/TMA pipeline keeps hardware busy with few issuing warps.</li>
+              <li>This dominant compiled-name family reaches 76.98% useful normalized MFU, so it is not the first optimization target.</li>
+              <li>The legacy NCU pipe-TC percentage is not used: it conflicts with both SM SOL and model-FLOP accounting on these Blackwell kernels.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="tree">
+        <h2>Where the Top Five Sit in the Model</h2>
+        <p class="lede">
+          This is the focused subset of the
+          <a href="https://tomyoung903.github.io/maas_docs/tmp/basic-kernel-understanding-b300/#pp2-tree">full PP2 execution tree</a>. The operation
+          IDs and FLOP ledger are reused; all timings on this page come from the
+          Neimeng trace.
+        </p>
+        <div class="tree">
+          <div class="tree-row"><span class="tree-id">2</span><strong>Decoder stack, layers 18-27</strong><span class="tree-kernel">468 launches</span></div>
+          <div class="tree-row child"><span class="tree-id">2.1</span><strong>Sparse MLA attention sublayer</strong><span class="tree-kernel">Attention-side families</span></div>
+          <div class="tree-row grandchild"><span class="tree-id">2.1.4</span><span>q_b projection</span><span class="tree-kernel">Dominant DeepGEMM name</span></div>
+          <div class="tree-row grandchild"><span class="tree-id">A1</span><span>Indexer query projection</span><span class="tree-kernel">Dominant DeepGEMM name</span></div>
+          <div class="tree-row grandchild"><span class="tree-id">2.1.6</span><span>Prepare query and KV cache</span><span class="tree-kernel">RopeQuantizeKernel</span></div>
+          <div class="tree-row grandchild"><span class="tree-id">2.1.7</span><span>Selected sparse MLA scan</span><span class="tree-kernel">fmhaSm100fKernel</span></div>
+          <div class="tree-row grandchild"><span class="tree-id">2.1.9</span><span>Output projection</span><span class="tree-kernel">Dominant DeepGEMM name</span></div>
+          <div class="tree-row child"><span class="tree-id">2.3</span><strong>Sparse MoE feed-forward branch</strong><span class="tree-kernel">Routing and experts</span></div>
+          <div class="tree-row grandchild"><span class="tree-id">M2</span><span>Expert TopK</span><span class="tree-kernel">gatherTopK</span></div>
+          <div class="tree-row grandchild"><span class="tree-id">M3b</span><span>Active-expert gate/up projections</span><span class="tree-kernel">CUTLASS grouped GEMM</span></div>
+          <div class="tree-row grandchild"><span class="tree-id">M3d</span><span>Active-expert down projections</span><span class="tree-kernel">CUTLASS grouped GEMM</span></div>
+        </div>
+      </section>
+
+      <section id="nontensor">
+        <h2>Why Gather and RoPE Have No MFU Number</h2>
+        <p>
+          A dense FP8 denominator answers “how much Tensor-Core matrix throughput
+          did this kernel realize?” It does not answer whether an index gather or
+          elementwise quantization kernel is efficient. Assigning either a 0% MFU
+          would be numerically true only in a trivial sense and operationally misleading.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Family</th><th class="num">Launches</th><th class="num">Nsys ms</th><th>Observed geometry</th><th>Correct efficiency lens</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>gatherTopK</td>
+                <td class="num">30</td>
+                <td class="num">4.950</td>
+                <td>20 launches: grid 16,384, block 256; 10 launches: grid 16,384, block 32</td>
+                <td>Memory transactions, branch/comparison issue, and TopK algorithm cost</td>
+              </tr>
+              <tr>
+                <td>RopeQuantizeKernel</td>
+                <td class="num">10</td>
+                <td class="num">4.108</td>
+                <td>Grid 512 &times; 585, block 4 &times; 32, 43 registers/thread</td>
+                <td>Bytes moved, conversion throughput, and elementwise instruction rate</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">
+          Both attempted full counter captures failed dependency-sensitive kernel
+          replay and exported zero performance counters. Their Nsys timings and
+          launch geometry remain valid; no bandwidth or issue-efficiency claim is
+          made from the failed reports.
+        </div>
+      </section>
+
+      <section id="reference">
+        <h2>Comparison With the Referenced B300 Run</h2>
+        <p>
+          The runtime image, SGLang commit, deterministic token IDs, cache state,
+          and PP layout match the linked report. Neimeng PP2 is
+          1.06% faster in
+          aggregate decoder-kernel time, and the top-five ordering is unchanged.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kernel family</th><th class="num">Neimeng ms</th><th class="num">Reference ms</th><th class="num">Delta</th></tr></thead>
+            <tbody>
+          <tr>
+            <td>CUTLASS grouped MoE</td>
+            <td class="num">68.881</td>
+            <td class="num">69.960</td>
+            <td class="num good">
+              -1.54%
+            </td>
+          </tr>
+          <tr>
+            <td>Sparse MLA attention</td>
+            <td class="num">31.566</td>
+            <td class="num">31.946</td>
+            <td class="num good">
+              -1.19%
+            </td>
+          </tr>
+          <tr>
+            <td>Dominant DeepGEMM name</td>
+            <td class="num">12.934</td>
+            <td class="num">13.056</td>
+            <td class="num good">
+              -0.94%
+            </td>
+          </tr>
+          <tr>
+            <td>gatherTopK</td>
+            <td class="num">4.950</td>
+            <td class="num">4.977</td>
+            <td class="num good">
+              -0.53%
+            </td>
+          </tr>
+          <tr>
+            <td>RopeQuantizeKernel</td>
+            <td class="num">4.108</td>
+            <td class="num">4.127</td>
+            <td class="num good">
+              -0.46%
+            </td>
+          </tr></tbody>
+          </table>
+        </div>
+        <p>
+          PP2 total: 157.332 ms
+          versus 159.021 ms.
+          End-to-end client latency is not inferred from this PP2-only comparison.
+        </p>
+      </section>
+
+      <section id="method">
+        <h2>Method, Validity, and Reproducibility</h2>
+        <p class="lede">
+          Nsys supplies production-order timing across all 468 PP2 decoder launches.
+          NCU supplies one selected launch configuration per accepted family.
+          Analytical FLOPs come from the referenced GLM-5.2 execution tree.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Capture</th><th>Status</th><th>Gate or rejection reason</th></tr></thead>
+            <tbody>
+          <tr>
+            <td>Nsys baseline</td>
+            <td><span class="status accepted">accepted</span></td>
+            <td>HTTP 200; 16,384 input; one output; cached_tokens=0</td>
+          </tr>
+          <tr>
+            <td>Attention core / compute / memory / scheduler</td>
+            <td><span class="status accepted">accepted</span></td>
+            <td>Four independent reports; every measured request completed</td>
+          </tr>
+          <tr>
+            <td>Grouped CUTLASS full</td>
+            <td><span class="status accepted">accepted</span></td>
+            <td>Request exit 0; NCU exit 0; report exported</td>
+          </tr>
+          <tr>
+            <td>DeepGEMM full</td>
+            <td><span class="status accepted">accepted</span></td>
+            <td>Request exit 0; complete nonzero report; wrapper exit 9 followed intentional server shutdown</td>
+          </tr>
+          <tr>
+            <td>gatherTopK / Rope full</td>
+            <td><span class="status rejected">rejected</span></td>
+            <td>Kernel replay raised LaunchFailed; requests disconnected and exported performance counters were zero</td>
+          </tr>
+          <tr>
+            <td>Whole-range replay</td>
+            <td><span class="status rejected">rejected</span></td>
+            <td>Request completed but no report was emitted; range metrics would also aggregate the range rather than preserve per-kernel values</td>
+          </tr></tbody>
+          </table>
+        </div>
+        <h3>Exact request and runtime</h3>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr><th>Request</th><td>16,384 prompt tokens; 1 completion token; <code>cached_tokens=0</code>; HTTP 200</td></tr>
+              <tr><th>Latency</th><td>1,242.217 ms client; 1,238.404 ms server</td></tr>
+              <tr><th>Response</th><td><code>atus</code>; SHA-256 <code>e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629</code></td></tr>
+              <tr><th>Runtime</th><td><code>image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447</code></td></tr>
+              <tr><th>SGLang</th><td><code>3bd16074e02da069acdc959f0968af1d63fb9467</code>; <code>--moe-runner-backend cutlass</code></td></tr>
+              <tr><th>Device</th><td>2; CC 10.3; 148 SMs; 233.472 KB shared memory/SM; 65,536 registers/SM</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Primary external references</h3>
+        <ul>
+          <li><a href="https://tomyoung903.github.io/maas_docs/tmp/basic-kernel-understanding-b300/#pp2-tree">GLM-5.2 B300 PP2 execution tree and FLOP ledger</a></li>
+          <li><a href="https://www.nvidia.com/en-gb/data-center/dgx-b300/">NVIDIA DGX B300 performance specification</a></li>
+          <li><a href="https://docs.nvidia.com/nsight-compute/2025.3/ProfilingGuide/index.html">NVIDIA Nsight Compute 2025.3 profiling guide</a></li>
+        </ul>
+        <h3>Artifact hashes</h3>
+        <div class="table-wrap sources">
+          <table><thead><tr><th>Source</th><th>SHA-256</th></tr></thead><tbody><tr><td>nsys_baseline/trace.sqlite</td><td><code>ef4b4638e8504fa1cd7a41d8e831bf493f06fc53ad9b50ab605cc312b8d17758</code></td></tr><tr><td>nsys_baseline/pp2_semantic.json</td><td><code>946f035cca75e4b09c6dc6f02a01dd6409181790ca79e870cab15a696d458e80</code></td></tr><tr><td>nsys_baseline/result_profiled.json</td><td><code>98d32db106e52dac27194f253047ca427343ea8254af438862a34c8f57561726</code></td></tr><tr><td>ncu_attention_core/raw.csv</td><td><code>22be42e9b9a9b556d89c5fef77bb4451cc1c5ef3c0d4bc5d9f0b46d764e6bd8d</code></td></tr><tr><td>ncu_attention_memory_custom/raw.csv</td><td><code>071929262305a124b711ac5e95145edebf80d37160780eba3dd37c6552da4e6f</code></td></tr><tr><td>ncu_attention_scheduler_custom/raw.csv</td><td><code>06cc164a35084b1e3d43afc7b849ec7fa79005e8315017868e3a99ab47176d35</code></td></tr><tr><td>ncu_grouped_full/raw.csv</td><td><code>4ba358096f9f436aa57683f57f4679dfd5baabbb4631cb632a31f51a109b4601</code></td></tr><tr><td>ncu_deepgemm_full/raw.csv</td><td><code>ebd4bf2dcb0f3f42cb9522a4384f5d69089443ba5fa887874fef985bae4e95fc</code></td></tr><tr><td>ncu_combined_diagnostic/raw.csv</td><td><code>d23e025e825cdb27a2c7b5578e8852c99a257bd1e83345f83542963296679196</code></td></tr><tr><td>reference/basic-kernel-understanding-b300/timeline_data.json</td><td><code>f289480aa1956adc468ba24edb51744f835ef446760faebbab229dfa630ee5cd</code></td></tr></tbody></table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer><div>
+    Generated from retained Nsys and NCU artifacts. gpu-worker-198 was released
+    before report construction: no GPU reservation, process, memory allocation,
+    utilization, or Docker container remained.
+  </div></footer>
+</body>
+</html>
