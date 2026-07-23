@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A measured, visual explanation of how one 16,384-token sparse MLA kernel maps blocks and warps onto 148 SMs and produces 30.84% normalized MFU.">
+  <title>Sparse MLA at 30.84% MFU: Inside One GPU SM</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5b6773;
+      --line: #d8dde3;
+      --soft: #f4f6f8;
+      --paper: #ffffff;
+      --nav: #20262d;
+      --red: #b83f35;
+      --red-soft: #fbefed;
+      --blue: #2f729e;
+      --blue-soft: #eaf3f8;
+      --green: #287d5a;
+      --green-soft: #eaf6f0;
+      --gold: #a76f1b;
+      --gold-soft: #fff6e5;
+      --violet: #6d5488;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.62;
+      letter-spacing: 0;
+    }
+    a { color: #225f87; text-underline-offset: 3px; }
+    code, pre {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+    code { font-size: 0.88em; overflow-wrap: anywhere; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 10px 28px;
+      color: #f2f5f7;
+      background: var(--nav);
+      border-bottom: 1px solid #11161b;
+    }
+    .topbar strong { font-size: 14px; }
+    .topbar nav { display: flex; flex-wrap: wrap; gap: 16px; }
+    .topbar a { color: #d8e3ea; font-size: 13px; text-decoration: none; }
+    .hero {
+      padding: 56px 32px 42px;
+      background: #eef2f4;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-inner, .page-shell { max-width: 1360px; margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 980px;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 46px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    .hero-copy {
+      max-width: 920px;
+      margin: 18px 0 0;
+      color: #384550;
+      font-size: 18px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      margin-top: 23px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .page-shell {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 42px;
+      padding: 34px 32px 80px;
+    }
+    .toc {
+      position: sticky;
+      top: 76px;
+      align-self: start;
+      padding: 14px 0;
+      border-top: 2px solid var(--ink);
+      border-bottom: 1px solid var(--line);
+    }
+    .toc strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .toc a {
+      display: block;
+      padding: 5px 0;
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .toc a:hover { color: var(--ink); }
+    main { min-width: 0; }
+    section {
+      padding: 8px 0 44px;
+      margin-bottom: 38px;
+      border-bottom: 1px solid var(--line);
+      scroll-margin-top: 72px;
+    }
+    section:last-child { margin-bottom: 0; border-bottom: 0; }
+    h2 {
+      margin: 0 0 12px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 30px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 30px 0 10px;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+    p { max-width: 940px; margin: 10px 0; }
+    .lede { color: #3e4a55; font-size: 17px; }
+    .verdict {
+      margin: 24px 0;
+      padding: 20px 22px;
+      background: var(--red-soft);
+      border-left: 4px solid var(--red);
+    }
+    .verdict strong { display: block; margin-bottom: 5px; font-size: 18px; }
+    .note {
+      margin: 20px 0;
+      padding: 14px 16px;
+      background: var(--gold-soft);
+      border: 1px solid #d8ab61;
+      border-radius: 6px;
+    }
+    .note.ok { background: var(--green-soft); border-color: #72aa91; }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 26px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .stat {
+      min-height: 132px;
+      padding: 18px;
+      border-right: 1px solid var(--line);
+    }
+    .stat:last-child { border-right: 0; }
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .stat-value {
+      margin: 7px 0 3px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 30px;
+      line-height: 1.1;
+    }
+    .stat-note { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .comparison {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      margin: 24px 0;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .comparison > div { min-height: 150px; padding: 19px; background: var(--paper); }
+    .comparison .kicker { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+    .comparison .big {
+      margin: 5px 0;
+      color: var(--red);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 34px;
+      font-weight: 700;
+    }
+    .comparison p { color: var(--muted); font-size: 13px; }
+    .equation-stack {
+      max-width: 980px;
+      margin: 22px 0;
+      border-top: 1px solid var(--line);
+    }
+    .equation {
+      display: grid;
+      grid-template-columns: minmax(160px, 230px) 24px minmax(0, 1fr);
+      gap: 10px;
+      align-items: baseline;
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--line);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 17px;
+    }
+    .equation .lhs { font-style: italic; }
+    .equation .result { color: #8e3027; font-weight: 700; }
+    .math-var { font-family: Georgia, "Times New Roman", serif; font-style: italic; }
+    .math-unit { font-style: normal; }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      align-items: stretch;
+      margin: 28px 0;
+      border: 1px solid var(--line);
+    }
+    .flow-step {
+      position: relative;
+      min-height: 126px;
+      padding: 17px 20px 17px 15px;
+      border-right: 1px solid var(--line);
+    }
+    .flow-step:last-child { border-right: 0; }
+    .flow-step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      top: 44px;
+      right: -9px;
+      z-index: 2;
+      width: 18px;
+      height: 24px;
+      color: var(--blue);
+      background: var(--paper);
+      font-weight: 800;
+      text-align: center;
+    }
+    .flow-step strong { display: block; margin-bottom: 7px; }
+    .flow-step span { display: block; color: var(--muted); font-size: 12px; }
+    figure { margin: 28px 0; }
+    figcaption { margin-top: 10px; color: var(--muted); font-size: 13px; }
+    .sm-grid {
+      display: grid;
+      grid-template-columns: repeat(37, minmax(7px, 1fr));
+      gap: 3px;
+      max-width: 900px;
+      padding: 14px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+    }
+    .sm-cell {
+      aspect-ratio: 1;
+      min-width: 0;
+      background: #91b8cf;
+      border: 1px solid #5f8ea9;
+    }
+    .sm-cell.focus { background: var(--red); border-color: #7f2923; }
+    .sm-zoom {
+      max-width: 980px;
+      margin: 24px 0;
+      border: 2px solid var(--ink);
+    }
+    .sm-zoom-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 12px 16px;
+      color: #fff;
+      background: var(--ink);
+    }
+    .sm-zoom-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+      gap: 0;
+    }
+    .scheduler-panel { padding: 18px; border-right: 1px solid var(--line); }
+    .resource-panel { padding: 18px; background: var(--soft); }
+    .scheduler-row {
+      display: grid;
+      grid-template-columns: 84px minmax(180px, 1fr) 90px;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0;
+    }
+    .scheduler-label, .scheduler-readiness { color: var(--muted); font-size: 11px; }
+    .warp-slots {
+      display: grid;
+      grid-template-columns: repeat(16, minmax(5px, 1fr));
+      gap: 3px;
+    }
+    .warp-slot {
+      aspect-ratio: 1;
+      background: #e2e6ea;
+      border: 1px solid #c7cdd3;
+    }
+    .warp-slot.active { background: var(--blue); border-color: #1f587a; }
+    .resource-row { margin: 17px 0; }
+    .resource-row strong { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; }
+    .resource-track {
+      height: 12px;
+      margin-top: 7px;
+      overflow: hidden;
+      background: #dfe4e8;
+      border-radius: 3px;
+    }
+    .resource-track span { display: block; height: 100%; background: var(--red); }
+    .resource-row small { display: block; margin-top: 5px; color: var(--muted); }
+    .scheduler-audit {
+      display: grid;
+      grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+      gap: 28px;
+      align-items: start;
+      margin: 28px 0;
+    }
+    .cycle-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 18px);
+      gap: 4px;
+      width: max-content;
+      padding: 12px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+    }
+    .cycle-cell { width: 18px; height: 18px; background: #d7dce1; }
+    .cycle-cell.ready { background: var(--green); }
+    .stall-bar {
+      display: flex;
+      width: 100%;
+      height: 40px;
+      overflow: hidden;
+      border: 1px solid #bfc6cd;
+      border-radius: 4px;
+    }
+    .stall-bar span { display: block; height: 100%; }
+    .stall-long { background: var(--red); }
+    .stall-short { background: var(--gold); }
+    .stall-wait { background: var(--violet); }
+    .stall-issue { background: var(--green); }
+    .stall-other { background: #9aa4ad; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .legend i {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+      vertical-align: -1px;
+    }
+    .memory-path {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      margin: 28px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .memory-level {
+      min-height: 148px;
+      padding: 17px;
+      border-right: 1px solid var(--line);
+    }
+    .memory-level:last-child { border-right: 0; }
+    .memory-level strong { display: block; }
+    .memory-level .metric {
+      margin: 7px 0;
+      color: var(--blue);
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .memory-level span { color: var(--muted); font-size: 12px; }
+    .metric-bars {
+      display: grid;
+      grid-template-columns: 210px minmax(200px, 1fr) 82px;
+      gap: 11px 14px;
+      align-items: center;
+      max-width: 900px;
+      margin: 25px 0;
+    }
+    .metric-track {
+      height: 17px;
+      overflow: hidden;
+      background: #e7ebee;
+      border-radius: 3px;
+    }
+    .metric-track span { display: block; height: 100%; background: var(--blue); }
+    .metric-number { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .scenario-table { margin: 28px 0; }
+    .scenario-head, .scenario-row {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.2fr) minmax(180px, 1fr) 76px 84px;
+      gap: 14px;
+      align-items: center;
+    }
+    .scenario-head {
+      padding: 0 10px 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .scenario-row { min-height: 92px; padding: 12px 10px; border-top: 1px solid var(--line); }
+    .scenario-name span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .scenario-track {
+      height: 19px;
+      overflow: hidden;
+      background: #e6eaed;
+      border-radius: 3px;
+    }
+    .scenario-track span { display: block; height: 100%; background: var(--red); }
+    .scenario-row.hypothetical .scenario-track span { background: var(--blue); }
+    .scenario-row.ideal .scenario-track span { background: var(--green); }
+    .scenario-number, .scenario-time { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .table-wrap { overflow-x: auto; margin: 20px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      padding: 10px 9px;
+      color: var(--muted);
+      background: var(--soft);
+      border-bottom: 2px solid #aeb7c1;
+      text-align: left;
+    }
+    td { padding: 10px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    pre {
+      max-width: 100%;
+      margin: 20px 0;
+      padding: 18px;
+      overflow-x: auto;
+      color: #e8edf1;
+      background: #20262d;
+      border-radius: 5px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .download-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0;
+    }
+    .download-row a {
+      padding: 8px 12px;
+      color: var(--ink);
+      background: var(--soft);
+      border: 1px solid #bfc7ce;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .audit-list { padding-left: 20px; }
+    .audit-list li { max-width: 920px; margin: 8px 0; }
+    footer {
+      padding: 24px 32px;
+      color: #c8d2d9;
+      background: var(--nav);
+      font-size: 12px;
+    }
+    footer div { max-width: 1360px; margin: 0 auto; }
+    @media (max-width: 1050px) {
+      .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stat:nth-child(2) { border-right: 0; }
+      .flow, .memory-path { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow-step, .memory-level { border-bottom: 1px solid var(--line); }
+      .flow-step::after { display: none; }
+      .sm-grid { grid-template-columns: repeat(25, minmax(7px, 1fr)); }
+      .sm-zoom-body { grid-template-columns: 1fr; }
+      .scheduler-panel { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+    @media (max-width: 780px) {
+      .topbar { position: static; align-items: flex-start; padding: 10px 16px; }
+      .topbar nav { display: none; }
+      .hero { padding: 38px 20px 34px; }
+      h1 { font-size: 37px; }
+      .hero-copy { font-size: 16px; }
+      .page-shell { display: block; padding: 24px 20px 60px; }
+      .toc { position: static; margin-bottom: 32px; }
+      .toc a { display: inline-block; margin-right: 15px; }
+      .comparison, .scheduler-audit { grid-template-columns: 1fr; }
+      .equation { grid-template-columns: 1fr; gap: 2px; }
+      .equation .eq { display: none; }
+      .sm-grid { grid-template-columns: repeat(16, minmax(7px, 1fr)); }
+      .scenario-head { display: none; }
+      .scenario-row { grid-template-columns: 1fr 70px 82px; gap: 8px; }
+      .scenario-name { grid-column: 1 / -1; }
+      .scenario-track { min-width: 0; }
+      .metric-bars { grid-template-columns: minmax(130px, 1fr) 64px; }
+      .metric-track { grid-column: 1 / 3; grid-row: auto; }
+    }
+    @media (max-width: 520px) {
+      .stat-grid, .flow, .memory-path { grid-template-columns: 1fr; }
+      .stat, .flow-step, .memory-level { border-right: 0; border-bottom: 1px solid var(--line); }
+      .stat:last-child, .memory-level:last-child { border-bottom: 0; }
+      .scheduler-row { grid-template-columns: 1fr; }
+      .scheduler-readiness { text-align: left; }
+      .sm-grid { grid-template-columns: repeat(12, minmax(6px, 1fr)); }
+      .cycle-grid { grid-template-columns: repeat(10, 14px); }
+      .cycle-cell { width: 14px; height: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <strong>MaaS Kernel Study</strong>
+    <nav aria-label="Pack navigation">
+      <a href="https://tomyoung903.github.io/maas_docs/tmp/glm52-neimeng-b300-top5-kernel-mfu/">Top-five audit</a>
+      <a href="#mfu">MFU derivation</a>
+      <a href="#evidence">Evidence</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Measured sparse MLA execution</p>
+      <h1>Sparse MLA at 30.84% MFU: inside one GPU SM</h1>
+      <p class="hero-copy">
+        One 16,384-token GLM-5.2 sparse-attention launch becomes 16,384 thread
+        blocks. Each block consumes an entire SM's register file and 94.5% of
+        its shared-memory budget, leaving 16 resident warps to feed Tensor,
+        load/store, reduction, and softmax work.
+      </p>
+      <div class="hero-meta">
+        <span>Node: <code>gpu-worker-199</code></span>
+        <span>One allocated GPU</span>
+        <span>Device-reported: NVIDIA L20D, CC 10.3</span>
+        <span>Captured: 2026-07-23 CST</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-shell">
+    <aside class="toc" aria-label="Page overview">
+      <strong>On this page</strong>
+      <a href="#answer">Answer first</a>
+      <a href="#reproducer">Exact reproducer</a>
+      <a href="#hierarchy">Grid to SM</a>
+      <a href="#scheduler">Warp scheduler</a>
+      <a href="#memory">Memory path</a>
+      <a href="#mfu">30.84% derivation</a>
+      <a href="#counterfactuals">Toward 100%</a>
+      <a href="#evidence">Evidence and limits</a>
+    </aside>
+
+    <main>
+      <section id="answer">
+        <h2>Answer first</h2>
+        <p class="lede">
+          The 30.84% number does not mean that 30.84% of the SMs are switched
+          on. All 148 SMs receive work. It means the counted sparse-MLA
+          <em>useful FP8-equivalent operations</em> arrive at 30.84% of a
+          4.5-PFLOP/s dense-FP8 comparison peak.
+        </p>
+        <div class="verdict">
+          <strong>The standalone call reproduced the result.</strong>
+          The production trace measured <b>30.84%</b>.
+          The direct synthetic call measured <b>31.58%</b>
+          at <b>3.083 ms</b>. The difference is
+          0.74 percentage points,
+          while preserving the exact API, dimensions, kernel specialization,
+          grid, block, register, and shared-memory shape.
+        </div>
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="stat-label">Useful work / layer</div>
+            <div class="stat-value">4.381 TFLOP</div>
+            <div class="stat-note">Q&middot;K and probability&middot;V over selected token pairs.</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Synthetic time</div>
+            <div class="stat-value">3.083 ms</div>
+            <div class="stat-note">Median of five groups, ten launches per group.</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Achieved occupancy</div>
+            <div class="stat-value">24.94%</div>
+            <div class="stat-note">15.96 of 64 possible resident warps per SM.</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">No eligible warp</div>
+            <div class="stat-value">63.4%</div>
+            <div class="stat-note">Scheduler cycles with no warp ready to issue.</div>
+          </div>
+        </div>
+        <div class="note">
+          <b>Two meanings of sparse:</b> sparse MLA selects at most 2,048 KV
+          tokens per query. It is not NVIDIA's 2:4 structured-sparsity mode.
+          The denominator here is dense FP8. NVIDIA lists 72 sparse FP8 PFLOPS
+          for an eight-GPU DGX B300 and states dense is half: 36 / 8 =
+          4.5 PFLOP/s per GPU.
+        </div>
+      </section>
+
+      <section id="reproducer">
+        <h2>The exact standalone reproducer</h2>
+        <p>
+          The driver bypasses HTTP, the scheduler, pipeline parallelism, and
+          the rest of the model. It directly calls the same FlashInfer
+          TensorRT-LLM entry point selected by SGLang's DSA backend, using
+          synthetic FP8 query/KV storage and a causal 2,048-entry page table.
+        </p>
+        <div class="flow" aria-label="Reproducer call path">
+          <div class="flow-step"><strong>Synthetic tensors</strong><span>16,384 queries, 64 heads, FP8 Q and KV</span></div>
+          <div class="flow-step"><strong>FlashInfer API</strong><span><code>trtllm_batch_decode_with_kv_cache_mla</code></span></div>
+          <div class="flow-step"><strong>Backend</strong><span><code>trtllm-gen</code>, variable sequence, shared paged index</span></div>
+          <div class="flow-step"><strong>Compiled kernel</strong><span>fmhaSm100fKernel_...TokenSparse...Q64Kv128...ForGen</span></div>
+          <div class="flow-step"><strong>BF16 output</strong><span>[16,384, 1, 64, 512], finite sample checked</span></div>
+        </div>
+        <pre><code>out = trtllm_batch_decode_with_kv_cache_mla(
+    query=query,                  # [16384, 1, 64, 576], FP8
+    kv_cache=kv_cache,            # paged FP8 latent + RoPE cache
+    block_tables=page_table,      # [16384, 1, 2048]
+    seq_lens=seq_lens.clamp(max=2048),
+    sparse_mla_top_k=2048,
+    qk_nope_head_dim=128,
+    kv_lora_rank=512,
+    qk_rope_head_dim=64,
+    backend=&quot;trtllm-gen&quot;,
+    is_var_seq=True,
+)</code></pre>
+        <div class="download-row">
+          <a href="reproduce_sparse_mla.py">Download full reproducer</a>
+          <a href="analysis.json">Download analysis JSON</a>
+          <a href="nsys_kernel_samples.csv">Download Nsys timings</a>
+          <a href="sparse_mla_recent_details.csv">Download NCU details</a>
+        </div>
+        <div class="comparison">
+          <div>
+            <div class="kicker">Production PP2</div>
+            <div class="big">30.84%</div>
+            <p>
+              Ten layers, 43.810 TFLOP in
+              31.566 ms. Average kernel:
+              3.157 ms.
+            </p>
+          </div>
+          <div>
+            <div class="kicker">Direct isolated call</div>
+            <div class="big">31.58%</div>
+            <p>
+              One layer-equivalent call, 4.381
+              TFLOP in 3.083 ms. Nsys and NCU independently
+              found the same kernel specialization.
+            </p>
+          </div>
+        </div>
+        <p>
+          The isolated call is 2.33%
+          faster than the production per-layer average. That small difference
+          is expected: real selected indices, cache history, clocks, and the
+          surrounding layer are absent. This is a shape-level reproduction,
+          not a claim that synthetic values recreate the learned DSA choices.
+        </p>
+      </section>
+
+      <section id="hierarchy">
+        <h2>From one launch to 148 SMs</h2>
+        <p class="lede">
+          CUDA distributes the grid's independent thread blocks across SMs.
+          A block stays on one SM; its 512 threads become 16 warps of 32
+          consecutive threads. This kernel permits only one resident block per
+          SM, so a full wave is 148 blocks.
+        </p>
+        <div class="equation-stack">
+          <div class="equation">
+            <span class="lhs">warps per block</span><span class="eq">=</span>
+            <span>512 threads / 32 threads per warp = <span class="result">16 warps</span></span>
+          </div>
+          <div class="equation">
+            <span class="lhs">blocks per full wave</span><span class="eq">=</span>
+            <span>148 SMs &times; 1 resident block per SM = <span class="result">148 blocks</span></span>
+          </div>
+          <div class="equation">
+            <span class="lhs">waves per SM</span><span class="eq">=</span>
+            <span>16,384 blocks / 148 SMs = <span class="result">110.70</span></span>
+          </div>
+        </div>
+        <figure>
+          <div class="sm-grid" aria-label="148 SMs, each with one resident thread block">
+            <span class="sm-cell" title="SM 0: one resident block"></span><span class="sm-cell" title="SM 1: one resident block"></span><span class="sm-cell focus" title="SM 2: one resident block"></span><span class="sm-cell" title="SM 3: one resident block"></span><span class="sm-cell" title="SM 4: one resident block"></span><span class="sm-cell" title="SM 5: one resident block"></span><span class="sm-cell" title="SM 6: one resident block"></span><span class="sm-cell" title="SM 7: one resident block"></span><span class="sm-cell" title="SM 8: one resident block"></span><span class="sm-cell" title="SM 9: one resident block"></span><span class="sm-cell" title="SM 10: one resident block"></span><span class="sm-cell" title="SM 11: one resident block"></span><span class="sm-cell" title="SM 12: one resident block"></span><span class="sm-cell" title="SM 13: one resident block"></span><span class="sm-cell" title="SM 14: one resident block"></span><span class="sm-cell" title="SM 15: one resident block"></span><span class="sm-cell" title="SM 16: one resident block"></span><span class="sm-cell" title="SM 17: one resident block"></span><span class="sm-cell" title="SM 18: one resident block"></span><span class="sm-cell" title="SM 19: one resident block"></span><span class="sm-cell" title="SM 20: one resident block"></span><span class="sm-cell" title="SM 21: one resident block"></span><span class="sm-cell" title="SM 22: one resident block"></span><span class="sm-cell" title="SM 23: one resident block"></span><span class="sm-cell" title="SM 24: one resident block"></span><span class="sm-cell" title="SM 25: one resident block"></span><span class="sm-cell" title="SM 26: one resident block"></span><span class="sm-cell" title="SM 27: one resident block"></span><span class="sm-cell" title="SM 28: one resident block"></span><span class="sm-cell" title="SM 29: one resident block"></span><span class="sm-cell" title="SM 30: one resident block"></span><span class="sm-cell" title="SM 31: one resident block"></span><span class="sm-cell" title="SM 32: one resident block"></span><span class="sm-cell" title="SM 33: one resident block"></span><span class="sm-cell" title="SM 34: one resident block"></span><span class="sm-cell" title="SM 35: one resident block"></span><span class="sm-cell" title="SM 36: one resident block"></span><span class="sm-cell" title="SM 37: one resident block"></span><span class="sm-cell" title="SM 38: one resident block"></span><span class="sm-cell" title="SM 39: one resident block"></span><span class="sm-cell" title="SM 40: one resident block"></span><span class="sm-cell" title="SM 41: one resident block"></span><span class="sm-cell" title="SM 42: one resident block"></span><span class="sm-cell" title="SM 43: one resident block"></span><span class="sm-cell" title="SM 44: one resident block"></span><span class="sm-cell" title="SM 45: one resident block"></span><span class="sm-cell" title="SM 46: one resident block"></span><span class="sm-cell" title="SM 47: one resident block"></span><span class="sm-cell" title="SM 48: one resident block"></span><span class="sm-cell" title="SM 49: one resident block"></span><span class="sm-cell" title="SM 50: one resident block"></span><span class="sm-cell" title="SM 51: one resident block"></span><span class="sm-cell" title="SM 52: one resident block"></span><span class="sm-cell" title="SM 53: one resident block"></span><span class="sm-cell" title="SM 54: one resident block"></span><span class="sm-cell" title="SM 55: one resident block"></span><span class="sm-cell" title="SM 56: one resident block"></span><span class="sm-cell" title="SM 57: one resident block"></span><span class="sm-cell" title="SM 58: one resident block"></span><span class="sm-cell" title="SM 59: one resident block"></span><span class="sm-cell" title="SM 60: one resident block"></span><span class="sm-cell" title="SM 61: one resident block"></span><span class="sm-cell" title="SM 62: one resident block"></span><span class="sm-cell" title="SM 63: one resident block"></span><span class="sm-cell" title="SM 64: one resident block"></span><span class="sm-cell" title="SM 65: one resident block"></span><span class="sm-cell" title="SM 66: one resident block"></span><span class="sm-cell" title="SM 67: one resident block"></span><span class="sm-cell" title="SM 68: one resident block"></span><span class="sm-cell" title="SM 69: one resident block"></span><span class="sm-cell" title="SM 70: one resident block"></span><span class="sm-cell" title="SM 71: one resident block"></span><span class="sm-cell" title="SM 72: one resident block"></span><span class="sm-cell" title="SM 73: one resident block"></span><span class="sm-cell" title="SM 74: one resident block"></span><span class="sm-cell" title="SM 75: one resident block"></span><span class="sm-cell" title="SM 76: one resident block"></span><span class="sm-cell" title="SM 77: one resident block"></span><span class="sm-cell" title="SM 78: one resident block"></span><span class="sm-cell" title="SM 79: one resident block"></span><span class="sm-cell" title="SM 80: one resident block"></span><span class="sm-cell" title="SM 81: one resident block"></span><span class="sm-cell" title="SM 82: one resident block"></span><span class="sm-cell" title="SM 83: one resident block"></span><span class="sm-cell" title="SM 84: one resident block"></span><span class="sm-cell" title="SM 85: one resident block"></span><span class="sm-cell" title="SM 86: one resident block"></span><span class="sm-cell" title="SM 87: one resident block"></span><span class="sm-cell" title="SM 88: one resident block"></span><span class="sm-cell" title="SM 89: one resident block"></span><span class="sm-cell" title="SM 90: one resident block"></span><span class="sm-cell" title="SM 91: one resident block"></span><span class="sm-cell" title="SM 92: one resident block"></span><span class="sm-cell" title="SM 93: one resident block"></span><span class="sm-cell" title="SM 94: one resident block"></span><span class="sm-cell" title="SM 95: one resident block"></span><span class="sm-cell" title="SM 96: one resident block"></span><span class="sm-cell" title="SM 97: one resident block"></span><span class="sm-cell" title="SM 98: one resident block"></span><span class="sm-cell" title="SM 99: one resident block"></span><span class="sm-cell" title="SM 100: one resident block"></span><span class="sm-cell" title="SM 101: one resident block"></span><span class="sm-cell" title="SM 102: one resident block"></span><span class="sm-cell" title="SM 103: one resident block"></span><span class="sm-cell" title="SM 104: one resident block"></span><span class="sm-cell" title="SM 105: one resident block"></span><span class="sm-cell" title="SM 106: one resident block"></span><span class="sm-cell" title="SM 107: one resident block"></span><span class="sm-cell" title="SM 108: one resident block"></span><span class="sm-cell" title="SM 109: one resident block"></span><span class="sm-cell" title="SM 110: one resident block"></span><span class="sm-cell" title="SM 111: one resident block"></span><span class="sm-cell" title="SM 112: one resident block"></span><span class="sm-cell" title="SM 113: one resident block"></span><span class="sm-cell" title="SM 114: one resident block"></span><span class="sm-cell" title="SM 115: one resident block"></span><span class="sm-cell" title="SM 116: one resident block"></span><span class="sm-cell" title="SM 117: one resident block"></span><span class="sm-cell" title="SM 118: one resident block"></span><span class="sm-cell" title="SM 119: one resident block"></span><span class="sm-cell" title="SM 120: one resident block"></span><span class="sm-cell" title="SM 121: one resident block"></span><span class="sm-cell" title="SM 122: one resident block"></span><span class="sm-cell" title="SM 123: one resident block"></span><span class="sm-cell" title="SM 124: one resident block"></span><span class="sm-cell" title="SM 125: one resident block"></span><span class="sm-cell" title="SM 126: one resident block"></span><span class="sm-cell" title="SM 127: one resident block"></span><span class="sm-cell" title="SM 128: one resident block"></span><span class="sm-cell" title="SM 129: one resident block"></span><span class="sm-cell" title="SM 130: one resident block"></span><span class="sm-cell" title="SM 131: one resident block"></span><span class="sm-cell" title="SM 132: one resident block"></span><span class="sm-cell" title="SM 133: one resident block"></span><span class="sm-cell" title="SM 134: one resident block"></span><span class="sm-cell" title="SM 135: one resident block"></span><span class="sm-cell" title="SM 136: one resident block"></span><span class="sm-cell" title="SM 137: one resident block"></span><span class="sm-cell" title="SM 138: one resident block"></span><span class="sm-cell" title="SM 139: one resident block"></span><span class="sm-cell" title="SM 140: one resident block"></span><span class="sm-cell" title="SM 141: one resident block"></span><span class="sm-cell" title="SM 142: one resident block"></span><span class="sm-cell" title="SM 143: one resident block"></span><span class="sm-cell" title="SM 144: one resident block"></span><span class="sm-cell" title="SM 145: one resident block"></span><span class="sm-cell" title="SM 146: one resident block"></span><span class="sm-cell" title="SM 147: one resident block"></span>
+          </div>
+          <figcaption>
+            One full wave: 148 blue cells are 148 SMs, each hosting one block.
+            The red cell is expanded below. After a block retires, the scheduler
+            assigns a later block; this repeats for about 110.7 waves per SM.
+          </figcaption>
+        </figure>
+
+        <div class="sm-zoom">
+          <div class="sm-zoom-head">
+            <strong>One SM, one 512-thread block</strong>
+            <span>16 active warps / 64 hardware warp slots</span>
+          </div>
+          <div class="sm-zoom-body">
+            <div class="scheduler-panel">
+              <p>
+                Four warp schedulers each own four active warps from this block.
+                Gray squares are unoccupied warp slots, not threads that were
+                launched and then disabled.
+              </p>
+              
+            <div class="scheduler-row">
+              <span class="scheduler-label">Scheduler 0</span>
+              <div class="warp-slots"><span class="warp-slot active" title="Scheduler 0, warp slot 0"></span><span class="warp-slot active" title="Scheduler 0, warp slot 1"></span><span class="warp-slot active" title="Scheduler 0, warp slot 2"></span><span class="warp-slot active" title="Scheduler 0, warp slot 3"></span><span class="warp-slot" title="Scheduler 0, warp slot 4"></span><span class="warp-slot" title="Scheduler 0, warp slot 5"></span><span class="warp-slot" title="Scheduler 0, warp slot 6"></span><span class="warp-slot" title="Scheduler 0, warp slot 7"></span><span class="warp-slot" title="Scheduler 0, warp slot 8"></span><span class="warp-slot" title="Scheduler 0, warp slot 9"></span><span class="warp-slot" title="Scheduler 0, warp slot 10"></span><span class="warp-slot" title="Scheduler 0, warp slot 11"></span><span class="warp-slot" title="Scheduler 0, warp slot 12"></span><span class="warp-slot" title="Scheduler 0, warp slot 13"></span><span class="warp-slot" title="Scheduler 0, warp slot 14"></span><span class="warp-slot" title="Scheduler 0, warp slot 15"></span></div>
+              <span class="scheduler-readiness">0.44 eligible</span>
+            </div>
+            
+
+            <div class="scheduler-row">
+              <span class="scheduler-label">Scheduler 1</span>
+              <div class="warp-slots"><span class="warp-slot active" title="Scheduler 1, warp slot 0"></span><span class="warp-slot active" title="Scheduler 1, warp slot 1"></span><span class="warp-slot active" title="Scheduler 1, warp slot 2"></span><span class="warp-slot active" title="Scheduler 1, warp slot 3"></span><span class="warp-slot" title="Scheduler 1, warp slot 4"></span><span class="warp-slot" title="Scheduler 1, warp slot 5"></span><span class="warp-slot" title="Scheduler 1, warp slot 6"></span><span class="warp-slot" title="Scheduler 1, warp slot 7"></span><span class="warp-slot" title="Scheduler 1, warp slot 8"></span><span class="warp-slot" title="Scheduler 1, warp slot 9"></span><span class="warp-slot" title="Scheduler 1, warp slot 10"></span><span class="warp-slot" title="Scheduler 1, warp slot 11"></span><span class="warp-slot" title="Scheduler 1, warp slot 12"></span><span class="warp-slot" title="Scheduler 1, warp slot 13"></span><span class="warp-slot" title="Scheduler 1, warp slot 14"></span><span class="warp-slot" title="Scheduler 1, warp slot 15"></span></div>
+              <span class="scheduler-readiness">0.44 eligible</span>
+            </div>
+            
+
+            <div class="scheduler-row">
+              <span class="scheduler-label">Scheduler 2</span>
+              <div class="warp-slots"><span class="warp-slot active" title="Scheduler 2, warp slot 0"></span><span class="warp-slot active" title="Scheduler 2, warp slot 1"></span><span class="warp-slot active" title="Scheduler 2, warp slot 2"></span><span class="warp-slot active" title="Scheduler 2, warp slot 3"></span><span class="warp-slot" title="Scheduler 2, warp slot 4"></span><span class="warp-slot" title="Scheduler 2, warp slot 5"></span><span class="warp-slot" title="Scheduler 2, warp slot 6"></span><span class="warp-slot" title="Scheduler 2, warp slot 7"></span><span class="warp-slot" title="Scheduler 2, warp slot 8"></span><span class="warp-slot" title="Scheduler 2, warp slot 9"></span><span class="warp-slot" title="Scheduler 2, warp slot 10"></span><span class="warp-slot" title="Scheduler 2, warp slot 11"></span><span class="warp-slot" title="Scheduler 2, warp slot 12"></span><span class="warp-slot" title="Scheduler 2, warp slot 13"></span><span class="warp-slot" title="Scheduler 2, warp slot 14"></span><span class="warp-slot" title="Scheduler 2, warp slot 15"></span></div>
+              <span class="scheduler-readiness">0.44 eligible</span>
+            </div>
+            
+
+            <div class="scheduler-row">
+              <span class="scheduler-label">Scheduler 3</span>
+              <div class="warp-slots"><span class="warp-slot active" title="Scheduler 3, warp slot 0"></span><span class="warp-slot active" title="Scheduler 3, warp slot 1"></span><span class="warp-slot active" title="Scheduler 3, warp slot 2"></span><span class="warp-slot active" title="Scheduler 3, warp slot 3"></span><span class="warp-slot" title="Scheduler 3, warp slot 4"></span><span class="warp-slot" title="Scheduler 3, warp slot 5"></span><span class="warp-slot" title="Scheduler 3, warp slot 6"></span><span class="warp-slot" title="Scheduler 3, warp slot 7"></span><span class="warp-slot" title="Scheduler 3, warp slot 8"></span><span class="warp-slot" title="Scheduler 3, warp slot 9"></span><span class="warp-slot" title="Scheduler 3, warp slot 10"></span><span class="warp-slot" title="Scheduler 3, warp slot 11"></span><span class="warp-slot" title="Scheduler 3, warp slot 12"></span><span class="warp-slot" title="Scheduler 3, warp slot 13"></span><span class="warp-slot" title="Scheduler 3, warp slot 14"></span><span class="warp-slot" title="Scheduler 3, warp slot 15"></span></div>
+              <span class="scheduler-readiness">0.44 eligible</span>
+            </div>
+            
+            </div>
+            <div class="resource-panel">
+              <div class="resource-row">
+                <strong><span>Register file</span><span>100%</span></strong>
+                <div class="resource-track"><span style="width:100%"></span></div>
+                <small>512 &times; 128 = 65,536 32-bit registers (262,144 bytes)</small>
+              </div>
+              <div class="resource-row">
+                <strong><span>Shared-memory allocation</span><span>94.52%</span></strong>
+                <div class="resource-track"><span style="width:94.5175%"></span></div>
+                <small>220,672 / 233,472 bytes</small>
+              </div>
+              <div class="resource-row">
+                <strong><span>Resident warp capacity</span><span>25%</span></strong>
+                <div class="resource-track"><span style="width:25%"></span></div>
+                <small>16 resident warps / 64 maximum warps</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="verdict">
+          <strong>Why a second block cannot enter this SM.</strong>
+          Registers alone consume 65,536 / 65,536. Shared memory independently
+          consumes 220,672 / 233,472 bytes. Both NCU occupancy limits report
+          one block. A second block would require at most 64 registers/thread
+          and 116,736 total shared bytes/block.
+        </div>
+      </section>
+
+      <section id="scheduler">
+        <h2>What the 16 warps do each cycle</h2>
+        <p>
+          A resident warp is merely available to the scheduler. It is
+          <em>eligible</em> only when its next instruction is decoded, its input
+          dependencies are ready, and the required execution pipe is
+          available. NCU measured 3.99 active warps per scheduler but only 0.44
+          eligible on an average cycle.
+        </p>
+        <div class="scheduler-audit">
+          <figure>
+            <div class="cycle-grid" aria-label="100 representative scheduler cycles">
+              <span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell ready"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span><span class="cycle-cell"></span>
+            </div>
+            <figcaption>
+              A 100-cycle teaching view: green represents the measured
+              36.6% of cycles with at
+              least one eligible warp; gray represents
+              63.4% with none.
+            </figcaption>
+          </figure>
+          <div>
+            <h3>Average state budget per issued instruction</h3>
+            <div class="stall-bar" aria-label="Average warp cycles by state">
+              <span class="stall-long" style="width:68.4693%"></span>
+              <span class="stall-short" style="width:6.9661%"></span>
+              <span class="stall-wait" style="width:9.4409%"></span>
+              <span class="stall-issue" style="width:9.1659%"></span>
+              <span class="stall-other" style="width:5.9578%"></span>
+            </div>
+            <div class="legend">
+              <span><i class="stall-long"></i>Long scoreboard 7.47 cycles</span>
+              <span><i class="stall-short"></i>Short scoreboard 0.76</span>
+              <span><i class="stall-wait"></i>Fixed-latency wait 1.03</span>
+              <span><i class="stall-issue"></i>Selected/issued 1.00</span>
+              <span><i class="stall-other"></i>Other 0.65</span>
+            </div>
+            <p>
+              Total: 10.91
+              warp-cycles per issued instruction. The dominant
+              68.5% is waiting for an L1TEX-tracked dependency,
+              usually a value produced by a local/global/texture load.
+            </p>
+          </div>
+        </div>
+        <div class="note">
+          <b>Low occupancy is not the same as low MFU.</b> Sixteen warps can
+          sometimes drive Tensor Cores effectively. Here, however, the four
+          active warps per scheduler often wait on the same class of
+          dependency, so there is no independent ready warp to issue on 63.4%
+          of scheduler cycles.
+        </div>
+      </section>
+
+      <section id="memory">
+        <h2>Registers, shared memory, L1, L2, and HBM</h2>
+        <p class="lede">
+          These stores form a hierarchy, not five interchangeable buckets.
+          Registers are private thread state; shared memory is explicit
+          block-local scratch; L1/TEX and L2 are hardware-managed caches; HBM
+          is the backing device memory.
+        </p>
+        <div class="memory-path">
+          <div class="memory-level">
+            <strong>Registers</strong>
+            <div class="metric">128 / thread</div>
+            <span>Fast operands and accumulators. Allocation is private to each thread and consumes the entire SM register file.</span>
+          </div>
+          <div class="memory-level">
+            <strong>Shared memory</strong>
+            <div class="metric">220,672 B</div>
+            <span>Program-managed staging and cross-warp exchange within one block. Lifetime ends when the block retires.</span>
+          </div>
+          <div class="memory-level">
+            <strong>L1 / TEX</strong>
+            <div class="metric">63.91% hit</div>
+            <span>Per-SM hardware cache and coalescing path. It shares a configurable physical budget with shared memory.</span>
+          </div>
+          <div class="memory-level">
+            <strong>L2</strong>
+            <div class="metric">126.5 MiB</div>
+            <span>GPU-wide cache shared across SMs. 94.38% of measured sectors hit here.</span>
+          </div>
+          <div class="memory-level">
+            <strong>HBM</strong>
+            <div class="metric">7.45% peak</div>
+            <span>Backing memory. Low peak utilization shows this launch is not saturating HBM bandwidth.</span>
+          </div>
+        </div>
+        <div class="metric-bars">
+          <span>SM throughput</span>
+          <div class="metric-track"><span style="width:64.4500%"></span></div>
+          <span class="metric-number">64.45%</span>
+          <span>Tensor-pipe active cycles</span>
+          <div class="metric-track"><span style="width:61.7800%"></span></div>
+          <span class="metric-number">61.78%</span>
+          <span>Useful normalized MFU</span>
+          <div class="metric-track"><span style="width:31.5773%"></span></div>
+          <span class="metric-number">31.58%</span>
+          <span>HBM throughput</span>
+          <div class="metric-track"><span style="width:7.4500%"></span></div>
+          <span class="metric-number">7.45%</span>
+        </div>
+        <p>
+          These bars have different denominators. Tensor-pipe activity says
+          the pipe was active during 61.78%
+          of elapsed cycles; it does not count how many of its operations belong
+          to the useful QK/PV numerator. The kernel also performs loads,
+          softmax, reductions, index handling, synchronization, and output
+          conversion. Those consume hardware time but are excluded from MFU.
+        </p>
+      </section>
+
+      <section id="mfu">
+        <h2>Exactly how 30.84% arises</h2>
+        <p>
+          For the first 2,048 causal queries, the number of valid selected
+          keys grows from 1 to 2,048. The remaining 14,336 queries each use
+          2,048 keys. Every selected query-key pair is evaluated for 64 heads.
+        </p>
+        <div class="equation-stack">
+          <div class="equation">
+            <span class="lhs">selected pairs</span><span class="eq">=</span>
+            <span>
+              2,048 &times; 2,049 / 2 + (16,384 - 2,048) &times; 2,048
+              = <span class="result">31,458,304</span>
+            </span>
+          </div>
+          <div class="equation">
+            <span class="lhs">FLOPs / pair / head</span><span class="eq">=</span>
+            <span>
+              2 &times; (512 + 64) + 2 &times; 512
+              = <span class="result">2,176</span>
+            </span>
+          </div>
+          <div class="equation">
+            <span class="lhs">useful work / layer</span><span class="eq">=</span>
+            <span>
+              31,458,304 &times; 64 &times;
+              2,176
+              = <span class="result">4,381,009,248,256 FLOPs</span>
+            </span>
+          </div>
+          <div class="equation">
+            <span class="lhs">production MFU</span><span class="eq">=</span>
+            <span>
+              43.810092 TFLOP /
+              (0.031566236 s &times; 4,500 TFLOP/s)
+              = <span class="result">30.8417%</span>
+            </span>
+          </div>
+          <div class="equation">
+            <span class="lhs">synthetic MFU</span><span class="eq">=</span>
+            <span>
+              4.381009 TFLOP /
+              (0.003083094 s &times; 4,500 TFLOP/s)
+              = <span class="result">31.5773%</span>
+            </span>
+          </div>
+        </div>
+        <div class="note ok">
+          <b>What the numerator intentionally excludes:</b> sparse-index
+          generation, page-table reads, softmax exponentials, reductions,
+          synchronization, and BF16 output conversion. They are necessary
+          execution, but the established MFU convention counts the FP8-equivalent
+          Q&middot;K and probability&middot;V operations only.
+        </div>
+      </section>
+
+      <section id="counterfactuals">
+        <h2>What would have to change to approach 100%</h2>
+        <p class="lede">
+          The measured rows are evidence. The blue and green rows are
+          counterfactual teaching targets: each holds useful work fixed at
+          4.381 TFLOP and asks how short the
+          kernel must become. They are not benchmark predictions.
+        </p>
+        <div class="scenario-table">
+          <div class="scenario-head">
+            <span>Scenario and condition</span><span>Normalized MFU</span><span>MFU</span><span>Required time</span>
+          </div>
+          
+            <div class="scenario-row measured">
+              <div class="scenario-name">
+                <strong>Measured production baseline</strong>
+                <span>Original SGLang PP2 trace; 10 layer launches.</span>
+              </div>
+              <div class="scenario-track" aria-label="30.84% MFU">
+                <span style="width:30.8417%"></span>
+              </div>
+              <div class="scenario-number">30.84%</div>
+              <div class="scenario-time">3.157 ms</div>
+            </div>
+            
+
+            <div class="scenario-row measured">
+              <div class="scenario-name">
+                <strong>Direct synthetic reproducer</strong>
+                <span>Exact FlashInfer entry point and launch shape; one layer call.</span>
+              </div>
+              <div class="scenario-track" aria-label="31.58% MFU">
+                <span style="width:31.5773%"></span>
+              </div>
+              <div class="scenario-number">31.58%</div>
+              <div class="scenario-time">3.083 ms</div>
+            </div>
+            
+
+            <div class="scenario-row hypothetical">
+              <div class="scenario-name">
+                <strong>Latency-first counterfactual</strong>
+                <span>Keep one block per SM, but make selected-KV loads and the software pipeline ready often enough to remove 21% of time.</span>
+              </div>
+              <div class="scenario-track" aria-label="40.00% MFU">
+                <span style="width:40.0000%"></span>
+              </div>
+              <div class="scenario-number">40.00%</div>
+              <div class="scenario-time">2.434 ms</div>
+            </div>
+            
+
+            <div class="scenario-row hypothetical">
+              <div class="scenario-name">
+                <strong>Two-block counterfactual</strong>
+                <span>At most 64 registers/thread and 116,736 total shared bytes/block, plus enough locality to avoid cache regression.</span>
+              </div>
+              <div class="scenario-track" aria-label="50.00% MFU">
+                <span style="width:50.0000%"></span>
+              </div>
+              <div class="scenario-number">50.00%</div>
+              <div class="scenario-time">1.947 ms</div>
+            </div>
+            
+
+            <div class="scenario-row hypothetical">
+              <div class="scenario-name">
+                <strong>Three-block counterfactual</strong>
+                <span>At most 42 registers/thread and 77,824 total shared bytes/block, with a balanced Tensor/load/reduction pipeline.</span>
+              </div>
+              <div class="scenario-track" aria-label="75.00% MFU">
+                <span style="width:75.0000%"></span>
+              </div>
+              <div class="scenario-number">75.00%</div>
+              <div class="scenario-time">1.298 ms</div>
+            </div>
+            
+
+            <div class="scenario-row ideal">
+              <div class="scenario-name">
+                <strong>Idealized useful-FP8 ceiling</strong>
+                <span>At most 32 registers/thread and 58,368 total shared bytes/block, then assume every peak FP8 slot performs counted QK or PV work with zero overhead. This is not realistic attention behavior.</span>
+              </div>
+              <div class="scenario-track" aria-label="100.00% MFU">
+                <span style="width:100.0000%"></span>
+              </div>
+              <div class="scenario-number">100.00%</div>
+              <div class="scenario-time">0.974 ms</div>
+            </div>
+            
+        </div>
+        <h3>Resource thresholds for more resident blocks</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Blocks / SM</th><th>Resident warps</th><th>Theoretical occupancy</th><th>Maximum registers / thread</th><th>Maximum total shared bytes / block</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1 - measured</td><td>16</td><td>25%</td><td>128 used</td><td>220,672 used</td></tr>
+              <tr><td>2</td><td>32</td><td>50%</td><td>64</td><td>116,736</td></tr>
+              <tr><td>3</td><td>48</td><td>75%</td><td>42</td><td>77,824</td></tr>
+              <tr><td>4</td><td>64</td><td>100%</td><td>32</td><td>58,368</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          These register and shared-memory values are arithmetic upper bounds
+          from the measured per-SM budgets. Register allocation granularity,
+          barriers, and other launch constraints can lower actual occupancy.
+        </p>
+        <div class="verdict">
+          <strong>More occupancy is an opportunity, not a speedup formula.</strong>
+          Reducing registers or shared memory can admit more blocks, but those
+          blocks help only if they provide eligible warps while another warp is
+          waiting. Extra blocks may also reduce cache locality or force spills.
+          The 100% row additionally assumes no softmax, load, reduction,
+          synchronization, or pipeline overhead - impossible for a real
+          attention kernel.
+        </div>
+      </section>
+
+      <section id="evidence">
+        <h2>Evidence, provenance, and limits</h2>
+        <p>
+          This experiment used exactly one Kubernetes GPU allocation on
+          <code>gpu-worker-199</code>. The pod was deleted after capture.
+          Node-local verification then found zero compute processes, zero
+          running Docker containers, and all eight GPUs at 0 MiB and 0%
+          utilization.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Evidence</th><th>Result</th></tr></thead>
+            <tbody>
+              <tr><td>Direct CUDA events</td><td>Five groups of ten launches; median 3.083094 ms, 31.5773% MFU</td></tr>
+              <tr><td>Nsight Systems 2025.3.1</td><td>10 NVTX-contained launches; 3.075399-3.080167 ms, mean 3.076992 ms</td></tr>
+              <tr><td>Nsight Compute 2025.3.1</td><td>One matching launch, kernel replay, 20 passes; 3.085440 ms counter sample</td></tr>
+              <tr><td>Output validation</td><td>Sampled BF16 output finite; mean 0.02734789</td></tr>
+              <tr><td>Kernel identity</td><td><code>fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparseP1VarSeqQ64Kv128PersistentKeepsAbForGen</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Captured source hashes</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Source</th><th>SHA-256 prefix</th></tr></thead>
+            <tbody><tr><td><code>reproduce_sparse_mla.py</code></td><td><code>2ae83f615c35df18...</code></td></tr><tr><td><code>final_recent_full.json</code></td><td><code>d1e2f55769776414...</code></td></tr><tr><td><code>sparse_mla_recent.sqlite</code></td><td><code>b4524ba6596fc920...</code></td></tr><tr><td><code>sparse_mla_recent_raw.csv</code></td><td><code>551ea5f164b53668...</code></td></tr><tr><td><code>sparse_mla_recent_details.csv</code></td><td><code>3df5ad5a70f1ced1...</code></td></tr></tbody>
+          </table>
+        </div>
+        <h3>Interpretation limits</h3>
+        <ul class="audit-list"><li>The cluster calls the fleet B300, while the device reports NVIDIA L20D, compute capability 10.3, and 148 SMs.</li><li>The 4,500-TFLOP/s dense FP8 denominator is a comparison convention derived from NVIDIA&#x27;s DGX B300 system specification, not a public L20D product specification.</li><li>Synthetic selected-token indices preserve cardinality and launch geometry, but they cannot reproduce the exact learned DSA index distribution or the complete SGLang layer context.</li><li>NCU replay changes wall time. NCU counters describe the replayed kernel; unprofiled CUDA events and Nsys provide timing.</li></ul>
+        <h3>Primary references</h3>
+        <ul class="audit-list">
+          <li><a href="https://docs.nvidia.com/cuda/archive/13.0.0/cuda-c-programming-guide/index.html">CUDA C++ Programming Guide</a>: grids, blocks, 32-thread warps, registers, and resident-resource limits.</li>
+          <li><a href="https://docs.nvidia.com/cuda/blackwell-tuning-guide/index.html">NVIDIA Blackwell Tuning Guide</a>: 64 warps/SM, 64K registers/SM, shared-memory/L1 carveout, and Blackwell memory hierarchy.</li>
+          <li><a href="https://archive.docs.nvidia.com/nsight-compute/2025.3/ProfilingGuide/index.html">Nsight Compute Profiling Guide</a>: occupancy, eligible warps, issue slots, and scoreboard stall definitions.</li>
+          <li><a href="https://www.nvidia.com/en-gb/data-center/dgx-b300/">NVIDIA DGX B300 specification</a>: eight GPUs and 72 sparse FP8 PFLOPS; dense is one-half.</li>
+          <li><a href="https://tomyoung903.github.io/maas_docs/tmp/glm52-neimeng-b300-top5-kernel-mfu/">Original GLM-5.2 top-five kernel MFU audit</a>: production 30.84% baseline and ten-layer PP2 context.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+  <footer>
+    <div>
+      Generated from captured profiler artifacts. Measured values are labeled;
+      counterfactual rows are explanatory requirements, not benchmark claims.
+    </div>
+  </footer>
+</body>
+</html>

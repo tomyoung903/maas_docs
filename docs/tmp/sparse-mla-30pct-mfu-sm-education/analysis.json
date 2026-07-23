@@ -1,0 +1,263 @@
+{
+  "artifact": {
+    "title": "Sparse MLA at 30.84% MFU: Inside One GPU SM",
+    "generated_at": "2026-07-23T18:58:40.276154+08:00",
+    "node": "gpu-worker-199",
+    "allocated_gpu_uuid": "GPU-a5a2b405-e307-a918-d31d-5c4d03019356",
+    "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447",
+    "runtime_digest": "sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b",
+    "sglang_commit": "3bd16074e02da069acdc959f0968af1d63fb9467",
+    "sources": {
+      "reproduce_sparse_mla.py": "2ae83f615c35df186f9ef09d9ba45705bf63b7e171f1e8bc1e7f4dce8c050d5e",
+      "final_recent_full.json": "d1e2f557697764146fcd086ed7cf5e6a93b68fd72a9f5fced6eae601e978b85e",
+      "sparse_mla_recent.sqlite": "b4524ba6596fc920107e704629400d7dc4d60d0209e01b969cdce54869e13511",
+      "sparse_mla_recent_raw.csv": "551ea5f164b53668426db937cea1c10123aa1ef67b353c3646aaf16b7c14bb06",
+      "sparse_mla_recent_details.csv": "3df5ad5a70f1ced1af4555df227bcc5840ef58f0aaf5b175545fde98c1d19de6"
+    }
+  },
+  "contract": {
+    "entry_point": "flashinfer.decode.trtllm_batch_decode_with_kv_cache_mla",
+    "backend": "trtllm-gen",
+    "tokens": 16384,
+    "topk": 2048,
+    "heads": 64,
+    "qk_nope_head_dim": 128,
+    "kv_lora_rank": 512,
+    "qk_rope_head_dim": 64,
+    "value_dim": 512,
+    "page_size": 64,
+    "layout": "recent",
+    "query_shape": [
+      16384,
+      1,
+      64,
+      576
+    ],
+    "kv_cache_shape": [
+      256,
+      1,
+      64,
+      576
+    ],
+    "page_table_shape": [
+      16384,
+      1,
+      2048
+    ],
+    "seq_lens_shape": [
+      16384
+    ],
+    "query_dtype": "torch.float8_e4m3fn",
+    "kv_cache_dtype": "torch.float8_e4m3fn",
+    "output_dtype": "torch.bfloat16"
+  },
+  "validation": {
+    "sample_finite": true,
+    "sample_mean": 0.02734789252281189,
+    "device_name": "NVIDIA L20D",
+    "compute_capability": [
+      10,
+      3
+    ],
+    "torch_version": "2.11.0+cu130",
+    "cuda_version": "13.0",
+    "max_memory_allocated_bytes": 2224098816
+  },
+  "kernel": {
+    "name": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparseP1VarSeqQ64Kv128PersistentKeepsAbForGen",
+    "selected_pairs": 31458304,
+    "flops_per_pair_per_head": 2176,
+    "useful_flops_per_launch": 4381009248256,
+    "useful_tflop_per_launch": 4.381009248256,
+    "normalization_peak_tflops": 4500.0,
+    "geometry": {
+      "grid": [
+        1,
+        1,
+        16384
+      ],
+      "block": [
+        512,
+        1,
+        1
+      ],
+      "registers_per_thread": 128,
+      "static_shared_bytes": 0,
+      "dynamic_shared_bytes": 219648,
+      "stream_id": 7
+    },
+    "block_size": 512,
+    "grid_size": 16384,
+    "registers_per_thread": 128,
+    "registers_per_sm": 65536,
+    "shared_bytes_per_block": 220672,
+    "dynamic_shared_bytes": 219648,
+    "driver_shared_bytes": 1024,
+    "shared_bytes_per_sm": 233472,
+    "sm_count": 148,
+    "schedulers_per_sm": 4,
+    "max_warps_per_scheduler": 16,
+    "max_warps_per_sm": 64,
+    "waves_per_sm": 110.7,
+    "l2_bytes": 132644864
+  },
+  "timing": {
+    "production": {
+      "launches": 10,
+      "aggregate_ms": 31.566236,
+      "average_ms": 3.1566236,
+      "aggregate_tflop": 43.81009248256,
+      "mfu_percent": 30.84173896195782
+    },
+    "direct_event": {
+      "samples_ms": [
+        3.0830944061279295,
+        3.0835039138793947,
+        3.08242244720459,
+        3.0835647583007812,
+        3.082863998413086
+      ],
+      "median_ms": 3.0830944061279295,
+      "mfu_percent": 31.577288349929262
+    },
+    "nsys": {
+      "samples_ms": [
+        3.075399,
+        3.076326,
+        3.077254,
+        3.076423,
+        3.080167,
+        3.076775,
+        3.07687,
+        3.077414,
+        3.077543,
+        3.075751
+      ],
+      "mean_ms": 3.0769922,
+      "median_ms": 3.0768225,
+      "minimum_ms": 3.075399,
+      "maximum_ms": 3.080167,
+      "mfu_percent": 31.639911557902405
+    },
+    "ncu": {
+      "duration_ms": 3.08544,
+      "mfu_percent": 31.55328286155477,
+      "replay_passes": 20
+    },
+    "direct_vs_production_mfu_points": 0.7355493879714423,
+    "direct_vs_production_time_percent": -2.3293621029783385
+  },
+  "counters": {
+    "theoretical_occupancy_percent": 25.0,
+    "achieved_occupancy_percent": 24.94,
+    "active_warps_per_sm": 15.96,
+    "active_warps_per_scheduler": 3.99,
+    "eligible_warps_per_scheduler": 0.44,
+    "issued_warps_per_scheduler": 0.37,
+    "one_or_more_eligible_percent": 36.6,
+    "no_eligible_percent": 63.4,
+    "warp_cycles_per_issued_instruction": 10.91,
+    "stall_cycles": {
+      "long_scoreboard": 7.47,
+      "short_scoreboard": 0.76,
+      "wait": 1.03,
+      "selected": 1.0,
+      "other": 0.6500000000000004
+    },
+    "sm_throughput_percent": 64.45,
+    "tensor_pipe_active_percent": 61.78,
+    "dram_throughput_percent": 7.45,
+    "dram_bytes_per_second": 571246214478.32,
+    "l1_hit_percent": 63.91,
+    "l2_hit_percent": 94.38,
+    "predicated_threads_per_warp": 31.17
+  },
+  "scenarios": [
+    {
+      "name": "Measured production baseline",
+      "kind": "measured",
+      "mfu_percent": 30.84173896195782,
+      "duration_ms": 3.1566236,
+      "resident_blocks": 1,
+      "occupancy_percent": 25,
+      "condition": "Original SGLang PP2 trace; 10 layer launches."
+    },
+    {
+      "name": "Direct synthetic reproducer",
+      "kind": "measured",
+      "mfu_percent": 31.577288349929262,
+      "duration_ms": 3.0830944061279295,
+      "resident_blocks": 1,
+      "occupancy_percent": 25,
+      "condition": "Exact FlashInfer entry point and launch shape; one layer call."
+    },
+    {
+      "name": "Latency-first counterfactual",
+      "kind": "hypothetical",
+      "mfu_percent": 40,
+      "duration_ms": 2.433894026808889,
+      "resident_blocks": 1,
+      "occupancy_percent": 25,
+      "condition": "Keep one block per SM, but make selected-KV loads and the software pipeline ready often enough to remove 21% of time."
+    },
+    {
+      "name": "Two-block counterfactual",
+      "kind": "hypothetical",
+      "mfu_percent": 50,
+      "duration_ms": 1.9471152214471112,
+      "resident_blocks": 2,
+      "occupancy_percent": 50,
+      "condition": "At most 64 registers/thread and 116,736 total shared bytes/block, plus enough locality to avoid cache regression."
+    },
+    {
+      "name": "Three-block counterfactual",
+      "kind": "hypothetical",
+      "mfu_percent": 75,
+      "duration_ms": 1.298076814298074,
+      "resident_blocks": 3,
+      "occupancy_percent": 75,
+      "condition": "At most 42 registers/thread and 77,824 total shared bytes/block, with a balanced Tensor/load/reduction pipeline."
+    },
+    {
+      "name": "Idealized useful-FP8 ceiling",
+      "kind": "ideal",
+      "mfu_percent": 100,
+      "duration_ms": 0.9735576107235556,
+      "resident_blocks": 4,
+      "occupancy_percent": 100,
+      "condition": "At most 32 registers/thread and 58,368 total shared bytes/block, then assume every peak FP8 slot performs counted QK or PV work with zero overhead. This is not realistic attention behavior."
+    }
+  ],
+  "cleanup": {
+    "pod_deleted": true,
+    "gpu_reservations": 0,
+    "compute_processes": 0,
+    "gpu_memory_mib": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "gpu_utilization_percent": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "docker_containers": 0
+  },
+  "limitations": [
+    "The cluster calls the fleet B300, while the device reports NVIDIA L20D, compute capability 10.3, and 148 SMs.",
+    "The 4,500-TFLOP/s dense FP8 denominator is a comparison convention derived from NVIDIA's DGX B300 system specification, not a public L20D product specification.",
+    "Synthetic selected-token indices preserve cardinality and launch geometry, but they cannot reproduce the exact learned DSA index distribution or the complete SGLang layer context.",
+    "NCU replay changes wall time. NCU counters describe the replayed kernel; unprofiled CUDA events and Nsys provide timing."
+  ]
+}
