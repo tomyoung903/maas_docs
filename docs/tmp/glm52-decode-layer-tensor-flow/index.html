@@ -1,0 +1,1442 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="A measured GLM-5.2 decode-layer walkthrough connecting MLA attention, DeepEP routing, expert GEMMs, and concrete tensor flow.">
+  <link rel="icon" href="data:,">
+  <title>GLM-5.2 Decode Layer: Time and Tensor Flow</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5e6b78;
+      --line: #d7dee5;
+      --soft-line: #e9edf1;
+      --paper: #ffffff;
+      --ground: #f3f6f8;
+      --dark: #202a33;
+      --dark-soft: #2c3944;
+      --hidden: #2563a7;
+      --hidden-soft: #edf5fc;
+      --attention: #087f78;
+      --attention-soft: #eaf8f6;
+      --select: #a15c08;
+      --select-soft: #fff6e8;
+      --dispatch: #6552a3;
+      --dispatch-soft: #f3effb;
+      --expert: #a33b5b;
+      --expert-soft: #fceff3;
+      --combine: #267346;
+      --combine-soft: #edf8f1;
+      --shared: #526576;
+      --shared-soft: #eff3f6;
+      --warn: #984c17;
+      --warn-soft: #fff3e9;
+      --radius: 9px;
+      --shadow: 0 7px 22px rgba(25, 38, 52, .07);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 66px; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--ground);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.62;
+    }
+    a { color: #145f8b; text-underline-offset: 3px; }
+    a:focus-visible, button:focus-visible {
+      outline: 3px solid rgba(37, 99, 167, .28);
+      outline-offset: 2px;
+    }
+    .skip-link {
+      position: fixed;
+      top: -60px;
+      left: 16px;
+      z-index: 100;
+      padding: 9px 13px;
+      border-radius: 6px;
+      color: #fff;
+      background: #0f1720;
+      font-weight: 750;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 10px; }
+    .mono, time {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Academic notation: case and weight encode object type, color tracks families. */
+    .math-scalar { font-family: Georgia, "Times New Roman", serif; font-style: italic; }
+    .math-vec {
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-weight: 700;
+    }
+    .math-mat {
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: normal;
+      font-weight: 700;
+    }
+    .math-set {
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-weight: 700;
+    }
+    .math-space {
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: normal;
+      white-space: nowrap;
+    }
+    .math-fn { font-style: normal; font-weight: 500; }
+    .sym-hidden { color: var(--hidden); }
+    .sym-attention { color: var(--attention); }
+    .sym-select { color: var(--select); }
+    .sym-dispatch { color: var(--dispatch); }
+    .sym-expert { color: var(--expert); }
+    .sym-combine { color: var(--combine); }
+    .sym-shared { color: var(--shared); }
+    sub, sup { line-height: 0; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 48px;
+      gap: 20px;
+      padding: 0 max(22px, calc((100vw - 1380px) / 2));
+      color: #fff;
+      background: var(--dark);
+      border-bottom: 1px solid #111920;
+    }
+    .topbar strong { font-size: 14px; white-space: nowrap; }
+    .top-links {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 7px 0;
+      scrollbar-width: thin;
+    }
+    .top-links a {
+      flex: 0 0 auto;
+      padding: 4px 8px;
+      border-radius: 5px;
+      color: #dce6ec;
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .top-links a:hover { background: var(--dark-soft); color: #fff; }
+
+    .hero {
+      color: #fff;
+      background:
+        radial-gradient(circle at 84% 15%, rgba(8, 127, 120, .24), transparent 28%),
+        linear-gradient(135deg, #2b3740 0%, #333e47 62%, #263a3c 100%);
+      border-bottom: 4px solid var(--attention);
+    }
+    .hero-inner {
+      width: min(1380px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 40px 0 32px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #9fded8;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 1050px;
+      margin: 0;
+      font-size: clamp(34px, 4.2vw, 50px);
+      line-height: 1.08;
+      letter-spacing: -.025em;
+    }
+    .hero-copy {
+      max-width: 980px;
+      margin: 14px 0 0;
+      color: #dce4e8;
+      font-size: 17px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 21px;
+    }
+    .hero-pill {
+      padding: 5px 10px;
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 999px;
+      color: #dfe8eb;
+      background: rgba(255, 255, 255, .06);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 32px;
+      width: min(1380px, calc(100% - 48px));
+      margin: 0 auto;
+      align-items: start;
+    }
+    .toc {
+      position: sticky;
+      top: 68px;
+      padding: 28px 0;
+    }
+    .toc h2 {
+      margin: 0 0 9px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .toc a {
+      display: block;
+      padding: 7px 10px;
+      border-left: 2px solid transparent;
+      border-radius: 0 5px 5px 0;
+      color: #465462;
+      font-size: 13px;
+      line-height: 1.3;
+      text-decoration: none;
+    }
+    .toc a:hover {
+      color: var(--ink);
+      border-left-color: var(--attention);
+      background: #e7f1f1;
+    }
+    main { min-width: 0; padding-bottom: 70px; }
+    section {
+      padding: 36px 0 40px;
+      border-bottom: 1px solid var(--line);
+    }
+    section:last-child { border-bottom: 0; }
+    h2 {
+      margin: 0 0 9px;
+      font-size: 26px;
+      line-height: 1.22;
+      letter-spacing: -.01em;
+    }
+    h3 {
+      margin: 27px 0 10px;
+      font-size: 19px;
+      line-height: 1.3;
+    }
+    p { margin: 0 0 13px; }
+    .lede { max-width: 980px; color: var(--muted); }
+
+    .callout {
+      margin: 18px 0;
+      padding: 15px 17px;
+      border: 1px solid #bcdad6;
+      border-left: 4px solid var(--attention);
+      border-radius: var(--radius);
+      background: #f2fbfa;
+    }
+    .callout.warning {
+      border-color: #e5c6ae;
+      border-left-color: var(--warn);
+      background: var(--warn-soft);
+    }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .evidence-key {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 18px 0;
+    }
+    .key {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #435160;
+      font-size: 12px;
+    }
+    .key::before {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      content: "";
+    }
+    .key.measured::before { background: var(--attention); }
+    .key.illustrative::before { background: var(--select); }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 22px 0;
+    }
+    .metric {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .metric-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .metric-value {
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 760;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-detail { margin-top: 4px; color: var(--muted); font-size: 12px; }
+
+    .flow-board {
+      margin-top: 22px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .flow-start, .flow-merge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .flow-branches {
+      display: grid;
+      grid-template-columns: 115px minmax(0, 1fr);
+      gap: 10px 13px;
+      margin: 15px 0;
+    }
+    .lane-label {
+      display: flex;
+      align-items: center;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .path {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      min-width: 0;
+    }
+    .node {
+      display: flex;
+      flex: 1 1 0;
+      min-width: 100px;
+      flex-direction: column;
+      justify-content: center;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-left: 4px solid #9aa6b0;
+      border-radius: 7px;
+      background: #fff;
+      text-align: center;
+    }
+    .node strong { font-size: 13px; line-height: 1.25; }
+    .node small { margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.3; }
+    .node.attention { border-left-color: var(--attention); background: var(--attention-soft); }
+    .node.select { border-left-color: var(--select); background: var(--select-soft); }
+    .node.dispatch { border-left-color: var(--dispatch); background: var(--dispatch-soft); }
+    .node.expert { border-left-color: var(--expert); background: var(--expert-soft); }
+    .node.combine { border-left-color: var(--combine); background: var(--combine-soft); }
+    .node.shared { border-left-color: var(--shared); background: var(--shared-soft); }
+    .node.hidden { border-left-color: var(--hidden); background: var(--hidden-soft); }
+    .arrow {
+      display: grid;
+      flex: 0 0 18px;
+      place-items: center;
+      color: #8a97a2;
+      font-size: 18px;
+    }
+    .parallel-badge {
+      align-self: center;
+      padding: 3px 7px;
+      border: 1px solid #cbd3da;
+      border-radius: 999px;
+      color: #536170;
+      background: #fff;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .timeline-shell {
+      margin-top: 23px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    .timeline {
+      min-width: 990px;
+      padding: 16px 18px 18px;
+    }
+    .timeline-head {
+      display: flex;
+      justify-content: space-between;
+      margin: 0 0 9px 104px;
+      color: var(--muted);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+    .time-lane {
+      display: grid;
+      grid-template-columns: 94px minmax(0, 1fr);
+      align-items: center;
+      margin-top: 8px;
+    }
+    .time-lane-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+    .time-track {
+      position: relative;
+      height: 42px;
+      border: 1px solid var(--soft-line);
+      border-radius: 5px;
+      background:
+        linear-gradient(to right, transparent 24.8%, #e7ebee 25%, transparent 25.2%),
+        linear-gradient(to right, transparent 49.8%, #e7ebee 50%, transparent 50.2%),
+        linear-gradient(to right, transparent 74.8%, #e7ebee 75%, transparent 75.2%),
+        #fafbfc;
+    }
+    .time-block {
+      position: absolute;
+      top: 5px;
+      left: var(--left);
+      width: max(var(--width), 7px);
+      height: 30px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, .11);
+      border-radius: 4px;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 28px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .time-block.attention { background: var(--attention); }
+    .time-block.dispatch { background: var(--dispatch); }
+    .time-block.expert { background: var(--expert); }
+    .time-block.combine { background: var(--combine); }
+    .time-block.shared { background: var(--shared); }
+    .time-block.setup { color: #62420c; background: #f1cf8a; }
+    .time-marker {
+      position: absolute;
+      top: -4px;
+      bottom: -4px;
+      left: calc(100% - 2px);
+      width: 2px;
+      background: var(--hidden);
+    }
+    .time-marker span {
+      position: absolute;
+      right: 3px;
+      bottom: 2px;
+      color: var(--hidden);
+      background: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .timeline-note {
+      margin: 10px 0 0 104px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .symbol-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 19px 0;
+    }
+    .symbol-card {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    .symbol-card .symbol {
+      font-size: 21px;
+      line-height: 1.25;
+    }
+    .symbol-card p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+
+    .table-wrap {
+      width: 100%;
+      margin-top: 20px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    caption {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      color: #33414e;
+      background: #f8fafb;
+      font-weight: 720;
+      text-align: left;
+    }
+    th, td {
+      padding: 12px 13px;
+      border-bottom: 1px solid var(--soft-line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: #52606c;
+      background: #f7f9fa;
+      font-size: 10px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #fbfcfd; }
+    td.phase {
+      width: 18%;
+      border-left: 4px solid #a9b2ba;
+      font-weight: 730;
+    }
+    tr.family-attention td.phase { border-left-color: var(--attention); }
+    tr.family-select td.phase { border-left-color: var(--select); }
+    tr.family-dispatch td.phase { border-left-color: var(--dispatch); }
+    tr.family-expert td.phase { border-left-color: var(--expert); }
+    tr.family-combine td.phase { border-left-color: var(--combine); }
+    tr.family-shared td.phase { border-left-color: var(--shared); }
+    tr.family-hidden td.phase { border-left-color: var(--hidden); }
+    td.interval {
+      width: 22%;
+      white-space: nowrap;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+    .tensor-line { display: block; margin-bottom: 3px; }
+    .shape {
+      display: inline-block;
+      margin-left: 4px;
+      padding: 1px 6px;
+      border: 1px solid #d5dde3;
+      border-radius: 999px;
+      color: #4f5e6c;
+      background: #f6f8f9;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .tensor-note { color: var(--muted); font-size: 11px; }
+
+    .worked-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .worked-card {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    .worked-card h3 { margin: 0 0 11px; font-size: 17px; }
+    .vector-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 10px 0;
+    }
+    .value {
+      min-width: 48px;
+      padding: 5px 7px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: #293744;
+      background: #f8fafb;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .value.ellipsis { color: var(--muted); }
+    .pair-grid {
+      display: grid;
+      grid-template-columns: 68px repeat(8, minmax(44px, 1fr));
+      gap: 5px;
+      align-items: center;
+      margin-top: 12px;
+      overflow-x: auto;
+      font-size: 11px;
+    }
+    .pair-label { color: var(--muted); font-weight: 750; }
+    .pair-cell {
+      padding: 5px 4px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #fafbfc;
+      text-align: center;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .equation-block {
+      display: grid;
+      gap: 8px;
+      margin-top: 13px;
+      padding: 15px;
+      border: 1px solid #cbd9d0;
+      border-left: 4px solid var(--combine);
+      border-radius: 7px;
+      background: #f6fbf8;
+      overflow-x: auto;
+    }
+    .equation-row {
+      display: grid;
+      grid-template-columns: minmax(92px, auto) 22px minmax(0, 1fr);
+      gap: 8px;
+      align-items: baseline;
+      min-width: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 16px;
+    }
+    .equation-row .lhs { text-align: right; }
+    .equation-row .eq { text-align: center; }
+    .equation-row .rhs { min-width: 0; overflow-wrap: anywhere; }
+    .equation-note {
+      margin-top: 7px;
+      color: var(--muted);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-size: 11px;
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 11px;
+      margin-top: 20px;
+    }
+    .insight {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    .insight strong { display: block; margin-bottom: 5px; }
+    .insight p { margin: 0; color: var(--muted); font-size: 13px; }
+    details {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    summary {
+      padding: 13px 15px;
+      cursor: pointer;
+      font-weight: 720;
+    }
+    .details-body {
+      padding: 0 15px 15px;
+      color: #44515e;
+      font-size: 13px;
+    }
+    .details-body ul { margin: 8px 0 0; padding-left: 20px; }
+    .details-body li { margin: 6px 0; }
+    footer {
+      padding: 27px max(24px, calc((100vw - 1380px) / 2));
+      color: #566472;
+      background: #e6ecef;
+      font-size: 12px;
+    }
+
+    @media (max-width: 1080px) {
+      .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .symbol-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .worked-grid { grid-template-columns: 1fr; }
+      .insight-grid { grid-template-columns: 1fr; }
+      .path { flex-wrap: wrap; }
+      .node { min-width: 145px; }
+    }
+    @media (max-width: 900px) {
+      .topbar {
+        position: static;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0;
+        padding: 9px 14px 3px;
+      }
+      .top-links { width: 100%; }
+      .hero-inner, .layout { width: min(100% - 28px, 1380px); }
+      .hero-inner { padding: 30px 0 25px; }
+      .layout { display: block; }
+      .toc {
+        position: static;
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        padding: 14px 0 2px;
+      }
+      .toc h2 { display: none; }
+      .toc a {
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+      }
+      .flow-branches { grid-template-columns: 1fr; }
+      .lane-label { margin-top: 7px; }
+    }
+    @media (max-width: 720px) {
+      body { font-size: 15px; }
+      section { padding: 29px 0 33px; }
+      .metric-grid, .symbol-grid { grid-template-columns: 1fr; }
+      .flow-board { padding: 14px; }
+      .flow-start, .flow-merge, .path {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .arrow { min-height: 18px; transform: rotate(90deg); }
+      .parallel-badge { align-self: flex-start; }
+      .table-wrap { overflow: visible; border: 0; background: transparent; box-shadow: none; }
+      table, tbody { display: block; }
+      thead { display: none; }
+      caption {
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        margin-bottom: 9px;
+      }
+      tr {
+        display: block;
+        margin-bottom: 10px;
+        border: 1px solid var(--line);
+        border-left: 4px solid #a9b2ba;
+        border-radius: 7px;
+        background: #fff;
+        overflow: hidden;
+      }
+      tr.family-attention { border-left-color: var(--attention); }
+      tr.family-select { border-left-color: var(--select); }
+      tr.family-dispatch { border-left-color: var(--dispatch); }
+      tr.family-expert { border-left-color: var(--expert); }
+      tr.family-combine { border-left-color: var(--combine); }
+      tr.family-shared { border-left-color: var(--shared); }
+      tr.family-hidden { border-left-color: var(--hidden); }
+      td {
+        display: grid;
+        grid-template-columns: 110px minmax(0, 1fr);
+        gap: 10px;
+        width: auto !important;
+        padding: 9px 11px;
+      }
+      td::before {
+        color: var(--muted);
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+      }
+      td.phase { border-left: 0; }
+      td.interval { white-space: normal; }
+      .worked-card { padding: 14px; }
+      .pair-grid { grid-template-columns: 62px repeat(8, 48px); }
+    }
+    @media (max-width: 520px) {
+      .hero-copy { font-size: 15px; }
+      .metric-grid { gap: 8px; }
+      td { grid-template-columns: 1fr; gap: 3px; }
+      .equation-row {
+        grid-template-columns: 76px 18px minmax(0, 1fr);
+        font-size: 15px;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="topbar">
+    <strong>GLM-5.2 Kernel Study</strong>
+    <nav class="top-links" aria-label="Pack navigation">
+      <a href="../basic-kernel-understanding-decode-first/">Full decode report</a>
+      <a href="../basic-kernel-understanding-decode-first/#execution-tree">Execution tree</a>
+      <a href="../basic-kernel-understanding-decode-first/kernel_events.csv.gz">Kernel events</a>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Temporary explanatory note · one computed decode token</p>
+      <h1>From MLA attention to eight experts—and back</h1>
+      <p class="hero-copy">
+        A tensor-first reading of one measured GLM-5.2 sparse layer: what each kernel phase receives,
+        what it produces, and where the shared and routed expert paths overlap in time.
+      </p>
+      <div class="hero-meta" aria-label="Experiment summary">
+        <span class="hero-pill">One H200 node</span>
+        <span class="hero-pill">Eight GPU ranks</span>
+        <span class="hero-pill">One GPU-computed token</span>
+        <span class="hero-pill">Useful CUDA Graph wave</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Page contents">
+      <h2>On this page</h2>
+      <a href="#mental-model">One-layer model</a>
+      <a href="#timing">Measured timing</a>
+      <a href="#tensor-table">Tensor-flow table</a>
+      <a href="#worked-token">Worked token</a>
+      <a href="#interpretation">How to read it</a>
+      <a href="#evidence">Evidence</a>
+    </nav>
+
+    <main id="main">
+      <section id="mental-model">
+        <h2>One sparse layer has two MoE branches</h2>
+        <p class="lede">
+          Attention runs first. The router then sends the same normalized token into a routed-expert
+          branch and a shared-expert branch. The branches reunite before the next layer begins.
+        </p>
+
+        <div class="evidence-key" aria-label="Evidence key">
+          <span class="key measured">Trace/config-backed: ordering, timing, and shapes</span>
+          <span class="key illustrative">Illustrative: the readable numeric values</span>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="metric-label">Hidden width</div>
+            <div class="metric-value">6,144</div>
+            <div class="metric-detail">elements per token vector</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Selected experts</div>
+            <div class="metric-value">8 of 256</div>
+            <div class="metric-detail">for each routed token</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Sample layer span</div>
+            <div class="metric-value">215.968&nbsp;µs</div>
+            <div class="metric-detail">MLA split to next MLA split</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Ordering audit</div>
+            <div class="metric-value">1,200 / 1,200</div>
+            <div class="metric-detail">MoE instances followed this chain</div>
+          </div>
+        </div>
+
+        <div class="flow-board" role="img" aria-label="Attention feeds a router. The routed-expert and shared-expert branches then execute in parallel and merge before the next layer.">
+          <div class="flow-start">
+            <div class="node attention">
+              <strong>MLA attention</strong>
+              <small>contextualize the token</small>
+            </div>
+            <span class="arrow" aria-hidden="true">→</span>
+            <div class="node select">
+              <strong>Router and TopK</strong>
+              <small>choose eight experts</small>
+            </div>
+          </div>
+
+          <div class="flow-branches">
+            <div class="lane-label">Routed path</div>
+            <div class="path">
+              <div class="node dispatch">
+                <strong>DeepEP dispatch</strong>
+                <small>move and group token copies</small>
+              </div>
+              <span class="arrow" aria-hidden="true">→</span>
+              <div class="node expert">
+                <strong>Gate/up GEMM</strong>
+                <small>expert-specific expansion</small>
+              </div>
+              <span class="arrow" aria-hidden="true">→</span>
+              <div class="node expert">
+                <strong>Down GEMM</strong>
+                <small>return to hidden width</small>
+              </div>
+              <span class="arrow" aria-hidden="true">→</span>
+              <div class="node combine">
+                <strong>DeepEP combine</strong>
+                <small>return and weight outputs</small>
+              </div>
+            </div>
+
+            <div class="lane-label">Shared path</div>
+            <div class="path">
+              <div class="node shared">
+                <strong>Shared expert</strong>
+                <small>local alternate CUDA stream</small>
+              </div>
+              <span class="parallel-badge">overlaps dispatch</span>
+            </div>
+          </div>
+
+          <div class="flow-merge">
+            <div class="node hidden">
+              <strong>Merge and residual</strong>
+              <small>one token vector for layer <span class="math-scalar">L</span> + 1</small>
+            </div>
+            <span class="arrow" aria-hidden="true">→</span>
+            <div class="node attention">
+              <strong>Next-layer MLA</strong>
+              <small>repeat the motif</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="timing">
+        <h2>The measured overlap is narrow and specific</h2>
+        <p class="lede">
+          This strip is the useful-wave GPU-0 sample from layer 3. Each horizontal position is measured
+          relative to the first MLA split at <time>33.151810&nbsp;ms</time>.
+        </p>
+
+        <div class="timeline-shell" aria-label="Measured layer timing strip">
+          <div class="timeline">
+            <div class="timeline-head">
+              <span>0&nbsp;µs</span>
+              <span>54&nbsp;µs</span>
+              <span>108&nbsp;µs</span>
+              <span>162&nbsp;µs</span>
+              <span>215.968&nbsp;µs</span>
+            </div>
+
+            <div class="time-lane">
+              <div class="time-lane-label">Main stream</div>
+              <div class="time-track">
+                <span class="time-block attention" style="--left:0%;--width:4.55%">split</span>
+                <span class="time-block attention" style="--left:3.07%;--width:5.19%">comb.</span>
+                <span class="time-block setup" style="--left:8.26%;--width:31.89%">projection · route</span>
+                <span class="time-block dispatch" style="--left:40.15%;--width:4.99%">D1</span>
+                <span class="time-block dispatch" style="--left:46.89%;--width:1.93%">D2</span>
+                <span class="time-block expert" style="--left:49.03%;--width:10.86%">gate/up</span>
+                <span class="time-block setup" style="--left:59.89%;--width:3.38%">act</span>
+                <span class="time-block expert" style="--left:63.27%;--width:7.53%">down</span>
+                <span class="time-block combine" style="--left:71.28%;--width:3.38%">C1</span>
+                <span class="time-block combine" style="--left:74.91%;--width:2.93%">C2</span>
+                <span class="time-marker"><span>next MLA</span></span>
+              </div>
+            </div>
+
+            <div class="time-lane">
+              <div class="time-lane-label">Shared stream</div>
+              <div class="time-track">
+                <span class="time-block shared" style="--left:32.83%;--width:14.17%">shared expert</span>
+              </div>
+            </div>
+
+            <p class="timeline-note">
+              D1/D2 and C1/C2 are the two observed kernels in each logical DeepEP phase. The trace
+              does not expose enough semantic metadata to assign a more specific role to each member.
+            </p>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong>What actually overlaps?</strong>
+          The shared-expert branch runs on a separate stream and overlaps DeepEP dispatch. On one GPU,
+          the routed chain itself remains ordered: dispatch → gate/up → activation → down → combine.
+        </div>
+      </section>
+
+      <section id="tensor-table">
+        <h2>The same timeline, now with tensors</h2>
+        <p class="lede">
+          Shapes below describe the logical token flow. DeepEP’s physical communication buffers may
+          contain rank-local grouping, capacity padding, graph padding, and bookkeeping beyond these logical rows.
+        </p>
+
+        <div class="symbol-grid">
+          <div class="symbol-card">
+            <div class="symbol">
+              <span class="sym sym-hidden math-vec">x<sub>L</sub></span>
+              ∈ <span class="math-space">ℝ<sup>6,144</sup></span>
+            </div>
+            <p>One hidden-state vector entering sparse layer <span class="math-scalar">L</span>.</p>
+          </div>
+          <div class="symbol-card">
+            <div class="symbol">
+              <span class="sym sym-select math-vec">g<sub>L</sub></span>
+              ∈ <span class="math-space">ℝ<sup>256</sup></span>
+            </div>
+            <p>FP32 router scores over all routed experts.</p>
+          </div>
+          <div class="symbol-card">
+            <div class="symbol">
+              <span class="sym sym-select math-set">I<sub>L</sub></span>,
+              &#8739;<span class="sym sym-select math-set">I<sub>L</sub></span>&#8739; = 8
+            </div>
+            <p>The selected-expert set for this token.</p>
+          </div>
+          <div class="symbol-card">
+            <div class="symbol">
+              <span class="sym sym-dispatch math-mat">X<sup>route</sup><sub>L</sub></span>
+              ∈ <span class="math-space">ℝ<sup>8 × 6,144</sup></span>
+            </div>
+            <p>A conceptual list of eight assignments—not the physical DeepEP buffer.</p>
+          </div>
+          <div class="symbol-card">
+            <div class="symbol">
+              <span class="sym sym-expert math-mat">Z<sub>L</sub></span>
+              ∈ <span class="math-space">ℝ<sup>8 × 2,048</sup></span>
+            </div>
+            <p>Activated expert intermediates after gate/up.</p>
+          </div>
+          <div class="symbol-card">
+            <div class="symbol">
+              <span class="sym sym-combine math-vec">r<sub>L</sub></span>
+              ∈ <span class="math-space">ℝ<sup>6,144</sup></span>
+            </div>
+            <p>The weighted routed-expert result after combine.</p>
+          </div>
+        </div>
+
+        <div class="callout warning">
+          <strong>The physical DeepEP tensor is padded and expert-major.</strong>
+          For this exact EP=8 capture, each rank owned 32 routed experts and reserved 512 slots per
+          local expert. Dispatch produced an FP8 activation buffer in
+          <span class="math-space">ℝ<sup>32 × 512 × 6,144</sup></span>, FP32 per-group scales in
+          <span class="math-space">ℝ<sup>32 × 512 × 48</sup></span>, and 32 valid-row counts.
+          The conceptual eight-row view below tracks the token’s eight assignments; most physical
+          capacity rows are padding and are masked from the grouped GEMMs.
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption>GPU-0 layer-3 phase timing and logical tensor transformation</caption>
+            <thead>
+              <tr>
+                <th scope="col">Phase</th>
+                <th scope="col">Observed interval</th>
+                <th scope="col">Tensor flow</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="family-attention">
+                <td class="phase" data-label="Phase">MLA split</td>
+                <td class="interval" data-label="Observed interval">33.151810–33.161634&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    <span class="sym sym-hidden math-vec">x<sub>L</sub></span>
+                    → query plus cached key/value latents → partitioned attention states
+                  </span>
+                  <span class="tensor-note">Each partition carries a partial output and normalization state.</span>
+                </td>
+              </tr>
+              <tr class="family-attention">
+                <td class="phase" data-label="Phase">MLA combine</td>
+                <td class="interval" data-label="Observed interval">33.158434–33.169634&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    partitioned states → attention-head output
+                    <span class="sym sym-attention math-mat">O<sup>attn</sup><sub>L</sub></span>
+                  </span>
+                  <span class="tensor-note">Split and combine overlap briefly as an observed pipelined pair.</span>
+                </td>
+              </tr>
+              <tr class="family-select">
+                <td class="phase" data-label="Phase">Projection and router</td>
+                <td class="interval" data-label="Observed interval">33.169634–33.238530&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    <span class="sym sym-attention math-mat">O<sup>attn</sup><sub>L</sub></span>
+                    → output projection, residual, norm →
+                    <span class="sym sym-hidden math-vec">h<sub>L</sub></span>
+                    <span class="shape">ℝ<sup>6,144</sup></span>
+                  </span>
+                  <span class="tensor-line">
+                    <span class="sym sym-hidden math-vec">h<sub>L</sub></span>
+                    → <span class="math-fn">TopK</span>(
+                    <span class="sym sym-select math-vec">g<sub>L</sub></span>) →
+                    <span class="sym sym-select math-set">I<sub>L</sub></span> and normalized weights
+                    <span class="sym sym-select math-vec">p</span>
+                  </span>
+                </td>
+              </tr>
+              <tr class="family-shared">
+                <td class="phase" data-label="Phase">Shared expert</td>
+                <td class="interval" data-label="Observed interval">33.222722–33.253314&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    <span class="sym sym-hidden math-vec">h<sub>L</sub></span>
+                    → gate/up
+                    <span class="shape">ℝ<sup>4,096</sup></span>
+                    → activation
+                    <span class="shape">ℝ<sup>2,048</sup></span>
+                    → <span class="sym sym-shared math-vec">s<sub>L</sub></span>
+                    <span class="shape">ℝ<sup>6,144</sup></span>
+                  </span>
+                  <span class="tensor-note">This local branch uses a separate CUDA stream.</span>
+                </td>
+              </tr>
+              <tr class="family-dispatch">
+                <td class="phase" data-label="Phase">DeepEP dispatch 1</td>
+                <td class="interval" data-label="Observed interval">33.238530–33.249314&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    begin routing copies of
+                    <span class="sym sym-hidden math-vec">h<sub>L</sub></span>
+                    toward the owner ranks of
+                    <span class="sym sym-select math-set">I<sub>L</sub></span>
+                  </span>
+                </td>
+              </tr>
+              <tr class="family-dispatch">
+                <td class="phase" data-label="Phase">DeepEP dispatch 2</td>
+                <td class="interval" data-label="Observed interval">33.253090–33.257250&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    complete logical grouping →
+                    <span class="sym sym-dispatch math-mat">X<sup>route</sup><sub>L</sub></span>
+                    <span class="shape">ℝ<sup>8 × 6,144</sup></span>
+                  </span>
+                  <span class="tensor-note">
+                    Conceptual only. The physical rank-local FP8 buffer has shape
+                    <span class="math-space">32 × 512 × 6,144</span>.
+                  </span>
+                </td>
+              </tr>
+              <tr class="family-expert">
+                <td class="phase" data-label="Phase">Routed gate/up GEMM</td>
+                <td class="interval" data-label="Observed interval">33.257698–33.281153&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    <span class="sym sym-dispatch math-mat">X<sup>route</sup><sub>L</sub></span>
+                    → [<span class="sym sym-expert math-mat">G<sub>L</sub></span> ∥
+                    <span class="sym sym-expert math-mat">U<sub>L</sub></span>]
+                    <span class="shape">ℝ<sup>8 × 4,096</sup></span>
+                  </span>
+                  <span class="tensor-note">
+                    Each selected expert applies its own FP8 weight matrix. The physical BF16 allocation
+                    is <span class="math-space">32 × 512 × 4,096</span>.
+                  </span>
+                </td>
+              </tr>
+              <tr class="family-expert">
+                <td class="phase" data-label="Phase">SiLU, quantize, transpose</td>
+                <td class="interval" data-label="Observed interval">33.281153–33.288450&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    <span class="sym sym-expert math-mat">Z<sub>L</sub></span> =
+                    <span class="math-fn">SiLU</span>(<span class="sym sym-expert math-mat">G<sub>L</sub></span>)
+                    ⊙ <span class="sym sym-expert math-mat">U<sub>L</sub></span>
+                    <span class="shape">ℝ<sup>8 × 2,048</sup></span>
+                  </span>
+                  <span class="tensor-note">
+                    The physical BF16 allocation is
+                    <span class="math-space">32 × 512 × 2,048</span>; masked counts identify valid rows.
+                  </span>
+                </td>
+              </tr>
+              <tr class="family-expert">
+                <td class="phase" data-label="Phase">Routed down GEMM</td>
+                <td class="interval" data-label="Observed interval">33.288450–33.304706&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    <span class="sym sym-expert math-mat">Z<sub>L</sub></span>
+                    → <span class="sym sym-expert math-mat">Y<sup>expert</sup><sub>L</sub></span>
+                    <span class="shape">ℝ<sup>8 × 6,144</sup></span>
+                  </span>
+                  <span class="tensor-note">
+                    One logical result per assignment; physical BF16 allocation:
+                    <span class="math-space">32 × 512 × 6,144</span>.
+                  </span>
+                </td>
+              </tr>
+              <tr class="family-combine">
+                <td class="phase" data-label="Phase">DeepEP combine 1</td>
+                <td class="interval" data-label="Observed interval">33.305762–33.313058&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    begin returning rows of
+                    <span class="sym sym-expert math-mat">Y<sup>expert</sup><sub>L</sub></span>
+                    to the token’s originating rank
+                  </span>
+                </td>
+              </tr>
+              <tr class="family-combine">
+                <td class="phase" data-label="Phase">DeepEP combine 2</td>
+                <td class="interval" data-label="Observed interval">33.313602–33.319938&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    restore token order; the runtime forms the weighted routed vector
+                    <span class="sym sym-combine math-vec">r<sub>L</sub></span> =
+                    ∑<sub><span class="math-scalar">i</span>∈<span class="sym sym-select math-set">I<sub>L</sub></span></sub>
+                    <span class="sym sym-select math-scalar">p<sub>i</sub></span>
+                    <span class="sym sym-expert math-vec">y<sub>i</sub></span>
+                    <span class="shape">ℝ<sup>6,144</sup></span>
+                  </span>
+                </td>
+              </tr>
+              <tr class="family-hidden">
+                <td class="phase" data-label="Phase">MoE merge and attention preparation</td>
+                <td class="interval" data-label="Observed interval">33.319938–33.367778&nbsp;ms</td>
+                <td data-label="Tensor flow">
+                  <span class="tensor-line">
+                    <span class="sym sym-expert math-vec">f<sub>L</sub></span> =
+                    <span class="sym sym-shared math-vec">s<sub>L</sub></span> +
+                    2.5<span class="sym sym-combine math-vec">r<sub>L</sub></span>
+                    <span class="shape">ℝ<sup>6,144</sup></span>
+                  </span>
+                  <span class="tensor-line">
+                    residual merge and next-layer norm/Q/KV preparation →
+                    <span class="sym sym-hidden math-vec">x<sub>L+1</sub></span>
+                  </span>
+                  <span class="tensor-note">
+                    These operations may be fused across the layer boundary; the next MLA split starts
+                    at 33.367778 ms.
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="worked-token">
+        <h2>A readable one-token example</h2>
+        <p class="lede">
+          The runtime tensors have thousands of elements. This example prints only a short slice and
+          one output coordinate while preserving the production dimensions and routing structure.
+        </p>
+
+        <div class="callout warning">
+          <strong>Values are illustrative, not captured.</strong>
+          Nsight recorded kernel names, timing, streams, and graph metadata. It did not record hidden
+          states, expert IDs, router weights, or expert-output values.
+        </div>
+
+        <div class="worked-grid">
+          <article class="worked-card">
+            <h3>Input and expert selection</h3>
+            <p>
+              Example slice of
+              <span class="sym sym-hidden math-vec">x<sub>L</sub></span>
+              ∈ <span class="math-space">ℝ<sup>6,144</sup></span>:
+            </p>
+            <div class="vector-box" aria-label="Illustrative hidden state values">
+              <span class="value">0.20</span>
+              <span class="value">−0.10</span>
+              <span class="value">0.35</span>
+              <span class="value">0.08</span>
+              <span class="value ellipsis">…</span>
+            </div>
+
+            <div class="pair-grid" aria-label="Illustrative expert IDs and router weights">
+              <div class="pair-label">expert</div>
+              <div class="pair-cell">7</div>
+              <div class="pair-cell">42</div>
+              <div class="pair-cell">91</div>
+              <div class="pair-cell">103</div>
+              <div class="pair-cell">150</div>
+              <div class="pair-cell">188</div>
+              <div class="pair-cell">209</div>
+              <div class="pair-cell">250</div>
+
+              <div class="pair-label">weight</div>
+              <div class="pair-cell">0.30</div>
+              <div class="pair-cell">0.20</div>
+              <div class="pair-cell">0.15</div>
+              <div class="pair-cell">0.12</div>
+              <div class="pair-cell">0.09</div>
+              <div class="pair-cell">0.07</div>
+              <div class="pair-cell">0.04</div>
+              <div class="pair-cell">0.03</div>
+            </div>
+
+            <p class="tensor-note" style="margin-top:12px">
+              DeepEP logically copies the same token into eight rows, then places each row beside the
+              weights of its selected expert. Multiple selected experts may live on the same GPU.
+            </p>
+          </article>
+
+          <article class="worked-card">
+            <h3>Weighted return to one token</h3>
+            <p>
+              Suppose coordinate 1 of the eight expert results is:
+            </p>
+            <div class="vector-box" aria-label="Illustrative expert output values">
+              <span class="value">0.80</span>
+              <span class="value">−0.10</span>
+              <span class="value">0.50</span>
+              <span class="value">0.30</span>
+              <span class="value">−0.40</span>
+              <span class="value">0.20</span>
+              <span class="value">0.10</span>
+              <span class="value">0.60</span>
+            </div>
+
+            <div class="equation-block" aria-label="Worked DeepEP combine equations">
+              <div class="equation-row">
+                <span class="lhs sym sym-combine math-scalar">r<sub>L,1</sub></span>
+                <span class="eq">=</span>
+                <span class="rhs">
+                  ∑<sub><span class="math-scalar">i</span>∈<span class="sym sym-select math-set">I<sub>L</sub></span></sub>
+                  <span class="sym sym-select math-scalar">p<sub>i</sub></span>
+                  <span class="sym sym-expert math-scalar">y<sub>i,1</sub></span>
+                </span>
+              </div>
+              <div class="equation-row">
+                <span class="lhs"></span>
+                <span class="eq">=</span>
+                <span class="rhs">
+                  0.30(0.80) + 0.20(−0.10) + 0.15(0.50) + 0.12(0.30)
+                  + 0.09(−0.40) + 0.07(0.20) + 0.04(0.10) + 0.03(0.60)
+                </span>
+              </div>
+              <div class="equation-row">
+                <span class="lhs"></span>
+                <span class="eq">=</span>
+                <span class="rhs">0.331</span>
+              </div>
+              <div class="equation-row">
+                <span class="lhs sym sym-expert math-scalar">f<sub>L,1</sub></span>
+                <span class="eq">=</span>
+                <span class="rhs">
+                  <span class="sym sym-shared math-scalar">s<sub>L,1</sub></span>
+                  + 2.5<span class="sym sym-combine math-scalar">r<sub>L,1</sub></span>
+                  = 0.050 + 2.5(0.331) = 0.8775
+                </span>
+              </div>
+              <div class="equation-row">
+                <span class="lhs sym sym-hidden math-scalar">x<sub>L+1,1</sub></span>
+                <span class="eq">≈</span>
+                <span class="rhs">
+                  <span class="sym sym-hidden math-scalar">h<sub>L,1</sub></span> +
+                  <span class="sym sym-expert math-scalar">f<sub>L,1</sub></span>
+                  = 0.180 + 0.8775 = 1.0575
+                </span>
+              </div>
+              <div class="equation-note">
+                One coordinate is shown for readability; the same weighted operation applies across all
+                6,144 hidden coordinates. The final line is a conceptual residual view because the
+                implementation may fuse residual and normalization work across the layer boundary.
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="interpretation">
+        <h2>How to read apparent overlap correctly</h2>
+        <p class="lede">
+          The chart has two different notions of concurrency: genuine same-rank stream overlap and
+          aggregate overlap caused by eight ranks reaching the same phase at different times.
+        </p>
+
+        <div class="insight-grid">
+          <article class="insight">
+            <strong>One GPU: routed path is ordered</strong>
+            <p>
+              Dispatch finishes before that GPU’s routed gate/up GEMM. Down finishes before that GPU’s
+              combine. There were zero violations across 1,200 audited MoE instances.
+            </p>
+          </article>
+          <article class="insight">
+            <strong>One GPU: shared work overlaps</strong>
+            <p>
+              The shared expert uses an alternate stream and overlaps DeepEP dispatch by a median
+              14.657&nbsp;µs. This is intentional compute/communication concurrency.
+            </p>
+          </article>
+          <article class="insight">
+            <strong>Eight GPUs: phases can overlap globally</strong>
+            <p>
+              A fast rank may reach expert compute while a slow rank is still dispatching. That is
+              cross-rank skew, not a broken dependency on either rank.
+            </p>
+          </article>
+        </div>
+
+        <div class="callout">
+          <strong>Combine is also a synchronization boundary.</strong>
+          Expert-load imbalance expanded the median eight-rank skew to 32.4&nbsp;µs at routed-down
+          completion. DeepEP combine reduced final skew to 5.4&nbsp;µs, so long combine residency can
+          include waiting rather than proportional useful transfer.
+        </div>
+      </section>
+
+      <section id="evidence">
+        <h2>Evidence and limits</h2>
+        <p class="lede">
+          This note is a readable companion to the complete kernel timeline, not a replacement for it.
+        </p>
+
+        <details open>
+          <summary>What is directly supported by the trace?</summary>
+          <div class="details-body">
+            <ul>
+              <li>The listed timestamps, stream placement, kernel ordering, and overlap intervals.</li>
+              <li>Two DeepEP dispatch kernels, two routed expert GEMMs, and two DeepEP combine kernels per sparse layer.</li>
+              <li>Seventy-five sparse layers, eight GPUs, and two graph waves: 1,200 MoE layer instances.</li>
+              <li>The logical and physical dimensions established from model configuration, capture settings, runtime code, and GEMM kernel signatures.</li>
+              <li>The second graph wave is cleanup work, not a second GPU-computed token.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary>What should not be inferred?</summary>
+          <div class="details-body">
+            <ul>
+              <li>The example hidden values, expert IDs, router weights, and expert outputs were not captured.</li>
+              <li>The trace does not reveal the private semantic division between the first and second DeepEP kernel in each pair.</li>
+              <li>The conceptual eight-row routed stack is not the full shape of DeepEP’s expert-major, capacity-padded communication buffers.</li>
+              <li>Summed GPU time across eight ranks is not the same quantity as elapsed wall time.</li>
+            </ul>
+          </div>
+        </details>
+
+        <p style="margin-top:18px">
+          Continue with the
+          <a href="../basic-kernel-understanding-decode-first/">complete one-token decode report</a>
+          for the request window, graph executions, execution tree, kernel families, and downloadable evidence.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    Temporary MaaS Docs note · GLM-5.2 one-token decode profile · timings relative to server Receive
+  </footer>
+</body>
+</html>
