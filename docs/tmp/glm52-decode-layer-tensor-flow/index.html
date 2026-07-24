@@ -672,6 +672,53 @@
     }
     .details-body ul { margin: 8px 0 0; padding-left: 20px; }
     .details-body li { margin: 6px 0; }
+    .contract-table th:first-child,
+    .contract-table td:first-child {
+      width: 190px;
+    }
+    .contract-table td:first-child {
+      color: #33414e;
+      font-weight: 730;
+    }
+    .hash {
+      overflow-wrap: anywhere;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+    }
+    .command-block {
+      margin: 8px 0 0;
+      padding: 14px;
+      overflow-x: auto;
+      border: 1px solid #dbe2e7;
+      border-radius: 7px;
+      color: #dfe8ec;
+      background: #1f2932;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      line-height: 1.55;
+      white-space: pre;
+    }
+    .artifact-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .artifact-link {
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      overflow-wrap: anywhere;
+    }
+    .artifact-link a { font-weight: 720; }
+    .artifact-link small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10px;
+    }
     footer {
       padding: 27px max(24px, calc((100vw - 1380px) / 2));
       color: #566472;
@@ -771,6 +818,15 @@
       td.interval { white-space: normal; }
       .worked-card { padding: 14px; }
       .pair-grid { grid-template-columns: 62px repeat(8, 48px); }
+      .artifact-list { grid-template-columns: 1fr; }
+      .contract-table td {
+        display: block;
+      }
+      .contract-table td::before {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .contract-table td:first-child { color: var(--muted); }
     }
     @media (max-width: 520px) {
       .hero-copy { font-size: 15px; }
@@ -823,6 +879,7 @@
       <a href="#tensor-table">Tensor-flow table</a>
       <a href="#worked-token">Worked token</a>
       <a href="#interpretation">How to read it</a>
+      <a href="#reproduction">Reproduction</a>
       <a href="#evidence">Evidence</a>
     </nav>
 
@@ -1392,6 +1449,266 @@
           Expert-load imbalance expanded the median eight-rank skew to 32.4&nbsp;µs at routed-down
           completion. DeepEP combine reduced final skew to 5.4&nbsp;µs, so long combine residency can
           include waiting rather than proportional useful transfer.
+        </div>
+      </section>
+
+      <section id="reproduction">
+        <h2>Experiment and reproduction contract</h2>
+        <p class="lede">
+          These are the settings that produced the measured timeline. They distinguish the model
+          execution being studied from the fake prefill handoff used to isolate a decode worker.
+        </p>
+
+        <div class="callout warning">
+          <strong>This was fake-PD decode isolation, not an end-to-end PD measurement.</strong>
+          The decode worker ran with <code>--disaggregation-transfer-backend fake</code>. No real
+          prefill worker ran, and no real KV-cache or network transfer was measured. The page is
+          evidence about the isolated decode computation and its local cleanup only.
+        </div>
+
+        <div class="table-wrap">
+          <table class="contract-table">
+            <caption>Captured runtime, request, profiler, and evidence settings</caption>
+            <thead>
+              <tr>
+                <th scope="col">Contract field</th>
+                <th scope="col">Captured value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-label="Contract field">Location and device</td>
+                <td data-label="Captured value">
+                  Cluster <code>prod-maas-h200-eu-west1</code>; node <code>gpu-h200-2</code>;
+                  eight NVIDIA H200 GPUs.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Runtime image</td>
+                <td data-label="Captured value">
+                  <code>image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447</code><br>
+                  Immutable digest:
+                  <span class="hash">sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b</span>
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Runtime code</td>
+                <td data-label="Captured value">
+                  SGLang <span class="hash">3bd16074e02da069acdc959f0968af1d63fb9467</span>;
+                  Dynamo <span class="hash">57408ea1bb09454717847258768c20c0e6564fae</span>.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Model identity</td>
+                <td data-label="Captured value">
+                  Path <code>/home/models/zai-org/GLM-5.2-FP8</code>; served name
+                  <code>zai-org/glm-5.2</code>. The retained evidence does not contain a checkpoint
+                  revision or weight checksum, so exact checkpoint identity cannot be independently verified.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Parallel topology</td>
+                <td data-label="Captured value">
+                  One logical decode replica; TP=8, DP=8, EP=8, PP=1; DP attention and DP LM head enabled.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Decode and MoE backends</td>
+                <td data-label="Captured value">
+                  Standard autoregressive decode; speculative decoding/EAGLE disabled. DeepEP
+                  <code>low_latency</code> MoE all-to-all; fused QK norm/RoPE enabled;
+                  <code>SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK=64</code> and
+                  <code>SGLANG_DEEPEP_LL_COMBINE_SEND_NUM_SMS=24</code>.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Memory and batching</td>
+                <td data-label="Captured value">
+                  Context length 1,048,576; chunked and maximum prefill 1,024; maximum 40 running
+                  requests; static memory fraction 0.897; maximum 131,072 total tokens; load balance
+                  by <code>total_tokens</code>.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">KV cache and graph</td>
+                <td data-label="Captured value">
+                  KV cache <code>fp8_e4m3</code>; page size 64; decode CUDA Graph batch size 1.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Fake-PD handoff</td>
+                <td data-label="Captured value">
+                  <code>--disaggregation-mode decode</code>;
+                  <code>--disaggregation-transfer-backend fake</code>;
+                  bootstrap host <code>2.2.2.2</code>, room <code>0</code>.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Measured request</td>
+                <td data-label="Captured value">
+                  One streaming native <code>/generate</code> request; 16,384 deterministic IDs from
+                  <code>1000 + (index % 1024)</code> for index 0 through 16,383; compact-ID SHA-256
+                  <span class="hash">8cbff7c802f11954db30888442ddf2b4636ffd876bcb3640d8ef0970aee7d25f</span>;
+                  temperature 0, <code>ignore_eos=true</code>, <code>max_new_tokens=2</code>.
+                  The fake handoff supplied one token and the decode worker computed one token.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Cache and control</td>
+                <td data-label="Captured value">
+                  Cache flushed before profiling; measured <code>cached_tokens=0</code>. A separate
+                  unprofiled <code>max_new_tokens=1</code> control completed the fake handoff with
+                  zero Decode scheduler rows.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Nsight Systems capture</td>
+                <td data-label="Captured value">
+                  CUDA/NVTX/OSRT; CUDA Graph node tracing; profiler gated with
+                  <code>cudaProfilerApi</code>; sampling and CPU context-switch collection disabled;
+                  SQLite export requested.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Interpretation scope</td>
+                <td data-label="Captured value">
+                  The worked timeline is one useful-wave sample from GPU 0, layer 3. It is not an
+                  average or distribution. Post-Finish overlap cleanup is retained separately from
+                  the useful computed-token tree.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Publication provenance</td>
+                <td data-label="Captured value">
+                  Companion report commit
+                  <span class="hash">33758f9e3617f146e79b699c5a9c07b527163fce</span>.
+                  Source bundle:
+                  <code>basic_kernel_understanding_decode_one_token_eu2_20260722_0851</code>.
+                </td>
+              </tr>
+              <tr>
+                <td data-label="Contract field">Retention boundary</td>
+                <td data-label="Captured value">
+                  Compact report artifacts and launch scripts remain. The raw QDSTRM,
+                  <code>.nsys-rep</code>, and SQLite capture were removed after hashing and are not
+                  available for a new trace extraction or re-analysis.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <details>
+          <summary>Near-exact container environment and server launch</summary>
+          <div class="details-body">
+            <p>
+              This excerpt preserves the profiler and model-execution arguments from the retained
+              launch scripts. Host mounts, container naming, networking, and local output paths must
+              be adapted to the replay environment.
+            </p>
+            <pre class="command-block"><code>export SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK=64
+export SGLANG_DEEPEP_LL_COMBINE_SEND_NUM_SMS=24
+
+nsys profile \
+  --capture-range=cudaProfilerApi \
+  --capture-range-end=stop-shutdown \
+  --kill=sigterm \
+  --trace=cuda,nvtx,osrt \
+  --cuda-graph-trace=node \
+  --sample=none \
+  --cpuctxsw=none \
+  --force-overwrite=true \
+  --export=sqlite \
+  --output=/profiles/basic_kernel_understanding_decode_one_token_eu2_20260722_0851 \
+  python3 -m sglang.launch_server \
+    --model-path /home/models/zai-org/GLM-5.2-FP8 \
+    --served-model-name zai-org/glm-5.2 \
+    --trust-remote-code \
+    --host 127.0.0.1 \
+    --port 30000 \
+    --tp-size 8 \
+    --dp-size 8 \
+    --ep-size 8 \
+    --pp-size 1 \
+    --enable-dp-attention \
+    --enable-dp-lm-head \
+    --enable-fused-qk-norm-rope \
+    --tool-call-parser glm47 \
+    --reasoning-parser glm45 \
+    --moe-a2a-backend deepep \
+    --deepep-mode low_latency \
+    --disaggregation-mode decode \
+    --disaggregation-transfer-backend fake \
+    --context-length 1048576 \
+    --chunked-prefill-size 1024 \
+    --max-prefill-tokens 1024 \
+    --max-running-requests 40 \
+    --mem-fraction-static 0.897 \
+    --max-total-tokens 131072 \
+    --kv-cache-dtype fp8_e4m3 \
+    --page-size 64 \
+    --cuda-graph-bs-decode 1 \
+    --load-balance-method total_tokens</code></pre>
+          </div>
+        </details>
+
+        <details>
+          <summary>Exact request shape and profiler gates</summary>
+          <div class="details-body">
+            <p>
+              The request ID may change on a replay. Preserve the ID sequence, native payload,
+              cache/profile ordering, streaming EOF wait, and post-request scheduler grace.
+            </p>
+            <pre class="command-block"><code>input_ids = [1000 + (index % 1024) for index in range(16384)]
+
+POST /flush_cache
+{}
+
+POST /start_profile
+{"activities":["CUDA_PROFILER"],"with_stack":false,"record_shapes":false}
+
+POST /generate
+{
+  "input_ids": input_ids,
+  "sampling_params": {
+    "temperature": 0,
+    "max_new_tokens": 2,
+    "ignore_eos": true
+  },
+  "stream": true,
+  "bootstrap_host": "2.2.2.2",
+  "bootstrap_room": 0,
+  "rid": "basic-kernel-decode-one-computed-measured-&lt;uuid&gt;"
+}
+
+# Drain the stream to EOF, allow scheduler grace, then:
+POST /stop_profile
+{}</code></pre>
+            <p style="margin-top:12px">
+              The separate fake-handoff control used the same request with
+              <code>max_new_tokens=1</code> and profiling disabled. It persisted one completion
+              token while the server logged zero Decode rows between Receive and Finish.
+            </p>
+          </div>
+        </details>
+
+        <div class="artifact-list" aria-label="Published compact evidence">
+          <div class="artifact-link">
+            <a href="../basic-kernel-understanding-decode-first/timeline_data.json">Timeline data</a>
+            <small>SHA-256 317185321d5c4cd32986a1897e88118228b2ae950e9a2cafea26bbd550830182</small>
+          </div>
+          <div class="artifact-link">
+            <a href="../basic-kernel-understanding-decode-first/kernel_events.csv.gz">Kernel events</a>
+            <small>SHA-256 fc0ed38e18b3ba1f4b7f1352a8eadd88a2d5c6fa5aaf305b05fb6ef592522409</small>
+          </div>
+          <div class="artifact-link">
+            <a href="../basic-kernel-understanding-decode-first/kernel_summary.csv">Kernel summary</a>
+            <small>SHA-256 858f384470dd3af973450cd08df4878e15d592e8f93aca78b3e687fab1f8d7d8</small>
+          </div>
+          <div class="artifact-link">
+            <a href="../basic-kernel-understanding-decode-first/one_token_control_evidence.json">One-token control</a>
+            <small>SHA-256 c20d3621b287df4179545ac0165284b4f93dcb1c61bda0dddab45d65ef55c65a</small>
+          </div>
         </div>
       </section>
 

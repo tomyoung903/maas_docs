@@ -40,6 +40,21 @@
       font-size: 0.86em;
       overflow-wrap: anywhere;
     }
+    pre {
+      max-width: 100%;
+      margin: 0;
+      padding: 14px 16px;
+      overflow-x: auto;
+      color: #27333e;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre;
+    }
+    pre code { font-size: inherit; overflow-wrap: normal; }
     .topbar {
       position: sticky;
       top: 0;
@@ -265,6 +280,22 @@
     }
     td { padding: 10px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .contract-table th { width: 188px; }
+    .contract-table td { min-width: 360px; }
+    details.repro {
+      margin: 14px 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+    }
+    details.repro summary {
+      padding: 11px 14px;
+      cursor: pointer;
+      color: #314657;
+      background: var(--soft);
+      font-weight: 750;
+    }
+    details.repro > div { padding: 14px; }
     .good { color: #176447; font-weight: 700; }
     .bad { color: #9d3329; font-weight: 700; }
     .status {
@@ -324,6 +355,8 @@
       .equation .equals { display: none; }
       .tree-row { grid-template-columns: 64px 1fr; gap: 8px; }
       .tree-kernel { grid-column: 2; }
+      .contract-table th { width: 132px; white-space: normal; }
+      .contract-table td { min-width: 300px; }
     }
   </style>
 </head>
@@ -346,8 +379,8 @@
         softmax work, and useful FP8 MMA.
       </p>
       <div class="hero-meta">
-        <span><strong>Node:</strong> gpu-worker-198</span>
-        <span><strong>Shape:</strong> TP=1, DP=1, PP=8</span>
+        <span><strong>Node:</strong> prod-maas-b300-neimeng / gpu-worker-198</span>
+        <span><strong>Shape:</strong> TP=1, DP=1, EP=1, PP=8</span>
         <span><strong>Request:</strong> 16,384 input + 1 output token</span>
         <span><strong>Cache:</strong> 0 reused tokens</span>
       </div>
@@ -394,9 +427,11 @@
         </div>
         <div class="note">
           <strong>Identity and denominator caveat.</strong>
-          Kubernetes calls this the Neimeng B300 fleet, but the runtime reports
-          <code>2</code>; NCU reports compute capability
-          10.3 and 148 SMs. For direct comparison with
+          Kubernetes calls this the Neimeng B300 fleet, while Nsys and
+          <code>nvidia-smi</code> report <code>NVIDIA L20D</code>
+          on profiled CUDA device 2; NCU reports compute capability
+          10.3 / GB110
+          and 148 SMs. For direct comparison with
           the linked B300 report, all analytical percentages use 4,500 TFLOP/s dense FP8.
           NVIDIA publishes 72 PFLOP/s sparse FP8 for an eight-GPU DGX B300 and states that
           dense is half, yielding 4.5 PFLOP/s per GPU. No public L20D specification was found.
@@ -812,19 +847,79 @@
           </tr></tbody>
           </table>
         </div>
-        <h3>Exact request and runtime</h3>
+        <h3>Exact experiment contract</h3>
         <div class="table-wrap">
-          <table>
+          <table class="contract-table">
             <tbody>
-              <tr><th>Request</th><td>16,384 prompt tokens; 1 completion token; <code>cached_tokens=0</code>; HTTP 200</td></tr>
-              <tr><th>Latency</th><td>1,242.217 ms client; 1,238.404 ms server</td></tr>
-              <tr><th>Response</th><td><code>atus</code>; SHA-256 <code>e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629</code></td></tr>
-              <tr><th>Runtime</th><td><code>image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447</code></td></tr>
-              <tr><th>SGLang</th><td><code>3bd16074e02da069acdc959f0968af1d63fb9467</code>; <code>--moe-runner-backend cutlass</code></td></tr>
-              <tr><th>Device</th><td>2; CC 10.3; 148 SMs; 233.472 KB shared memory/SM; 65,536 registers/SM</td></tr>
+              <tr><th>Cluster and scope</th><td><code>prod-maas-b300-neimeng</code> / <code>gpu-worker-198</code>; one eight-GPU pod; PP2 layers 18–27 on CUDA device 2</td></tr>
+              <tr><th>Observed device</th><td><code>NVIDIA L20D</code>; CC 10.3 / GB110; 148 SMs; 233.472 KB shared memory/SM; 65,536 registers/SM</td></tr>
+              <tr><th>Runtime image</th><td><code>image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447</code><br><code>sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b</code></td></tr>
+              <tr><th>Code revisions</th><td>SGLang <code>3bd16074e02da069acdc959f0968af1d63fb9467</code><br>Dynamo <code>57408ea1bb09454717847258768c20c0e6564fae</code></td></tr>
+              <tr><th>Model</th><td><code>/home/models/zai-org/GLM-5.2-FP8</code>; served as <code>zai-org/glm-5.2</code></td></tr>
+              <tr><th>Parallelism</th><td>TP=1, DP=1, EP=1, PP=8; PP2, layers 18-27, CUDA device 2</td></tr>
+              <tr><th>Effective backends</th><td>DSA attention; TRT-LLM DSA prefill; SGL-kernel DSA TopK; CUTLASS MoE; no MoE all-to-all; FP8 E4M3, page size 64; decode and piecewise CUDA graphs disabled</td></tr>
+              <tr><th>Memory and batching</th><td>Context 1,048,576; chunked/max prefill 16,384; max running requests 48; static memory fraction 0.85</td></tr>
+              <tr><th>Input</th><td>16,384 IDs from <code>1000 + (index % 1024), index 0 through 16,383</code>; compact-ID SHA-256 <code>8cbff7c802f11954db30888442ddf2b4636ffd876bcb3640d8ef0970aee7d25f</code></td></tr>
+              <tr><th>Sampling</th><td>Temperature 0; <code>max_new_tokens=1</code>; <code>ignore_eos=true</code>; non-streaming; random seed 829728877</td></tr>
+              <tr><th>Cache and warmup</th><td>One warmup outside capture, then one measured request; <code>/flush_cache</code> before each; measured <code>cached_tokens=0</code></td></tr>
+              <tr><th>Observed result</th><td>HTTP 200; 1,242.217 ms client; 1,238.404 ms server; response <code>atus</code> / SHA-256 <code>e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629</code></td></tr>
+              <tr><th>Profilers</th><td>Nsight Systems 2025.3.2.0; Nsight Compute 2025.3.1.0. CUDA/NVTX/OSRT; cudaProfilerApi range; CUDA graph node tracing; sampling and CPU context-switch tracing disabled. target all child processes; CUDA device 2; per-launch-config; one launch; kernel replay; cache-control all; clock-control none.</td></tr>
+              <tr><th>Source and sidecar</th><td>Retained bundle <code>/home/tom/sglang2/z_local/kernel_mfu_top5_neimeng/glm52_top5_kernel_mfu_20260723_134849</code>; generator <code>build_report.py</code>; published <a href="analysis.json">analysis.json</a></td></tr>
             </tbody>
           </table>
         </div>
+        <div class="note">
+          <strong>Checkpoint provenance limit.</strong>
+          The capture preserves the exact model path and immutable runtime image, but no
+          model-weight checksum or checkpoint revision was recorded. Repeating this
+          contract reproduces the software and request settings, not a proven bit-for-bit
+          checkpoint, if that mounted path later changes.
+        </div>
+        <details class="repro">
+          <summary>Near-exact server launch essentials</summary>
+          <div>
+            <pre><code>python3 -m sglang.launch_server \
+  --model-path /home/models/zai-org/GLM-5.2-FP8 \
+  --served-model-name zai-org/glm-5.2 \
+  --tp-size 1 --dp-size 1 --pp-size 8 \
+  --context-length 1048576 \
+  --chunked-prefill-size 16384 --max-prefill-tokens 16384 \
+  --max-running-requests 48 --mem-fraction-static 0.85 \
+  --kv-cache-dtype fp8_e4m3 --page-size 64 \
+  --enable-fused-qk-norm-rope \
+  --disable-decode-cuda-graph --disable-piecewise-cuda-graph \
+  --moe-runner-backend cutlass --random-seed 829728877</code></pre>
+            <p>Effective values logged by SGLang were EP=1, DSA attention, TRT-LLM DSA prefill, SGL-kernel DSA TopK, and no MoE all-to-all.</p>
+          </div>
+        </details>
+        <details class="repro">
+          <summary>Exact request and profiler gates</summary>
+          <div>
+            <pre><code>input_ids = [1000 + (index % 1024) for index in range(16384)]
+# flush → one warmup → flush → start profiler → one measured request
+# temperature=0, max_new_tokens=1, ignore_eos=true, stream=false
+
+nsys profile --capture-range=cudaProfilerApi \
+  --capture-range-end=stop-shutdown --trace=cuda,nvtx,osrt \
+  --cuda-graph-trace=node --sample=none --cpuctxsw=none --export=sqlite …
+
+ncu --target-processes all --devices 2 --profile-from-start off \
+  --filter-mode per-launch-config --launch-count 1 --replay-mode kernel \
+  --cache-control all --clock-control none &lt;family-specific sections/metrics&gt; …</code></pre>
+            <p>Each accepted NCU family used a fresh server process and the same cache/request gate. Failed gather/RoPE replay attempts remain rejected in the table above.</p>
+          </div>
+        </details>
+        <details class="repro">
+          <summary>Rebuild this report from retained artifacts</summary>
+          <div>
+            <pre><code>cd /home/tom/sglang2/z_local/kernel_mfu_top5_neimeng/glm52_top5_kernel_mfu_20260723_134849
+python3 -m py_compile build_report.py
+python3 build_report.py
+rsync -a publish/glm52-neimeng-b300-top5-kernel-mfu/ \
+  /home/tom/maas_docs/docs/tmp/glm52-neimeng-b300-top5-kernel-mfu/</code></pre>
+            <p>The retained local bundle includes the Nsys report/SQLite export, accepted NCU reports/CSV exports, request gates, launch scripts, and generator. The public page publishes only this HTML and <a href="analysis.json">analysis.json</a>; the hash ledger below pins every generator input used here.</p>
+          </div>
+        </details>
         <h3>Primary external references</h3>
         <ul>
           <li><a href="https://tomyoung903.github.io/maas_docs/tmp/basic-kernel-understanding-b300/#pp2-tree">GLM-5.2 B300 PP2 execution tree and FLOP ledger</a></li>
@@ -833,7 +928,7 @@
         </ul>
         <h3>Artifact hashes</h3>
         <div class="table-wrap sources">
-          <table><thead><tr><th>Source</th><th>SHA-256</th></tr></thead><tbody><tr><td>nsys_baseline/trace.sqlite</td><td><code>ef4b4638e8504fa1cd7a41d8e831bf493f06fc53ad9b50ab605cc312b8d17758</code></td></tr><tr><td>nsys_baseline/pp2_semantic.json</td><td><code>946f035cca75e4b09c6dc6f02a01dd6409181790ca79e870cab15a696d458e80</code></td></tr><tr><td>nsys_baseline/result_profiled.json</td><td><code>98d32db106e52dac27194f253047ca427343ea8254af438862a34c8f57561726</code></td></tr><tr><td>ncu_attention_core/raw.csv</td><td><code>22be42e9b9a9b556d89c5fef77bb4451cc1c5ef3c0d4bc5d9f0b46d764e6bd8d</code></td></tr><tr><td>ncu_attention_memory_custom/raw.csv</td><td><code>071929262305a124b711ac5e95145edebf80d37160780eba3dd37c6552da4e6f</code></td></tr><tr><td>ncu_attention_scheduler_custom/raw.csv</td><td><code>06cc164a35084b1e3d43afc7b849ec7fa79005e8315017868e3a99ab47176d35</code></td></tr><tr><td>ncu_grouped_full/raw.csv</td><td><code>4ba358096f9f436aa57683f57f4679dfd5baabbb4631cb632a31f51a109b4601</code></td></tr><tr><td>ncu_deepgemm_full/raw.csv</td><td><code>ebd4bf2dcb0f3f42cb9522a4384f5d69089443ba5fa887874fef985bae4e95fc</code></td></tr><tr><td>ncu_combined_diagnostic/raw.csv</td><td><code>d23e025e825cdb27a2c7b5578e8852c99a257bd1e83345f83542963296679196</code></td></tr><tr><td>reference/basic-kernel-understanding-b300/timeline_data.json</td><td><code>f289480aa1956adc468ba24edb51744f835ef446760faebbab229dfa630ee5cd</code></td></tr></tbody></table>
+          <table><thead><tr><th>Source</th><th>SHA-256</th></tr></thead><tbody><tr><td>experiment_manifest.md</td><td><code>239285bee6f1bff869e006a73a02106c4d85c43f4db52e36a8effe0229ab9683</code></td></tr><tr><td>pod.yaml</td><td><code>dbb27e599eeb4f3255a574f4b5d47837323aec62c2e7db949253b13d7753238f</code></td></tr><tr><td>server_args.sh</td><td><code>7aa8f8fef055449759d1537dd444ac2e325a5858616502b3272d37cfcdd7ab8a</code></td></tr><tr><td>run_one_request.py</td><td><code>9287473f706c2e41fbef7a35d4b28db8338c7455daf6aa11b07a13fb2e786d3d</code></td></tr><tr><td>launch_nsys.sh</td><td><code>3cde41fd3b4d9f0bb347734dae8cf7da0cfb31c4c41394d7ab8ee3f5aee1777d</code></td></tr><tr><td>launch_ncu.sh</td><td><code>50abebf2213c51a66665b13cdaa0f5013c28f4a490aff52f93db8fdb3861756e</code></td></tr><tr><td>build_report.py</td><td><code>9cfc9faf1e9f8b4318a97e7b0fcacf4f0ffc06fdbc5e811dee92ef5645e408f0</code></td></tr><tr><td>nsys_baseline/trace.sqlite</td><td><code>ef4b4638e8504fa1cd7a41d8e831bf493f06fc53ad9b50ab605cc312b8d17758</code></td></tr><tr><td>nsys_baseline/pp2_semantic.json</td><td><code>946f035cca75e4b09c6dc6f02a01dd6409181790ca79e870cab15a696d458e80</code></td></tr><tr><td>nsys_baseline/request_contract.json</td><td><code>3545ad084b40f41f98a3aedf8bad381c193f2f3c5788499bca692c32de1dd3e9</code></td></tr><tr><td>nsys_baseline/result_profiled.json</td><td><code>98d32db106e52dac27194f253047ca427343ea8254af438862a34c8f57561726</code></td></tr><tr><td>nsys_baseline/gpu_inventory.csv</td><td><code>b96b26fc02409b0006b74922bfd1f9ffbc9e3941147f1195dddf1b3fb9baeff0</code></td></tr><tr><td>ncu_attention_core/raw.csv</td><td><code>22be42e9b9a9b556d89c5fef77bb4451cc1c5ef3c0d4bc5d9f0b46d764e6bd8d</code></td></tr><tr><td>ncu_attention_memory_custom/raw.csv</td><td><code>071929262305a124b711ac5e95145edebf80d37160780eba3dd37c6552da4e6f</code></td></tr><tr><td>ncu_attention_scheduler_custom/raw.csv</td><td><code>06cc164a35084b1e3d43afc7b849ec7fa79005e8315017868e3a99ab47176d35</code></td></tr><tr><td>ncu_grouped_full/raw.csv</td><td><code>4ba358096f9f436aa57683f57f4679dfd5baabbb4631cb632a31f51a109b4601</code></td></tr><tr><td>ncu_deepgemm_full/raw.csv</td><td><code>ebd4bf2dcb0f3f42cb9522a4384f5d69089443ba5fa887874fef985bae4e95fc</code></td></tr><tr><td>ncu_combined_diagnostic/raw.csv</td><td><code>d23e025e825cdb27a2c7b5578e8852c99a257bd1e83345f83542963296679196</code></td></tr><tr><td>reference/basic-kernel-understanding-b300/timeline_data.json</td><td><code>f289480aa1956adc468ba24edb51744f835ef446760faebbab229dfa630ee5cd</code></td></tr></tbody></table>
         </div>
       </section>
     </main>

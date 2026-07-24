@@ -583,6 +583,41 @@
       line-height: 1.5;
     }
 
+    .settings-table { min-width: 760px; }
+    .settings-table th:first-child,
+    .settings-table td:first-child { width: 155px; }
+    .settings-table td:nth-child(2) { width: 44%; }
+
+    .contract-blocks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 20px 0 26px;
+    }
+
+    .contract-block {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+    }
+
+    .contract-block:first-child { grid-column: 1 / -1; }
+    .contract-block h4 {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: .94rem;
+    }
+    .contract-block pre {
+      max-height: 460px;
+      margin: 0;
+      padding: 13px 14px;
+      font-size: .76rem;
+    }
+    .contract-block pre code { color: inherit; }
+    .retention-table td { overflow-wrap: anywhere; }
+
     .sources {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -638,7 +673,9 @@
       .rank-view { grid-template-columns: 1fr; }
       .rank-grid { grid-template-columns: repeat(4, minmax(44px, 1fr)); }
       .branch-split,
-      .sources { grid-template-columns: 1fr; }
+      .sources,
+      .contract-blocks { grid-template-columns: 1fr; }
+      .contract-block:first-child { grid-column: auto; }
       .execution-tree { overflow-x: auto; }
       .tree-head,
       .tree-row { min-width: 900px; }
@@ -1116,18 +1153,232 @@
 
       <section id="evidence">
         <h2>Configuration And Evidence</h2>
-        <p>The mapping above is specific to the recovered <code>optim_exp2</code> standard-decode launch. Changing any of these flags can change the group arithmetic and therefore the tree labels.</p>
+        <p>The mapping above is anchored to run
+        <code>basic_kernel_understanding_decode_one_token_eu2_20260722_0851</code>
+        on 2026-07-22. Changing the parallel groups, DeepEP mode, transfer
+        backend, or graph batch shape can change the group arithmetic and the
+        observed tree.</p>
 
-        <pre><code>--tp-size 8
---dp-size 8
---ep-size 8
---pp-size 1
---enable-dp-attention
---enable-dp-lm-head
---moe-a2a-backend deepep
---deepep-mode low_latency
---cuda-graph-bs-decode 1</code></pre>
+        <h3>Recorded Environment</h3>
+        <div class="table-wrap">
+          <table class="settings-table">
+            <thead><tr><th>Scope</th><th>Recorded setting</th><th>Reproduction meaning</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Cluster and hardware</td>
+                <td><code>prod-maas-h200-eu-west1</code>; node
+                <code>gpu-h200-2</code>; 8 &times; NVIDIA H200 GPUs.</td>
+                <td>One confirmed-idle node supplied all eight ranks.</td>
+              </tr>
+              <tr>
+                <td>Model</td>
+                <td><code>zai-org/GLM-5.2-FP8</code>; served as
+                <code>zai-org/glm-5.2</code>. Runtime arguments recorded
+                <code>revision=None</code> and <code>model_checksum=None</code>.</td>
+                <td>The exact model snapshot was not captured. A future rerun
+                must pin and record a revision or checkpoint checksum; this
+                page intentionally does not borrow one from another run.</td>
+              </tr>
+              <tr>
+                <td>Runtime image</td>
+                <td><code>image.hpc-ai.com/platform/dynamo-sglang-runtime@sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b</code><br>
+                SGLang <code>3bd16074e02da069acdc959f0968af1d63fb9467</code>;
+                CUDA 13.0.1; NCCL package 2.28.3 for CUDA 13.</td>
+                <td>The immutable digest and runtime build commit identify the
+                executable environment.</td>
+              </tr>
+              <tr>
+                <td>Topology and backend</td>
+                <td>TP=8, DP=8, EP=8, PP=1; DP attention and DP LM head;
+                DeepEP <code>low_latency</code>; no EAGLE; decode graph batch
+                size 1.</td>
+                <td>The same physical ranks 0&ndash;7 successively act as
+                attention-DP owners, dense-TP shards, and sparse-EP owners.</td>
+              </tr>
+              <tr>
+                <td>Capacity</td>
+                <td>Context 1,048,576; requested chunk/max prefill 1,024;
+                runtime-resolved per-DP-rank chunk 128; max running 40; max
+                total tokens 131,072; memory fraction 0.897; FP8-E4M3 KV;
+                page size 64.</td>
+                <td>The fake-transfer request emitted zero prefill scheduler
+                rows, but these capacity settings still define allocation and
+                graph capture.</td>
+              </tr>
+              <tr>
+                <td>Cache and transfer</td>
+                <td><code>/flush_cache</code> succeeded before profiling;
+                decode disaggregation with transfer backend
+                <code>fake</code>; radix cache resolved disabled. The mounted
+                compilation cache and warmed JIT artifacts were not cleared.</td>
+                <td>This isolates decode scheduling and kernel shape. It is not
+                a cold-start run and contains no real prefill-to-decode KV
+                transfer.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
+        <div class="callout">
+          <strong>Fake-transfer boundary:</strong> the backend allocates the
+          16,384-token logical context without transferring prompt-derived KV.
+          The run is valid evidence for decode topology, graph structure, and
+          kernel motifs, but not for production Mooncake transfer performance,
+          prompt-conditioned output correctness, or end-to-end PD throughput.
+        </div>
+
+        <div class="contract-blocks">
+          <div class="contract-block">
+            <h4>Exact server launch contract</h4>
+            <pre><code>python3 -m sglang.launch_server \
+  --model-path /home/models/zai-org/GLM-5.2-FP8 \
+  --served-model-name zai-org/glm-5.2 \
+  --trust-remote-code --host 127.0.0.1 --port 30000 \
+  --tp-size 8 --dp-size 8 --ep-size 8 --pp-size 1 \
+  --enable-dp-attention --enable-dp-lm-head \
+  --enable-fused-qk-norm-rope \
+  --tool-call-parser glm47 --reasoning-parser glm45 \
+  --moe-a2a-backend deepep --deepep-mode low_latency \
+  --disaggregation-mode decode \
+  --disaggregation-transfer-backend fake \
+  --context-length 1048576 \
+  --chunked-prefill-size 1024 --max-prefill-tokens 1024 \
+  --max-running-requests 40 --mem-fraction-static 0.897 \
+  --max-total-tokens 131072 \
+  --kv-cache-dtype fp8_e4m3 --page-size 64 \
+  --cuda-graph-bs-decode 1 \
+  --load-balance-method total_tokens \
+  --enable-dynamic-batch-tokenizer --enable-metrics \
+  --enable-cache-report \
+  --soft-watchdog-timeout 7200 --watchdog-timeout 7200 \
+  --decode-log-interval 1 --log-requests \
+  --log-requests-level 1 --log-requests-target stdout</code></pre>
+          </div>
+
+          <div class="contract-block">
+            <h4>Exact measured-request contract</h4>
+            <pre><code>input_ids = [1000 + (i % 1024) for i in range(16384)]
+canonical compact-JSON SHA-256 =
+8cbff7c802f11954db30888442ddf2b4636ffd876bcb3640d8ef0970aee7d25f
+
+POST /generate {
+  "rid": "&lt;run-unique request ID&gt;",
+  "input_ids": input_ids,
+  "sampling_params": {
+    "temperature": 0,
+    "max_new_tokens": 2,
+    "ignore_eos": true
+  },
+  "stream": true,
+  "bootstrap_host": "2.2.2.2",
+  "bootstrap_room": 0
+}
+
+exactly 1 measured request
+token 1: fake-prefill handoff
+token 2: one GPU-computed decode forward</code></pre>
+          </div>
+
+          <div class="contract-block">
+            <h4>Profiler and capture contract</h4>
+            <pre><code>nsys profile \
+  --capture-range=cudaProfilerApi \
+  --capture-range-end=stop-shutdown --kill=sigterm \
+  --trace=cuda,nvtx,osrt --cuda-graph-trace=node \
+  --sample=none --cpuctxsw=none \
+  --force-overwrite=true --export=sqlite
+
+POST /flush_cache {}
+POST /start_profile {
+  "activities": ["CUDA_PROFILER"],
+  "with_stack": false,
+  "record_shapes": false
+}
+POST /generate &rarr; persist stream EOF
+retain scheduler grace
+POST /stop_profile {}</code></pre>
+          </div>
+
+          <div class="contract-block">
+            <h4>Consequential container environment</h4>
+            <pre><code>SGLANG_ENABLE_JIT_DEEPGEMM=1
+SGLANG_JIT_DEEPGEMM_COMPILE_WORKERS=32
+SGLANG_JIT_DEEPGEMM_FAST_WARMUP=0
+SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK=64
+SGLANG_DEEPEP_LL_COMBINE_SEND_NUM_SMS=24
+NVSHMEM_LOCAL_TRANSPORT=p2p
+NCCL_IB_DISABLE=0
+NCCL_CUMEM_ENABLE=1
+NCCL_NVLS_ENABLE=1
+NCCL_SOCKET_IFNAME=eth0
+GLOO_SOCKET_IFNAME=eth0
+container: host network, privileged, 8 GPUs, 64 GiB shm</code></pre>
+          </div>
+        </div>
+
+        <h3>Evidence, Provenance, And Retention</h3>
+        <div class="table-wrap">
+          <table class="retention-table">
+            <thead><tr><th>Evidence</th><th>Recorded result</th><th>Retention or limitation</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Measured lifecycle</td>
+                <td>One HTTP-200 streaming request; 16,384 prompt tokens; two
+                persisted completion tokens; zero prefill rows; one useful
+                pre-Finish decode row plus one post-Finish cleanup row.</td>
+                <td>Sixteen full-model graph executions equal two graph waves
+                &times; eight GPUs. The cleanup wave remains visible but is not
+                counted as another user-request token.</td>
+              </tr>
+              <tr>
+                <td>Control request</td>
+                <td>An unprofiled <code>max_new_tokens=1</code> request completed
+                with the fake-handoff token and produced zero decode rows.</td>
+                <td>This is the control proving why the measured request uses
+                <code>max_new_tokens=2</code>.</td>
+              </tr>
+              <tr>
+                <td>Raw capture manifest</td>
+                <td>Checksums were recorded for a 3,519,073,691-byte QDSTRM, a
+                319,039,861-byte <code>.nsys-rep</code>, and a
+                1,397,542,912-byte SQLite export.</td>
+                <td>The raw captures were removed from the source node after
+                their manifest and compact evidence were preserved. They are
+                not present in this page pack and are not claimed recoverable.</td>
+              </tr>
+              <tr>
+                <td>Compact evidence</td>
+                <td><a href="../basic-kernel-understanding-decode-first/timeline_data.json">timeline JSON</a>,
+                <a href="../basic-kernel-understanding-decode-first/kernel_summary.csv">kernel summary</a>,
+                <a href="../basic-kernel-understanding-decode-first/kernel_events.csv.gz">compressed event ledger</a>,
+                and <a href="../basic-kernel-understanding-decode-first/one_token_control_evidence.json">one-token control</a>.</td>
+                <td>These retain the normalized event ledger, graph accounting,
+                request lifecycle, and control evidence used by this explanation.</td>
+              </tr>
+              <tr>
+                <td>Code provenance</td>
+                <td>Runtime image: SGLang
+                <code>3bd16074e02da069acdc959f0968af1d63fb9467</code>.
+                Explanatory source links below: workspace commit
+                <code>5f71c13474b6b45e908fd6ccf185289d51e81536</code>.</td>
+                <td>The two commits serve different purposes and must not be
+                read as one exact runtime source revision.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <strong>Profiler interpretation:</strong> module-level NVTX ranges
+          were absent, so ownership is reconstructed from graph node order,
+          kernel motifs, and collective signatures. Graph padding and required
+          collectives can launch kernels on ranks that do not own the real
+          request row. The profiler-stop socket closed under
+          <code>stop-shutdown</code>; successful exports and preserved hashes,
+          rather than that socket response, are the capture-validity evidence.
+        </div>
+
+        <h3>Explanatory Source Links</h3>
         <div class="sources">
           <a class="source-link" href="../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree"><strong>Original numbered model tree</strong><span>Architecture operation IDs, branch structure, and layer counts.</span></a>
           <a class="source-link" href="../basic-kernel-understanding-decode-first/"><strong>Standard decode kernel report</strong><span>Eight-GPU, no-EAGLE trace that shows dense and DeepEP communication motifs.</span></a>
@@ -1138,7 +1389,12 @@
         </div>
       </section>
 
-      <footer>Topology explanation generated from the recovered standard-decode run and SGLang source at commit <code>5f71c13474b6b45e908fd6ccf185289d51e81536</code>. The original 100K prefill execution-tree file was not modified.</footer>
+      <footer>Topology explanation anchored to runtime SGLang commit
+      <code>3bd16074e02da069acdc959f0968af1d63fb9467</code>. Explanatory source links
+      use workspace commit
+      <code>5f71c13474b6b45e908fd6ccf185289d51e81536</code>; they are intentionally
+      distinguished from the runtime build. The original 100K prefill
+      execution-tree file was not modified.</footer>
     </article>
   </div>
 </main>

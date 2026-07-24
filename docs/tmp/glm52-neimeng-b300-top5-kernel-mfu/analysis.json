@@ -1,15 +1,32 @@
 {
   "artifact": {
     "title": "GLM-5.2 Neimeng Top-Five Kernel MFU Audit",
-    "generated_at": "2026-07-23T15:53:06.913942+08:00",
+    "generated_at": "2026-07-24T11:25:49.352217+08:00",
+    "cluster": "prod-maas-b300-neimeng",
     "node": "gpu-worker-198",
+    "model_path": "/home/models/zai-org/GLM-5.2-FP8",
+    "served_model_name": "zai-org/glm-5.2",
+    "model_revision": null,
+    "model_checksum": null,
     "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447",
     "runtime_digest": "sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b",
     "sglang_commit": "3bd16074e02da069acdc959f0968af1d63fb9467",
+    "dynamo_commit": "57408ea1bb09454717847258768c20c0e6564fae",
+    "source_bundle": "/home/tom/sglang2/z_local/kernel_mfu_top5_neimeng/glm52_top5_kernel_mfu_20260723_134849",
+    "generator": "/home/tom/sglang2/z_local/kernel_mfu_top5_neimeng/glm52_top5_kernel_mfu_20260723_134849/build_report.py",
     "sources": {
+      "experiment_manifest.md": "239285bee6f1bff869e006a73a02106c4d85c43f4db52e36a8effe0229ab9683",
+      "pod.yaml": "dbb27e599eeb4f3255a574f4b5d47837323aec62c2e7db949253b13d7753238f",
+      "server_args.sh": "7aa8f8fef055449759d1537dd444ac2e325a5858616502b3272d37cfcdd7ab8a",
+      "run_one_request.py": "9287473f706c2e41fbef7a35d4b28db8338c7455daf6aa11b07a13fb2e786d3d",
+      "launch_nsys.sh": "3cde41fd3b4d9f0bb347734dae8cf7da0cfb31c4c41394d7ab8ee3f5aee1777d",
+      "launch_ncu.sh": "50abebf2213c51a66665b13cdaa0f5013c28f4a490aff52f93db8fdb3861756e",
+      "build_report.py": "9cfc9faf1e9f8b4318a97e7b0fcacf4f0ffc06fdbc5e811dee92ef5645e408f0",
       "nsys_baseline/trace.sqlite": "ef4b4638e8504fa1cd7a41d8e831bf493f06fc53ad9b50ab605cc312b8d17758",
       "nsys_baseline/pp2_semantic.json": "946f035cca75e4b09c6dc6f02a01dd6409181790ca79e870cab15a696d458e80",
+      "nsys_baseline/request_contract.json": "3545ad084b40f41f98a3aedf8bad381c193f2f3c5788499bca692c32de1dd3e9",
       "nsys_baseline/result_profiled.json": "98d32db106e52dac27194f253047ca427343ea8254af438862a34c8f57561726",
+      "nsys_baseline/gpu_inventory.csv": "b96b26fc02409b0006b74922bfd1f9ffbc9e3941147f1195dddf1b3fb9baeff0",
       "ncu_attention_core/raw.csv": "22be42e9b9a9b556d89c5fef77bb4451cc1c5ef3c0d4bc5d9f0b46d764e6bd8d",
       "ncu_attention_memory_custom/raw.csv": "071929262305a124b711ac5e95145edebf80d37160780eba3dd37c6552da4e6f",
       "ncu_attention_scheduler_custom/raw.csv": "06cc164a35084b1e3d43afc7b849ec7fa79005e8315017868e3a99ab47176d35",
@@ -18,6 +35,37 @@
       "ncu_combined_diagnostic/raw.csv": "d23e025e825cdb27a2c7b5578e8852c99a257bd1e83345f83542963296679196",
       "reference/basic-kernel-understanding-b300/timeline_data.json": "f289480aa1956adc468ba24edb51744f835ef446760faebbab229dfa630ee5cd"
     }
+  },
+  "request_contract": {
+    "input_ids_construction": "1000 + (index % 1024), index 0 through 16,383",
+    "input_ids_sha256": "8cbff7c802f11954db30888442ddf2b4636ffd876bcb3640d8ef0970aee7d25f",
+    "temperature": 0,
+    "max_new_tokens": 1,
+    "ignore_eos": true,
+    "stream": false,
+    "random_seed": 829728877,
+    "warmups_outside_capture": 1,
+    "profiled_requests": 1,
+    "cache_policy": "flush before warmup and again before measured request",
+    "cached_tokens_required": 0
+  },
+  "runtime_contract": {
+    "parallelism": "TP=1, DP=1, EP=1, PP=8",
+    "profiled_stage": "PP2, layers 18-27, CUDA device 2",
+    "effective_backends": "DSA attention; TRT-LLM DSA prefill; SGL-kernel DSA TopK; CUTLASS MoE; no MoE all-to-all",
+    "kv_cache": "FP8 E4M3, page size 64",
+    "cuda_graphs": "decode and piecewise CUDA graphs disabled",
+    "context_length": 1048576,
+    "chunked_prefill_size": 16384,
+    "max_prefill_tokens": 16384,
+    "max_running_requests": 48,
+    "mem_fraction_static": 0.85
+  },
+  "profiler_contract": {
+    "nsys_version": "2025.3.2.0",
+    "nsys_scope": "CUDA/NVTX/OSRT; cudaProfilerApi range; CUDA graph node tracing; sampling and CPU context-switch tracing disabled",
+    "ncu_version": "2025.3.1.0",
+    "ncu_scope": "target all child processes; CUDA device 2; per-launch-config; one launch; kernel replay; cache-control all; clock-control none"
   },
   "request": {
     "cached_tokens": 0,
@@ -57,8 +105,10 @@
     "response_text_sha256": "e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629"
   },
   "device": {
-    "reported_name": "2",
+    "reported_name": "NVIDIA L20D",
+    "cuda_device": 2,
     "compute_capability": "10.3",
+    "architecture": "GB110",
     "architecture_id": 416,
     "chip_id": 419,
     "sm_count": 148,
@@ -66,11 +116,11 @@
     "registers_per_sm": 65536,
     "max_warps_per_sm": 64,
     "normalization_peak_tflops": 4500.0,
-    "identity_note": "The cluster is named B300, while the runtime reports NVIDIA L20D and NCU reports CC 10.3 / architecture GB110. The 4,500-TFLOP/s denominator is retained only for like-for-like B300 normalization."
+    "identity_note": "The cluster is named B300, while Nsys and nvidia-smi report NVIDIA L20D for CUDA device 2 and NCU reports CC 10.3 / architecture GB110. The 4,500-TFLOP/s denominator is retained only for like-for-like B300 normalization."
   },
   "pp2": {
     "layers": "18-27",
-    "parallelism": "TP=1, DP=1, PP=8",
+    "parallelism": "TP=1, DP=1, EP=1, PP=8",
     "decoder_launches": 468,
     "decoder_kernel_ms": 157.332225,
     "decoder_wall_span_ms": 158.023495,

@@ -412,6 +412,50 @@
     .comparison-callout { margin-bottom: 24px; }
     .delta-good { color: #126a56; font-weight: 700; }
     .delta-bad { color: #a13838; font-weight: 700; }
+    .experiment-settings {
+      margin-top: 30px;
+      padding-top: 26px;
+      border-top: 1px solid var(--line);
+    }
+    .experiment-settings h4 { margin: 0 0 8px; font-size: 14px; }
+    .settings-table { min-width: 760px; }
+    .settings-table th:first-child,
+    .settings-table td:first-child { width: 150px; }
+    .settings-table td:nth-child(2) { width: 44%; }
+    .contract-blocks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .contract-block {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .contract-block:first-child { grid-column: 1 / -1; }
+    .contract-block:last-child { grid-column: 1 / -1; }
+    .contract-block pre {
+      max-height: 420px;
+      margin: 0;
+      padding: 13px 14px;
+      border-radius: 4px;
+      color: #e8f1ef;
+      background: #202a2d;
+      overflow: auto;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .contract-block pre code { padding: 0; color: inherit; background: transparent; }
+    .retention-note { overflow-wrap: anywhere; }
+    @media (max-width: 820px) {
+      .contract-blocks { grid-template-columns: 1fr; }
+      .contract-block:first-child,
+      .contract-block:last-child { grid-column: auto; }
+    }
   </style>
 </head>
 <body>
@@ -437,6 +481,7 @@
       <h2>Contents</h2>
       <a href="#overview">Overview</a>
       <a href="#contract">Run contract</a>
+      <a href="#experiment-settings">Experiment settings</a>
       <a href="#ranks">PP ranks</a>
       <a href="#pp2-tree">PP2 execution tree</a>
       <a href="#comparison">H200 vs B300</a>
@@ -477,6 +522,183 @@
             </ul>
           </div>
         </div>
+
+        <!-- experiment-settings:start -->
+        <div class="experiment-settings" id="experiment-settings">
+          <h3>Exact Reproduction Settings</h3>
+          <p class="lede">The page visualizes the final profiled request from a
+          same-node backend experiment. The profiler contains one request, while
+          the complete CUTLASS variant also includes the warm-up and unprofiled
+          repetitions shown below.</p>
+
+          <div class="table-wrap">
+            <table class="settings-table">
+              <thead><tr><th>Scope</th><th>Recorded setting</th><th>Reproduction meaning</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>Run and hardware</td>
+                  <td>Hebei machine 1; node <code>gpu-b300-103</code>; 8 &times;
+                  NVIDIA B300 SXM6 AC; driver <code>580.126.20</code>.</td>
+                  <td>The GPU inventory recorded a 1,100 W power limit and
+                  observed clocks, but the experiment did not lock application
+                  clocks. Do not treat the observed inventory clocks as a fixed
+                  clock contract.</td>
+                </tr>
+                <tr>
+                  <td>Model</td>
+                  <td><code>zai-org/GLM-5.2-FP8</code><br>revision
+                  <code>ba978f7d347eaf65d22f1a86833408afdb953541</code></td>
+                  <td>The revision was verified before the sequential A/B run;
+                  keep it pinned rather than relying on the repository head.</td>
+                </tr>
+                <tr>
+                  <td>Runtime</td>
+                  <td><code>image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447</code><br>
+                  digest <code>sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b</code><br>
+                  SGLang <code>3bd16074e02da069acdc959f0968af1d63fb9467</code>;
+                  CUDA 13; NCCL <code>2.28.9+cuda13.0</code>.</td>
+                  <td>The digest, not only the mutable tag, is the image identity.</td>
+                </tr>
+                <tr>
+                  <td>Topology</td>
+                  <td>One node; TP=1, DP=1, EP=1, PP=8; layer partition
+                  <code>[9, 9, 10, 10, 10, 10, 10, 10]</code>.</td>
+                  <td>One pipeline stage maps to each GPU. The report's PP2
+                  accounting covers layers 18&ndash;27.</td>
+                </tr>
+                <tr>
+                  <td>Backend and capacity</td>
+                  <td>CUTLASS MoE; context 1,048,576; chunk/max prefill 16,384;
+                  max running 48; static-memory fraction 0.85; FP8-E4M3 KV;
+                  page size 64; decode and piecewise CUDA graphs disabled.</td>
+                  <td>The one backend delta is
+                  <code>--moe-runner-backend cutlass</code>; the remaining
+                  settings are held fixed across the A/B variants.</td>
+                </tr>
+                <tr>
+                  <td>Sequence and cache</td>
+                  <td>Built-in server warm-up, then 2 user warm-ups, 7
+                  unprofiled measurements, and 1 separately profiled request.
+                  <code>/flush_cache</code> ran before every user request.</td>
+                  <td>The flush cleared request radix/KV-prefix state; mounted
+                  JIT, Triton, and DeepGEMM compilation caches remained warm.
+                  Therefore “uncached” means zero reused prompt tokens, not a
+                  cold compilation cache.</td>
+                </tr>
+                <tr>
+                  <td>Transfer mode</td>
+                  <td>Standalone prefill:
+                  <code>disaggregation_mode=null</code>, EP backend
+                  <code>none</code>, hierarchical cache disabled.</td>
+                  <td>The resolved default transfer-backend field says
+                  <code>mooncake</code>, but it is inactive when disaggregation
+                  mode is null. No PD or hierarchical-cache transfer is measured.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="contract-blocks">
+            <div class="contract-block">
+              <h4>Server launch contract</h4>
+              <pre><code>python3 -m sglang.launch_server &#92;
+  --model-path /home/models/zai-org/GLM-5.2-FP8 &#92;
+  --served-model-name zai-org/glm-5.2 &#92;
+  --trust-remote-code --host 0.0.0.0 --port 30000 &#92;
+  --tp-size 1 --dp-size 1 --pp-size 8 &#92;
+  --enable-fused-qk-norm-rope &#92;
+  --tool-call-parser glm47 --reasoning-parser glm45 &#92;
+  --context-length 1048576 &#92;
+  --chunked-prefill-size 16384 --max-prefill-tokens 16384 &#92;
+  --max-running-requests 48 --mem-fraction-static 0.85 &#92;
+  --kv-cache-dtype fp8_e4m3 --page-size 64 &#92;
+  --enable-dynamic-batch-tokenizer --enable-metrics &#92;
+  --enable-cache-report --disable-decode-cuda-graph &#92;
+  --disable-piecewise-cuda-graph &#92;
+  --soft-watchdog-timeout 7200 --watchdog-timeout 7200 &#92;
+  --decode-log-interval 1 --log-requests &#92;
+  --log-requests-level 1 --log-requests-target stdout &#92;
+  --moe-runner-backend cutlass</code></pre>
+            </div>
+
+            <div class="contract-block">
+              <h4>Request and measurement contract</h4>
+              <pre><code>input_ids = [1000 + (i % 1024) for i in range(16384)]
+canonical compact-JSON SHA-256 =
+8cbff7c802f11954db30888442ddf2b4636ffd876bcb3640d8ef0970aee7d25f
+
+POST /flush_cache {}
+POST /generate {
+  "input_ids": input_ids,
+  "sampling_params": {
+    "temperature": 0,
+    "max_new_tokens": 1,
+    "ignore_eos": true
+  },
+  "stream": false
+}
+
+2 warm-ups + 7 measured + 1 profiled
+required: HTTP 200, prompt=16384, completion=1, cached=0</code></pre>
+            </div>
+
+            <div class="contract-block">
+              <h4>Profiler contract</h4>
+              <pre><code>nsys profile &#92;
+  --capture-range=cudaProfilerApi &#92;
+  --capture-range-end=stop-shutdown --kill=sigterm &#92;
+  --trace=cuda,nvtx,osrt --cuda-graph-trace=node &#92;
+  --sample=none --cpuctxsw=none &#92;
+  --force-overwrite=true --export=sqlite
+
+POST /flush_cache {}
+POST /start_profile {
+  "activities": ["CUDA_PROFILER"],
+  "with_stack": false,
+  "record_shapes": false
+}
+POST /generate &rarr; persist result
+POST /stop_profile {"activities": ["CUDA_PROFILER"]}</code></pre>
+            </div>
+
+            <div class="contract-block">
+              <h4>Pod, JIT, cache, and resource boundary</h4>
+              <pre><code>FLASHINFER_NVCC_THREADS=16
+MAX_JOBS=16
+SGLANG_ENABLE_JIT_DEEPGEMM=1
+SGLANG_JIT_DEEPGEMM_COMPILE_WORKERS=32
+SGLANG_JIT_DEEPGEMM_FAST_WARMUP=1
+SGLANG_WARMUP_TIMEOUT=3600
+NCCL_SOCKET_IFNAME=bond0
+GLOO_SOCKET_IFNAME=bond0
+
+requests: cpu=16, memory=1200Gi, ephemeral=64Gi, gpu=8
+limits:   cpu=32, memory=1500Gi, ephemeral=512Gi, gpu=8
+security: privileged root; SYS_PTRACE + IPC_LOCK; host network
+model:    /mnt/disk1/models &rarr; /home/models (read-only)
+cache:    /mnt/disk1/codex-cache/glm52-fp8-profile &rarr; /root/.cache
+profiles: /mnt/disk1/codex-profiles/b300_fp8_kernel_mfu_opt_20260722 &rarr; /profiles
+tmp:      64Gi emptyDir
+shm:      64Gi memory-backed emptyDir</code></pre>
+            </div>
+          </div>
+
+          <div class="callout warning retention-note">
+            <strong>Provenance, retention, and interpretation limits</strong>
+            Run <code>b300_fp8_kernel_mfu_opt_20260722/moe_cutlass</code> is the
+            primary experiment. The retained source SQLite has SHA-256
+            <code>67c38df7f6dd3802c0001f3ed993eaf1bd6d516974252e1f54ec4f762880c64c</code>;
+            normalized JSON/CSV and audit sidecars are downloadable below. The
+            full <code>.nsys-rep</code> is not part of this published pack, so
+            its continued availability is not asserted. MFU uses analytical
+            model FLOPs and a 4.5-PFLOP/s-per-GPU dense-FP8 normalization, not
+            NCU counters. Aggregate kernel milliseconds sum device residency
+            and are neither request wall time nor useful-compute time. The H200
+            comparison is a separate evidence-pack dependency with its own
+            precision conversion.
+          </div>
+        </div>
+        <!-- experiment-settings:end -->
       </section>
 
       <section class="band" id="ranks">

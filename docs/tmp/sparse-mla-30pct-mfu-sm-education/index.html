@@ -464,6 +464,31 @@
       font-weight: 700;
       text-decoration: none;
     }
+    .sparse-experiment-settings .settings-table td:first-child {
+      width: 190px;
+      color: #384550;
+      font-weight: 800;
+    }
+    .sparse-experiment-settings details {
+      margin: 12px 0;
+      overflow: hidden;
+      background: #f7f9fa;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+    .sparse-experiment-settings summary {
+      padding: 12px 15px;
+      cursor: pointer;
+      color: #26323b;
+      font-weight: 800;
+    }
+    .sparse-experiment-settings details[open] summary {
+      border-bottom: 1px solid var(--line);
+    }
+    .sparse-experiment-settings details pre {
+      margin: 0;
+      border-radius: 0;
+    }
     .audit-list { padding-left: 20px; }
     .audit-list li { max-width: 920px; margin: 8px 0; }
     footer {
@@ -502,6 +527,7 @@
       .scenario-track { min-width: 0; }
       .metric-bars { grid-template-columns: minmax(130px, 1fr) 64px; }
       .metric-track { grid-column: 1 / 3; grid-row: auto; }
+      .sparse-experiment-settings .settings-table td:first-child { width: 145px; }
     }
     @media (max-width: 520px) {
       .stat-grid, .flow, .memory-path { grid-template-columns: 1fr; }
@@ -512,6 +538,7 @@
       .sm-grid { grid-template-columns: repeat(12, minmax(6px, 1fr)); }
       .cycle-grid { grid-template-columns: repeat(10, 14px); }
       .cycle-cell { width: 14px; height: 14px; }
+      .sparse-experiment-settings .settings-table td:first-child { width: 118px; }
     }
   </style>
 </head>
@@ -549,6 +576,7 @@
       <strong>On this page</strong>
       <a href="#answer">Answer first</a>
       <a href="#reproducer">Exact reproducer</a>
+      <a href="#experiment-settings">Experiment settings</a>
       <a href="#hierarchy">Grid to SM</a>
       <a href="#scheduler">Warp scheduler</a>
       <a href="#memory">Memory path</a>
@@ -667,6 +695,163 @@
           not a claim that synthetic values recreate the learned DSA choices.
         </p>
       </section>
+
+      <!-- experiment-settings:start -->
+      <section class="sparse-experiment-settings" id="experiment-settings">
+        <h2>Experiment settings and reproduction</h2>
+        <p class="lede">
+          This retained contract separates the direct synthetic kernel call from
+          the production trace used only as a comparison baseline.
+        </p>
+        <div class="table-wrap">
+          <table class="settings-table">
+            <thead><tr><th>Area</th><th>Exact setting</th></tr></thead>
+            <tbody>
+              <tr><td>Allocation</td><td>
+                Cluster <code>prod-maas-b300-neimeng</code>,
+                namespace <code>default</code>,
+                node <code>gpu-worker-199</code>; exactly one
+                GPU, UUID
+                <code>GPU-a5a2b405-e307-a918-d31d-5c4d03019356</code>.
+                The device reported <code>NVIDIA L20D</code>,
+                compute capability <code>10.3</code>.
+              </td></tr>
+              <tr><td>Runtime image</td><td>
+                <code>image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447</code><br>
+                digest <code>sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b</code>
+              </td></tr>
+              <tr><td>Software</td><td>
+                SGLang commit <code>3bd16074e02da069acdc959f0968af1d63fb9467</code>;
+                FlashInfer <code>0.6.12</code>;
+                PyTorch <code>2.11.0+cu130</code>;
+                CUDA <code>13.0</code>;
+                Nsight Systems and Nsight Compute
+                <code>2025.3.1</code>.
+              </td></tr>
+              <tr><td>Model boundary</td><td>
+                <strong>No model or checkpoint was loaded.</strong> This is a
+                direct synthetic call to
+                <code>flashinfer.decode.trtllm_batch_decode_with_kv_cache_mla</code>. The linked
+                production baseline is a separate GLM-5.2-FP8 PP8 run; only its
+                PP2 ten-layer sparse-MLA measurements are compared here.
+              </td></tr>
+              <tr><td>Topology</td><td>
+                One GPU and one process. HTTP, the scheduler, model loading,
+                tensor/data/pipeline parallelism, and distributed workers are
+                bypassed; TP, DP, and PP are therefore not applicable to the
+                direct call.
+              </td></tr>
+              <tr><td>Tensor contract</td><td>
+                <code>tokens=16,384</code>, <code>top-k=2,048</code>,
+                <code>heads=64</code>, <code>qk_nope=128</code>,
+                <code>kv_lora_rank=512</code>, <code>qk_rope=64</code>,
+                value dimension <code>512</code>, page size <code>64</code>,
+                <code>layout=recent</code>, variable sequence, shared paged-KV
+                index, backend <code>trtllm-gen</code>.
+              </td></tr>
+              <tr><td>Values and memory</td><td>
+                Seed <code>20260723</code>; query constant <code>0.0625</code>;
+                KV constant <code>0.03125</code>; FP8 E4M3 query/KV; BF16 output;
+                <code>384 MiB</code> workspace.
+              </td></tr>
+              <tr><td>Cache and transfer</td><td>
+                Synthetic tensors are freshly allocated. There is no HTTP
+                request cache, radix cache, hierarchical cache, model-weight
+                cache, Dynamo transfer, Mooncake transfer, or prefill/decode
+                disaggregation.
+              </td></tr>
+              <tr><td>Direct timing</td><td>
+                Three warmups, ten launches per repeat, five repeats; CUDA-event
+                median <code>3.083094 ms</code>.
+              </td></tr>
+              <tr><td>Nsight Systems</td><td>
+                CUDA and NVTX tracing; CPU sampling and context-switch tracing
+                disabled; three warmups, one launch per repeat, ten repeats.
+              </td></tr>
+              <tr><td>Nsight Compute</td><td>
+                Privileged root pod; all target processes; demangled
+                <code>TokenSparse</code> regex; per-launch configuration; skip
+                three launches and capture one; kernel replay; all-cache flush;
+                clocks unchanged; seven named sections; 20 replay passes.
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <details>
+          <summary>Copy: direct timing reproducer</summary>
+          <pre><code>env HOME=/tmp TORCHINDUCTOR_CACHE_DIR=/tmp/torchinductor \
+  python3 reproduce_sparse_mla.py \
+  --tokens 16384 \
+  --topk 2048 \
+  --heads 64 \
+  --layout recent \
+  --warmup 3 \
+  --iterations 10 \
+  --repeats 5 \
+  --seed 20260723 \
+  --json-out final_recent_full.json</code></pre>
+        </details>
+        <details>
+          <summary>Copy: Nsight Systems capture</summary>
+          <pre><code>cp reproduce_sparse_mla.py /tmp/reproduce_sparse_mla.py
+
+nsys profile \
+  --trace=cuda,nvtx \
+  --sample=none \
+  --cpuctxsw=none \
+  --force-overwrite=true \
+  -o /tmp/sparse_mla_recent \
+  env HOME=/tmp TORCHINDUCTOR_CACHE_DIR=/tmp/torchinductor \
+  python3 /tmp/reproduce_sparse_mla.py \
+  --tokens 16384 \
+  --topk 2048 \
+  --layout recent \
+  --warmup 3 \
+  --iterations 1 \
+  --repeats 10 \
+  --json-out /tmp/nsys_recent.json</code></pre>
+        </details>
+        <details>
+          <summary>Copy: Nsight Compute capture</summary>
+          <pre><code>cp reproduce_sparse_mla.py /tmp/reproduce_sparse_mla.py
+
+/opt/nvidia/nsight-compute/2025.3.1/target/linux-desktop-glibc_2_11_3-x64/ncu \
+  --target-processes all \
+  --kernel-name-base demangled \
+  --kernel-name &#x27;regex:fmhaSm100fKernel_.*TokenSparse&#x27; \
+  --filter-mode per-launch-config \
+  --launch-skip 3 \
+  --launch-count 1 \
+  --replay-mode kernel \
+  --cache-control all \
+  --clock-control none \
+  --section LaunchStats \
+  --section Occupancy \
+  --section SpeedOfLight \
+  --section MemoryWorkloadAnalysis \
+  --section SchedulerStats \
+  --section WarpStateStats \
+  --section ComputeWorkloadAnalysis \
+  --force-overwrite \
+  --export /tmp/sparse_mla_recent_full \
+  env HOME=/tmp TORCHINDUCTOR_CACHE_DIR=/tmp/torchinductor \
+  python3 /tmp/reproduce_sparse_mla.py \
+  --tokens 16384 \
+  --topk 2048 \
+  --layout recent \
+  --warmup 3 \
+  --iterations 1 \
+  --repeats 1 \
+  --json-out /tmp/ncu_recent.json</code></pre>
+        </details>
+        <div class="download-row">
+          <a href="reproduce_sparse_mla.py">Reproducer source</a>
+          <a href="analysis.json">Settings, results, and hashes</a>
+          <a href="nsys_kernel_samples.csv">Nsight Systems timings</a>
+          <a href="sparse_mla_recent_details.csv">Nsight Compute details</a>
+        </div>
+      </section>
+      <!-- experiment-settings:end -->
 
       <section id="hierarchy">
         <h2>From one launch to 148 SMs</h2>
