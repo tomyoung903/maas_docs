@@ -249,6 +249,127 @@
     }
     .flow-step strong { display: block; margin-bottom: 7px; }
     .flow-step span { display: block; color: var(--muted); font-size: 12px; }
+    .evidence-key {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      margin: 20px 0 26px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .evidence-key b {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 1px 5px;
+      color: var(--ink);
+      border-left: 4px solid var(--blue);
+    }
+    .evidence-key .inferred b { border-color: var(--gold); }
+    .evidence-key .illustrative b { border-color: var(--violet); }
+    .tensor-inventory td:nth-child(2),
+    .tensor-inventory td:nth-child(3) {
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .tensor-inventory .shape {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .query-microscope {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      margin: 26px 0;
+      border: 1px solid var(--line);
+    }
+    .query-step {
+      position: relative;
+      min-height: 168px;
+      padding: 16px 19px 16px 14px;
+      border-right: 1px solid var(--line);
+    }
+    .query-step:last-child { border-right: 0; }
+    .query-step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      top: 67px;
+      right: -9px;
+      z-index: 2;
+      width: 18px;
+      color: var(--blue);
+      background: var(--paper);
+      font-weight: 800;
+      text-align: center;
+    }
+    .query-step .step-number {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--red);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .query-step strong { display: block; margin-bottom: 6px; }
+    .query-step span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.48;
+    }
+    .flow-ledger td:first-child {
+      width: 58px;
+      color: var(--red);
+      font-weight: 800;
+      text-align: center;
+    }
+    .flow-ledger td:nth-child(2) { width: 170px; font-weight: 800; }
+    .resource-math {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 24px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .resource-math > div {
+      min-height: 132px;
+      padding: 16px;
+      border-right: 1px solid var(--line);
+    }
+    .resource-math > div:last-child { border-right: 0; }
+    .resource-math strong { display: block; margin-bottom: 5px; }
+    .resource-math .number {
+      display: block;
+      margin: 4px 0;
+      color: var(--blue);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 23px;
+      font-weight: 700;
+    }
+    .resource-math small { color: var(--muted); line-height: 1.4; }
+    .mapping-table .proven { border-left: 4px solid var(--blue); }
+    .mapping-table .inferred { border-left: 4px solid var(--gold); }
+    .mapping-table .illustrative { border-left: 4px solid var(--violet); }
+    .memory-reuse {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+      gap: 26px;
+      margin: 26px 0;
+      padding: 22px 0;
+      border-top: 2px solid var(--ink);
+      border-bottom: 1px solid var(--line);
+    }
+    .memory-reuse .big-number {
+      color: var(--red);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.05;
+    }
+    .memory-reuse p { margin-top: 6px; color: var(--muted); }
     figure { margin: 28px 0; }
     figcaption { margin-top: 10px; color: var(--muted); font-size: 13px; }
     .sm-grid {
@@ -504,6 +625,10 @@
       .flow, .memory-path { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .flow-step, .memory-level { border-bottom: 1px solid var(--line); }
       .flow-step::after { display: none; }
+      .query-microscope { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .query-step { border-bottom: 1px solid var(--line); }
+      .query-step:nth-child(3n) { border-right: 0; }
+      .query-step::after { display: none; }
       .sm-grid { grid-template-columns: repeat(25, minmax(7px, 1fr)); }
       .sm-zoom-body { grid-template-columns: 1fr; }
       .scheduler-panel { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -520,6 +645,10 @@
       .comparison, .scheduler-audit { grid-template-columns: 1fr; }
       .equation { grid-template-columns: 1fr; gap: 2px; }
       .equation .eq { display: none; }
+      .resource-math { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .resource-math > div:nth-child(2) { border-right: 0; }
+      .resource-math > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .memory-reuse { grid-template-columns: 1fr; gap: 8px; }
       .sm-grid { grid-template-columns: repeat(16, minmax(7px, 1fr)); }
       .scenario-head { display: none; }
       .scenario-row { grid-template-columns: 1fr 70px 82px; gap: 8px; }
@@ -533,12 +662,74 @@
       .stat-grid, .flow, .memory-path { grid-template-columns: 1fr; }
       .stat, .flow-step, .memory-level { border-right: 0; border-bottom: 1px solid var(--line); }
       .stat:last-child, .memory-level:last-child { border-bottom: 0; }
+      .query-microscope, .resource-math { grid-template-columns: 1fr; }
+      .query-step, .resource-math > div {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .query-step:last-child, .resource-math > div:last-child { border-bottom: 0; }
       .scheduler-row { grid-template-columns: 1fr; }
       .scheduler-readiness { text-align: left; }
       .sm-grid { grid-template-columns: repeat(12, minmax(6px, 1fr)); }
       .cycle-grid { grid-template-columns: repeat(10, 14px); }
       .cycle-cell { width: 14px; height: 14px; }
       .sparse-experiment-settings .settings-table td:first-child { width: 118px; }
+      .tensor-inventory,
+      .tensor-inventory tbody,
+      .mapping-table,
+      .mapping-table tbody,
+      .flow-ledger,
+      .flow-ledger tbody {
+        display: block;
+        width: 100%;
+      }
+      .tensor-inventory thead,
+      .mapping-table thead,
+      .flow-ledger thead {
+        display: none;
+      }
+      .tensor-inventory tr,
+      .mapping-table tr,
+      .flow-ledger tr {
+        display: block;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .mapping-table tr { padding-left: 9px; }
+      .tensor-inventory td,
+      .mapping-table td,
+      .flow-ledger td,
+      .flow-ledger td:first-child,
+      .flow-ledger td:nth-child(2) {
+        display: block;
+        width: 100%;
+        padding: 5px 8px;
+        border: 0;
+        white-space: normal;
+        text-align: left;
+      }
+      .tensor-inventory td::before,
+      .mapping-table td::before,
+      .flow-ledger td::before {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .tensor-inventory td:nth-child(1)::before { content: "Allocation"; }
+      .tensor-inventory td:nth-child(2)::before { content: "Footprint"; }
+      .tensor-inventory td:nth-child(3)::before { content: "Per query row"; }
+      .tensor-inventory td:nth-child(4)::before { content: "Concrete meaning"; }
+      .mapping-table td:nth-child(1)::before { content: "Hierarchy boundary"; }
+      .mapping-table td:nth-child(2)::before { content: "What is exact here"; }
+      .mapping-table td:nth-child(3)::before { content: "What must not be overclaimed"; }
+      .flow-ledger td:nth-child(1)::before { content: "Stage"; }
+      .flow-ledger td:nth-child(2)::before { content: "Object"; }
+      .flow-ledger td:nth-child(3)::before { content: "Movement or calculation"; }
+      .flow-ledger td:nth-child(4)::before { content: "Where state lives"; }
+      .flow-ledger td:nth-child(5)::before { content: "Coordination"; }
     }
   </style>
 </head>
@@ -547,6 +738,7 @@
     <strong>MaaS Kernel Study</strong>
     <nav aria-label="Pack navigation">
       <a href="https://tomyoung903.github.io/maas_docs/tmp/glm52-neimeng-b300-top5-kernel-mfu/">Top-five audit</a>
+      <a href="#full-data-flow">Tensor journey</a>
       <a href="#mfu">MFU derivation</a>
       <a href="#evidence">Evidence</a>
     </nav>
@@ -577,6 +769,7 @@
       <a href="#answer">Answer first</a>
       <a href="#reproducer">Exact reproducer</a>
       <a href="#experiment-settings">Experiment settings</a>
+      <a href="#full-data-flow">Full tensor journey</a>
       <a href="#hierarchy">Grid to SM</a>
       <a href="#scheduler">Warp scheduler</a>
       <a href="#memory">Memory path</a>
@@ -852,6 +1045,393 @@ nsys profile \
         </div>
       </section>
       <!-- experiment-settings:end -->
+
+      <section id="full-data-flow">
+        <h2>The complete tensor journey for this 16,384-token launch</h2>
+        <p class="lede">
+          This section follows the actual tensor contract from device memory,
+          through 16,384 CUDA thread blocks and the four warp schedulers in
+          each occupied SM, to the final BF16 tensor. It deliberately separates
+          measured facts from mappings that the compiled kernel does not expose.
+        </p>
+        <div class="evidence-key" aria-label="Evidence labels">
+          <span><b>Measured</b> API shape, profiler counter, or launch field</span>
+          <span class="inferred"><b>Strong inference</b> implied by matching row and grid cardinality</span>
+          <span class="illustrative"><b>Teaching quotient</b> useful arithmetic, not a claimed lane map</span>
+        </div>
+
+        <h3>1. The six allocations entering the call</h3>
+        <p>
+          The direct call allocated 2,121.0625 MiB.
+          PyTorch recorded 2,121.0659
+          MiB at peak, a difference of only
+          3,584
+          bytes from the six explicit allocations below.
+        </p>
+        <div class="table-wrap">
+          <table class="tensor-inventory">
+            <thead>
+              <tr><th>Allocation</th><th>Footprint</th><th>Per query row</th><th>Concrete meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Query, FP8</strong><span class="shape"><code>[16,384, 1, 64, 576]</code></span></td>
+                <td>576 MiB</td>
+                <td>36 KiB</td>
+                <td>For each token row: 64 head-specific query vectors. Each vector has a 512-element absorbed latent part and a 64-element RoPE part.</td>
+              </tr>
+              <tr>
+                <td><strong>Compressed KV cache, FP8</strong><span class="shape"><code>[256, 1, 64, 576]</code></span></td>
+                <td>9 MiB</td>
+                <td>Shared by all heads</td>
+                <td>256 pages &times; one shared MLA KV stream &times; 64 tokens/page &times; 576 values. The first 512 values are compressed latent KV; the last 64 are RoPE key values.</td>
+              </tr>
+              <tr>
+                <td><strong>Selected-token table, INT32</strong><span class="shape"><code>[16,384, 1, 2,048]</code></span></td>
+                <td>128 MiB</td>
+                <td>8 KiB</td>
+                <td>Physical KV-token indices for each query. Invalid causal-prefix slots are <code>-1</code>; valid count is <code>min(t + 1, 2,048)</code>.</td>
+              </tr>
+              <tr>
+                <td><strong>Sequence lengths, INT32</strong><span class="shape"><code>[16,384]</code></span></td>
+                <td>64.0 KiB</td>
+                <td>4 bytes</td>
+                <td>The valid selected-token count for each query row, capped at 2,048.</td>
+              </tr>
+              <tr>
+                <td><strong>Workspace, UINT8</strong><span class="shape"><code>[384 MiB]</code></span></td>
+                <td>384 MiB</td>
+                <td>Kernel-wide scratch</td>
+                <td>FlashInfer workspace supplied to the compiled TRT-LLM GEN implementation. Its internal subdivision is not exposed by the API or trace.</td>
+              </tr>
+              <tr>
+                <td><strong>Output, BF16</strong><span class="shape"><code>[16,384, 1, 64, 512]</code></span></td>
+                <td>1,024 MiB</td>
+                <td>64 KiB</td>
+                <td>For each query row and head, 512 latent output values. There are 536,870,912 BF16 values in total.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="verdict">
+          <strong>Do not interpret the two visible 64s the same way.</strong>
+          In the query tensor, <code>64</code> is the number of attention heads.
+          In the KV tensor, <code>64</code> is the page size. MLA stores one
+          compressed 576-value KV vector per physical token and shares it across
+          all 64 query heads; it does not store 64 independent KV-head vectors.
+        </div>
+
+        <h3>2. Follow one query row <span class="math-var">t</span></h3>
+        <p>
+          Let <span class="math-var">L</span><sub>t</sub> be
+          <code>min(t + 1, 2,048)</code>. For one head
+          <span class="math-var">h</span>, split the 576-value absorbed query
+          into 512 latent values and 64 RoPE values. For every selected physical
+          token <span class="math-var">j</span>, the conceptual fused-attention
+          calculation is:
+        </p>
+        <div class="equation-stack">
+          <div class="equation">
+            <span class="lhs">score<sub>t,h,j</sub></span><span class="eq">=</span>
+            <span>
+              1 / sqrt(128 + 64) &times;
+              (query-latent<sub>t,h</sub> &middot; KV-latent<sub>j</sub> +
+              query-RoPE<sub>t,h</sub> &middot; key-RoPE<sub>j</sub>)
+            </span>
+          </div>
+          <div class="equation">
+            <span class="lhs">probability<sub>t,h,j</sub></span><span class="eq">=</span>
+            <span>softmax over the <span class="math-var">L</span><sub>t</sub> selected scores</span>
+          </div>
+          <div class="equation">
+            <span class="lhs">output<sub>t,h</sub></span><span class="eq">=</span>
+            <span>
+              sum over selected <span class="math-var">j</span> of
+              probability<sub>t,h,j</sub> &times; KV-latent<sub>j</sub>,
+              producing <span class="result">512 BF16 values</span>
+            </span>
+          </div>
+        </div>
+        <div class="note">
+          <b>Why the dot product has 576 elements while the scale says 128 + 64:</b>
+          the API receives the model's original no-RoPE dimension
+          <code>qk_nope_head_dim=128</code> for scaling, but the query handed to
+          this absorbed MLA kernel has already been transformed into the
+          512-dimensional compressed-KV latent space. Appending 64 RoPE values
+          gives the observed 576-element QK operand.
+        </div>
+        <div class="query-microscope" aria-label="One query-row fused attention path">
+          <div class="query-step">
+            <span class="step-number">Step 1</span>
+            <strong>Own row <span class="math-var">t</span></strong>
+            <span>Read 36 KiB of FP8 query data: 64 vectors &times; 576 values.</span>
+          </div>
+          <div class="query-step">
+            <span class="step-number">Step 2</span>
+            <strong>Resolve selections</strong>
+            <span>Read an 8 KiB INT32 row and its valid length, then translate selected physical tokens into paged-KV addresses.</span>
+          </div>
+          <div class="query-step">
+            <span class="step-number">Step 3</span>
+            <strong>Gather KV tiles</strong>
+            <span>A full row names 2,048 &times; 576 FP8 values, a 1.125 MiB logical KV slice, so it must be consumed in tiles.</span>
+          </div>
+          <div class="query-step">
+            <span class="step-number">Step 4</span>
+            <strong>QK and softmax</strong>
+            <span>Form 64 &times; <span class="math-var">L</span><sub>t</sub> conceptual scores, scale them, and normalize each head's selected set.</span>
+          </div>
+          <div class="query-step">
+            <span class="step-number">Step 5</span>
+            <strong>Probability &times; V</strong>
+            <span>Accumulate 512 latent output channels for each of the 64 heads using the same selected compressed KV vectors.</span>
+          </div>
+          <div class="query-step">
+            <span class="step-number">Step 6</span>
+            <strong>Store row <span class="math-var">t</span></strong>
+            <span>Convert and write 32,768 BF16 values, exactly 64 KiB for this output row.</span>
+          </div>
+        </div>
+        <p>
+          For a full 2,048-selection row, this is
+          131,072 selected head-pairs and
+          285.213 million counted FLOPs.
+          Across the launch, the causal prefix produces
+          31,458,304 query-KV pairs and
+          2,013,331,456 selected head-pairs.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Counted phase</th><th>Arithmetic</th><th>Useful work in the complete launch</th><th>Share</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>QK score dots</td>
+                <td>2 &times; 576 FLOPs / selected pair / head</td>
+                <td>2.319358 TFLOP</td>
+                <td>52.94%</td>
+              </tr>
+              <tr>
+                <td>Probability &times; V</td>
+                <td>2 &times; 512 FLOPs / selected pair / head</td>
+                <td>2.061651 TFLOP</td>
+                <td>47.06%</td>
+              </tr>
+              <tr>
+                <td><strong>Total MFU numerator</strong></td>
+                <td>2,176 FLOPs / selected pair / head</td>
+                <td><strong>4.381009 TFLOP</strong></td>
+                <td><strong>100%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>3. Fan 16,384 rows out across 148 SMs</h3>
+        <p>
+          Nsys and NCU both recorded grid <code>(1, 1, 16,384)</code> and block
+          <code>(512, 1, 1)</code>. The grid therefore contains one CTA for
+          every flattened query row. The one-CTA-per-row ownership is a strong
+          inference from equal cardinality and the API contract; the profiler
+          cannot expose the private cubin's <code>blockIdx.z</code> expression.
+        </p>
+        <div class="resource-math">
+          <div>
+            <strong>Grid</strong>
+            <span class="number">16,384 CTAs</span>
+            <small>8,388,608 launched threads and 262,144 launched warps over the complete kernel.</small>
+          </div>
+          <div>
+            <strong>One full wave</strong>
+            <span class="number">148 CTAs</span>
+            <small>One admitted block per SM: 75,776 resident threads and 2,368 resident warps GPU-wide.</small>
+          </div>
+          <div>
+            <strong>Complete waves</strong>
+            <span class="number">110</span>
+            <small>110 &times; 148 = 16,280 blocks retire before the tail.</small>
+          </div>
+          <div>
+            <strong>Final partial wave</strong>
+            <span class="number">104 CTAs</span>
+            <small>The remaining 104 blocks occupy at most 104 SMs; scheduling order is not guaranteed.</small>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="mapping-table">
+            <thead><tr><th>Hierarchy boundary</th><th>What is exact here</th><th>What must not be overclaimed</th></tr></thead>
+            <tbody>
+              <tr class="proven">
+                <td><strong>Grid to SM</strong></td>
+                <td>16,384 independent blocks are admitted onto 148 SMs, at one resident block per SM.</td>
+                <td>CUDA does not promise that increasing block IDs run in increasing order.</td>
+              </tr>
+              <tr class="inferred">
+                <td><strong>Block to query row</strong></td>
+                <td>Grid cardinality exactly matches the 16,384 flattened query rows, strongly indicating one row owner per CTA.</td>
+                <td>Nsys and NCU do not reveal the compiled <code>blockIdx.z</code>-to-row address expression.</td>
+              </tr>
+              <tr class="proven">
+                <td><strong>Block to warps</strong></td>
+                <td>512 threads divide exactly into 16 hardware warps of 32 lanes. The block cannot split across SMs or migrate while resident.</td>
+                <td>A warp is an instruction-execution group, not necessarily a permanent attention-head owner.</td>
+              </tr>
+              <tr class="illustrative">
+                <td><strong>Warp to heads</strong></td>
+                <td>An even-share quotient is 64 heads / 16 warps = 4 head-equivalents per warp.</td>
+                <td>The private kernel may use warp specialization, cooperative head tiles, and producer/consumer roles. Four heads per warp is not a measured mapping.</td>
+              </tr>
+              <tr class="illustrative">
+                <td><strong>Thread lanes to one head</strong></td>
+                <td>An even-share quotient is 512 threads / 64 heads = 8 thread-equivalents per head, then 512 output values / 8 = 64 values per thread-equivalent.</td>
+                <td>This arithmetic is only a scale model. Tensor fragments, reductions, shuffles, and staged loads can assign entirely different lane roles.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>4. What one admitted block does inside one SM</h3>
+        <p>
+          Admission immediately reserves all 65,536 32-bit registers and
+          220,672 bytes of shared memory for this block. The 512 threads form
+          16 warps; the SM's four schedulers see about four active warps each.
+          A scheduler advances a warp one ready instruction at a time. It does
+          not run one warp to completion before choosing another.
+        </p>
+        <div class="table-wrap">
+          <table class="flow-ledger">
+            <thead><tr><th>Stage</th><th>Object</th><th>Concrete movement or calculation</th><th>Where state lives</th><th>Coordination</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>0</td><td>CTA admission</td>
+                <td>One 512-thread block receives an SM after the prior resident block retires.</td>
+                <td>16 warp contexts, 262,144 register bytes, and 220,672 shared-memory bytes are reserved.</td>
+                <td>CUDA block scheduler; blocks are independent.</td>
+              </tr>
+              <tr>
+                <td>1</td><td>Metadata</td>
+                <td>Warps load the row length and selected INT32 physical-token indices, then derive paged-KV addresses.</td>
+                <td>HBM-backed arrays arrive through L2 and L1/TEX; current indices and pointers reside in registers.</td>
+                <td>Scoreboard dependencies prevent consumers from issuing before loads return.</td>
+              </tr>
+              <tr>
+                <td>2</td><td>Q and KV tiles</td>
+                <td>Warps fetch a 36 KiB query row and stream the up-to-1.125 MiB logical selected-KV slice in smaller tiles.</td>
+                <td>Cache lines pass through L2/L1; operands and pipeline tiles occupy registers and shared memory.</td>
+                <td>Kernel barriers or dependency protocols keep producers and consumers on the correct tile.</td>
+              </tr>
+              <tr>
+                <td>3</td><td>QK dots</td>
+                <td>Tensor-pipeline instructions consume FP8 query and KV fragments and accumulate 576-element dot products.</td>
+                <td>Input fragments and partial sums are primarily register/shared-memory state; NCU measured 61.78% tensor-pipe active cycles.</td>
+                <td>Warps issue only when operands and the required execution pipe are ready.</td>
+              </tr>
+              <tr>
+                <td>4</td><td>Streaming softmax</td>
+                <td>Per-head maxima and sums are reduced while selected tiles advance; scale is <code>1 / sqrt(192)</code>.</td>
+                <td>Per-thread fragments use registers; cross-lane or cross-warp exchange can use shuffles and shared memory.</td>
+                <td>Reduction dependencies and synchronization create non-Tensor instructions and wait states.</td>
+              </tr>
+              <tr>
+                <td>5</td><td>Probability &times; V</td>
+                <td>Normalized probabilities weight the 512-value compressed latent vectors and update each head's output accumulator.</td>
+                <td>Tensor/ALU inputs and output accumulators are tiled through registers and shared memory.</td>
+                <td>Compute overlaps with later tile movement only when an independent warp is eligible.</td>
+              </tr>
+              <tr>
+                <td>6</td><td>BF16 output</td>
+                <td>Final 512-value accumulators for 64 heads are converted and written as one 64 KiB output row.</td>
+                <td>Register accumulators become global stores through L1/L2 to the 1 GiB output allocation.</td>
+                <td>The block retires only after all its warps finish and stores are committed as required.</td>
+              </tr>
+              <tr>
+                <td>7</td><td>Next wave</td>
+                <td>Register and shared-memory allocations are released; another queued CTA can enter the SM.</td>
+                <td>The departing block's register/shared state ceases to exist. L2 lines may remain reusable by later SMs.</td>
+                <td>This repeats for 110.70 average waves per SM.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="resource-math">
+          <div>
+            <strong>One thread</strong>
+            <span class="number">128 registers</span>
+            <small>512 bytes of allocated private register state for pointers, fragments, predicates, and accumulators.</small>
+          </div>
+          <div>
+            <strong>One warp</strong>
+            <span class="number">16 KiB registers</span>
+            <small>32 lanes execute a common instruction under lane predicates; each lane still owns its private register values.</small>
+          </div>
+          <div>
+            <strong>One block</strong>
+            <span class="number">256 KiB registers</span>
+            <small>16 warps collectively consume the entire 256 KiB SM register file plus 215.5 KiB shared memory.</small>
+          </div>
+          <div>
+            <strong>Four schedulers</strong>
+            <span class="number">0.44 eligible each</span>
+            <small>3.99 active but only 0.37 issued warps per scheduler on an average cycle.</small>
+          </div>
+        </div>
+        <div class="note">
+          <b>The exact 220,672-byte shared-memory layout is not public.</b>
+          It is defensible to say the fused kernel needs block-wide staging,
+          reductions, barriers, and pipeline state. It is not defensible to
+          label particular byte ranges as Q, K, V, probability, or accumulator
+          buffers without source or SASS-level reverse engineering. The same
+          limit applies to exact head-to-warp and output-dimension-to-lane maps.
+        </div>
+
+        <h3>5. Why logical work and physical traffic differ sharply</h3>
+        <div class="memory-reuse">
+          <div>
+            <div class="big-number">9 MiB KV pool</div>
+            <p>versus 126.5 MiB of measured GPU-wide L2</p>
+          </div>
+          <div>
+            <strong>The complete synthetic physical KV pool fits in L2 more than fourteen times over.</strong>
+            <p>
+              The <code>recent</code> selection layout also makes adjacent full
+              query rows share 2,047 of their 2,048 physical KV positions.
+              This creates heavy cross-CTA address reuse even though the useful
+              calculation still counts 2,013,331,456
+              selected head-pairs.
+            </p>
+          </div>
+        </div>
+        <p>
+          The memory path for an input tile is:
+          <strong>HBM-backed tensor &rarr; GPU-wide L2 &rarr; per-SM L1/TEX
+          &rarr; explicitly staged shared memory and thread-private registers
+          &rarr; execution pipes</strong>. Output travels back through the cache
+          hierarchy to its HBM-backed allocation. NCU measured
+          63.91% L1/TEX hit rate,
+          94.38% L2 hit rate, and only
+          7.45% of peak DRAM throughput.
+        </p>
+        <p>
+          That does not make the kernel free of memory latency. A miss or an
+          irregular gather can still block a dependent warp while aggregate
+          HBM bandwidth remains low. The scheduler evidence is direct:
+          63.4% of cycles had no eligible warp,
+          and long-scoreboard waits contributed
+          7.47 of the measured
+          10.91 warp-cycles per
+          issued instruction.
+        </p>
+        <div class="verdict">
+          <strong>The complete causal chain behind 30.84% MFU.</strong>
+          One resource-heavy CTA fills each SM with only 16 resident warps.
+          Those warps cooperatively gather selected KV tiles, execute QK,
+          normalize scores, accumulate probability-times-V, and store BF16
+          output. When their load and reduction dependencies align, the four
+          schedulers have no independent ready warp to hide the wait. Tensor
+          work is substantial, but tile movement, softmax, synchronization,
+          conversion, and empty issue opportunities all consume elapsed time
+          outside the 4.381-TFLOP useful numerator.
+        </div>
+      </section>
 
       <section id="hierarchy">
         <h2>From one launch to 148 SMs</h2>
@@ -1274,9 +1854,10 @@ nsys profile \
           </table>
         </div>
         <h3>Interpretation limits</h3>
-        <ul class="audit-list"><li>The cluster calls the fleet B300, while the device reports NVIDIA L20D, compute capability 10.3, and 148 SMs.</li><li>The 4,500-TFLOP/s dense FP8 denominator is a comparison convention derived from NVIDIA&#x27;s DGX B300 system specification, not a public L20D product specification.</li><li>Synthetic selected-token indices preserve cardinality and launch geometry, but they cannot reproduce the exact learned DSA index distribution or the complete SGLang layer context.</li><li>NCU replay changes wall time. NCU counters describe the replayed kernel; unprofiled CUDA events and Nsys provide timing.</li></ul>
+        <ul class="audit-list"><li>The cluster calls the fleet B300, while the device reports NVIDIA L20D, compute capability 10.3, and 148 SMs.</li><li>The 4,500-TFLOP/s dense FP8 denominator is a comparison convention derived from NVIDIA&#x27;s DGX B300 system specification, not a public L20D product specification.</li><li>Synthetic selected-token indices preserve cardinality and launch geometry, but they cannot reproduce the exact learned DSA index distribution or the complete SGLang layer context.</li><li>NCU replay changes wall time. NCU counters describe the replayed kernel; unprofiled CUDA events and Nsys provide timing.</li><li>The TensorRT-LLM GEN kernel is a compiled specialization. The trace proves launch and resource geometry, but it does not expose the exact head-to-warp, dimension-to-lane, register, or shared-memory layout. Even-share quotients are teaching aids, not reverse-engineered implementation claims.</li></ul>
         <h3>Primary references</h3>
         <ul class="audit-list">
+          <li><a href="https://docs.flashinfer.ai/generated/flashinfer.mla.trtllm_batch_decode_with_kv_cache_mla.html">FlashInfer sparse-MLA API reference</a>: query, paged compressed-KV, shared page-table, variable-sequence, and output tensor semantics. The experiment itself retained deployed version 0.6.12.</li>
           <li><a href="https://docs.nvidia.com/cuda/archive/13.0.0/cuda-c-programming-guide/index.html">CUDA C++ Programming Guide</a>: grids, blocks, 32-thread warps, registers, and resident-resource limits.</li>
           <li><a href="https://docs.nvidia.com/cuda/blackwell-tuning-guide/index.html">NVIDIA Blackwell Tuning Guide</a>: 64 warps/SM, 64K registers/SM, shared-memory/L1 carveout, and Blackwell memory hierarchy.</li>
           <li><a href="https://archive.docs.nvidia.com/nsight-compute/2025.3/ProfilingGuide/index.html">Nsight Compute Profiling Guide</a>: occupancy, eligible warps, issue slots, and scoreboard stall definitions.</li>

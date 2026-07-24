@@ -1,7 +1,7 @@
 {
   "artifact": {
     "title": "Sparse MLA at 30.84% MFU: Inside One GPU SM",
-    "generated_at": "2026-07-23T18:58:40.276154+08:00",
+    "generated_at": "2026-07-24T12:21:29.442403+08:00",
     "cluster": "prod-maas-b300-neimeng",
     "namespace": "default",
     "node": "gpu-worker-199",
@@ -71,7 +71,10 @@
   "kernel": {
     "name": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparseP1VarSeqQ64Kv128PersistentKeepsAbForGen",
     "selected_pairs": 31458304,
+    "selected_head_pairs": 2013331456,
     "flops_per_pair_per_head": 2176,
+    "qk_flops_per_launch": 2319357837312,
+    "pv_flops_per_launch": 2061651410944,
     "useful_flops_per_launch": 4381009248256,
     "useful_tflop_per_launch": 4.381009248256,
     "normalization_peak_tflops": 4500.0,
@@ -104,7 +107,28 @@
     "max_warps_per_scheduler": 16,
     "max_warps_per_sm": 64,
     "waves_per_sm": 110.7,
-    "l2_bytes": 132644864
+    "l2_bytes": 132644864,
+    "full_waves": 110,
+    "tail_blocks": 104
+  },
+  "data_flow": {
+    "query_elements": 603979776,
+    "query_bytes": 603979776,
+    "query_bytes_per_row": 36864,
+    "kv_physical_tokens": 16384,
+    "kv_elements": 9437184,
+    "kv_bytes": 9437184,
+    "kv_selected_bytes_per_full_row": 1179648,
+    "index_elements": 33554432,
+    "index_bytes": 134217728,
+    "index_bytes_per_row": 8192,
+    "seq_lens_bytes": 65536,
+    "workspace_bytes": 402653184,
+    "output_elements": 536870912,
+    "output_bytes": 1073741824,
+    "output_bytes_per_row": 65536,
+    "full_row_head_pairs": 131072,
+    "full_row_flops": 285212672
   },
   "timing": {
     "production": {
@@ -263,6 +287,7 @@
     "The cluster calls the fleet B300, while the device reports NVIDIA L20D, compute capability 10.3, and 148 SMs.",
     "The 4,500-TFLOP/s dense FP8 denominator is a comparison convention derived from NVIDIA's DGX B300 system specification, not a public L20D product specification.",
     "Synthetic selected-token indices preserve cardinality and launch geometry, but they cannot reproduce the exact learned DSA index distribution or the complete SGLang layer context.",
-    "NCU replay changes wall time. NCU counters describe the replayed kernel; unprofiled CUDA events and Nsys provide timing."
+    "NCU replay changes wall time. NCU counters describe the replayed kernel; unprofiled CUDA events and Nsys provide timing.",
+    "The TensorRT-LLM GEN kernel is a compiled specialization. The trace proves launch and resource geometry, but it does not expose the exact head-to-warp, dimension-to-lane, register, or shared-memory layout. Even-share quotients are teaching aids, not reverse-engineered implementation claims."
   ]
 }
