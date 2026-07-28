@@ -1,0 +1,50 @@
+{
+  "generated_at": "2026-07-28T13:20:00+08:00",
+  "experiment": {
+    "model": "zai-org/glm-5.2",
+    "decode_topology": "TP8",
+    "prefill_topology": "2 x PP4",
+    "concurrency_limit": 32,
+    "observed_peak_concurrency": 32,
+    "request_rate": "infinity",
+    "seed": 424242,
+    "prompt_groups": 32,
+    "prompts_per_group": 1,
+    "total_input_tokens": 2560473,
+    "mean_input_tokens": 80014.78125,
+    "total_output_tokens": 19200,
+    "output_tokens_per_request": 600
+  },
+  "results": {
+    "dp8": {
+      "mean_tpot_ms": 9.95971360147168,
+      "median_tpot_ms": 9.805275353077157,
+      "p90_tpot_ms": 11.50749035809113,
+      "mean_ttft_ms": 17191.003358155285,
+      "mean_e2e_ms": 23156.87,
+      "output_throughput_tps": 520.0078472682382
+    },
+    "tp8_no_dp_attention": {
+      "mean_tpot_ms": 13.222474975117194,
+      "median_tpot_ms": 13.02941240318188,
+      "p90_tpot_ms": 15.684246815910535,
+      "mean_ttft_ms": 10451.384121841329,
+      "mean_e2e_ms": 18371.65,
+      "output_throughput_tps": 903.1300453227531
+    }
+  },
+  "startup_evidence": {
+    "dp1_mem_fraction_initial": 0.95,
+    "dp1_mem_fraction_final": 0.9,
+    "cuda_graph_requested_allocation_gib": 2.81,
+    "cuda_graph_free_memory_mib_at_failure": 460.38,
+    "cuda_graph_free_memory_gib_after_fix": 9.32,
+    "custom_all_reduce_failure": "undefined symbol: cuPointerGetAttribute",
+    "fallback": "--disable-custom-all-reduce (NCCL)"
+  },
+  "evidence_scope": {
+    "request_metrics": "measured in the paired Neimeng experiment",
+    "kernel_map": "mechanistic interpretation informed by the existing one-token decode trace",
+    "paired_nsys_dp8_vs_dp1": false
+  }
+}

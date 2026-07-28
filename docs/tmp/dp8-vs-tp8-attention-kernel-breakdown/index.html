@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Evidence-backed explanation of prompt reuse, concurrency 32, and the kernel-level difference between DP8 attention and TP8 attention for GLM-5.2 decode.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:,">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/dp8-vs-tp8-attention-kernel-breakdown/">
+  <title>DP8 vs TP8 Attention: Where the TPOT Difference Can Come From</title>
+  <style>
+    :root {
+      --ink:#1d272b; --muted:#5d6970; --line:#d4dbde; --soft:#e8ecee;
+      --paper:#fff; --ground:#f3f5f6; --dark:#263036;
+      --dp:#176b9b; --dp-soft:#e8f3f9; --tp:#985018; --tp-soft:#faeee3;
+      --attn:#246b87; --attn-soft:#e5f1f5; --moe:#744b8c; --moe-soft:#f1e9f5;
+      --comm:#a33d45; --comm-soft:#f8e8e9; --norm:#47745d; --norm-soft:#e8f2ed;
+      --memory:#9a7118; --memory-soft:#fbf3dc; --neutral:#6b7479; --neutral-soft:#edf0f1;
+      --good:#15664e; --good-soft:#e5f3ed; --warn:#9a4b19; --warn-soft:#fff0e5;
+      --radius:7px; --shadow:0 1px 2px rgba(25,31,36,.08);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;scroll-padding-top:58px}
+    body{margin:0;color:var(--ink);background:var(--ground);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;line-height:1.58}
+    a{color:#155f88;text-underline-offset:3px}
+    code{padding:.12rem .32rem;border-radius:3px;background:#eef1f2;font-family:"SFMono-Regular",Consolas,monospace;font-size:.9em;overflow-wrap:anywhere}
+    .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:20px;height:48px;padding:0 max(22px,calc((100vw - 1460px)/2));color:#fff;background:var(--dark)}
+    .topbar strong{font-size:14px}.topbar nav{display:flex;gap:16px}.topbar a{color:#dce5e9;font-size:13px;text-decoration:none}
+    .hero{padding:38px max(24px,calc((100vw - 1460px)/2)) 32px;color:#fff;background:#344047;border-bottom:4px solid var(--dp)}
+    .eyebrow{margin:0 0 7px;color:#b6dbea;font-size:12px;font-weight:800;text-transform:uppercase}
+    h1{max-width:1080px;margin:0;font-size:clamp(2.3rem,4.4vw,3.4rem);line-height:1.08;letter-spacing:-.025em}
+    .hero p{max-width:1020px;margin:15px 0 0;color:#e1e7e9;font-size:17px}
+    .hero-meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:20px;color:#c6d1d5;font-size:13px}
+    .layout{display:grid;grid-template-columns:215px minmax(0,1fr);gap:30px;width:min(1460px,calc(100% - 40px));margin:0 auto;align-items:start}
+    .toc{position:sticky;top:68px;padding:28px 0}.toc h2{margin:0 0 10px;color:var(--muted);font-size:12px;text-transform:uppercase}
+    .toc a{display:block;padding:6px 9px;border-left:2px solid transparent;color:#4d5960;font-size:13px;text-decoration:none}.toc a:hover{border-left-color:var(--dp);background:#e8f0f4}
+    main{min-width:0;padding-bottom:80px}.band{padding:35px 0 40px;border-bottom:1px solid var(--line)}.band:last-child{border-bottom:0}
+    h2{margin:0 0 9px;font-size:25px;line-height:1.2}h3{margin:25px 0 9px;font-size:17px;line-height:1.3}.lede{max-width:1030px;margin:0 0 22px;color:var(--muted)}
+    .summary-grid{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:10px}.metric{padding:14px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+    .metric .label{color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase}.metric .value{margin-top:4px;font-size:23px;font-weight:760;line-height:1.15}.metric .detail{margin-top:4px;color:var(--muted);font-size:12px}
+    .callout{margin:20px 0;padding:16px 18px;border-left:5px solid var(--dp);background:var(--dp-soft)}.callout.warning{border-left-color:var(--warn);background:var(--warn-soft)}.callout.good{border-left-color:var(--good);background:var(--good-soft)}
+    .equations{display:grid;gap:8px;margin:18px 0}.eq{display:grid;grid-template-columns:minmax(150px,220px) 34px minmax(0,1fr);align-items:baseline;padding:12px 15px;border:1px solid var(--line);background:#fff}.eq .lhs,.eq .rhs{font-family:Georgia,"Times New Roman",serif;font-size:18px}.eq .equals{text-align:center}.shape{color:var(--muted);font-family:Inter,sans-serif;font-size:12px}
+    .math-var{font-family:Georgia,"Times New Roman",serif;font-style:italic}.math-vec{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:700}.math-mat{font-family:Georgia,"Times New Roman",serif;font-weight:700}.math-set{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:700}
+    .sym-hidden{color:#315f87}.sym-attn{color:var(--attn)}.sym-comm{color:var(--comm)}.sym-memory{color:var(--memory)}
+    .two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.card{padding:17px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}.card h3{margin:0 0 8px}.card p{margin:7px 0;color:var(--muted)}
+    .proof{display:grid;grid-template-columns:170px minmax(0,1fr);margin:15px 0 0;border-top:1px solid var(--line)}.proof dt,.proof dd{margin:0;padding:10px 12px;border-bottom:1px solid var(--line)}.proof dt{color:var(--muted);background:#f8f9fa;font-size:12px;font-weight:750}.proof dd{background:#fff;overflow-wrap:anywhere}
+    .flow{display:grid;gap:9px;margin:18px 0}.flow-row{display:grid;grid-template-columns:145px minmax(0,1fr) 190px;gap:14px;align-items:center;padding:13px 14px;border:1px solid var(--line);border-left:5px solid var(--neutral);border-radius:var(--radius);background:#fff}.flow-row.attn{border-left-color:var(--attn);background:var(--attn-soft)}.flow-row.moe{border-left-color:var(--moe);background:var(--moe-soft)}.flow-row.comm{border-left-color:var(--comm);background:var(--comm-soft)}.flow-row.norm{border-left-color:var(--norm);background:var(--norm-soft)}.flow-row .stage{font-weight:800}.flow-row .copy{color:#455159}.flow-row .delta{color:var(--muted);font-size:12px}
+    .timeline{display:grid;gap:13px;margin:20px 0}.lane{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center}.lane-label{font-size:12px;font-weight:800}.track{display:flex;min-height:42px;overflow:hidden;border:1px solid var(--line);border-radius:5px;background:#fff}.seg{display:flex;align-items:center;justify-content:center;min-width:30px;padding:5px 7px;border-right:1px solid rgba(255,255,255,.65);font-size:11px;font-weight:750;text-align:center}.seg.attn{background:var(--attn-soft);color:#15536b}.seg.moe{background:var(--moe-soft);color:#623b78}.seg.comm{background:var(--comm-soft);color:#7e2931}.seg.norm{background:var(--norm-soft);color:#315d49}.seg.other{background:var(--neutral-soft);color:#4d575c}
+    .legend{display:flex;flex-wrap:wrap;gap:9px 17px;margin:10px 0;color:var(--muted);font-size:12px}.legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:12px;height:12px;border:1px solid #b9c1c5;border-radius:2px}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);background:#fff}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 11px;border-bottom:1px solid var(--soft);text-align:left;vertical-align:top}th{color:#4c575e;background:#f7f9fa;font-size:11px;text-transform:uppercase}td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .causal{display:grid;grid-template-columns:1fr 42px 1fr 42px 1fr;gap:8px;align-items:stretch;margin:18px 0}.cause,.effect{padding:16px;border:1px solid var(--line);border-radius:var(--radius);background:#fff}.arrow{display:grid;place-items:center;color:var(--muted);font-size:25px}.cause strong,.effect strong{display:block;margin-bottom:5px}.cause span,.effect span{color:var(--muted);font-size:13px}
+    .verdict{display:inline-flex;align-items:center;padding:3px 8px;border:1px solid;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}.verdict.no{border-color:#8eb3a2;color:#285e47;background:#e8f3ed}.verdict.bias{border-color:#d79da1;color:#7c2f35;background:#faebec}.verdict.unknown{border-color:#d8b56c;color:#755313;background:#fbf4df}
+    footer{padding:27px max(24px,calc((100vw - 1460px)/2));color:#566169;background:#e6ebed;font-size:12px}
+    @media(max-width:1120px){.summary-grid{grid-template-columns:repeat(3,1fr)}.two-col{grid-template-columns:1fr}.causal{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+    @media(max-width:820px){.topbar{padding:0 14px}.topbar nav a:not(:last-child){display:none}.hero{padding:28px 18px 24px}.layout{display:block;width:min(100% - 24px,1460px)}.toc{position:static;display:flex;gap:4px;overflow:auto;padding:14px 0 2px}.toc h2{display:none}.toc a{flex:0 0 auto;border-left:0;border-bottom:2px solid transparent}.summary-grid{grid-template-columns:repeat(2,1fr)}.flow-row{grid-template-columns:1fr}.lane{grid-template-columns:1fr}.eq{grid-template-columns:1fr}.eq .equals{text-align:left}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <strong>MaaS Kernel Notes</strong>
+    <nav>
+      <a href="../basic-kernel-understanding-decode-first/">One-token trace</a>
+      <a href="../glm52-decode-dp8-tp8-ep8-execution-tree/">DP/TP/EP tree</a>
+      <a href="../">Temporary studies</a>
+    </nav>
+  </header>
+  <section class="hero">
+    <p class="eyebrow">GLM-5.2 · Neimeng · end-to-end decode experiment</p>
+    <h1>DP8 vs TP8 Attention: Where the TPOT Difference Can Come From</h1>
+    <p>This page proves prompt identity and concurrency from the benchmark artifacts, then maps the two attention topologies onto their expected decode kernels. Request metrics are measured; the side-by-side kernel delta is a mechanistic explanation, not a paired Nsight capture.</p>
+    <div class="hero-meta">
+      <span>32 distinct ≈80K contexts</span><span>600 output tokens</span><span>TP8 decoder</span>
+      <span>EAGLE: 5 steps · top-k 1 · 6 draft tokens</span><span>32/32 successful in both runs</span>
+    </div>
+  </section>
+  <div class="layout">
+    <aside class="toc" aria-label="Page overview">
+      <h2>On this page</h2>
+      <a href="#result">Measured result</a>
+      <a href="#prompt-proof">Prompt identity</a>
+      <a href="#concurrency-proof">Concurrency 32</a>
+      <a href="#topology">Topology change</a>
+      <a href="#kernel-flow">Kernel flow</a>
+      <a href="#timeline">Timeline model</a>
+      <a href="#memory">Why 0.90 was needed</a>
+      <a href="#allreduce">Why custom AR failed</a>
+      <a href="#causality">Does this explain 24.7%?</a>
+      <a href="#next-profile">What paired Nsight must prove</a>
+    </aside>
+    <main>
+      <section class="band" id="result">
+        <h2>Measured request-level result</h2>
+        <p class="lede">The benchmark measured a 3.26 ms reduction in mean TPOT with DP8 attention. That is the result to explain—not yet a measured allocation of those milliseconds to individual kernels.</p>
+        <div class="summary-grid">
+          <div class="metric"><div class="label">DP8 mean TPOT</div><div class="value">9.96 ms</div><div class="detail">measured</div></div>
+          <div class="metric"><div class="label">No-DP mean TPOT</div><div class="value">13.22 ms</div><div class="detail">TP8 attention</div></div>
+          <div class="metric"><div class="label">Reduction</div><div class="value">24.7%</div><div class="detail">relative to no-DP</div></div>
+          <div class="metric"><div class="label">Speedup</div><div class="value">1.33×</div><div class="detail">TPOT ratio</div></div>
+          <div class="metric"><div class="label">Peak client concurrency</div><div class="value">32</div><div class="detail">recorded by benchmark</div></div>
+          <div class="metric"><div class="label">Average input</div><div class="value">80,014.8</div><div class="detail">tokens/request</div></div>
+        </div>
+        <div class="equations" aria-label="TPOT equations">
+          <div class="eq"><span class="lhs"><span class="math-var">T</span><sub>DP8</sub></span><span class="equals">=</span><span class="rhs">9.9597 ms</span></div>
+          <div class="eq"><span class="lhs"><span class="math-var">T</span><sub>TP8</sub></span><span class="equals">=</span><span class="rhs">13.2225 ms</span></div>
+          <div class="eq"><span class="lhs">reduction</span><span class="equals">=</span><span class="rhs">(13.2225 − 9.9597) / 13.2225 = 24.7%</span></div>
+        </div>
+        <div class="callout warning"><strong>Do not round this into “DP8 is 30% faster overall.”</strong> Mean TPOT improved by 24.7%. TTFT, end-to-end latency, and aggregate output throughput moved in the opposite direction in this single run pair, so the claim is specific to per-request TPOT.</div>
+      </section>
+
+      <section class="band" id="prompt-proof">
+        <h2>How the two runs used identical prompts</h2>
+        <p class="lede">There were two different caches. The benchmark reused a serialized CPU-side prompt dataset; the serving KV cache was flushed before each measured run.</p>
+        <div class="two-col">
+          <article class="card">
+            <h3>Prompt dataset cache: intentionally reused</h3>
+            <p>DP8 generated 32 records with seed <code>424242</code> and wrote a cache whose key encoded seed, group count, lengths, and tokenizer. DP1 printed <code>Loading cached generated input data</code> for that exact cache file.</p>
+            <p>The raw JSONL independently matches: both runs contain the same 32 input lengths and the same total of 2,560,473 input tokens.</p>
+          </article>
+          <article class="card">
+            <h3>Server KV cache: intentionally not reused</h3>
+            <p>Both benchmark commands used <code>--flush-cache</code>. Therefore DP1 did not inherit DP8’s attention KV entries. Each topology had to process and transfer its own request contexts.</p>
+            <p>“Cached prompts” means reproducible workload generation, not a cache-hit benchmark.</p>
+          </article>
+        </div>
+        <dl class="proof">
+          <dt>Dataset construction</dt><dd><code>gsp-num-groups=32</code> × <code>gsp-prompts-per-group=1</code></dd>
+          <dt>Distinct contexts</dt><dd>One independently generated system prefix per group; only one request consumes each group.</dd>
+          <dt>Identity key</dt><dd>Seed 424242 + 32 groups + 1 prompt/group + nominal lengths + tokenizer backend.</dd>
+          <dt>Output identity</dt><dd>All 64 measured requests generated exactly 600 tokens.</dd>
+        </dl>
+      </section>
+
+      <section class="band" id="concurrency-proof">
+        <h2>How concurrency 32 was guaranteed—and what was not</h2>
+        <p class="lede">The client-side issue policy was deterministic: all requests became eligible immediately, and a semaphore allowed at most 32 in flight.</p>
+        <div class="causal">
+          <div class="cause"><strong><code>request-rate=inf</code></strong><span>No Poisson delay: all 32 request coroutines are released at benchmark time zero.</span></div>
+          <div class="arrow">→</div>
+          <div class="cause"><strong><code>max-concurrency=32</code></strong><span>The client permits all 32 requests to remain in flight simultaneously.</span></div>
+          <div class="arrow">→</div>
+          <div class="effect"><strong>Observed peak = 32</strong><span>The benchmark’s recorded <code>max_concurrent_requests</code> equals 32 in both runs.</span></div>
+        </div>
+        <div class="callout"><strong>This guarantees 32 client requests in flight, not a perfectly rectangular decode batch of 32.</strong> Two PP4 prefill workers finish long 80K contexts at different times. Requests can therefore join decode in waves, which is one reason TPOT and aggregate output throughput need not move together.</div>
+      </section>
+
+      <section class="band" id="topology">
+        <h2>The topology change inside one decode layer</h2>
+        <p class="lede">MoE and dense projections remain TP8. The main change is whether attention owns independent request subsets per GPU or shards one request’s attention work across all eight GPUs.</p>
+        <div class="two-col">
+          <article class="card">
+            <h3 style="color:var(--dp)">DP8 attention</h3>
+            <p>At a decode step, rank <span class="math-var">r</span> owns a subset <span class="math-set sym-attn">B<sub>r</sub></span> of active requests. Its MLA attention reads only those requests’ local KV pages and produces complete attention outputs locally.</p>
+            <div class="equations">
+              <div class="eq"><span class="lhs"><span class="math-set sym-attn">B<sub>r</sub></span></span><span class="equals">⊂</span><span class="rhs"><span class="math-set">B</span>, disjoint across ranks</span></div>
+              <div class="eq"><span class="lhs">attention work/rank</span><span class="equals">≈</span><span class="rhs">|<span class="math-set">B</span>| / 8 <span class="shape">when balanced</span></span></div>
+            </div>
+          </article>
+          <article class="card">
+            <h3 style="color:var(--tp)">TP8 attention, no DP attention</h3>
+            <p>All ranks participate in each active request. Attention projections and heads are sharded, then partial results must be combined before the next replicated or tensor-parallel stage can consume them.</p>
+            <div class="equations">
+              <div class="eq"><span class="lhs"><span class="math-vec sym-attn">o<sub>t</sub></span></span><span class="equals">=</span><span class="rhs">combine(<span class="math-vec">o<sub>t,0</sub></span>, …, <span class="math-vec">o<sub>t,7</sub></span>)</span></div>
+              <div class="eq"><span class="lhs">synchronization</span><span class="equals">=</span><span class="rhs">collective communication on the TP group</span></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="band" id="kernel-flow">
+        <h2>Kernel-family breakdown of one decode layer</h2>
+        <p class="lede">The colors deliberately separate attention, communication, MoE compute, normalization, and auxiliary work. DP8 primarily changes the blue attention path and the red communication boundary; purple MoE compute remains largely shared.</p>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--attn-soft)"></i>MLA / indexer attention</span>
+          <span><i class="swatch" style="background:var(--comm-soft)"></i>Collectives / synchronization</span>
+          <span><i class="swatch" style="background:var(--moe-soft)"></i>GEMM / MoE compute</span>
+          <span><i class="swatch" style="background:var(--norm-soft)"></i>Norm / residual</span>
+        </div>
+        <div class="flow">
+          <div class="flow-row norm"><div class="stage">Input norm</div><div class="copy">Fused residual add + RMSNorm</div><div class="delta">same family in both modes</div></div>
+          <div class="flow-row attn"><div class="stage">DSA indexer</div><div class="copy">Indexer query/key projection, score, and TopK page/block selection</div><div class="delta">DP8: request subset per rank</div></div>
+          <div class="flow-row attn"><div class="stage">MLA projection</div><div class="copy">Query latent, KV latent, RoPE, and output projection kernels</div><div class="delta">different batch ownership</div></div>
+          <div class="flow-row attn"><div class="stage">Sparse MLA scan</div><div class="copy">Sparse FP8 decode attention scans selected KV pages</div><div class="delta">DP8 reduces per-rank request/KV scan set</div></div>
+          <div class="flow-row comm"><div class="stage">Attention combine</div><div class="copy">TP8 attention needs cross-rank combination of partial outputs</div><div class="delta">DP8 can avoid this attention-boundary collective</div></div>
+          <div class="flow-row norm"><div class="stage">Post-attention norm</div><div class="copy">Residual and RMSNorm before FFN/MoE</div><div class="delta">largely unchanged</div></div>
+          <div class="flow-row moe"><div class="stage">MoE gate + TopK</div><div class="copy">Router logits, expert selection, permutation and scaling</div><div class="delta">not removed by DP attention</div></div>
+          <div class="flow-row moe"><div class="stage">MoE up / gate</div><div class="copy">NVFP4 expert GEMM, activation, shared-expert path</div><div class="delta">same TP8/MoE family</div></div>
+          <div class="flow-row moe"><div class="stage">MoE down</div><div class="copy">Expert down projection and weighted reduction</div><div class="delta">same TP8/MoE family</div></div>
+          <div class="flow-row comm"><div class="stage">TP/MoE combine</div><div class="copy">Required collective or reduction for tensor/expert-parallel outputs</div><div class="delta">still exists in DP8</div></div>
+        </div>
+        <div class="callout"><strong>Why the distinction matters:</strong> DP8 does not make every kernel 1.33× faster. It changes request ownership and removes or shrinks specific attention-side synchronization. MoE GEMMs can remain the same size and cost.</div>
+      </section>
+
+      <section class="band" id="timeline">
+        <h2>Schematic token timeline</h2>
+        <p class="lede">This is a topology model, not a time-scaled Nsight chart. Width emphasizes which families can change. A true paired capture is required to assign milliseconds.</p>
+        <div class="timeline" role="img" aria-label="Schematic comparison of DP8 and TP8 attention kernel families">
+          <div class="lane">
+            <div class="lane-label">DP8 attention</div>
+            <div class="track">
+              <div class="seg norm" style="flex:7">Norm</div>
+              <div class="seg attn" style="flex:13">Indexer</div>
+              <div class="seg attn" style="flex:19">MLA scan</div>
+              <div class="seg norm" style="flex:6">Norm</div>
+              <div class="seg moe" style="flex:18">MoE up</div>
+              <div class="seg moe" style="flex:15">MoE down</div>
+              <div class="seg comm" style="flex:9">MoE/TP combine</div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="lane-label">TP8 attention</div>
+            <div class="track">
+              <div class="seg norm" style="flex:7">Norm</div>
+              <div class="seg attn" style="flex:15">Indexer</div>
+              <div class="seg attn" style="flex:23">MLA scan</div>
+              <div class="seg comm" style="flex:13">Attention combine</div>
+              <div class="seg norm" style="flex:6">Norm</div>
+              <div class="seg moe" style="flex:18">MoE up</div>
+              <div class="seg moe" style="flex:15">MoE down</div>
+              <div class="seg comm" style="flex:9">MoE/TP combine</div>
+            </div>
+          </div>
+        </div>
+        <p class="lede">The existing one-token trace shows the relevant named families—including sparse MLA decode, RMSNorm, NCCL reduce-scatter, and NCCL all-gather—but it was captured for a different run. Its aggregate times cannot be subtracted from this Neimeng experiment.</p>
+      </section>
+
+      <section class="band" id="memory">
+        <h2>Why <code>mem-fraction-static=0.95</code> failed for no-DP attention</h2>
+        <p class="lede">Static memory reservation happens before CUDA graph capture. Reserving 95% for weights, KV pools, and static buffers left too little unreserved memory for graph-private allocations in TP8 attention mode.</p>
+        <div class="equations">
+          <div class="eq"><span class="lhs"><span class="math-var sym-memory">M</span><sub>static</sub></span><span class="equals">≈</span><span class="rhs"><span class="math-var">f</span><sub>static</sub> · <span class="math-var">M</span><sub>GPU</sub></span></div>
+          <div class="eq"><span class="lhs"><span class="math-var sym-memory">M</span><sub>free-for-graph</sub></span><span class="equals">=</span><span class="rhs"><span class="math-var">M</span><sub>GPU</sub> − weights − KV/static pools − runtime allocations</span></div>
+          <div class="eq"><span class="lhs">failure point</span><span class="equals">=</span><span class="rhs">460 MiB free &lt; 2.81 GiB requested</span></div>
+          <div class="eq"><span class="lhs">after <span class="math-var">f</span><sub>static</sub> = 0.90</span><span class="equals">=</span><span class="rhs">9.32 GiB free after graph capture</span></div>
+        </div>
+        <div class="callout good"><strong>This is a capacity/startup fix, not a demonstrated decode speed trick.</strong> Once both runs have captured their graphs and the 32-request working set fits, a smaller KV pool should not directly make attention arithmetic 24.7% faster. It mainly reduces maximum cache capacity.</div>
+      </section>
+
+      <section class="band" id="allreduce">
+        <h2>Why custom all-reduce failed and why NCCL matters</h2>
+        <p class="lede">No-DP attention activates TP communication paths that DP attention can avoid. During graph capture, SGLang loaded a JIT-compiled custom-all-reduce shared object; that object failed dynamic linking because the CUDA Driver API symbol <code>cuPointerGetAttribute</code> was unresolved.</p>
+        <div class="causal">
+          <div class="cause"><strong>TP8 attention path</strong><span>Cross-rank partial outputs require a collective combine.</span></div>
+          <div class="arrow">→</div>
+          <div class="cause"><strong>Custom AR library loaded</strong><span>JIT shared object expects a CUDA Driver API symbol at runtime.</span></div>
+          <div class="arrow">→</div>
+          <div class="effect"><strong>Dynamic-link failure</strong><span>Schedulers exit with code 127 before serving starts.</span></div>
+        </div>
+        <p>The supported workaround, <code>--disable-custom-all-reduce</code>, routes those collectives through NCCL. NCCL is correct, but its launch protocol, synchronization, and data path can be slower than a tuned intra-node custom reduction for small decode tensors.</p>
+        <div class="callout warning"><strong>This workaround can inflate the observed DP8 advantage.</strong> DP8 did not need the failing TP-attention custom-AR path, while the no-DP baseline paid NCCL collective cost. The experiment therefore measures “DP8 as configured” versus “TP8 attention with NCCL fallback,” not versus an ideal working custom-AR baseline.</div>
+      </section>
+
+      <section class="band" id="causality">
+        <h2>Do the two startup workarounds explain the 24.7% TPOT reduction?</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Factor</th><th>Expected TPOT effect</th><th>Verdict</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td><code>mem-fraction-static: 0.95 → 0.90</code></td><td>Usually negligible after successful graph capture</td><td><span class="verdict no">No direct explanation</span></td><td>Changes KV capacity/headroom, not the per-token model equations or topology.</td></tr>
+              <tr><td>NCCL fallback for no-DP attention</td><td>Can increase collective latency</td><td><span class="verdict bias">Plausible upward bias</span></td><td>No-DP attention requires TP synchronization; fallback may be slower than custom AR.</td></tr>
+              <tr><td>DP8 request ownership</td><td>Less attention work per rank and fewer attention collectives</td><td><span class="verdict unknown">Likely real mechanism</span></td><td>This is the intended topology benefit, especially at concurrency 32 and long KV.</td></tr>
+              <tr><td>Different decode admission waves</td><td>Changes per-request TPOT distribution and aggregate throughput</td><td><span class="verdict unknown">Unquantified</span></td><td>Long prefills finish at different times; peak client concurrency does not imply identical decode batch history.</td></tr>
+              <tr><td>One run per topology</td><td>Leaves run-order and variance unresolved</td><td><span class="verdict unknown">Unquantified</span></td><td>No alternating-order repeats or confidence interval.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout"><strong>Best supported conclusion:</strong> memory headroom does not explain the speedup. DP attention’s reduced attention-side work/communication is a credible cause, and the NCCL fallback probably makes the no-DP baseline slower, but the current artifacts cannot divide the 3.26 ms delta between those effects.</div>
+      </section>
+
+      <section class="band" id="next-profile">
+        <h2>What a paired Nsight experiment must prove</h2>
+        <p class="lede">To turn the mechanism into attribution, capture both topologies on the same two nodes with identical prompt records and alternate run order.</p>
+        <div class="flow">
+          <div class="flow-row attn"><div class="stage">1. MLA/indexer totals</div><div class="copy">Compare sparse MLA scan, indexer, TopK, and projection GPU-ms per generated token.</div><div class="delta">tests reduced attention work</div></div>
+          <div class="flow-row comm"><div class="stage">2. Collective totals</div><div class="copy">Compare attention-boundary all-reduce/reduce-scatter/all-gather count and duration.</div><div class="delta">tests communication removal</div></div>
+          <div class="flow-row moe"><div class="stage">3. MoE controls</div><div class="copy">Confirm MoE up/down GEMM and routing totals remain comparable.</div><div class="delta">control family</div></div>
+          <div class="flow-row norm"><div class="stage">4. Batch history</div><div class="copy">Align scheduler active-request counts and accepted EAGLE tokens with kernel windows.</div><div class="delta">controls admission waves</div></div>
+        </div>
+        <p class="lede">Required variants: DP8; TP8 attention + NCCL; and, only after fixing the image linkage, TP8 attention + custom AR. That third variant is what separates the intrinsic DP-attention gain from fallback overhead.</p>
+      </section>
+
+      <section class="band" id="evidence">
+        <h2>Evidence scope</h2>
+        <dl class="proof">
+          <dt>Measured artifacts</dt><dd>DP8 and DP1 benchmark JSONL: request counts, token lengths, peak concurrency, TTFT, TPOT, E2E latency, and throughput.</dd>
+          <dt>Startup logs</dt><dd>CUDA OOM allocation/free-memory values, successful graph-capture headroom, and custom-AR dynamic-link failure.</dd>
+          <dt>Kernel reference</dt><dd><a href="../basic-kernel-understanding-decode-first/">Basic Kernel Understanding: One Computed Decode Token</a>.</dd>
+          <dt>Machine-readable summary</dt><dd><a href="evidence.json">evidence.json</a>.</dd>
+          <dt>Critical limitation</dt><dd>No paired Neimeng Nsight captures were collected for DP8 and TP8 attention. Timeline widths on this page are schematic.</dd>
+        </dl>
+      </section>
+    </main>
+  </div>
+  <footer>Generated from the 2026-07-28 Neimeng end-to-end experiment. Static page; no external JavaScript or CDN dependencies.</footer>
+  <script id="timeline-data" type="application/json">{
+  "artifact": {
+    "name": "DP8 vs TP8 attention request-level comparison",
+    "generated_at": "2026-07-28T13:20:00+08:00",
+    "sources": [
+      "dp8-80k.jsonl",
+      "dp1-80k.jsonl",
+      "final-dgd.yaml",
+      "startup logs quoted in evidence.json"
+    ],
+    "capture_lifecycle": {
+      "kernel_capture": "unavailable: no paired Nsight capture was collected"
+    }
+  },
+  "bin_seconds": 36.922519729007035,
+  "duration_seconds": 36.922519729007035,
+  "profile_start_note": "No profiler time base exists. The sole empty bin is a schema placeholder and is not rendered as kernel evidence.",
+  "category_totals": {},
+  "bins": [
+    {
+      "t": 0,
+      "kernel_ms": {},
+      "kernel_count": {},
+      "decode_graph_ms": 0,
+      "decode_graph_count": 0
+    }
+  ],
+  "benchmark": {
+    "measurement_status": "completed",
+    "requests": 64,
+    "success": 64,
+    "failure": 0,
+    "dp8_mean_tpot_ms": 9.95971360147168,
+    "tp8_attention_mean_tpot_ms": 13.222474975117194,
+    "peak_client_concurrency_each_run": 32,
+    "total_input_tokens_each_run": 2560473,
+    "total_output_tokens_each_run": 19200
+  },
+  "panel_availability": {
+    "kernel_time_density": "unavailable",
+    "decode_cuda_graph_executions": "unavailable",
+    "scheduler_timeline": "unavailable",
+    "reason": "The experiment preserved benchmark JSONL and startup logs but no paired Nsight or timestamped scheduler artifacts."
+  }
+}</script>
+</body>
+</html>
