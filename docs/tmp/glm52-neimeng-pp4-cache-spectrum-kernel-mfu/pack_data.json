@@ -1,0 +1,187 @@
+{
+  "common_contract": {
+    "cluster": "prod-maas-b300-neimeng",
+    "cluster_dense_fp4_peak_pflops_per_second": 54.0,
+    "dense_fp4_peak_tflops_per_gpu": 13500.0,
+    "max_new_tokens": 1,
+    "model": "nvidia/GLM-5.2-NVFP4",
+    "node": "gpu-worker-212",
+    "parallelism": "TP1 x DP1 x PP4",
+    "participating_gpu_count": 4
+  },
+  "comparison_boundary": "Three measured operating points with different workload/context distributions; not a cache-only causal speedup study.",
+  "experiments": [
+    {
+      "cache_hit_rate": 0.4622743101736074,
+      "cached_tokens": 51147392,
+      "completion_tokens": 815,
+      "description": "The exact continuous-agent workload: variable contexts, stable user/workspace prefixes, five-minute admission, and full drain.",
+      "detail_href": "realistic-agent-cache/index.html",
+      "evidence": [],
+      "full_lifecycle_prompt_tokens_per_second": 76856.90957663517,
+      "gpu_count": 4,
+      "label": "Realistic agent cache",
+      "model": "zai-org/glm-5.2",
+      "node": "gpu-worker-212",
+      "parallelism": "TP1 x DP1 x PP4",
+      "prompt_tokens": 110642947,
+      "request_count": 815,
+      "slug": "realistic-agent-cache",
+      "source_files": [
+        {
+          "bytes": 6416191,
+          "path": "index.html",
+          "sha256": "b483b732a53d41280b76790c92e60aa7e005a9ce54e29fdebdbbe8c86159045d"
+        },
+        {
+          "bytes": 3720558,
+          "path": "timeline_data.json",
+          "sha256": "b95c56860c5cc9db75f02e22f2bddeafc53389f3849fa21c87e14ab5302ca350"
+        }
+      ],
+      "stable_allocated_fp4_equivalent_flops": 1.1304466875204934e+18,
+      "stable_cluster_mfu": 0.2649898470512174,
+      "stable_duration_seconds": 79.0,
+      "stable_fp4_equivalent_pflops_per_second": 14.30945174076574,
+      "stable_new_prompt_tokens_per_second": 41461.267377698496,
+      "steady_cache_hit_rate": 0.4739170030668712,
+      "timeline_href": "realistic-agent-cache/timeline_data.json",
+      "uncached_tokens": 59495555,
+      "workload": "Continuous agent sessions with natural prefix reuse"
+    },
+    {
+      "cache_hit_rate": 0.9,
+      "cached_tokens": 54000000,
+      "completion_tokens": 600,
+      "description": "In-GPU radix reuse only, deterministic A,A,A,B boundaries, exact aggregate hit accounting, and a separately gated steady cohort.",
+      "detail_href": "controlled-100k-90pct/index.html",
+      "evidence": [
+        {
+          "href": "evidence/steady_cache_validation.json",
+          "label": "Exact-cache validation"
+        },
+        {
+          "href": "evidence/warm_and_probe.json",
+          "label": "Warm/probe evidence"
+        },
+        {
+          "href": "evidence/steady_state_gate.json",
+          "label": "Steady-load gate"
+        },
+        {
+          "href": "evidence/run_summary.json",
+          "label": "Client run summary"
+        },
+        {
+          "href": "evidence/validation.json",
+          "label": "Client validation"
+        },
+        {
+          "href": "evidence/request_manifest.json",
+          "label": "Request contract"
+        }
+      ],
+      "full_lifecycle_prompt_tokens_per_second": 459657.4253492638,
+      "gpu_count": 4,
+      "label": "Controlled 100K / 90%",
+      "model": "nvidia/GLM-5.2-NVFP4",
+      "node": "gpu-worker-212",
+      "parallelism": "TP1 x DP1 x PP4",
+      "prompt_tokens": 60000000,
+      "request_count": 600,
+      "slug": "controlled-100k-90pct",
+      "source_files": [
+        {
+          "bytes": 377615,
+          "path": "index.html",
+          "sha256": "0f04125b1b9a85bbae856da45ab7b3f3a838b8a73efbaade01234c0a0da31287"
+        },
+        {
+          "bytes": 316748,
+          "path": "timeline_data.json",
+          "sha256": "3e9e70cf73ce77558bc0b06cd3a4de3189ea8e3929c28305da9bff82f7238d11"
+        },
+        {
+          "bytes": 660,
+          "path": "evidence/steady_cache_validation.json",
+          "sha256": "1b50c42ec2ef90aa072f88659b396fac370c6fc7dcb32d52eacedaa4838fe0c7"
+        },
+        {
+          "bytes": 1825,
+          "path": "evidence/warm_and_probe.json",
+          "sha256": "01ec89d96d52c624e1f3fe5fa1f0d5f5ba38a27e507fd89330c2c415f3b998a8"
+        },
+        {
+          "bytes": 510,
+          "path": "evidence/steady_state_gate.json",
+          "sha256": "b8a35f48d6a8102825e209af6119acda5fd20fc791ac70d77bd31581a8dc469b"
+        },
+        {
+          "bytes": 1769,
+          "path": "evidence/run_summary.json",
+          "sha256": "b89a9c9d2fe22ff80fab29980fe230cfdb97107a7c2b30babd88b904a7367eff"
+        },
+        {
+          "bytes": 89,
+          "path": "evidence/validation.json",
+          "sha256": "db6d02280a0c576ce614f97e7f19136e1bca4edfdedc2d86202297b8cbab0d1f"
+        },
+        {
+          "bytes": 204373,
+          "path": "evidence/request_manifest.json",
+          "sha256": "ebe904653e4ff7b64fae8659030be48e54f39bf44732e3b978de880d0c7d0a36"
+        }
+      ],
+      "stable_allocated_fp4_equivalent_flops": 1.8884873766403617e+18,
+      "stable_cluster_mfu": 0.2964021113765176,
+      "stable_duration_seconds": 117.988324354,
+      "stable_fp4_equivalent_pflops_per_second": 16.005714014331954,
+      "stable_new_prompt_tokens_per_second": 47615.88108898409,
+      "steady_cache_hit_rate": 0.8999994306049822,
+      "timeline_href": "controlled-100k-90pct/timeline_data.json",
+      "uncached_tokens": 6000000,
+      "workload": "600 requests; exactly 100,000 prompt tokens and 90% weighted hit"
+    },
+    {
+      "cache_hit_rate": 0.0,
+      "cached_tokens": 0,
+      "completion_tokens": 300,
+      "description": "Radix cache disabled, unique cold prefixes, two 32,768-token prefill chunks, and one completion token.",
+      "detail_href": "uncached-65k/index.html",
+      "evidence": [],
+      "full_lifecycle_prompt_tokens_per_second": 53310.30598859946,
+      "gpu_count": 4,
+      "label": "Uncached 65K",
+      "model": "nvidia/GLM-5.2-NVFP4",
+      "node": "gpu-worker-212",
+      "parallelism": "TP1 x DP1 x PP4",
+      "prompt_tokens": 19660800,
+      "request_count": 300,
+      "slug": "uncached-65k",
+      "source_files": [
+        {
+          "bytes": 1884997,
+          "path": "index.html",
+          "sha256": "8d0260ca766b8265a022d62a547982a1b22e113abae743636d22944fec662dd3"
+        },
+        {
+          "bytes": 4614700,
+          "path": "timeline_data.json",
+          "sha256": "a2e4532fae4fe5104a5d9d90855b982880224b494ed32863154c4b495c66b2cd"
+        }
+      ],
+      "stable_allocated_fp4_equivalent_flops": 5.306835785676227e+18,
+      "stable_cluster_mfu": 0.31498313067878836,
+      "stable_duration_seconds": 312.0,
+      "stable_fp4_equivalent_pflops_per_second": 17.00908905665457,
+      "stable_new_prompt_tokens_per_second": 56188.717948717946,
+      "steady_cache_hit_rate": 0.0,
+      "timeline_href": "uncached-65k/timeline_data.json",
+      "uncached_tokens": 19660800,
+      "workload": "300 simultaneous cold requests; 65,536 prompt tokens each"
+    }
+  ],
+  "generated_at": "2026-07-28T20:33:22.279813+08:00",
+  "name": "GLM-5.2 Neimeng PP4 cache and uncached profile pack",
+  "schema_version": 1
+}

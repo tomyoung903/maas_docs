@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Gated comparison of three GLM-5.2 NVFP4 PP4 prefill profiles on Neimeng gpu-worker-212.">
+  <link rel="icon" href="data:,">
+  <title>GLM-5.2 Neimeng PP4 Cache / Uncached Profile Pack</title>
+  <style>
+    :root { color-scheme:light; --ink:#172033; --muted:#5f6b7a; --line:#d9e0e8; --soft:#f5f7fa; --green:#15803d; --red:#b91c1c; --blue:#2563eb; --amber:#b45309; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; background:#fff; }
+    body { margin:0; color:var(--ink); background:#fff; font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:#1d4ed8; text-decoration-thickness:1px; text-underline-offset:3px; }
+    code { font-family:"SFMono-Regular",Consolas,monospace; font-size:.92em; overflow-wrap:anywhere; }
+    .topbar { border-bottom:1px solid var(--line); background:#fff; }
+    .topbar-inner { max-width:1480px; margin:auto; padding:12px 24px; display:flex; justify-content:space-between; gap:20px; align-items:center; }
+    .brand { font-weight:760; }
+    .top-links { display:flex; flex-wrap:wrap; gap:18px; font-size:13px; }
+    .page { max-width:1480px; margin:auto; display:grid; grid-template-columns:220px minmax(0,1fr); gap:36px; padding:0 24px 72px; }
+    aside { padding-top:30px; }
+    .toc { position:sticky; top:18px; border-left:2px solid var(--line); padding-left:16px; }
+    .toc strong { display:block; font-size:12px; text-transform:uppercase; color:var(--muted); margin-bottom:9px; }
+    .toc a { display:block; color:#334155; text-decoration:none; padding:5px 0; font-size:13px; }
+    main { min-width:0; }
+    section { padding:42px 0; border-bottom:1px solid var(--line); scroll-margin-top:20px; }
+    .intro { padding-top:44px; }
+    .eyebrow { color:var(--green); font-size:13px; font-weight:750; text-transform:uppercase; }
+    h1 { margin:8px 0 10px; font-size:46px; line-height:1.08; max-width:1050px; }
+    h2 { margin:0 0 18px; font-size:25px; line-height:1.2; }
+    h3 { margin:0 0 10px; font-size:17px; }
+    p { max-width:1080px; }
+    .lede { max-width:1000px; color:#475569; font-size:17px; margin:0 0 24px; }
+    .status-line { display:flex; flex-wrap:wrap; gap:10px 22px; padding:13px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); font-size:13px; }
+    .status-line strong { color:var(--green); }
+    .metric-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:22px; }
+    .metric { border:1px solid var(--line); border-radius:6px; padding:16px; min-height:105px; }
+    .metric .value { display:block; font-size:24px; line-height:1.15; font-weight:780; font-variant-numeric:tabular-nums; }
+    .metric .label { display:block; margin-top:7px; color:var(--muted); font-size:12px; }
+    .callout { margin:20px 0; padding:16px 18px; border-left:4px solid var(--amber); background:#fffbeb; }
+    .callout.good { border-left-color:var(--green); background:#f0fdf4; }
+    .callout.info { border-left-color:var(--blue); background:#eff6ff; }
+    .equation { margin:18px 0; padding:14px 18px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); display:grid; gap:7px; font-size:16px; font-variant-numeric:tabular-nums; overflow-x:auto; }
+    .equation-row { display:grid; grid-template-columns:minmax(170px,auto) 24px minmax(520px,1fr); gap:8px; white-space:nowrap; }
+    .math-var { font-family:Georgia,"Times New Roman",serif; font-style:italic; }
+    .math-op,.math-unit { font-family:Georgia,"Times New Roman",serif; font-style:normal; }
+    .equation .note { color:var(--muted); font-size:13px; white-space:normal; }
+    .experiment-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    .experiment-card { min-width:0; border:1px solid var(--line); border-top:4px solid var(--green); border-radius:6px; padding:17px; }
+    .card-blue { border-top-color:var(--blue); } .card-amber { border-top-color:var(--amber); }
+    .card-kicker { margin:0 0 6px; color:var(--muted); font-size:12px; font-weight:750; text-transform:uppercase; }
+    .experiment-card p { color:#475569; }
+    .experiment-card dl { margin:15px 0 0; border-top:1px solid var(--line); }
+    .experiment-card dl div { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--line); }
+    .experiment-card dt { color:var(--muted); } .experiment-card dd { margin:0; font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
+    .card-link { margin-bottom:0; }
+    .two-col { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:30px; align-items:start; }
+    .bar-chart { border-top:1px solid var(--line); padding-top:12px; }
+    .bar-row { display:grid; grid-template-columns:135px minmax(120px,1fr) 105px; gap:10px; align-items:center; margin:10px 0; font-size:12px; }
+    .bar-label { color:#334155; }
+    .bar-track { height:12px; background:#e8edf2; }
+    .bar-track span { display:block; height:100%; background:var(--green); }
+    .bar-value { text-align:right; font-variant-numeric:tabular-nums; }
+    .table-wrap { max-width:100%; overflow-x:auto; border-top:1px solid var(--line); }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { text-align:left; vertical-align:top; padding:10px 11px; border-bottom:1px solid var(--line); }
+    thead th { background:var(--soft); color:#475569; font-size:11px; text-transform:uppercase; white-space:nowrap; }
+    tbody th { min-width:220px; }
+    .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .row-note { display:block; max-width:300px; margin-top:4px; color:var(--muted); font-size:11px; font-weight:400; }
+    .mini-links { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:6px; font-size:11px; font-weight:400; }
+    .checks { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 24px; padding:0; list-style:none; }
+    .checks li { padding:9px 0 9px 24px; border-bottom:1px solid var(--line); position:relative; }
+    .checks li::before { content:"OK"; position:absolute; left:0; color:var(--green); font-size:10px; font-weight:800; }
+    .artifact-links { display:flex; flex-wrap:wrap; gap:12px 20px; margin-top:18px; }
+    .fine { color:var(--muted); font-size:12px; }
+    footer { padding:28px 0 0; color:var(--muted); font-size:12px; }
+    @media (max-width:1050px) { .experiment-grid { grid-template-columns:1fr; } }
+    @media (max-width:980px) { .page { grid-template-columns:1fr; gap:0; } aside { padding-top:18px; } .toc { position:static; border-left:0; border-bottom:1px solid var(--line); padding:0 0 14px; display:flex; flex-wrap:wrap; gap:4px 16px; } .toc strong { width:100%; } .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .two-col { grid-template-columns:1fr; } }
+    @media (max-width:560px) { .topbar-inner,.page { padding-left:16px; padding-right:16px; } .topbar-inner { align-items:flex-start; flex-direction:column; } .metric-grid,.checks { grid-template-columns:1fr; } h1 { font-size:31px; } .bar-row { grid-template-columns:100px minmax(80px,1fr) 92px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="topbar-inner"><div class="brand">MaaS Docs / Profiling</div><nav class="top-links"><a href="../">Temporary reports</a><a href="pack_data.json">Pack JSON</a><a href="realistic-agent-cache/">Realistic detail</a><a href="controlled-100k-90pct/">90% detail</a><a href="uncached-65k/">Uncached detail</a></nav></div></header>
+  <div class="page">
+    <aside><nav class="toc" aria-label="Page overview"><strong>Overview</strong><a href="#overview">Result set</a><a href="#definitions">Definitions</a><a href="#comparison">Comparison</a><a href="#experiments">Experiments</a><a href="#quality">Quality gates</a></nav></aside>
+    <main>
+      <section id="overview" class="intro">
+        <div class="eyebrow">Completion-gated · Same Neimeng PP4 worker shape</div>
+        <h1>GLM-5.2 NVFP4 Prefill: Realistic Cache, Exact 90%, and Cold 65K</h1>
+        <p class="lede">Three full-lifecycle profiles on <code>gpu-worker-212</code>, all using TP1 &times; DP1 &times; PP4 on four B300/L20D GPUs and the same 54 PFLOP/s dense-FP4 cluster denominator. The primary page compares only reconciled source JSON; every row opens the complete validator-compatible kernel timeline.</p>
+        <div class="status-line"><strong>All source gates passed</strong><span>Three detail HTML/sidecar pairs validated before and after staging</span><span>Generated 2026-07-28T20:33:22.279813+08:00</span></div>
+        <div class="metric-grid">
+          <div class="metric"><span class="value">3</span><span class="label">full-lifecycle, one-token prefill experiments</span></div>
+          <div class="metric"><span class="value">4 GPUs</span><span class="label">TP1 &times; DP1 &times; PP4 participating worker shape</span></div>
+          <div class="metric"><span class="value">54 PFLOP/s</span><span class="label">4 &times; 13,500 TFLOP/s dense B300 FP4 denominator</span></div>
+        </div>
+        <div class="callout good"><strong>Publication gate.</strong> This index is emitted only after request completion, zero-decode, PP-stage, profiler-sidecar, and GPU-shape checks pass. The exact-90% case additionally requires 60,000,000 prompt tokens, 54,000,000 cached tokens, no per-request cache outliers, and a steady-cohort hit rate inside 89.9%-90.1%.</div>
+        <div class="callout info"><strong>Comparison boundary.</strong> These are three measured operating points, not a cache-only causal speedup study. The workloads and context distributions differ: realistic sessions are variable, the controlled case fixes 100K prompts, and the cold burst fixes 65,536-token prompts.</div>
+      </section>
+
+      <section id="definitions">
+        <h2>Definitions and Governing Relationships</h2>
+        <p>The table uses recomputed token ratios and the same trace-anchored, precision-normalized MFU convention for every experiment.</p>
+        <div class="equation">
+          <div class="equation-row"><span><span class="math-var">P<sub>i</sub></span></span><span>=</span><span>total prompt tokens in experiment <span class="math-var">i</span></span></div>
+          <div class="equation-row"><span><span class="math-var">C<sub>i</sub></span></span><span>=</span><span>server-reported cached prompt tokens in experiment <span class="math-var">i</span></span></div>
+          <div class="equation-row"><span><span class="math-var">N<sub>i</sub></span></span><span>=</span><span><span class="math-var">P<sub>i</sub></span> &minus; <span class="math-var">C<sub>i</sub></span></span></div>
+          <div class="equation-row"><span><span class="math-var">h<sub>i</sub></span></span><span>=</span><span><span class="math-var">C<sub>i</sub></span> / <span class="math-var">P<sub>i</sub></span></span></div>
+          <div class="equation-row"><span><span class="math-var">P<sub>peak</sub></span></span><span>=</span><span>4 &times; 13,500 TFLOP/s = 54 PFLOP/s</span></div>
+          <div class="equation-row"><span><span class="math-var">MFU<sub>i</sub></span></span><span>=</span><span><span class="math-var">F<sub>i,FP4-eq</sub></span> / (<span class="math-var">&Delta;t<sub>i</sub></span> &times; <span class="math-var">P<sub>peak</sub></span>)</span></div>
+          <div class="note"><span class="math-var">F<sub>i,FP4-eq</sub></span> is classified Tensor-Core model math allocated to the scheduler-selected stable interval. NVFP4 work is weighted &times;1, FP8 &times;3, and verified BF16 &times;6 against dense B300 FP4 peak; unverified work is excluded rather than assigned an invented precision.</div>
+        </div>
+        <p>Plainly: cache hit is cached prompt tokens divided by all prompt tokens. Stable MFU is executed, precision-normalized model math divided by elapsed stable time and the four-GPU dense FP4 peak.</p>
+      </section>
+
+      <section id="comparison">
+        <h2>Measured Comparison</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Experiment</th><th class="num">Requests</th><th class="num">Prompt tokens</th><th class="num">Full-run hit</th><th class="num">Steady hit</th><th class="num">Stable new tok/s</th><th class="num">Stable FP4-eq PFLOP/s</th><th class="num">Stable MFU</th><th>Sidecar</th></tr></thead>
+          <tbody><tr><th scope="row"><a href="realistic-agent-cache/index.html">Realistic agent cache</a><span class="row-note">Continuous agent sessions with natural prefix reuse</span></th><td class="num">815</td><td class="num">110,642,947</td><td class="num">46.23%</td><td class="num">47.39%</td><td class="num">41,461.3</td><td class="num">14.3095</td><td class="num"><strong>26.50%</strong></td><td><a href="realistic-agent-cache/timeline_data.json">timeline JSON</a></td></tr><tr><th scope="row"><a href="controlled-100k-90pct/index.html">Controlled 100K / 90%</a><span class="row-note">600 requests; exactly 100,000 prompt tokens and 90% weighted hit</span><div class="mini-links"><a href="controlled-100k-90pct/evidence/steady_cache_validation.json">Exact-cache validation</a><a href="controlled-100k-90pct/evidence/warm_and_probe.json">Warm/probe evidence</a><a href="controlled-100k-90pct/evidence/steady_state_gate.json">Steady-load gate</a><a href="controlled-100k-90pct/evidence/run_summary.json">Client run summary</a><a href="controlled-100k-90pct/evidence/validation.json">Client validation</a><a href="controlled-100k-90pct/evidence/request_manifest.json">Request contract</a></div></th><td class="num">600</td><td class="num">60,000,000</td><td class="num">90.00%</td><td class="num">90.00%</td><td class="num">47,615.9</td><td class="num">16.0057</td><td class="num"><strong>29.64%</strong></td><td><a href="controlled-100k-90pct/timeline_data.json">timeline JSON</a></td></tr><tr><th scope="row"><a href="uncached-65k/index.html">Uncached 65K</a><span class="row-note">300 simultaneous cold requests; 65,536 prompt tokens each</span></th><td class="num">300</td><td class="num">19,660,800</td><td class="num">0.00%</td><td class="num">0.00%</td><td class="num">56,188.7</td><td class="num">17.0091</td><td class="num"><strong>31.50%</strong></td><td><a href="uncached-65k/timeline_data.json">timeline JSON</a></td></tr></tbody>
+        </table></div>
+        <div class="two-col">
+          <div><h3>Stable MFU</h3><div class="bar-chart"><div class="bar-row"><div class="bar-label">Realistic agent cache</div><div class="bar-track"><span style="width:84.128266%"></span></div><div class="bar-value">26.50%</div></div><div class="bar-row"><div class="bar-label">Controlled 100K / 90%</div><div class="bar-track"><span style="width:94.100948%"></span></div><div class="bar-value">29.64%</div></div><div class="bar-row"><div class="bar-label">Uncached 65K</div><div class="bar-track"><span style="width:100.000000%"></span></div><div class="bar-value">31.50%</div></div></div></div>
+          <div><h3>Stable classified work rate</h3><div class="bar-chart"><div class="bar-row"><div class="bar-label">Realistic agent cache</div><div class="bar-track"><span style="width:84.128266%"></span></div><div class="bar-value">14.3095 PFLOP/s</div></div><div class="bar-row"><div class="bar-label">Controlled 100K / 90%</div><div class="bar-track"><span style="width:94.100948%"></span></div><div class="bar-value">16.0057 PFLOP/s</div></div><div class="bar-row"><div class="bar-label">Uncached 65K</div><div class="bar-track"><span style="width:100.000000%"></span></div><div class="bar-value">17.0091 PFLOP/s</div></div></div></div>
+        </div>
+        <p class="fine">Bars share a scale only within their own panel. Stable new-token rate excludes cached prefixes; full prompt-token rate remains available in <code>pack_data.json</code> and each detail report.</p>
+      </section>
+
+      <section id="experiments">
+        <h2>Full Detail Reports</h2>
+        <p>Each card opens the original self-contained detail page. Its embedded <code>timeline-data</code> object is byte-for-data equivalent to the adjacent <code>timeline_data.json</code> sidecar.</p>
+        <div class="experiment-grid"><article class="experiment-card card-green"><p class="card-kicker">Realistic agent cache</p><h3>26.50% stable MFU</h3><p>The exact continuous-agent workload: variable contexts, stable user/workspace prefixes, five-minute admission, and full drain.</p><dl><div><dt>Full-run hit</dt><dd>46.23%</dd></div><div><dt>Steady hit</dt><dd>47.39%</dd></div><div><dt>Stable window</dt><dd>79s</dd></div><div><dt>FP4-eq rate</dt><dd>14.3095 PFLOP/s</dd></div></dl><p class="card-link"><a href="realistic-agent-cache/index.html">Open full detail report</a></p></article><article class="experiment-card card-blue"><p class="card-kicker">Controlled 100K / 90%</p><h3>29.64% stable MFU</h3><p>In-GPU radix reuse only, deterministic A,A,A,B boundaries, exact aggregate hit accounting, and a separately gated steady cohort.</p><dl><div><dt>Full-run hit</dt><dd>90.00%</dd></div><div><dt>Steady hit</dt><dd>90.00%</dd></div><div><dt>Stable window</dt><dd>118s</dd></div><div><dt>FP4-eq rate</dt><dd>16.0057 PFLOP/s</dd></div></dl><p class="card-link"><a href="controlled-100k-90pct/index.html">Open full detail report</a></p></article><article class="experiment-card card-amber"><p class="card-kicker">Uncached 65K</p><h3>31.50% stable MFU</h3><p>Radix cache disabled, unique cold prefixes, two 32,768-token prefill chunks, and one completion token.</p><dl><div><dt>Full-run hit</dt><dd>0.00%</dd></div><div><dt>Steady hit</dt><dd>0.00%</dd></div><div><dt>Stable window</dt><dd>312s</dd></div><div><dt>FP4-eq rate</dt><dd>17.0091 PFLOP/s</dd></div></dl><p class="card-link"><a href="uncached-65k/index.html">Open full detail report</a></p></article></div>
+      </section>
+
+      <section id="quality">
+        <h2>Quality and Provenance Gates</h2>
+        <ul class="checks">
+          <li>Every detail timeline passes the profile-timeline data validator.</li>
+          <li>Every detail HTML contains exactly one raw timeline JSON script matching its sidecar.</li>
+          <li>All experiments identify <code>gpu-worker-212</code>, four participating GPUs, and PP=4.</li>
+          <li>All experiments use the 13,500 TFLOP/s/GPU dense-FP4 denominator.</li>
+          <li>All request rows completed with exactly one output token and zero decode scheduler rows.</li>
+          <li>Realistic and controlled cache totals reconcile with the server-reported cache counters.</li>
+          <li>The controlled full run is exactly 54M cached / 60M prompt = 90%.</li>
+          <li>The uncached run is exactly 300 &times; 65,536 prompt tokens and zero cached tokens.</li>
+          <li>Stable FLOP/s and MFU are recomputed from the allocated FLOP ledger before rendering.</li>
+          <li>Source hashes are persisted in <code>pack_data.json</code>.</li>
+        </ul>
+        <div class="artifact-links"><a href="pack_data.json">Comparison data and hashes</a><a href="realistic-agent-cache/timeline_data.json">Realistic timeline JSON</a><a href="controlled-100k-90pct/timeline_data.json">Exact-90% timeline JSON</a><a href="uncached-65k/timeline_data.json">Uncached timeline JSON</a></div>
+        <footer>Generated 2026-07-28T20:33:22.279813+08:00. Self-contained HTML; no CDN, remote font, or external script dependency.</footer>
+      </section>
+    </main>
+  </div>
+  <script id="pack-data" type="application/json">{"common_contract":{"cluster":"prod-maas-b300-neimeng","cluster_dense_fp4_peak_pflops_per_second":54.0,"dense_fp4_peak_tflops_per_gpu":13500.0,"max_new_tokens":1,"model":"nvidia/GLM-5.2-NVFP4","node":"gpu-worker-212","parallelism":"TP1 x DP1 x PP4","participating_gpu_count":4},"comparison_boundary":"Three measured operating points with different workload/context distributions; not a cache-only causal speedup study.","experiments":[{"cache_hit_rate":0.4622743101736074,"cached_tokens":51147392,"completion_tokens":815,"description":"The exact continuous-agent workload: variable contexts, stable user/workspace prefixes, five-minute admission, and full drain.","detail_href":"realistic-agent-cache/index.html","evidence":[],"full_lifecycle_prompt_tokens_per_second":76856.90957663517,"gpu_count":4,"label":"Realistic agent cache","model":"zai-org/glm-5.2","node":"gpu-worker-212","parallelism":"TP1 x DP1 x PP4","prompt_tokens":110642947,"request_count":815,"slug":"realistic-agent-cache","source_files":[{"bytes":6416191,"path":"index.html","sha256":"b483b732a53d41280b76790c92e60aa7e005a9ce54e29fdebdbbe8c86159045d"},{"bytes":3720558,"path":"timeline_data.json","sha256":"b95c56860c5cc9db75f02e22f2bddeafc53389f3849fa21c87e14ab5302ca350"}],"stable_allocated_fp4_equivalent_flops":1.1304466875204934e+18,"stable_cluster_mfu":0.2649898470512174,"stable_duration_seconds":79.0,"stable_fp4_equivalent_pflops_per_second":14.30945174076574,"stable_new_prompt_tokens_per_second":41461.267377698496,"steady_cache_hit_rate":0.4739170030668712,"timeline_href":"realistic-agent-cache/timeline_data.json","uncached_tokens":59495555,"workload":"Continuous agent sessions with natural prefix reuse"},{"cache_hit_rate":0.9,"cached_tokens":54000000,"completion_tokens":600,"description":"In-GPU radix reuse only, deterministic A,A,A,B boundaries, exact aggregate hit accounting, and a separately gated steady cohort.","detail_href":"controlled-100k-90pct/index.html","evidence":[{"href":"evidence/steady_cache_validation.json","label":"Exact-cache validation"},{"href":"evidence/warm_and_probe.json","label":"Warm/probe evidence"},{"href":"evidence/steady_state_gate.json","label":"Steady-load gate"},{"href":"evidence/run_summary.json","label":"Client run summary"},{"href":"evidence/validation.json","label":"Client validation"},{"href":"evidence/request_manifest.json","label":"Request contract"}],"full_lifecycle_prompt_tokens_per_second":459657.4253492638,"gpu_count":4,"label":"Controlled 100K / 90%","model":"nvidia/GLM-5.2-NVFP4","node":"gpu-worker-212","parallelism":"TP1 x DP1 x PP4","prompt_tokens":60000000,"request_count":600,"slug":"controlled-100k-90pct","source_files":[{"bytes":377615,"path":"index.html","sha256":"0f04125b1b9a85bbae856da45ab7b3f3a838b8a73efbaade01234c0a0da31287"},{"bytes":316748,"path":"timeline_data.json","sha256":"3e9e70cf73ce77558bc0b06cd3a4de3189ea8e3929c28305da9bff82f7238d11"},{"bytes":660,"path":"evidence/steady_cache_validation.json","sha256":"1b50c42ec2ef90aa072f88659b396fac370c6fc7dcb32d52eacedaa4838fe0c7"},{"bytes":1825,"path":"evidence/warm_and_probe.json","sha256":"01ec89d96d52c624e1f3fe5fa1f0d5f5ba38a27e507fd89330c2c415f3b998a8"},{"bytes":510,"path":"evidence/steady_state_gate.json","sha256":"b8a35f48d6a8102825e209af6119acda5fd20fc791ac70d77bd31581a8dc469b"},{"bytes":1769,"path":"evidence/run_summary.json","sha256":"b89a9c9d2fe22ff80fab29980fe230cfdb97107a7c2b30babd88b904a7367eff"},{"bytes":89,"path":"evidence/validation.json","sha256":"db6d02280a0c576ce614f97e7f19136e1bca4edfdedc2d86202297b8cbab0d1f"},{"bytes":204373,"path":"evidence/request_manifest.json","sha256":"ebe904653e4ff7b64fae8659030be48e54f39bf44732e3b978de880d0c7d0a36"}],"stable_allocated_fp4_equivalent_flops":1.8884873766403617e+18,"stable_cluster_mfu":0.2964021113765176,"stable_duration_seconds":117.988324354,"stable_fp4_equivalent_pflops_per_second":16.005714014331954,"stable_new_prompt_tokens_per_second":47615.88108898409,"steady_cache_hit_rate":0.8999994306049822,"timeline_href":"controlled-100k-90pct/timeline_data.json","uncached_tokens":6000000,"workload":"600 requests; exactly 100,000 prompt tokens and 90% weighted hit"},{"cache_hit_rate":0.0,"cached_tokens":0,"completion_tokens":300,"description":"Radix cache disabled, unique cold prefixes, two 32,768-token prefill chunks, and one completion token.","detail_href":"uncached-65k/index.html","evidence":[],"full_lifecycle_prompt_tokens_per_second":53310.30598859946,"gpu_count":4,"label":"Uncached 65K","model":"nvidia/GLM-5.2-NVFP4","node":"gpu-worker-212","parallelism":"TP1 x DP1 x PP4","prompt_tokens":19660800,"request_count":300,"slug":"uncached-65k","source_files":[{"bytes":1884997,"path":"index.html","sha256":"8d0260ca766b8265a022d62a547982a1b22e113abae743636d22944fec662dd3"},{"bytes":4614700,"path":"timeline_data.json","sha256":"a2e4532fae4fe5104a5d9d90855b982880224b494ed32863154c4b495c66b2cd"}],"stable_allocated_fp4_equivalent_flops":5.306835785676227e+18,"stable_cluster_mfu":0.31498313067878836,"stable_duration_seconds":312.0,"stable_fp4_equivalent_pflops_per_second":17.00908905665457,"stable_new_prompt_tokens_per_second":56188.717948717946,"steady_cache_hit_rate":0.0,"timeline_href":"uncached-65k/timeline_data.json","uncached_tokens":19660800,"workload":"300 simultaneous cold requests; 65,536 prompt tokens each"}],"generated_at":"2026-07-28T20:33:22.279813+08:00","name":"GLM-5.2 Neimeng PP4 cache and uncached profile pack","schema_version":1}</script>
+</body>
+</html>

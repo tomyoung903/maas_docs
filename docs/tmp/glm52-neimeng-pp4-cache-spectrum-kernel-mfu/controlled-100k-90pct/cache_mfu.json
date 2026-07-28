@@ -1,0 +1,87 @@
+{
+  "contract": {
+    "gpu_count": 4,
+    "pp_size": 4,
+    "precision": "ModelOpt NVFP4 mixed precision",
+    "dense_fp4_peak_tflops_per_gpu": 13500,
+    "cluster_dense_fp4_peak_pflops_per_second": 54.0,
+    "peak_source": "NVIDIA HGX B300 official dense FP4 specification",
+    "logical_work": "For request i, W_i = F(prompt_i) - F(cached_prefix_i), including the final LM head once. Cached-prefix model work is excluded; each new suffix still attends over its full context.",
+    "precision_aware_work": "Trace-anchored Tensor-Core math is expressed in dense-FP4 equivalents: routed NVFP4 x1, FP8 indexer/MLA x3, and BF16 attention/shared-expert GEMMs x6. Unverified or scalar/SFU/vector work stays unconverted and does not enter MFU.",
+    "stable_allocation": "The client-defined steady queue window selects PP0 scheduler new-token work. Page padding is removed with the full-run client/scheduler scale, then the exact client completion cohort supplies context-aware FP4-equivalent FLOPs per uncached token.",
+    "request_evidence_authority": "Persisted client rows are authoritative for per-request cached tokens because deployed server logs contain no joinable batch ID."
+  },
+  "requests": {
+    "count": 600,
+    "prompt_tokens": 60000000,
+    "cached_tokens": 54000000,
+    "uncached_tokens": 6000000,
+    "cache_hit_rate": 0.9,
+    "raw_logical_flops": 704901029207433600,
+    "raw_logical_pflops": 704.9010292074336,
+    "classified_raw_tensor_core_flops": 678786942902169600,
+    "unconverted_raw_flops": 26114086305264000,
+    "fp4_equivalent_flops": 2016854169378508800,
+    "fp4_equivalent_pflops": 2016.8541693785087,
+    "fp4_equivalent_flops_per_uncached_token": 336142361563.0848,
+    "fp4_equivalent_flops_per_uncached_token_distribution": {
+      "min": 336138220512.0,
+      "p10": 336138220512.0,
+      "median": 336138220512.0,
+      "p90": 336154864608.0,
+      "max": 336154864608.0
+    }
+  },
+  "scheduler": {
+    "stage_prefill_rows": {
+      "0": 185,
+      "1": 185,
+      "2": 185,
+      "3": 185
+    },
+    "logical_pp0_rows": 185,
+    "raw_new_tokens": 6019200,
+    "exact_client_uncached_tokens": 6000000,
+    "raw_minus_exact_new_tokens": 19200,
+    "page_padding_scale": 0.9968102073365231,
+    "raw_cached_tokens": 54000000
+  },
+  "stable": {
+    "origin_epoch_ns": 1785237683256184209,
+    "end_epoch_ns": 1785237813788177583,
+    "start_epoch_ns": 1785237695631431851,
+    "end_stable_epoch_ns": 1785237813619756205,
+    "start_offset_seconds": 12.375247642,
+    "end_offset_seconds": 130.363571996,
+    "duration_seconds": 117.988324354,
+    "method": "Client steady gate: at least 12 consecutive 0.5-second metrics samples at the configured running-request floor with a positive queue; the interval ends at the final qualifying queued sample.",
+    "running_request_floor": 0,
+    "required_consecutive_samples": 12,
+    "raw_pp0_new_tokens": 5636096,
+    "raw_pp0_cached_tokens": 50579968,
+    "pp0_rows": 172,
+    "stage_row_counts": {
+      "0": 172,
+      "1": 173,
+      "2": 173,
+      "3": 172
+    },
+    "effective_uncached_tokens": 5618118.022328549,
+    "prompt_tokens_per_second": 47615.88108898409,
+    "service_cohort_requests": 562,
+    "service_cohort_prompt_tokens": 56200000,
+    "service_cohort_cached_tokens": 50579968,
+    "service_cohort_cache_hit_rate": 0.8999994306049822,
+    "service_cohort_raw_logical_flops": 660261029172516672,
+    "service_cohort_classified_raw_tensor_core_flops": 635800695730882560,
+    "service_cohort_fp4_equivalent_flops_per_uncached_token": 336142346802.7533,
+    "allocated_fp4_equivalent_flops": 1.8884873766403617e+18,
+    "cluster_fp4_equivalent_pflops_per_second": 16.005714014331954,
+    "per_gpu_fp4_equivalent_tflops": 4001.428503582988,
+    "cluster_mfu": 0.2964021113765176,
+    "sensitivity": {
+      "completion_accounting_mfu": 0.2965030895013436,
+      "global_mix_scheduler_mfu": 0.2964021243918174
+    }
+  }
+}

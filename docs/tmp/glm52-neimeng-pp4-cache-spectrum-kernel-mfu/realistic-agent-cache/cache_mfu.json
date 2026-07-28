@@ -1,0 +1,99 @@
+{
+  "contract": {
+    "gpu_count": 4,
+    "pp_size": 4,
+    "precision": "ModelOpt NVFP4 mixed precision",
+    "dense_fp4_peak_tflops_per_gpu": 13500,
+    "cluster_dense_fp4_peak_pflops_per_second": 54.0,
+    "peak_source": "NVIDIA HGX B300 official dense FP4 specification",
+    "logical_work": "For request i, W_i = F(prompt_i) - F(cached_prefix_i), with the final LM head included once. Cached-prefix model work is excluded; new suffix queries still attend over their full causal context.",
+    "precision_aware_work": "The primary numerator is trace-anchored dense-FP4-equivalent Tensor-Core model math: routed NVFP4 x1, FP8 indexer/MLA x3, and BF16 attention/shared-expert GEMMs x6. Scalar, SFU, vector, dense-MLP, router, indexer-setup, absorbed-transform, and LM-head work is reported as unconverted and excluded.",
+    "stable_allocation": "Scale scheduler PP0 new-token work to remove page padding, then multiply by the context-aware FP4-equivalent FLOPs/new-token ratio of requests completing in the stable interval."
+  },
+  "requests": {
+    "count": 815,
+    "prompt_tokens": 110642947,
+    "cached_tokens": 51147392,
+    "uncached_tokens": 59495555,
+    "cache_hit_rate": 0.4622743101736074,
+    "raw_logical_flops": 7253593345464507787,
+    "raw_logical_pflops": 7253.593345464507,
+    "classified_raw_tensor_core_flops": 6994657879003531392,
+    "unconverted_raw_flops": 258935466460976395,
+    "fp4_equivalent_flops": 20790547049858046336,
+    "fp4_equivalent_pflops": 20790.547049858047,
+    "fp4_equivalent_flops_per_uncached_token": 349447064572.4382,
+    "fp4_equivalent_flops_per_uncached_token_distribution": {
+      "min": 309401820864.0,
+      "p10": 324645628262.4,
+      "median": 334337537376.0,
+      "p90": 356291152012.80005,
+      "max": 489088100448.0
+    }
+  },
+  "scheduler": {
+    "log_counts": {
+      "receive": 815,
+      "prefill": 7268,
+      "finish": 815,
+      "http_post": 815
+    },
+    "stage_prefill_rows": {
+      "0": 1817,
+      "1": 1817,
+      "2": 1817,
+      "3": 1817
+    },
+    "logical_pp0_rows": 1817,
+    "raw_new_tokens": 59520256,
+    "exact_client_uncached_tokens": 59495555,
+    "raw_minus_exact_new_tokens": 24701,
+    "page_padding_scale": 0.9995849984247379,
+    "raw_cached_tokens": 51147392
+  },
+  "stable": {
+    "origin_epoch_ns": 1785238868604637440,
+    "end_epoch_ns": 1785240308201254144,
+    "start_epoch_ns": 1785239234604637440,
+    "end_stable_epoch_ns": 1785239313604637440,
+    "start_offset_seconds": 366,
+    "end_offset_seconds": 445,
+    "duration_seconds": 79.0,
+    "queue_floor": 82,
+    "reference_pp0_new_tokens_per_second": 41506.13333333333,
+    "reference_rate_candidate_windows": 1224,
+    "reference_rate_method": "median PP0 new-token rate across 15-second windows that remain above the queue floor and contain at least one scheduler row from every PP stage",
+    "rolling_window_seconds": 15,
+    "rate_tolerance_fraction": 0.1,
+    "raw_pp0_new_tokens": 3276800,
+    "raw_pp0_cached_tokens": 2758976,
+    "pp0_rows": 100,
+    "queue_start": 509,
+    "queue_end": 510,
+    "stable_stage_rows": {
+      "0": 100,
+      "1": 100,
+      "2": 100,
+      "3": 100
+    },
+    "method": "longest interval whose trailing 15-second PP0 new-token rate stays within 10% of the median among qualifying 15-second windows, every window contains work from all four PP stages, and queue depth stays above 10% of issued requests (minimum 16) throughout every window",
+    "effective_uncached_tokens": 3275440.122838181,
+    "service_cohort_requests": 44,
+    "service_cohort_prompt_tokens": 5825155,
+    "service_cohort_cached_tokens": 2760640,
+    "service_cohort_cache_hit_rate": 0.4739170030668712,
+    "service_cohort_raw_logical_flops": 369208521652777611,
+    "service_cohort_classified_raw_tensor_core_flops": 355871186275772736,
+    "service_cohort_fp4_equivalent_flops_per_uncached_token": 345128179763.81055,
+    "allocated_fp4_equivalent_flops": 1.1304466875204934e+18,
+    "cluster_fp4_equivalent_pflops_per_second": 14.30945174076574,
+    "per_gpu_fp4_equivalent_tflops": 3577.362935191435,
+    "cluster_mfu": 0.2649898470512174,
+    "sensitivity": {
+      "completion_accounting_mfu": 0.24792557051310218,
+      "global_mix_scheduler_mfu": 0.2683058921961061,
+      "primary_minus_completion_mfu_points": 1.7064276538115213,
+      "primary_minus_global_mix_mfu_points": -0.33160451448887085
+    }
+  }
+}
