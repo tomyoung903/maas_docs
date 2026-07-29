@@ -1,0 +1,791 @@
+{
+  "manifest": {
+    "experiment": "glm52-tp8-basic-decode-16k-209-20260729",
+    "cluster": "prod-maas-b300-neimeng",
+    "node": "gpu-worker-209",
+    "gpu_count": 8,
+    "gpu_product_name": "NVIDIA L20D",
+    "model": "/mnt/disk1/models/nvidia/GLM-5.2-NVFP4",
+    "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime:f1a19e64-flashinfer-0.6.15.post1-cubin",
+    "topology": {
+      "tp": 8,
+      "dp": 1,
+      "ep": 1,
+      "pp": 1,
+      "speculative_algorithm": null,
+      "eagle": false
+    },
+    "measured_request": {
+      "rid": "basic-kernel-tp8-one-computed-measured-98a0315c-c0c4-4c91-8ab6-48d2b519fab0",
+      "input_tokens": 16384,
+      "completion_tokens": 2,
+      "computed_decode_tokens": 1,
+      "server_receive_epoch_ns": 1785311291521190400,
+      "server_response_sent_marker_epoch_ns": 1785311291533273500,
+      "server_finish_epoch_ns": 1785311291548359900,
+      "server_e2e_ms": 27.1695,
+      "server_reported_decode_throughput_tps": 65.54599614947152
+    },
+    "nsight": {
+      "version": "2025.3.1.0",
+      "automatic_import": {
+        "ok": false,
+        "reason": "QdstrmImporter could not load libdw.so.1 in the production runtime"
+      },
+      "recovery_import": {
+        "ok": true,
+        "dependency_added_to_disposable_pod": "libdw1t64",
+        "sqlite_quick_check": "ok",
+        "sqlite_kernel_rows": 37840,
+        "sqlite_runtime_rows": 8190077
+      },
+      "session_epoch_ns": 1785311290516159845,
+      "raw_kernel_start_trace_ns": 1010707823,
+      "raw_kernel_end_trace_ns": 1039392790,
+      "server_request_start_trace_ns": 1005030555,
+      "server_request_end_trace_ns": 1032200055,
+      "useful_decode_graph_start_trace_ns": 1021842090,
+      "useful_decode_graph_end_trace_ns": 1031546107,
+      "cleanup_decode_graph_start_trace_ns": 1031673273,
+      "cleanup_decode_graph_end_trace_ns": 1039356876,
+      "role_evidence": "The first eight-device graph finishes before the matched server Finish lifecycle and produces the one requested computed decode token. The next eight-device graph starts after that useful graph, crosses the Finish boundary, and is retained only as cleanup/steady-body context."
+    },
+    "controls": {
+      "handoff_only_rid": "basic-kernel-tp8-one-token-control-09363903-5682-4f7a-a9aa-77cf2b2423a4",
+      "handoff_only_completion_tokens": 1,
+      "handoff_only_pre_finish_decode_rows": 0,
+      "computed_smoke_rid": "basic-kernel-tp8-computed-smoke-d027a7f6-5819-4f92-933d-4965dc5a8aa8",
+      "computed_smoke_completion_tokens": 2,
+      "computed_smoke_pre_finish_decode_rows": 1
+    },
+    "remote_artifact_root": "/cpfs01/users/tom/experiments/glm52-tp8-basic-decode-16k-209-20260729",
+    "remote_artifacts": {
+      "glm52_tp8_basic_decode_16k_209_20260729.qdstrm": {
+        "size_bytes": 3754317820,
+        "sha256": "8fba5e04e279f4af256b83e89f3d3a1414ab92f3cb4a250f21f758f156420656"
+      },
+      "glm52_tp8_basic_decode_16k_209_20260729.nsys-rep": {
+        "size_bytes": 501306449,
+        "sha256": "aee5e6b14a0303127ed3cb5b2b26f14e5fc1bcb7ff0a1fd01842a57a94f3c924"
+      },
+      "glm52_tp8_basic_decode_16k_209_20260729.sqlite": {
+        "size_bytes": 3609292800,
+        "sha256": "4f36788119593ef6767b818f3314496d16a760fd9091e393704a146024d646c9"
+      }
+    }
+  },
+  "chronology": {
+    "first_gpu_activity_ms": 5.677268,
+    "useful_start_ms": 16.811535,
+    "useful_end_ms": 26.515552,
+    "cleanup_start_ms": 26.642718,
+    "cleanup_end_ms": 34.326321
+  },
+  "useful_decode_graph": {
+    "duration_ms": 9.704017,
+    "device_count": 8,
+    "kernel_events": 18712,
+    "graph_executions": 8,
+    "graph_node_events": 18648,
+    "non_graph_kernel_events": 64,
+    "aggregate_kernel_residency_ms": 92.577985,
+    "device_time_capacity_ms": 77.632136,
+    "active_device_union_ms": 70.34536,
+    "temporal_active_fraction": 0.906137118,
+    "aggregate_residency_to_capacity_ratio": 1.192521419,
+    "same_device_stream_overlap_excess_ms": 22.232625,
+    "graph_start_skew_ms": 2.010346,
+    "graph_finish_skew_ms": 0.000707,
+    "per_device": [
+      {
+        "device": 0,
+        "active_union_ms": 9.144237,
+        "temporal_active_fraction": 0.942314611,
+        "graph_start_offset_ms": 0.381408,
+        "graph_span_ms": 9.322609
+      },
+      {
+        "device": 1,
+        "active_union_ms": 8.650581,
+        "temporal_active_fraction": 0.891443306,
+        "graph_start_offset_ms": 0.868675,
+        "graph_span_ms": 8.835018
+      },
+      {
+        "device": 2,
+        "active_union_ms": 7.725487,
+        "temporal_active_fraction": 0.79611227,
+        "graph_start_offset_ms": 1.794326,
+        "graph_span_ms": 7.909606
+      },
+      {
+        "device": 3,
+        "active_union_ms": 9.382725,
+        "temporal_active_fraction": 0.966890825,
+        "graph_start_offset_ms": 0.143248,
+        "graph_span_ms": 9.560427
+      },
+      {
+        "device": 4,
+        "active_union_ms": 9.149556,
+        "temporal_active_fraction": 0.942862734,
+        "graph_start_offset_ms": 0.374625,
+        "graph_span_ms": 9.329074
+      },
+      {
+        "device": 5,
+        "active_union_ms": 9.519288,
+        "temporal_active_fraction": 0.980963657,
+        "graph_start_offset_ms": 0.0,
+        "graph_span_ms": 9.703988
+      },
+      {
+        "device": 6,
+        "active_union_ms": 9.258149,
+        "temporal_active_fraction": 0.954053254,
+        "graph_start_offset_ms": 0.262924,
+        "graph_span_ms": 9.440386
+      },
+      {
+        "device": 7,
+        "active_union_ms": 7.515337,
+        "temporal_active_fraction": 0.77445629,
+        "graph_start_offset_ms": 2.010346,
+        "graph_span_ms": 7.693233
+      }
+    ],
+    "categories": [
+      {
+        "name": "attention_projection",
+        "count": 5480,
+        "aggregate_residency_ms": 31.222911,
+        "aggregate_residency_share": 0.337260646,
+        "device_time_union_ms": 26.010616,
+        "capacity_fraction": 0.335049599
+      },
+      {
+        "name": "nccl_sync",
+        "count": 1264,
+        "aggregate_residency_ms": 19.603023,
+        "aggregate_residency_share": 0.211746054,
+        "device_time_union_ms": 19.603023,
+        "capacity_fraction": 0.252511705
+      },
+      {
+        "name": "memory_elementwise",
+        "count": 4480,
+        "aggregate_residency_ms": 10.235706,
+        "aggregate_residency_share": 0.110563067,
+        "device_time_union_ms": 8.33522,
+        "capacity_fraction": 0.107368165
+      },
+      {
+        "name": "norm_rope_quant",
+        "count": 2992,
+        "aggregate_residency_ms": 6.583108,
+        "aggregate_residency_share": 0.071108785,
+        "device_time_union_ms": 5.72787,
+        "capacity_fraction": 0.073782203
+      },
+      {
+        "name": "attention_mla",
+        "count": 1248,
+        "aggregate_residency_ms": 6.366428,
+        "aggregate_residency_share": 0.068768271,
+        "device_time_union_ms": 6.366428,
+        "capacity_fraction": 0.082007637
+      },
+      {
+        "name": "moe_routing",
+        "count": 1200,
+        "aggregate_residency_ms": 5.202566,
+        "aggregate_residency_share": 0.056196578,
+        "device_time_union_ms": 5.202566,
+        "capacity_fraction": 0.067015624
+      },
+      {
+        "name": "moe_up_gemm",
+        "count": 600,
+        "aggregate_residency_ms": 5.049057,
+        "aggregate_residency_share": 0.05453842,
+        "device_time_union_ms": 5.049057,
+        "capacity_fraction": 0.065038234
+      },
+      {
+        "name": "moe_down_gemm",
+        "count": 600,
+        "aggregate_residency_ms": 4.1206,
+        "aggregate_residency_share": 0.044509502,
+        "device_time_union_ms": 4.1206,
+        "capacity_fraction": 0.053078534
+      },
+      {
+        "name": "attention_indexer",
+        "count": 504,
+        "aggregate_residency_ms": 3.637268,
+        "aggregate_residency_share": 0.039288693,
+        "device_time_union_ms": 3.637268,
+        "capacity_fraction": 0.046852608
+      },
+      {
+        "name": "other",
+        "count": 344,
+        "aggregate_residency_ms": 0.557318,
+        "aggregate_residency_share": 0.006019984,
+        "device_time_union_ms": 0.33502,
+        "capacity_fraction": 0.004315481
+      }
+    ],
+    "all_reduce_push_by_device": [
+      {
+        "device": 0,
+        "count": 2,
+        "total_ms": 1.637864,
+        "longest_ms": 1.632936
+      },
+      {
+        "device": 1,
+        "count": 2,
+        "total_ms": 1.151397,
+        "longest_ms": 1.146309
+      },
+      {
+        "device": 2,
+        "count": 2,
+        "total_ms": 0.226913,
+        "longest_ms": 0.220993
+      },
+      {
+        "device": 3,
+        "count": 2,
+        "total_ms": 1.876296,
+        "longest_ms": 1.87156
+      },
+      {
+        "device": 4,
+        "count": 2,
+        "total_ms": 1.646094,
+        "longest_ms": 1.640398
+      },
+      {
+        "device": 5,
+        "count": 2,
+        "total_ms": 2.021259,
+        "longest_ms": 2.014667
+      },
+      {
+        "device": 6,
+        "count": 2,
+        "total_ms": 1.75822,
+        "longest_ms": 1.75214
+      },
+      {
+        "device": 7,
+        "count": 2,
+        "total_ms": 0.010464,
+        "longest_ms": 0.006976
+      }
+    ],
+    "all_reduce_push_total_ms": 10.328507,
+    "top_kernels": [
+      {
+        "category": "nccl_sync",
+        "count": 16,
+        "aggregate_residency_ms": 10.328507,
+        "average_us": 645.531687,
+        "name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)"
+      },
+      {
+        "category": "nccl_sync",
+        "count": 1240,
+        "aggregate_residency_ms": 9.10242,
+        "average_us": 7.340661,
+        "name": "void flashinfer::trtllm_mnnvl_allreduce::oneshotAllreduceFusionKernel<(unsigned char)8, __nv_bfloat16, (bool)1, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKe..."
+      },
+      {
+        "category": "attention_projection",
+        "count": 1872,
+        "aggregate_residency_ms": 8.47188,
+        "average_us": 4.525577,
+        "name": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_TNT"
+      },
+      {
+        "category": "attention_projection",
+        "count": 1368,
+        "aggregate_residency_ms": 7.920348,
+        "average_us": 5.789728,
+        "name": "nvjet_sm103_tst_32x64_64x16_4x1_v_bz_splitK_TNN"
+      },
+      {
+        "category": "attention_projection",
+        "count": 1248,
+        "aggregate_residency_ms": 6.72836,
+        "average_us": 5.391314,
+        "name": "nvjet_sm103_tst_16x64_64x16_4x1_v_bz_TNN"
+      },
+      {
+        "category": "memory_elementwise",
+        "count": 2024,
+        "aggregate_residency_ms": 5.509435,
+        "average_us": 2.722053,
+        "name": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, __nv_bfloat16, float, __nv_bfloat16, (bool)0, float, __nv_bfloat16, __nv_bfloat16, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>,..."
+      },
+      {
+        "category": "attention_projection",
+        "count": 624,
+        "aggregate_residency_ms": 5.451484,
+        "average_us": 8.736353,
+        "name": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_splitK_TNT"
+      },
+      {
+        "category": "attention_mla",
+        "count": 624,
+        "aggregate_residency_ms": 5.2486,
+        "average_us": 8.411218,
+        "name": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512HVPerCta128PagedKvDenseStaticTokenSparseP1MultiCtasKvVarSeqQ8Kv128StaticSwapsAbForGen"
+      },
+      {
+        "category": "moe_routing",
+        "count": 600,
+        "aggregate_residency_ms": 2.794323,
+        "average_us": 4.657205,
+        "name": "void moe::dev::routing::routingCustom::routingIndicesBlockKernel<moe::dev::routing::routingCustom::KernelParams<__nv_bfloat16, __nv_bfloat16, (int)256, (int)8, moe::dev::routing::TopKExpertSelect<moe::dev::routing::Si..."
+      },
+      {
+        "category": "attention_indexer",
+        "count": 168,
+        "aggregate_residency_ms": 2.534894,
+        "average_us": 15.088655,
+        "name": "<unnamed>::topk_transform_decode_kernel(<unnamed>::FastTopKParams, int *, const int *, long)"
+      },
+      {
+        "category": "moe_routing",
+        "count": 600,
+        "aggregate_residency_ms": 2.408243,
+        "average_us": 4.013738,
+        "name": "void moe::dev::finalize::finalizeKernel<moe::dev::finalize::KernelParams<cutlass::bfloat16_t, cutlass::bfloat16_t, (int)4, (bool)1>>(T1)"
+      },
+      {
+        "category": "moe_down_gemm",
+        "count": 300,
+        "aggregate_residency_ms": 2.053291,
+        "average_us": 6.844303,
+        "name": "bmm_Bfloat16_E2m1E2m1_Fp32_Ab16_Bb16tokFp32_t128x8x256_s9_et128x8_m128x8x64_c1x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_rgTma_clmp_dynB_sm100f"
+      },
+      {
+        "category": "moe_up_gemm",
+        "count": 225,
+        "aggregate_residency_ms": 1.886509,
+        "average_us": 8.384484,
+        "name": "bmm_E2m1_E2m1E2m1_Fp32_Ab16_Bb16_Cb16_t128x8x512u2_s5_et128x8_m128x8x64_c1x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_ldgsts_ldgstsSf_rgTma_clmp_swiGlu_dynB_sm100f"
+      },
+      {
+        "category": "norm_rope_quant",
+        "count": 624,
+        "aggregate_residency_ms": 1.644553,
+        "average_us": 2.635502,
+        "name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign128oi64204820481_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign128oi64204820481___T_0"
+      },
+      {
+        "category": "norm_rope_quant",
+        "count": 624,
+        "aggregate_residency_ms": 1.618374,
+        "average_us": 2.593548,
+        "name": "void flashinfer::RopeQuantizeKernel<(bool)1, (unsigned int)16, (unsigned int)1, __nv_bfloat16, long, __nv_fp8_e4m3>(T4 *, T4 *, T4 *, T4 *, T6 *, T6 *, T6 *, T6 *, float *, T5 *, unsigned int, unsigned int, unsigned i..."
+      },
+      {
+        "category": "memory_elementwise",
+        "count": 624,
+        "aggregate_residency_ms": 1.581194,
+        "average_us": 2.533965,
+        "name": "void <unnamed>::act_and_mul_kernel<__nv_bfloat16, (<unnamed>::ActivationKind)0, (bool)1, (bool)0>(<unnamed>::ActivationParams)"
+      },
+      {
+        "category": "moe_down_gemm",
+        "count": 225,
+        "aggregate_residency_ms": 1.555596,
+        "average_us": 6.91376,
+        "name": "bmm_Bfloat16_E2m1E2m1_Fp32_Ab16_Bb16tokFp32_t128x16x512_s5_et128x16_m256x16x64_c2x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_rgTma_clmp_dynB_sm100f"
+      },
+      {
+        "category": "attention_projection",
+        "count": 168,
+        "aggregate_residency_ms": 1.334793,
+        "average_us": 7.945196,
+        "name": "nvjet_sm103_tst_32x64_64x16_4x1_v_bz_TNN"
+      },
+      {
+        "category": "moe_up_gemm",
+        "count": 150,
+        "aggregate_residency_ms": 1.255529,
+        "average_us": 8.370193,
+        "name": "bmm_E2m1_E2m1E2m1_Fp32_Ab16_Bb16_Cb16_t128x8x512u2_s5_et128x8_m128x8x64_c1x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_tma_tmaSf_rgTma_clmp_swiGlu_dynB_sm100f"
+      },
+      {
+        "category": "norm_rope_quant",
+        "count": 600,
+        "aggregate_residency_ms": 1.132582,
+        "average_us": 1.887637,
+        "name": "kernel_cutlass_kernel_flashinferquantizationkernelsnvfp4_quantizeNVFP4QuantizeLinearKernel_object_at__tensorptrbf16gmemalign16o614461441_tensorptri8gmemalign16o307230721_tensorptri8gmemal_0"
+      }
+    ]
+  },
+  "cleanup_decode_graph": {
+    "duration_ms": 7.683603,
+    "device_count": 8,
+    "kernel_events": 18730,
+    "graph_executions": 8,
+    "graph_node_events": 18648,
+    "non_graph_kernel_events": 82,
+    "aggregate_kernel_residency_ms": 82.502326,
+    "device_time_capacity_ms": 61.468824,
+    "active_device_union_ms": 59.980987,
+    "temporal_active_fraction": 0.975795258,
+    "aggregate_residency_to_capacity_ratio": 1.342181624,
+    "same_device_stream_overlap_excess_ms": 22.521339,
+    "graph_start_skew_ms": 0.009933,
+    "graph_finish_skew_ms": 0.001032,
+    "per_device": [
+      {
+        "device": 0,
+        "active_union_ms": 7.497864,
+        "temporal_active_fraction": 0.975826575,
+        "graph_start_offset_ms": 0.005923,
+        "graph_span_ms": 7.676648
+      },
+      {
+        "device": 1,
+        "active_union_ms": 7.495018,
+        "temporal_active_fraction": 0.975456176,
+        "graph_start_offset_ms": 0.004607,
+        "graph_span_ms": 7.678757
+      },
+      {
+        "device": 2,
+        "active_union_ms": 7.496053,
+        "temporal_active_fraction": 0.975590878,
+        "graph_start_offset_ms": 0.003726,
+        "graph_span_ms": 7.679877
+      },
+      {
+        "device": 3,
+        "active_union_ms": 7.496929,
+        "temporal_active_fraction": 0.975704887,
+        "graph_start_offset_ms": 0.009933,
+        "graph_span_ms": 7.673251
+      },
+      {
+        "device": 4,
+        "active_union_ms": 7.503431,
+        "temporal_active_fraction": 0.976551105,
+        "graph_start_offset_ms": 0.007397,
+        "graph_span_ms": 7.675876
+      },
+      {
+        "device": 5,
+        "active_union_ms": 7.495374,
+        "temporal_active_fraction": 0.975502508,
+        "graph_start_offset_ms": 0.00599,
+        "graph_span_ms": 7.677098
+      },
+      {
+        "device": 6,
+        "active_union_ms": 7.500531,
+        "temporal_active_fraction": 0.976173678,
+        "graph_start_offset_ms": 0.0,
+        "graph_span_ms": 7.683415
+      },
+      {
+        "device": 7,
+        "active_union_ms": 7.495787,
+        "temporal_active_fraction": 0.975556259,
+        "graph_start_offset_ms": 0.005709,
+        "graph_span_ms": 7.67704
+      }
+    ],
+    "categories": [
+      {
+        "name": "attention_projection",
+        "count": 5480,
+        "aggregate_residency_ms": 31.261508,
+        "aggregate_residency_share": 0.378916687,
+        "device_time_union_ms": 26.03246,
+        "capacity_fraction": 0.423506719
+      },
+      {
+        "name": "memory_elementwise",
+        "count": 4442,
+        "aggregate_residency_ms": 10.134783,
+        "aggregate_residency_share": 0.122842391,
+        "device_time_union_ms": 8.225241,
+        "capacity_fraction": 0.133811589
+      },
+      {
+        "name": "nccl_sync",
+        "count": 1264,
+        "aggregate_residency_ms": 9.251296,
+        "aggregate_residency_share": 0.11213376,
+        "device_time_union_ms": 9.251296,
+        "capacity_fraction": 0.150503872
+      },
+      {
+        "name": "norm_rope_quant",
+        "count": 2992,
+        "aggregate_residency_ms": 6.587103,
+        "aggregate_residency_share": 0.079841422,
+        "device_time_union_ms": 5.737882,
+        "capacity_fraction": 0.093346214
+      },
+      {
+        "name": "attention_mla",
+        "count": 1248,
+        "aggregate_residency_ms": 6.376339,
+        "aggregate_residency_share": 0.077286779,
+        "device_time_union_ms": 6.376339,
+        "capacity_fraction": 0.103732894
+      },
+      {
+        "name": "moe_routing",
+        "count": 1200,
+        "aggregate_residency_ms": 5.201412,
+        "aggregate_residency_share": 0.063045641,
+        "device_time_union_ms": 5.201412,
+        "capacity_fraction": 0.0846187
+      },
+      {
+        "name": "moe_up_gemm",
+        "count": 600,
+        "aggregate_residency_ms": 5.046432,
+        "aggregate_residency_share": 0.061167148,
+        "device_time_union_ms": 5.046432,
+        "capacity_fraction": 0.082097422
+      },
+      {
+        "name": "moe_down_gemm",
+        "count": 600,
+        "aggregate_residency_ms": 4.140127,
+        "aggregate_residency_share": 0.050181943,
+        "device_time_union_ms": 4.140127,
+        "capacity_fraction": 0.067353281
+      },
+      {
+        "name": "attention_indexer",
+        "count": 504,
+        "aggregate_residency_ms": 3.586013,
+        "aggregate_residency_share": 0.043465599,
+        "device_time_union_ms": 3.586013,
+        "capacity_fraction": 0.058338728
+      },
+      {
+        "name": "other",
+        "count": 400,
+        "aggregate_residency_ms": 0.917313,
+        "aggregate_residency_share": 0.011118632,
+        "device_time_union_ms": 0.692009,
+        "capacity_fraction": 0.011257886
+      }
+    ],
+    "all_reduce_push_by_device": [
+      {
+        "device": 0,
+        "count": 2,
+        "total_ms": 0.013472,
+        "longest_ms": 0.008032
+      },
+      {
+        "device": 1,
+        "count": 2,
+        "total_ms": 0.01584,
+        "longest_ms": 0.0104
+      },
+      {
+        "device": 2,
+        "count": 2,
+        "total_ms": 0.017024,
+        "longest_ms": 0.011264
+      },
+      {
+        "device": 3,
+        "count": 2,
+        "total_ms": 0.007744,
+        "longest_ms": 0.00432
+      },
+      {
+        "device": 4,
+        "count": 2,
+        "total_ms": 0.011841,
+        "longest_ms": 0.006785
+      },
+      {
+        "device": 5,
+        "count": 2,
+        "total_ms": 0.015712,
+        "longest_ms": 0.009696
+      },
+      {
+        "device": 6,
+        "count": 2,
+        "total_ms": 0.021568,
+        "longest_ms": 0.015104
+      },
+      {
+        "device": 7,
+        "count": 2,
+        "total_ms": 0.015104,
+        "longest_ms": 0.008608
+      }
+    ],
+    "all_reduce_push_total_ms": 0.118305,
+    "top_kernels": [
+      {
+        "category": "nccl_sync",
+        "count": 1240,
+        "aggregate_residency_ms": 8.955772,
+        "average_us": 7.222397,
+        "name": "void flashinfer::trtllm_mnnvl_allreduce::oneshotAllreduceFusionKernel<(unsigned char)8, __nv_bfloat16, (bool)1, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKe..."
+      },
+      {
+        "category": "attention_projection",
+        "count": 1872,
+        "aggregate_residency_ms": 8.479046,
+        "average_us": 4.529405,
+        "name": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_TNT"
+      },
+      {
+        "category": "attention_projection",
+        "count": 1368,
+        "aggregate_residency_ms": 7.942695,
+        "average_us": 5.806064,
+        "name": "nvjet_sm103_tst_32x64_64x16_4x1_v_bz_splitK_TNN"
+      },
+      {
+        "category": "attention_projection",
+        "count": 1248,
+        "aggregate_residency_ms": 6.735274,
+        "average_us": 5.396854,
+        "name": "nvjet_sm103_tst_16x64_64x16_4x1_v_bz_TNN"
+      },
+      {
+        "category": "memory_elementwise",
+        "count": 2024,
+        "aggregate_residency_ms": 5.522102,
+        "average_us": 2.728311,
+        "name": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, __nv_bfloat16, float, __nv_bfloat16, (bool)0, float, __nv_bfloat16, __nv_bfloat16, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>,..."
+      },
+      {
+        "category": "attention_projection",
+        "count": 624,
+        "aggregate_residency_ms": 5.453439,
+        "average_us": 8.739486,
+        "name": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_splitK_TNT"
+      },
+      {
+        "category": "attention_mla",
+        "count": 624,
+        "aggregate_residency_ms": 5.249006,
+        "average_us": 8.411869,
+        "name": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512HVPerCta128PagedKvDenseStaticTokenSparseP1MultiCtasKvVarSeqQ8Kv128StaticSwapsAbForGen"
+      },
+      {
+        "category": "moe_routing",
+        "count": 600,
+        "aggregate_residency_ms": 2.782075,
+        "average_us": 4.636792,
+        "name": "void moe::dev::routing::routingCustom::routingIndicesBlockKernel<moe::dev::routing::routingCustom::KernelParams<__nv_bfloat16, __nv_bfloat16, (int)256, (int)8, moe::dev::routing::TopKExpertSelect<moe::dev::routing::Si..."
+      },
+      {
+        "category": "attention_indexer",
+        "count": 168,
+        "aggregate_residency_ms": 2.529914,
+        "average_us": 15.059012,
+        "name": "<unnamed>::topk_transform_decode_kernel(<unnamed>::FastTopKParams, int *, const int *, long)"
+      },
+      {
+        "category": "moe_routing",
+        "count": 600,
+        "aggregate_residency_ms": 2.419337,
+        "average_us": 4.032228,
+        "name": "void moe::dev::finalize::finalizeKernel<moe::dev::finalize::KernelParams<cutlass::bfloat16_t, cutlass::bfloat16_t, (int)4, (bool)1>>(T1)"
+      },
+      {
+        "category": "moe_down_gemm",
+        "count": 300,
+        "aggregate_residency_ms": 2.06891,
+        "average_us": 6.896367,
+        "name": "bmm_Bfloat16_E2m1E2m1_Fp32_Ab16_Bb16tokFp32_t128x8x256_s9_et128x8_m128x8x64_c1x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_rgTma_clmp_dynB_sm100f"
+      },
+      {
+        "category": "moe_up_gemm",
+        "count": 225,
+        "aggregate_residency_ms": 1.885422,
+        "average_us": 8.379653,
+        "name": "bmm_E2m1_E2m1E2m1_Fp32_Ab16_Bb16_Cb16_t128x8x512u2_s5_et128x8_m128x8x64_c1x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_ldgsts_ldgstsSf_rgTma_clmp_swiGlu_dynB_sm100f"
+      },
+      {
+        "category": "norm_rope_quant",
+        "count": 624,
+        "aggregate_residency_ms": 1.639559,
+        "average_us": 2.627498,
+        "name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign128oi64204820481_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign128oi64204820481___T_0"
+      },
+      {
+        "category": "norm_rope_quant",
+        "count": 624,
+        "aggregate_residency_ms": 1.629129,
+        "average_us": 2.610784,
+        "name": "void flashinfer::RopeQuantizeKernel<(bool)1, (unsigned int)16, (unsigned int)1, __nv_bfloat16, long, __nv_fp8_e4m3>(T4 *, T4 *, T4 *, T4 *, T6 *, T6 *, T6 *, T6 *, float *, T5 *, unsigned int, unsigned int, unsigned i..."
+      },
+      {
+        "category": "memory_elementwise",
+        "count": 624,
+        "aggregate_residency_ms": 1.586261,
+        "average_us": 2.542085,
+        "name": "void <unnamed>::act_and_mul_kernel<__nv_bfloat16, (<unnamed>::ActivationKind)0, (bool)1, (bool)0>(<unnamed>::ActivationParams)"
+      },
+      {
+        "category": "moe_down_gemm",
+        "count": 225,
+        "aggregate_residency_ms": 1.558826,
+        "average_us": 6.928116,
+        "name": "bmm_Bfloat16_E2m1E2m1_Fp32_Ab16_Bb16tokFp32_t128x16x512_s5_et128x16_m256x16x64_c2x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_rgTma_clmp_dynB_sm100f"
+      },
+      {
+        "category": "attention_projection",
+        "count": 168,
+        "aggregate_residency_ms": 1.332549,
+        "average_us": 7.931839,
+        "name": "nvjet_sm103_tst_32x64_64x16_4x1_v_bz_TNN"
+      },
+      {
+        "category": "moe_up_gemm",
+        "count": 150,
+        "aggregate_residency_ms": 1.255147,
+        "average_us": 8.367647,
+        "name": "bmm_E2m1_E2m1E2m1_Fp32_Ab16_Bb16_Cb16_t128x8x512u2_s5_et128x8_m128x8x64_c1x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_tma_tmaSf_rgTma_clmp_swiGlu_dynB_sm100f"
+      },
+      {
+        "category": "norm_rope_quant",
+        "count": 600,
+        "aggregate_residency_ms": 1.142787,
+        "average_us": 1.904645,
+        "name": "kernel_cutlass_kernel_flashinferquantizationkernelsnvfp4_quantizeNVFP4QuantizeLinearKernel_object_at__tensorptrbf16gmemalign16o614461441_tensorptri8gmemalign16o307230721_tensorptri8gmemal_0"
+      },
+      {
+        "category": "attention_mla",
+        "count": 624,
+        "aggregate_residency_ms": 1.127333,
+        "average_us": 1.806623,
+        "name": "set_mla_kv_buffer_kernel"
+      }
+    ]
+  },
+  "useful_graph_kernel_only_tps": 103.050108,
+  "cleanup_graph_kernel_only_tps": 130.147276,
+  "useful_vs_cleanup_wall_slowdown": 0.262951378,
+  "notes": [
+    "Temporal active union is not SM occupancy or hardware utilization.",
+    "Aggregate kernel residency sums overlapping streams and can exceed device-time capacity.",
+    "Kernel categories are name-based operation-family evidence.",
+    "The cleanup graph is a structural control, not a second useful output token."
+  ]
+}
