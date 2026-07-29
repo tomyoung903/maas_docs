@@ -1,0 +1,3089 @@
+{
+  "schema_version": 1,
+  "experiment_slug": "uncached-65k",
+  "metric": "queue_free_gpu_service_ttft",
+  "units": "seconds",
+  "reference_thresholds_seconds": {
+    "p50": 4,
+    "p75": 8,
+    "p90": 12,
+    "p99": 30
+  },
+  "estimator": {
+    "name": "nsight_pp0_first_alloc_extend_marker",
+    "start": {
+      "device_id": 0,
+      "pipeline_stage": "PP0",
+      "kernel_name": "alloc_extend_kernel",
+      "selection": "For each request at logged FCFS ordinal r, select rank-0 alloc_extend marker ordinal 2*r, which starts the request's first 32768-token chunk."
+    },
+    "ends": {
+      "token_ready": "request_finished_ts",
+      "server_sent": "response_sent_to_client_ts"
+    },
+    "forward_entry_time_logged": false,
+    "excluded_intervals": [
+      "Client-side and pre-server wait before SGLang receives the request.",
+      "SGLang internal queue time from queue admission through scheduler dequeue.",
+      "CPU time from scheduler dequeue/forward_entry to the first rank-0 GPU marker."
+    ],
+    "token_ready_end": "SGLang request_finished_ts; every measured request generated exactly one token.",
+    "server_sent_end": "SGLang response_sent_to_client_ts.",
+    "mapping_rule": "For FCFS ordinal r, use rank-0 alloc_extend marker ordinal 2*r; marker 2*r+1 is the request's second 32768-token chunk.",
+    "queue_exclusion": "Client/pre-server wait and SGLang's internal wait queue are excluded.",
+    "timestamp_alignment": {
+      "nsight_session_start_utc_epoch_ns": 1785236131502931643,
+      "marker_timestamp_resolution": "nanoseconds",
+      "sample_rounding_seconds": 1e-09
+    },
+    "bias_and_uncertainty": {
+      "direction": "The GPU marker occurs after unrecorded CPU forward_entry, so this marker-defined service interval slightly underestimates CPU-dequeue-to-token service TTFT.",
+      "direct_forward_entry_timestamp_available": false,
+      "prior_pp0_result_to_first_chunk_marker_positive_seconds": {
+        "count": 259,
+        "min": 0.002550768,
+        "mean": 0.031226517208,
+        "p50": 0.031885013,
+        "p75": 0.0350601705,
+        "p90": 0.0378402798,
+        "p99": 0.04235191874,
+        "max": 0.043462614,
+        "delayed_outer_log_timestamp_inversions_excluded": 7
+      },
+      "interpretation": "The approximately 32 ms median and 42 ms P99 are an observed scale, not a hard error bound, because the preceding PP0 result log is not the missing forward_entry timestamp."
+    }
+  },
+  "cohorts": {
+    "primary": {
+      "definition": "Client eof_epoch_ns lies inside the report's inclusive stable scheduler window; this selects source FCFS ordinals 1 through 267.",
+      "source_request_count": 300,
+      "count": 267,
+      "excluded_count": 33,
+      "quantile_method": "linear_(n-1)q",
+      "samples_seconds": [
+        {
+          "ordinal": 1,
+          "token_ready": 7.943805735,
+          "server_sent": 7.944032735
+        },
+        {
+          "ordinal": 2,
+          "token_ready": 3.054304484,
+          "server_sent": 3.054518984
+        },
+        {
+          "ordinal": 3,
+          "token_ready": 2.906875104,
+          "server_sent": 2.907100804
+        },
+        {
+          "ordinal": 4,
+          "token_ready": 2.91225782,
+          "server_sent": 2.91248752
+        },
+        {
+          "ordinal": 5,
+          "token_ready": 2.908312617,
+          "server_sent": 2.908523617
+        },
+        {
+          "ordinal": 6,
+          "token_ready": 2.925732471,
+          "server_sent": 2.925946771
+        },
+        {
+          "ordinal": 7,
+          "token_ready": 2.917381915,
+          "server_sent": 2.917613515
+        },
+        {
+          "ordinal": 8,
+          "token_ready": 2.919927203,
+          "server_sent": 2.920159203
+        },
+        {
+          "ordinal": 9,
+          "token_ready": 2.919315759,
+          "server_sent": 2.919515559
+        },
+        {
+          "ordinal": 10,
+          "token_ready": 2.931053818,
+          "server_sent": 2.931296718
+        },
+        {
+          "ordinal": 11,
+          "token_ready": 2.909588224,
+          "server_sent": 2.909798324
+        },
+        {
+          "ordinal": 12,
+          "token_ready": 2.92474665,
+          "server_sent": 2.92493445
+        },
+        {
+          "ordinal": 13,
+          "token_ready": 2.915854889,
+          "server_sent": 2.916079489
+        },
+        {
+          "ordinal": 14,
+          "token_ready": 2.918829527,
+          "server_sent": 2.919025527
+        },
+        {
+          "ordinal": 15,
+          "token_ready": 2.917311239,
+          "server_sent": 2.917473939
+        },
+        {
+          "ordinal": 16,
+          "token_ready": 2.916776065,
+          "server_sent": 2.916942365
+        },
+        {
+          "ordinal": 17,
+          "token_ready": 2.924241911,
+          "server_sent": 2.924439611
+        },
+        {
+          "ordinal": 18,
+          "token_ready": 2.910020968,
+          "server_sent": 2.910174968
+        },
+        {
+          "ordinal": 19,
+          "token_ready": 2.915859975,
+          "server_sent": 2.916017575
+        },
+        {
+          "ordinal": 20,
+          "token_ready": 2.916120107,
+          "server_sent": 2.916293907
+        },
+        {
+          "ordinal": 21,
+          "token_ready": 2.925258084,
+          "server_sent": 2.925415884
+        },
+        {
+          "ordinal": 22,
+          "token_ready": 2.920691175,
+          "server_sent": 2.920844675
+        },
+        {
+          "ordinal": 23,
+          "token_ready": 2.917367976,
+          "server_sent": 2.917524876
+        },
+        {
+          "ordinal": 24,
+          "token_ready": 2.915744147,
+          "server_sent": 2.915899347
+        },
+        {
+          "ordinal": 25,
+          "token_ready": 2.917999734,
+          "server_sent": 2.918266534
+        },
+        {
+          "ordinal": 26,
+          "token_ready": 2.920037628,
+          "server_sent": 2.920192328
+        },
+        {
+          "ordinal": 27,
+          "token_ready": 2.917025363,
+          "server_sent": 2.917177563
+        },
+        {
+          "ordinal": 28,
+          "token_ready": 2.921065537,
+          "server_sent": 2.921229537
+        },
+        {
+          "ordinal": 29,
+          "token_ready": 2.923168302,
+          "server_sent": 2.923316102
+        },
+        {
+          "ordinal": 30,
+          "token_ready": 2.927201625,
+          "server_sent": 2.927400825
+        },
+        {
+          "ordinal": 31,
+          "token_ready": 2.925997473,
+          "server_sent": 2.926149173
+        },
+        {
+          "ordinal": 32,
+          "token_ready": 2.921447413,
+          "server_sent": 2.921636213
+        },
+        {
+          "ordinal": 33,
+          "token_ready": 2.918645711,
+          "server_sent": 2.918793711
+        },
+        {
+          "ordinal": 34,
+          "token_ready": 2.916294832,
+          "server_sent": 2.916471232
+        },
+        {
+          "ordinal": 35,
+          "token_ready": 2.924369577,
+          "server_sent": 2.924536177
+        },
+        {
+          "ordinal": 36,
+          "token_ready": 2.925896951,
+          "server_sent": 2.926078151
+        },
+        {
+          "ordinal": 37,
+          "token_ready": 2.9275048,
+          "server_sent": 2.9277234
+        },
+        {
+          "ordinal": 38,
+          "token_ready": 2.931645716,
+          "server_sent": 2.931810216
+        },
+        {
+          "ordinal": 39,
+          "token_ready": 2.928600474,
+          "server_sent": 2.928742774
+        },
+        {
+          "ordinal": 40,
+          "token_ready": 2.922177001,
+          "server_sent": 2.922388001
+        },
+        {
+          "ordinal": 41,
+          "token_ready": 2.920434951,
+          "server_sent": 2.920654651
+        },
+        {
+          "ordinal": 42,
+          "token_ready": 2.927284276,
+          "server_sent": 2.927491876
+        },
+        {
+          "ordinal": 43,
+          "token_ready": 2.928736015,
+          "server_sent": 2.928995015
+        },
+        {
+          "ordinal": 44,
+          "token_ready": 2.92891354,
+          "server_sent": 2.92910374
+        },
+        {
+          "ordinal": 45,
+          "token_ready": 3.306182305,
+          "server_sent": 3.306322705
+        },
+        {
+          "ordinal": 46,
+          "token_ready": 2.92365361,
+          "server_sent": 2.92379261
+        },
+        {
+          "ordinal": 47,
+          "token_ready": 2.927644825,
+          "server_sent": 2.927799625
+        },
+        {
+          "ordinal": 48,
+          "token_ready": 2.925375584,
+          "server_sent": 2.925518884
+        },
+        {
+          "ordinal": 49,
+          "token_ready": 2.920979013,
+          "server_sent": 2.921123713
+        },
+        {
+          "ordinal": 50,
+          "token_ready": 2.928182947,
+          "server_sent": 2.928348147
+        },
+        {
+          "ordinal": 51,
+          "token_ready": 2.921395518,
+          "server_sent": 2.921562418
+        },
+        {
+          "ordinal": 52,
+          "token_ready": 2.926450964,
+          "server_sent": 2.926618764
+        },
+        {
+          "ordinal": 53,
+          "token_ready": 2.926825307,
+          "server_sent": 2.926984107
+        },
+        {
+          "ordinal": 54,
+          "token_ready": 2.930609017,
+          "server_sent": 2.930754417
+        },
+        {
+          "ordinal": 55,
+          "token_ready": 2.932099393,
+          "server_sent": 2.932256693
+        },
+        {
+          "ordinal": 56,
+          "token_ready": 2.939022626,
+          "server_sent": 2.939185226
+        },
+        {
+          "ordinal": 57,
+          "token_ready": 2.932394401,
+          "server_sent": 2.932559101
+        },
+        {
+          "ordinal": 58,
+          "token_ready": 2.940855131,
+          "server_sent": 2.941018631
+        },
+        {
+          "ordinal": 59,
+          "token_ready": 2.928365867,
+          "server_sent": 2.928537567
+        },
+        {
+          "ordinal": 60,
+          "token_ready": 2.932678698,
+          "server_sent": 2.932837498
+        },
+        {
+          "ordinal": 61,
+          "token_ready": 2.930936544,
+          "server_sent": 2.931091044
+        },
+        {
+          "ordinal": 62,
+          "token_ready": 2.929327539,
+          "server_sent": 2.929513739
+        },
+        {
+          "ordinal": 63,
+          "token_ready": 2.936078721,
+          "server_sent": 2.936262021
+        },
+        {
+          "ordinal": 64,
+          "token_ready": 2.930368241,
+          "server_sent": 2.930526041
+        },
+        {
+          "ordinal": 65,
+          "token_ready": 2.926815408,
+          "server_sent": 2.926987808
+        },
+        {
+          "ordinal": 66,
+          "token_ready": 2.933972581,
+          "server_sent": 2.934132781
+        },
+        {
+          "ordinal": 67,
+          "token_ready": 2.929183764,
+          "server_sent": 2.929346564
+        },
+        {
+          "ordinal": 68,
+          "token_ready": 2.918534276,
+          "server_sent": 2.918712376
+        },
+        {
+          "ordinal": 69,
+          "token_ready": 2.933291107,
+          "server_sent": 2.933481807
+        },
+        {
+          "ordinal": 70,
+          "token_ready": 2.930428955,
+          "server_sent": 2.930594455
+        },
+        {
+          "ordinal": 71,
+          "token_ready": 2.925612868,
+          "server_sent": 2.925778868
+        },
+        {
+          "ordinal": 72,
+          "token_ready": 2.932997122,
+          "server_sent": 2.933157622
+        },
+        {
+          "ordinal": 73,
+          "token_ready": 2.926362779,
+          "server_sent": 2.926534179
+        },
+        {
+          "ordinal": 74,
+          "token_ready": 2.927706109,
+          "server_sent": 2.927875309
+        },
+        {
+          "ordinal": 75,
+          "token_ready": 2.931230119,
+          "server_sent": 2.931393919
+        },
+        {
+          "ordinal": 76,
+          "token_ready": 2.925308412,
+          "server_sent": 2.925534912
+        },
+        {
+          "ordinal": 77,
+          "token_ready": 2.934786335,
+          "server_sent": 2.934986735
+        },
+        {
+          "ordinal": 78,
+          "token_ready": 2.935968022,
+          "server_sent": 2.936160522
+        },
+        {
+          "ordinal": 79,
+          "token_ready": 2.944202642,
+          "server_sent": 2.944415242
+        },
+        {
+          "ordinal": 80,
+          "token_ready": 2.936177883,
+          "server_sent": 2.936361983
+        },
+        {
+          "ordinal": 81,
+          "token_ready": 2.927124585,
+          "server_sent": 2.927347585
+        },
+        {
+          "ordinal": 82,
+          "token_ready": 2.92805955,
+          "server_sent": 2.92829745
+        },
+        {
+          "ordinal": 83,
+          "token_ready": 2.92733096,
+          "server_sent": 2.92747746
+        },
+        {
+          "ordinal": 84,
+          "token_ready": 2.919118101,
+          "server_sent": 2.919271401
+        },
+        {
+          "ordinal": 85,
+          "token_ready": 2.928146835,
+          "server_sent": 2.928333235
+        },
+        {
+          "ordinal": 86,
+          "token_ready": 2.930794431,
+          "server_sent": 2.930958931
+        },
+        {
+          "ordinal": 87,
+          "token_ready": 2.920974526,
+          "server_sent": 2.921122326
+        },
+        {
+          "ordinal": 88,
+          "token_ready": 2.9308783,
+          "server_sent": 2.9310304
+        },
+        {
+          "ordinal": 89,
+          "token_ready": 2.930234831,
+          "server_sent": 2.930404231
+        },
+        {
+          "ordinal": 90,
+          "token_ready": 2.93057391,
+          "server_sent": 2.93072501
+        },
+        {
+          "ordinal": 91,
+          "token_ready": 2.936987874,
+          "server_sent": 2.937127574
+        },
+        {
+          "ordinal": 92,
+          "token_ready": 2.934151893,
+          "server_sent": 2.934303793
+        },
+        {
+          "ordinal": 93,
+          "token_ready": 2.936370602,
+          "server_sent": 2.936533002
+        },
+        {
+          "ordinal": 94,
+          "token_ready": 2.930382044,
+          "server_sent": 2.930539044
+        },
+        {
+          "ordinal": 95,
+          "token_ready": 2.929107034,
+          "server_sent": 2.929365434
+        },
+        {
+          "ordinal": 96,
+          "token_ready": 2.923178543,
+          "server_sent": 2.923326843
+        },
+        {
+          "ordinal": 97,
+          "token_ready": 2.92885317,
+          "server_sent": 2.92900137
+        },
+        {
+          "ordinal": 98,
+          "token_ready": 2.93184201,
+          "server_sent": 2.93199051
+        },
+        {
+          "ordinal": 99,
+          "token_ready": 2.936556933,
+          "server_sent": 2.936708633
+        },
+        {
+          "ordinal": 100,
+          "token_ready": 2.937714831,
+          "server_sent": 2.937866731
+        },
+        {
+          "ordinal": 101,
+          "token_ready": 2.932736397,
+          "server_sent": 2.932913197
+        },
+        {
+          "ordinal": 102,
+          "token_ready": 2.929908475,
+          "server_sent": 2.930055875
+        },
+        {
+          "ordinal": 103,
+          "token_ready": 2.931723371,
+          "server_sent": 2.931864971
+        },
+        {
+          "ordinal": 104,
+          "token_ready": 2.928525587,
+          "server_sent": 2.928651187
+        },
+        {
+          "ordinal": 105,
+          "token_ready": 2.934043314,
+          "server_sent": 2.934224014
+        },
+        {
+          "ordinal": 106,
+          "token_ready": 2.926877426,
+          "server_sent": 2.927025526
+        },
+        {
+          "ordinal": 107,
+          "token_ready": 2.939954829,
+          "server_sent": 2.940108429
+        },
+        {
+          "ordinal": 108,
+          "token_ready": 2.919927522,
+          "server_sent": 2.920081022
+        },
+        {
+          "ordinal": 109,
+          "token_ready": 2.932426695,
+          "server_sent": 2.932582395
+        },
+        {
+          "ordinal": 110,
+          "token_ready": 2.935932026,
+          "server_sent": 2.936118226
+        },
+        {
+          "ordinal": 111,
+          "token_ready": 2.93257078,
+          "server_sent": 2.93274748
+        },
+        {
+          "ordinal": 112,
+          "token_ready": 2.926903645,
+          "server_sent": 2.927050045
+        },
+        {
+          "ordinal": 113,
+          "token_ready": 2.918535164,
+          "server_sent": 2.918727564
+        },
+        {
+          "ordinal": 114,
+          "token_ready": 2.921612443,
+          "server_sent": 2.921808443
+        },
+        {
+          "ordinal": 115,
+          "token_ready": 2.928473365,
+          "server_sent": 2.928651465
+        },
+        {
+          "ordinal": 116,
+          "token_ready": 2.924556738,
+          "server_sent": 2.924717138
+        },
+        {
+          "ordinal": 117,
+          "token_ready": 2.921663884,
+          "server_sent": 2.921809284
+        },
+        {
+          "ordinal": 118,
+          "token_ready": 2.923228734,
+          "server_sent": 2.923386534
+        },
+        {
+          "ordinal": 119,
+          "token_ready": 2.929670477,
+          "server_sent": 2.929829177
+        },
+        {
+          "ordinal": 120,
+          "token_ready": 2.928567568,
+          "server_sent": 2.928733368
+        },
+        {
+          "ordinal": 121,
+          "token_ready": 2.919633194,
+          "server_sent": 2.919790794
+        },
+        {
+          "ordinal": 122,
+          "token_ready": 2.917910341,
+          "server_sent": 2.918055041
+        },
+        {
+          "ordinal": 123,
+          "token_ready": 2.923439277,
+          "server_sent": 2.923585677
+        },
+        {
+          "ordinal": 124,
+          "token_ready": 2.929001277,
+          "server_sent": 2.929166077
+        },
+        {
+          "ordinal": 125,
+          "token_ready": 2.933736952,
+          "server_sent": 2.933883552
+        },
+        {
+          "ordinal": 126,
+          "token_ready": 2.928453741,
+          "server_sent": 2.928604141
+        },
+        {
+          "ordinal": 127,
+          "token_ready": 2.93730347,
+          "server_sent": 2.93744437
+        },
+        {
+          "ordinal": 128,
+          "token_ready": 2.935489211,
+          "server_sent": 2.935628711
+        },
+        {
+          "ordinal": 129,
+          "token_ready": 2.938576025,
+          "server_sent": 2.938725825
+        },
+        {
+          "ordinal": 130,
+          "token_ready": 2.92659134,
+          "server_sent": 2.92675984
+        },
+        {
+          "ordinal": 131,
+          "token_ready": 2.934798138,
+          "server_sent": 2.934938138
+        },
+        {
+          "ordinal": 132,
+          "token_ready": 2.929271108,
+          "server_sent": 2.929409508
+        },
+        {
+          "ordinal": 133,
+          "token_ready": 2.93382105,
+          "server_sent": 2.93395455
+        },
+        {
+          "ordinal": 134,
+          "token_ready": 2.934835548,
+          "server_sent": 2.934967148
+        },
+        {
+          "ordinal": 135,
+          "token_ready": 2.938246043,
+          "server_sent": 2.938383843
+        },
+        {
+          "ordinal": 136,
+          "token_ready": 2.929840471,
+          "server_sent": 2.929984471
+        },
+        {
+          "ordinal": 137,
+          "token_ready": 2.910534802,
+          "server_sent": 2.910732902
+        },
+        {
+          "ordinal": 138,
+          "token_ready": 2.921797877,
+          "server_sent": 2.921942777
+        },
+        {
+          "ordinal": 139,
+          "token_ready": 2.926922677,
+          "server_sent": 2.927069777
+        },
+        {
+          "ordinal": 140,
+          "token_ready": 2.937112752,
+          "server_sent": 2.937243952
+        },
+        {
+          "ordinal": 141,
+          "token_ready": 2.946179344,
+          "server_sent": 2.946325744
+        },
+        {
+          "ordinal": 142,
+          "token_ready": 2.939126771,
+          "server_sent": 2.939256671
+        },
+        {
+          "ordinal": 143,
+          "token_ready": 2.931105642,
+          "server_sent": 2.931236842
+        },
+        {
+          "ordinal": 144,
+          "token_ready": 2.936405117,
+          "server_sent": 2.936543417
+        },
+        {
+          "ordinal": 145,
+          "token_ready": 2.930149185,
+          "server_sent": 2.930294385
+        },
+        {
+          "ordinal": 146,
+          "token_ready": 2.939819394,
+          "server_sent": 2.939951494
+        },
+        {
+          "ordinal": 147,
+          "token_ready": 2.937458526,
+          "server_sent": 2.937600926
+        },
+        {
+          "ordinal": 148,
+          "token_ready": 2.941087364,
+          "server_sent": 2.941231164
+        },
+        {
+          "ordinal": 149,
+          "token_ready": 2.935286515,
+          "server_sent": 2.935430115
+        },
+        {
+          "ordinal": 150,
+          "token_ready": 2.922465897,
+          "server_sent": 2.922591697
+        },
+        {
+          "ordinal": 151,
+          "token_ready": 2.929415215,
+          "server_sent": 2.929586415
+        },
+        {
+          "ordinal": 152,
+          "token_ready": 2.923207269,
+          "server_sent": 2.923367669
+        },
+        {
+          "ordinal": 153,
+          "token_ready": 2.926225602,
+          "server_sent": 2.926548602
+        },
+        {
+          "ordinal": 154,
+          "token_ready": 2.924276844,
+          "server_sent": 2.924426544
+        },
+        {
+          "ordinal": 155,
+          "token_ready": 2.921516782,
+          "server_sent": 2.921689682
+        },
+        {
+          "ordinal": 156,
+          "token_ready": 2.933860019,
+          "server_sent": 2.934009219
+        },
+        {
+          "ordinal": 157,
+          "token_ready": 2.949163735,
+          "server_sent": 2.949312535
+        },
+        {
+          "ordinal": 158,
+          "token_ready": 2.929242026,
+          "server_sent": 2.929391026
+        },
+        {
+          "ordinal": 159,
+          "token_ready": 2.927868509,
+          "server_sent": 2.928026009
+        },
+        {
+          "ordinal": 160,
+          "token_ready": 2.932761443,
+          "server_sent": 2.932929343
+        },
+        {
+          "ordinal": 161,
+          "token_ready": 2.935700309,
+          "server_sent": 2.935838309
+        },
+        {
+          "ordinal": 162,
+          "token_ready": 2.932269162,
+          "server_sent": 2.932435362
+        },
+        {
+          "ordinal": 163,
+          "token_ready": 2.928107921,
+          "server_sent": 2.928269321
+        },
+        {
+          "ordinal": 164,
+          "token_ready": 2.919554935,
+          "server_sent": 2.919727935
+        },
+        {
+          "ordinal": 165,
+          "token_ready": 2.931671188,
+          "server_sent": 2.931836688
+        },
+        {
+          "ordinal": 166,
+          "token_ready": 2.92982387,
+          "server_sent": 2.92998147
+        },
+        {
+          "ordinal": 167,
+          "token_ready": 2.934525984,
+          "server_sent": 2.934694784
+        },
+        {
+          "ordinal": 168,
+          "token_ready": 2.931639876,
+          "server_sent": 2.931812576
+        },
+        {
+          "ordinal": 169,
+          "token_ready": 2.931022439,
+          "server_sent": 2.931174039
+        },
+        {
+          "ordinal": 170,
+          "token_ready": 2.933844576,
+          "server_sent": 2.934003576
+        },
+        {
+          "ordinal": 171,
+          "token_ready": 2.931396627,
+          "server_sent": 2.931561427
+        },
+        {
+          "ordinal": 172,
+          "token_ready": 2.939951398,
+          "server_sent": 2.940146198
+        },
+        {
+          "ordinal": 173,
+          "token_ready": 2.924396751,
+          "server_sent": 2.924616851
+        },
+        {
+          "ordinal": 174,
+          "token_ready": 2.923944478,
+          "server_sent": 2.924172478
+        },
+        {
+          "ordinal": 175,
+          "token_ready": 2.913453739,
+          "server_sent": 2.913670639
+        },
+        {
+          "ordinal": 176,
+          "token_ready": 2.925383184,
+          "server_sent": 2.925600584
+        },
+        {
+          "ordinal": 177,
+          "token_ready": 2.921048851,
+          "server_sent": 2.921271251
+        },
+        {
+          "ordinal": 178,
+          "token_ready": 2.924921707,
+          "server_sent": 2.925120707
+        },
+        {
+          "ordinal": 179,
+          "token_ready": 2.931677485,
+          "server_sent": 2.931836985
+        },
+        {
+          "ordinal": 180,
+          "token_ready": 2.934715762,
+          "server_sent": 2.934974862
+        },
+        {
+          "ordinal": 181,
+          "token_ready": 2.941657695,
+          "server_sent": 2.941815595
+        },
+        {
+          "ordinal": 182,
+          "token_ready": 2.947078009,
+          "server_sent": 2.947227509
+        },
+        {
+          "ordinal": 183,
+          "token_ready": 2.940333497,
+          "server_sent": 2.940506097
+        },
+        {
+          "ordinal": 184,
+          "token_ready": 2.937149741,
+          "server_sent": 2.937337641
+        },
+        {
+          "ordinal": 185,
+          "token_ready": 2.943183337,
+          "server_sent": 2.943376737
+        },
+        {
+          "ordinal": 186,
+          "token_ready": 2.941265826,
+          "server_sent": 2.941422426
+        },
+        {
+          "ordinal": 187,
+          "token_ready": 2.943124756,
+          "server_sent": 2.943270356
+        },
+        {
+          "ordinal": 188,
+          "token_ready": 2.934026665,
+          "server_sent": 2.934177065
+        },
+        {
+          "ordinal": 189,
+          "token_ready": 2.944818609,
+          "server_sent": 2.944964109
+        },
+        {
+          "ordinal": 190,
+          "token_ready": 2.932460562,
+          "server_sent": 2.932671262
+        },
+        {
+          "ordinal": 191,
+          "token_ready": 2.927427051,
+          "server_sent": 2.927640451
+        },
+        {
+          "ordinal": 192,
+          "token_ready": 2.930808154,
+          "server_sent": 2.931022454
+        },
+        {
+          "ordinal": 193,
+          "token_ready": 2.944474186,
+          "server_sent": 2.944698086
+        },
+        {
+          "ordinal": 194,
+          "token_ready": 2.927128796,
+          "server_sent": 2.927310496
+        },
+        {
+          "ordinal": 195,
+          "token_ready": 2.938058359,
+          "server_sent": 2.938278259
+        },
+        {
+          "ordinal": 196,
+          "token_ready": 2.932389032,
+          "server_sent": 2.932602532
+        },
+        {
+          "ordinal": 197,
+          "token_ready": 2.935328271,
+          "server_sent": 2.935502371
+        },
+        {
+          "ordinal": 198,
+          "token_ready": 2.923907993,
+          "server_sent": 2.924063193
+        },
+        {
+          "ordinal": 199,
+          "token_ready": 2.936395637,
+          "server_sent": 2.936609337
+        },
+        {
+          "ordinal": 200,
+          "token_ready": 2.936611117,
+          "server_sent": 2.936826117
+        },
+        {
+          "ordinal": 201,
+          "token_ready": 2.932779571,
+          "server_sent": 2.932932271
+        },
+        {
+          "ordinal": 202,
+          "token_ready": 2.941810515,
+          "server_sent": 2.941968315
+        },
+        {
+          "ordinal": 203,
+          "token_ready": 2.940500975,
+          "server_sent": 2.940856475
+        },
+        {
+          "ordinal": 204,
+          "token_ready": 2.926956797,
+          "server_sent": 2.927101697
+        },
+        {
+          "ordinal": 205,
+          "token_ready": 2.929451646,
+          "server_sent": 2.929663646
+        },
+        {
+          "ordinal": 206,
+          "token_ready": 2.919975577,
+          "server_sent": 2.920133877
+        },
+        {
+          "ordinal": 207,
+          "token_ready": 2.922459336,
+          "server_sent": 2.922662736
+        },
+        {
+          "ordinal": 208,
+          "token_ready": 2.925759148,
+          "server_sent": 2.925958248
+        },
+        {
+          "ordinal": 209,
+          "token_ready": 2.934418942,
+          "server_sent": 2.934616242
+        },
+        {
+          "ordinal": 210,
+          "token_ready": 2.935161803,
+          "server_sent": 2.935365803
+        },
+        {
+          "ordinal": 211,
+          "token_ready": 2.93359347,
+          "server_sent": 2.93379757
+        },
+        {
+          "ordinal": 212,
+          "token_ready": 2.936987929,
+          "server_sent": 2.937228029
+        },
+        {
+          "ordinal": 213,
+          "token_ready": 2.941097746,
+          "server_sent": 2.941261246
+        },
+        {
+          "ordinal": 214,
+          "token_ready": 2.93979009,
+          "server_sent": 2.94002089
+        },
+        {
+          "ordinal": 215,
+          "token_ready": 2.934546579,
+          "server_sent": 2.934772379
+        },
+        {
+          "ordinal": 216,
+          "token_ready": 2.929213005,
+          "server_sent": 2.929434305
+        },
+        {
+          "ordinal": 217,
+          "token_ready": 2.934436764,
+          "server_sent": 2.934663764
+        },
+        {
+          "ordinal": 218,
+          "token_ready": 2.927060167,
+          "server_sent": 2.927261167
+        },
+        {
+          "ordinal": 219,
+          "token_ready": 2.920354816,
+          "server_sent": 2.920561716
+        },
+        {
+          "ordinal": 220,
+          "token_ready": 2.91642592,
+          "server_sent": 2.91665882
+        },
+        {
+          "ordinal": 221,
+          "token_ready": 2.937893827,
+          "server_sent": 2.938120227
+        },
+        {
+          "ordinal": 222,
+          "token_ready": 2.936701442,
+          "server_sent": 2.936909042
+        },
+        {
+          "ordinal": 223,
+          "token_ready": 2.931107549,
+          "server_sent": 2.931304649
+        },
+        {
+          "ordinal": 224,
+          "token_ready": 2.935966464,
+          "server_sent": 2.936202464
+        },
+        {
+          "ordinal": 225,
+          "token_ready": 2.933676765,
+          "server_sent": 2.933853865
+        },
+        {
+          "ordinal": 226,
+          "token_ready": 2.931943758,
+          "server_sent": 2.932134758
+        },
+        {
+          "ordinal": 227,
+          "token_ready": 2.929189271,
+          "server_sent": 2.929434271
+        },
+        {
+          "ordinal": 228,
+          "token_ready": 2.932458779,
+          "server_sent": 2.932641179
+        },
+        {
+          "ordinal": 229,
+          "token_ready": 2.932752346,
+          "server_sent": 2.932991646
+        },
+        {
+          "ordinal": 230,
+          "token_ready": 2.937639563,
+          "server_sent": 2.937849563
+        },
+        {
+          "ordinal": 231,
+          "token_ready": 2.929468809,
+          "server_sent": 2.929665509
+        },
+        {
+          "ordinal": 232,
+          "token_ready": 2.929840738,
+          "server_sent": 2.930042438
+        },
+        {
+          "ordinal": 233,
+          "token_ready": 2.940942743,
+          "server_sent": 2.941123343
+        },
+        {
+          "ordinal": 234,
+          "token_ready": 2.933602298,
+          "server_sent": 2.933776998
+        },
+        {
+          "ordinal": 235,
+          "token_ready": 2.936046486,
+          "server_sent": 2.936226986
+        },
+        {
+          "ordinal": 236,
+          "token_ready": 2.922564581,
+          "server_sent": 2.922762081
+        },
+        {
+          "ordinal": 237,
+          "token_ready": 2.924928261,
+          "server_sent": 2.925109761
+        },
+        {
+          "ordinal": 238,
+          "token_ready": 2.931385344,
+          "server_sent": 2.931574444
+        },
+        {
+          "ordinal": 239,
+          "token_ready": 2.94374017,
+          "server_sent": 2.94393757
+        },
+        {
+          "ordinal": 240,
+          "token_ready": 2.943462814,
+          "server_sent": 2.943662114
+        },
+        {
+          "ordinal": 241,
+          "token_ready": 2.937423696,
+          "server_sent": 2.937608696
+        },
+        {
+          "ordinal": 242,
+          "token_ready": 2.92490599,
+          "server_sent": 2.92508429
+        },
+        {
+          "ordinal": 243,
+          "token_ready": 2.928739775,
+          "server_sent": 2.928927675
+        },
+        {
+          "ordinal": 244,
+          "token_ready": 2.92305825,
+          "server_sent": 2.92326935
+        },
+        {
+          "ordinal": 245,
+          "token_ready": 2.934873677,
+          "server_sent": 2.935040677
+        },
+        {
+          "ordinal": 246,
+          "token_ready": 2.93462804,
+          "server_sent": 2.93479854
+        },
+        {
+          "ordinal": 247,
+          "token_ready": 2.932834449,
+          "server_sent": 2.933041349
+        },
+        {
+          "ordinal": 248,
+          "token_ready": 2.927178421,
+          "server_sent": 2.927366421
+        },
+        {
+          "ordinal": 249,
+          "token_ready": 2.928226285,
+          "server_sent": 2.928405685
+        },
+        {
+          "ordinal": 250,
+          "token_ready": 2.937075134,
+          "server_sent": 2.937243534
+        },
+        {
+          "ordinal": 251,
+          "token_ready": 2.939232398,
+          "server_sent": 2.939420398
+        },
+        {
+          "ordinal": 252,
+          "token_ready": 3.102383377,
+          "server_sent": 3.102679877
+        },
+        {
+          "ordinal": 253,
+          "token_ready": 2.934643275,
+          "server_sent": 2.934833275
+        },
+        {
+          "ordinal": 254,
+          "token_ready": 2.930482437,
+          "server_sent": 2.930762037
+        },
+        {
+          "ordinal": 255,
+          "token_ready": 2.926756519,
+          "server_sent": 2.926939719
+        },
+        {
+          "ordinal": 256,
+          "token_ready": 2.929366041,
+          "server_sent": 2.929551741
+        },
+        {
+          "ordinal": 257,
+          "token_ready": 2.918214733,
+          "server_sent": 2.918413433
+        },
+        {
+          "ordinal": 258,
+          "token_ready": 2.922884062,
+          "server_sent": 2.923054262
+        },
+        {
+          "ordinal": 259,
+          "token_ready": 2.935908906,
+          "server_sent": 2.936090106
+        },
+        {
+          "ordinal": 260,
+          "token_ready": 2.933143963,
+          "server_sent": 2.933352363
+        },
+        {
+          "ordinal": 261,
+          "token_ready": 2.943473045,
+          "server_sent": 2.943667745
+        },
+        {
+          "ordinal": 262,
+          "token_ready": 2.936459685,
+          "server_sent": 2.936681585
+        },
+        {
+          "ordinal": 263,
+          "token_ready": 2.930661614,
+          "server_sent": 2.930881514
+        },
+        {
+          "ordinal": 264,
+          "token_ready": 2.927424191,
+          "server_sent": 2.927655591
+        },
+        {
+          "ordinal": 265,
+          "token_ready": 2.93036143,
+          "server_sent": 2.93114793
+        },
+        {
+          "ordinal": 266,
+          "token_ready": 2.934105748,
+          "server_sent": 2.934291448
+        },
+        {
+          "ordinal": 267,
+          "token_ready": 2.931348289,
+          "server_sent": 2.931525689
+        }
+      ],
+      "distributions_seconds": {
+        "token_ready": {
+          "count": 267,
+          "min": 2.906875104,
+          "mean": 2.950803554607,
+          "p50": 2.929908475,
+          "p75": 2.9347922365,
+          "p90": 2.9398018116,
+          "p99": 3.07065130762,
+          "max": 7.943805735
+        },
+        "server_sent": {
+          "count": 267,
+          "min": 2.907100804,
+          "mean": 2.950985646742,
+          "p50": 2.930055875,
+          "p75": 2.934971005,
+          "p90": 2.9399792524,
+          "p99": 3.07089368762,
+          "max": 7.944032735
+        },
+        "ready_to_sent": {
+          "count": 267,
+          "min": 0.0001256,
+          "mean": 0.000182092135,
+          "p50": 0.0001714,
+          "p75": 0.0002001,
+          "p90": 0.00022574,
+          "p99": 0.00030551,
+          "max": 0.0007865
+        }
+      },
+      "strict_under_threshold_counts": {
+        "4": 266,
+        "8": 267,
+        "12": 267,
+        "30": 267
+      },
+      "passes": {
+        "p50": true,
+        "p75": true,
+        "p90": true,
+        "p99": true
+      },
+      "selection_window_epoch_ns": {
+        "start_inclusive": 1785236151614382797,
+        "end_inclusive": 1785236463614382797
+      },
+      "source_fcfs_ordinal_range_inclusive": [
+        1,
+        267
+      ]
+    },
+    "full_run": {
+      "definition": "All 300 successful measured requests in logged FCFS order, including pipeline startup and drain.",
+      "source_request_count": 300,
+      "count": 300,
+      "excluded_count": 0,
+      "quantile_method": "linear_(n-1)q",
+      "samples_seconds": [
+        {
+          "ordinal": 0,
+          "token_ready": 19.531598538,
+          "server_sent": 19.532013938
+        },
+        {
+          "ordinal": 1,
+          "token_ready": 7.943805735,
+          "server_sent": 7.944032735
+        },
+        {
+          "ordinal": 2,
+          "token_ready": 3.054304484,
+          "server_sent": 3.054518984
+        },
+        {
+          "ordinal": 3,
+          "token_ready": 2.906875104,
+          "server_sent": 2.907100804
+        },
+        {
+          "ordinal": 4,
+          "token_ready": 2.91225782,
+          "server_sent": 2.91248752
+        },
+        {
+          "ordinal": 5,
+          "token_ready": 2.908312617,
+          "server_sent": 2.908523617
+        },
+        {
+          "ordinal": 6,
+          "token_ready": 2.925732471,
+          "server_sent": 2.925946771
+        },
+        {
+          "ordinal": 7,
+          "token_ready": 2.917381915,
+          "server_sent": 2.917613515
+        },
+        {
+          "ordinal": 8,
+          "token_ready": 2.919927203,
+          "server_sent": 2.920159203
+        },
+        {
+          "ordinal": 9,
+          "token_ready": 2.919315759,
+          "server_sent": 2.919515559
+        },
+        {
+          "ordinal": 10,
+          "token_ready": 2.931053818,
+          "server_sent": 2.931296718
+        },
+        {
+          "ordinal": 11,
+          "token_ready": 2.909588224,
+          "server_sent": 2.909798324
+        },
+        {
+          "ordinal": 12,
+          "token_ready": 2.92474665,
+          "server_sent": 2.92493445
+        },
+        {
+          "ordinal": 13,
+          "token_ready": 2.915854889,
+          "server_sent": 2.916079489
+        },
+        {
+          "ordinal": 14,
+          "token_ready": 2.918829527,
+          "server_sent": 2.919025527
+        },
+        {
+          "ordinal": 15,
+          "token_ready": 2.917311239,
+          "server_sent": 2.917473939
+        },
+        {
+          "ordinal": 16,
+          "token_ready": 2.916776065,
+          "server_sent": 2.916942365
+        },
+        {
+          "ordinal": 17,
+          "token_ready": 2.924241911,
+          "server_sent": 2.924439611
+        },
+        {
+          "ordinal": 18,
+          "token_ready": 2.910020968,
+          "server_sent": 2.910174968
+        },
+        {
+          "ordinal": 19,
+          "token_ready": 2.915859975,
+          "server_sent": 2.916017575
+        },
+        {
+          "ordinal": 20,
+          "token_ready": 2.916120107,
+          "server_sent": 2.916293907
+        },
+        {
+          "ordinal": 21,
+          "token_ready": 2.925258084,
+          "server_sent": 2.925415884
+        },
+        {
+          "ordinal": 22,
+          "token_ready": 2.920691175,
+          "server_sent": 2.920844675
+        },
+        {
+          "ordinal": 23,
+          "token_ready": 2.917367976,
+          "server_sent": 2.917524876
+        },
+        {
+          "ordinal": 24,
+          "token_ready": 2.915744147,
+          "server_sent": 2.915899347
+        },
+        {
+          "ordinal": 25,
+          "token_ready": 2.917999734,
+          "server_sent": 2.918266534
+        },
+        {
+          "ordinal": 26,
+          "token_ready": 2.920037628,
+          "server_sent": 2.920192328
+        },
+        {
+          "ordinal": 27,
+          "token_ready": 2.917025363,
+          "server_sent": 2.917177563
+        },
+        {
+          "ordinal": 28,
+          "token_ready": 2.921065537,
+          "server_sent": 2.921229537
+        },
+        {
+          "ordinal": 29,
+          "token_ready": 2.923168302,
+          "server_sent": 2.923316102
+        },
+        {
+          "ordinal": 30,
+          "token_ready": 2.927201625,
+          "server_sent": 2.927400825
+        },
+        {
+          "ordinal": 31,
+          "token_ready": 2.925997473,
+          "server_sent": 2.926149173
+        },
+        {
+          "ordinal": 32,
+          "token_ready": 2.921447413,
+          "server_sent": 2.921636213
+        },
+        {
+          "ordinal": 33,
+          "token_ready": 2.918645711,
+          "server_sent": 2.918793711
+        },
+        {
+          "ordinal": 34,
+          "token_ready": 2.916294832,
+          "server_sent": 2.916471232
+        },
+        {
+          "ordinal": 35,
+          "token_ready": 2.924369577,
+          "server_sent": 2.924536177
+        },
+        {
+          "ordinal": 36,
+          "token_ready": 2.925896951,
+          "server_sent": 2.926078151
+        },
+        {
+          "ordinal": 37,
+          "token_ready": 2.9275048,
+          "server_sent": 2.9277234
+        },
+        {
+          "ordinal": 38,
+          "token_ready": 2.931645716,
+          "server_sent": 2.931810216
+        },
+        {
+          "ordinal": 39,
+          "token_ready": 2.928600474,
+          "server_sent": 2.928742774
+        },
+        {
+          "ordinal": 40,
+          "token_ready": 2.922177001,
+          "server_sent": 2.922388001
+        },
+        {
+          "ordinal": 41,
+          "token_ready": 2.920434951,
+          "server_sent": 2.920654651
+        },
+        {
+          "ordinal": 42,
+          "token_ready": 2.927284276,
+          "server_sent": 2.927491876
+        },
+        {
+          "ordinal": 43,
+          "token_ready": 2.928736015,
+          "server_sent": 2.928995015
+        },
+        {
+          "ordinal": 44,
+          "token_ready": 2.92891354,
+          "server_sent": 2.92910374
+        },
+        {
+          "ordinal": 45,
+          "token_ready": 3.306182305,
+          "server_sent": 3.306322705
+        },
+        {
+          "ordinal": 46,
+          "token_ready": 2.92365361,
+          "server_sent": 2.92379261
+        },
+        {
+          "ordinal": 47,
+          "token_ready": 2.927644825,
+          "server_sent": 2.927799625
+        },
+        {
+          "ordinal": 48,
+          "token_ready": 2.925375584,
+          "server_sent": 2.925518884
+        },
+        {
+          "ordinal": 49,
+          "token_ready": 2.920979013,
+          "server_sent": 2.921123713
+        },
+        {
+          "ordinal": 50,
+          "token_ready": 2.928182947,
+          "server_sent": 2.928348147
+        },
+        {
+          "ordinal": 51,
+          "token_ready": 2.921395518,
+          "server_sent": 2.921562418
+        },
+        {
+          "ordinal": 52,
+          "token_ready": 2.926450964,
+          "server_sent": 2.926618764
+        },
+        {
+          "ordinal": 53,
+          "token_ready": 2.926825307,
+          "server_sent": 2.926984107
+        },
+        {
+          "ordinal": 54,
+          "token_ready": 2.930609017,
+          "server_sent": 2.930754417
+        },
+        {
+          "ordinal": 55,
+          "token_ready": 2.932099393,
+          "server_sent": 2.932256693
+        },
+        {
+          "ordinal": 56,
+          "token_ready": 2.939022626,
+          "server_sent": 2.939185226
+        },
+        {
+          "ordinal": 57,
+          "token_ready": 2.932394401,
+          "server_sent": 2.932559101
+        },
+        {
+          "ordinal": 58,
+          "token_ready": 2.940855131,
+          "server_sent": 2.941018631
+        },
+        {
+          "ordinal": 59,
+          "token_ready": 2.928365867,
+          "server_sent": 2.928537567
+        },
+        {
+          "ordinal": 60,
+          "token_ready": 2.932678698,
+          "server_sent": 2.932837498
+        },
+        {
+          "ordinal": 61,
+          "token_ready": 2.930936544,
+          "server_sent": 2.931091044
+        },
+        {
+          "ordinal": 62,
+          "token_ready": 2.929327539,
+          "server_sent": 2.929513739
+        },
+        {
+          "ordinal": 63,
+          "token_ready": 2.936078721,
+          "server_sent": 2.936262021
+        },
+        {
+          "ordinal": 64,
+          "token_ready": 2.930368241,
+          "server_sent": 2.930526041
+        },
+        {
+          "ordinal": 65,
+          "token_ready": 2.926815408,
+          "server_sent": 2.926987808
+        },
+        {
+          "ordinal": 66,
+          "token_ready": 2.933972581,
+          "server_sent": 2.934132781
+        },
+        {
+          "ordinal": 67,
+          "token_ready": 2.929183764,
+          "server_sent": 2.929346564
+        },
+        {
+          "ordinal": 68,
+          "token_ready": 2.918534276,
+          "server_sent": 2.918712376
+        },
+        {
+          "ordinal": 69,
+          "token_ready": 2.933291107,
+          "server_sent": 2.933481807
+        },
+        {
+          "ordinal": 70,
+          "token_ready": 2.930428955,
+          "server_sent": 2.930594455
+        },
+        {
+          "ordinal": 71,
+          "token_ready": 2.925612868,
+          "server_sent": 2.925778868
+        },
+        {
+          "ordinal": 72,
+          "token_ready": 2.932997122,
+          "server_sent": 2.933157622
+        },
+        {
+          "ordinal": 73,
+          "token_ready": 2.926362779,
+          "server_sent": 2.926534179
+        },
+        {
+          "ordinal": 74,
+          "token_ready": 2.927706109,
+          "server_sent": 2.927875309
+        },
+        {
+          "ordinal": 75,
+          "token_ready": 2.931230119,
+          "server_sent": 2.931393919
+        },
+        {
+          "ordinal": 76,
+          "token_ready": 2.925308412,
+          "server_sent": 2.925534912
+        },
+        {
+          "ordinal": 77,
+          "token_ready": 2.934786335,
+          "server_sent": 2.934986735
+        },
+        {
+          "ordinal": 78,
+          "token_ready": 2.935968022,
+          "server_sent": 2.936160522
+        },
+        {
+          "ordinal": 79,
+          "token_ready": 2.944202642,
+          "server_sent": 2.944415242
+        },
+        {
+          "ordinal": 80,
+          "token_ready": 2.936177883,
+          "server_sent": 2.936361983
+        },
+        {
+          "ordinal": 81,
+          "token_ready": 2.927124585,
+          "server_sent": 2.927347585
+        },
+        {
+          "ordinal": 82,
+          "token_ready": 2.92805955,
+          "server_sent": 2.92829745
+        },
+        {
+          "ordinal": 83,
+          "token_ready": 2.92733096,
+          "server_sent": 2.92747746
+        },
+        {
+          "ordinal": 84,
+          "token_ready": 2.919118101,
+          "server_sent": 2.919271401
+        },
+        {
+          "ordinal": 85,
+          "token_ready": 2.928146835,
+          "server_sent": 2.928333235
+        },
+        {
+          "ordinal": 86,
+          "token_ready": 2.930794431,
+          "server_sent": 2.930958931
+        },
+        {
+          "ordinal": 87,
+          "token_ready": 2.920974526,
+          "server_sent": 2.921122326
+        },
+        {
+          "ordinal": 88,
+          "token_ready": 2.9308783,
+          "server_sent": 2.9310304
+        },
+        {
+          "ordinal": 89,
+          "token_ready": 2.930234831,
+          "server_sent": 2.930404231
+        },
+        {
+          "ordinal": 90,
+          "token_ready": 2.93057391,
+          "server_sent": 2.93072501
+        },
+        {
+          "ordinal": 91,
+          "token_ready": 2.936987874,
+          "server_sent": 2.937127574
+        },
+        {
+          "ordinal": 92,
+          "token_ready": 2.934151893,
+          "server_sent": 2.934303793
+        },
+        {
+          "ordinal": 93,
+          "token_ready": 2.936370602,
+          "server_sent": 2.936533002
+        },
+        {
+          "ordinal": 94,
+          "token_ready": 2.930382044,
+          "server_sent": 2.930539044
+        },
+        {
+          "ordinal": 95,
+          "token_ready": 2.929107034,
+          "server_sent": 2.929365434
+        },
+        {
+          "ordinal": 96,
+          "token_ready": 2.923178543,
+          "server_sent": 2.923326843
+        },
+        {
+          "ordinal": 97,
+          "token_ready": 2.92885317,
+          "server_sent": 2.92900137
+        },
+        {
+          "ordinal": 98,
+          "token_ready": 2.93184201,
+          "server_sent": 2.93199051
+        },
+        {
+          "ordinal": 99,
+          "token_ready": 2.936556933,
+          "server_sent": 2.936708633
+        },
+        {
+          "ordinal": 100,
+          "token_ready": 2.937714831,
+          "server_sent": 2.937866731
+        },
+        {
+          "ordinal": 101,
+          "token_ready": 2.932736397,
+          "server_sent": 2.932913197
+        },
+        {
+          "ordinal": 102,
+          "token_ready": 2.929908475,
+          "server_sent": 2.930055875
+        },
+        {
+          "ordinal": 103,
+          "token_ready": 2.931723371,
+          "server_sent": 2.931864971
+        },
+        {
+          "ordinal": 104,
+          "token_ready": 2.928525587,
+          "server_sent": 2.928651187
+        },
+        {
+          "ordinal": 105,
+          "token_ready": 2.934043314,
+          "server_sent": 2.934224014
+        },
+        {
+          "ordinal": 106,
+          "token_ready": 2.926877426,
+          "server_sent": 2.927025526
+        },
+        {
+          "ordinal": 107,
+          "token_ready": 2.939954829,
+          "server_sent": 2.940108429
+        },
+        {
+          "ordinal": 108,
+          "token_ready": 2.919927522,
+          "server_sent": 2.920081022
+        },
+        {
+          "ordinal": 109,
+          "token_ready": 2.932426695,
+          "server_sent": 2.932582395
+        },
+        {
+          "ordinal": 110,
+          "token_ready": 2.935932026,
+          "server_sent": 2.936118226
+        },
+        {
+          "ordinal": 111,
+          "token_ready": 2.93257078,
+          "server_sent": 2.93274748
+        },
+        {
+          "ordinal": 112,
+          "token_ready": 2.926903645,
+          "server_sent": 2.927050045
+        },
+        {
+          "ordinal": 113,
+          "token_ready": 2.918535164,
+          "server_sent": 2.918727564
+        },
+        {
+          "ordinal": 114,
+          "token_ready": 2.921612443,
+          "server_sent": 2.921808443
+        },
+        {
+          "ordinal": 115,
+          "token_ready": 2.928473365,
+          "server_sent": 2.928651465
+        },
+        {
+          "ordinal": 116,
+          "token_ready": 2.924556738,
+          "server_sent": 2.924717138
+        },
+        {
+          "ordinal": 117,
+          "token_ready": 2.921663884,
+          "server_sent": 2.921809284
+        },
+        {
+          "ordinal": 118,
+          "token_ready": 2.923228734,
+          "server_sent": 2.923386534
+        },
+        {
+          "ordinal": 119,
+          "token_ready": 2.929670477,
+          "server_sent": 2.929829177
+        },
+        {
+          "ordinal": 120,
+          "token_ready": 2.928567568,
+          "server_sent": 2.928733368
+        },
+        {
+          "ordinal": 121,
+          "token_ready": 2.919633194,
+          "server_sent": 2.919790794
+        },
+        {
+          "ordinal": 122,
+          "token_ready": 2.917910341,
+          "server_sent": 2.918055041
+        },
+        {
+          "ordinal": 123,
+          "token_ready": 2.923439277,
+          "server_sent": 2.923585677
+        },
+        {
+          "ordinal": 124,
+          "token_ready": 2.929001277,
+          "server_sent": 2.929166077
+        },
+        {
+          "ordinal": 125,
+          "token_ready": 2.933736952,
+          "server_sent": 2.933883552
+        },
+        {
+          "ordinal": 126,
+          "token_ready": 2.928453741,
+          "server_sent": 2.928604141
+        },
+        {
+          "ordinal": 127,
+          "token_ready": 2.93730347,
+          "server_sent": 2.93744437
+        },
+        {
+          "ordinal": 128,
+          "token_ready": 2.935489211,
+          "server_sent": 2.935628711
+        },
+        {
+          "ordinal": 129,
+          "token_ready": 2.938576025,
+          "server_sent": 2.938725825
+        },
+        {
+          "ordinal": 130,
+          "token_ready": 2.92659134,
+          "server_sent": 2.92675984
+        },
+        {
+          "ordinal": 131,
+          "token_ready": 2.934798138,
+          "server_sent": 2.934938138
+        },
+        {
+          "ordinal": 132,
+          "token_ready": 2.929271108,
+          "server_sent": 2.929409508
+        },
+        {
+          "ordinal": 133,
+          "token_ready": 2.93382105,
+          "server_sent": 2.93395455
+        },
+        {
+          "ordinal": 134,
+          "token_ready": 2.934835548,
+          "server_sent": 2.934967148
+        },
+        {
+          "ordinal": 135,
+          "token_ready": 2.938246043,
+          "server_sent": 2.938383843
+        },
+        {
+          "ordinal": 136,
+          "token_ready": 2.929840471,
+          "server_sent": 2.929984471
+        },
+        {
+          "ordinal": 137,
+          "token_ready": 2.910534802,
+          "server_sent": 2.910732902
+        },
+        {
+          "ordinal": 138,
+          "token_ready": 2.921797877,
+          "server_sent": 2.921942777
+        },
+        {
+          "ordinal": 139,
+          "token_ready": 2.926922677,
+          "server_sent": 2.927069777
+        },
+        {
+          "ordinal": 140,
+          "token_ready": 2.937112752,
+          "server_sent": 2.937243952
+        },
+        {
+          "ordinal": 141,
+          "token_ready": 2.946179344,
+          "server_sent": 2.946325744
+        },
+        {
+          "ordinal": 142,
+          "token_ready": 2.939126771,
+          "server_sent": 2.939256671
+        },
+        {
+          "ordinal": 143,
+          "token_ready": 2.931105642,
+          "server_sent": 2.931236842
+        },
+        {
+          "ordinal": 144,
+          "token_ready": 2.936405117,
+          "server_sent": 2.936543417
+        },
+        {
+          "ordinal": 145,
+          "token_ready": 2.930149185,
+          "server_sent": 2.930294385
+        },
+        {
+          "ordinal": 146,
+          "token_ready": 2.939819394,
+          "server_sent": 2.939951494
+        },
+        {
+          "ordinal": 147,
+          "token_ready": 2.937458526,
+          "server_sent": 2.937600926
+        },
+        {
+          "ordinal": 148,
+          "token_ready": 2.941087364,
+          "server_sent": 2.941231164
+        },
+        {
+          "ordinal": 149,
+          "token_ready": 2.935286515,
+          "server_sent": 2.935430115
+        },
+        {
+          "ordinal": 150,
+          "token_ready": 2.922465897,
+          "server_sent": 2.922591697
+        },
+        {
+          "ordinal": 151,
+          "token_ready": 2.929415215,
+          "server_sent": 2.929586415
+        },
+        {
+          "ordinal": 152,
+          "token_ready": 2.923207269,
+          "server_sent": 2.923367669
+        },
+        {
+          "ordinal": 153,
+          "token_ready": 2.926225602,
+          "server_sent": 2.926548602
+        },
+        {
+          "ordinal": 154,
+          "token_ready": 2.924276844,
+          "server_sent": 2.924426544
+        },
+        {
+          "ordinal": 155,
+          "token_ready": 2.921516782,
+          "server_sent": 2.921689682
+        },
+        {
+          "ordinal": 156,
+          "token_ready": 2.933860019,
+          "server_sent": 2.934009219
+        },
+        {
+          "ordinal": 157,
+          "token_ready": 2.949163735,
+          "server_sent": 2.949312535
+        },
+        {
+          "ordinal": 158,
+          "token_ready": 2.929242026,
+          "server_sent": 2.929391026
+        },
+        {
+          "ordinal": 159,
+          "token_ready": 2.927868509,
+          "server_sent": 2.928026009
+        },
+        {
+          "ordinal": 160,
+          "token_ready": 2.932761443,
+          "server_sent": 2.932929343
+        },
+        {
+          "ordinal": 161,
+          "token_ready": 2.935700309,
+          "server_sent": 2.935838309
+        },
+        {
+          "ordinal": 162,
+          "token_ready": 2.932269162,
+          "server_sent": 2.932435362
+        },
+        {
+          "ordinal": 163,
+          "token_ready": 2.928107921,
+          "server_sent": 2.928269321
+        },
+        {
+          "ordinal": 164,
+          "token_ready": 2.919554935,
+          "server_sent": 2.919727935
+        },
+        {
+          "ordinal": 165,
+          "token_ready": 2.931671188,
+          "server_sent": 2.931836688
+        },
+        {
+          "ordinal": 166,
+          "token_ready": 2.92982387,
+          "server_sent": 2.92998147
+        },
+        {
+          "ordinal": 167,
+          "token_ready": 2.934525984,
+          "server_sent": 2.934694784
+        },
+        {
+          "ordinal": 168,
+          "token_ready": 2.931639876,
+          "server_sent": 2.931812576
+        },
+        {
+          "ordinal": 169,
+          "token_ready": 2.931022439,
+          "server_sent": 2.931174039
+        },
+        {
+          "ordinal": 170,
+          "token_ready": 2.933844576,
+          "server_sent": 2.934003576
+        },
+        {
+          "ordinal": 171,
+          "token_ready": 2.931396627,
+          "server_sent": 2.931561427
+        },
+        {
+          "ordinal": 172,
+          "token_ready": 2.939951398,
+          "server_sent": 2.940146198
+        },
+        {
+          "ordinal": 173,
+          "token_ready": 2.924396751,
+          "server_sent": 2.924616851
+        },
+        {
+          "ordinal": 174,
+          "token_ready": 2.923944478,
+          "server_sent": 2.924172478
+        },
+        {
+          "ordinal": 175,
+          "token_ready": 2.913453739,
+          "server_sent": 2.913670639
+        },
+        {
+          "ordinal": 176,
+          "token_ready": 2.925383184,
+          "server_sent": 2.925600584
+        },
+        {
+          "ordinal": 177,
+          "token_ready": 2.921048851,
+          "server_sent": 2.921271251
+        },
+        {
+          "ordinal": 178,
+          "token_ready": 2.924921707,
+          "server_sent": 2.925120707
+        },
+        {
+          "ordinal": 179,
+          "token_ready": 2.931677485,
+          "server_sent": 2.931836985
+        },
+        {
+          "ordinal": 180,
+          "token_ready": 2.934715762,
+          "server_sent": 2.934974862
+        },
+        {
+          "ordinal": 181,
+          "token_ready": 2.941657695,
+          "server_sent": 2.941815595
+        },
+        {
+          "ordinal": 182,
+          "token_ready": 2.947078009,
+          "server_sent": 2.947227509
+        },
+        {
+          "ordinal": 183,
+          "token_ready": 2.940333497,
+          "server_sent": 2.940506097
+        },
+        {
+          "ordinal": 184,
+          "token_ready": 2.937149741,
+          "server_sent": 2.937337641
+        },
+        {
+          "ordinal": 185,
+          "token_ready": 2.943183337,
+          "server_sent": 2.943376737
+        },
+        {
+          "ordinal": 186,
+          "token_ready": 2.941265826,
+          "server_sent": 2.941422426
+        },
+        {
+          "ordinal": 187,
+          "token_ready": 2.943124756,
+          "server_sent": 2.943270356
+        },
+        {
+          "ordinal": 188,
+          "token_ready": 2.934026665,
+          "server_sent": 2.934177065
+        },
+        {
+          "ordinal": 189,
+          "token_ready": 2.944818609,
+          "server_sent": 2.944964109
+        },
+        {
+          "ordinal": 190,
+          "token_ready": 2.932460562,
+          "server_sent": 2.932671262
+        },
+        {
+          "ordinal": 191,
+          "token_ready": 2.927427051,
+          "server_sent": 2.927640451
+        },
+        {
+          "ordinal": 192,
+          "token_ready": 2.930808154,
+          "server_sent": 2.931022454
+        },
+        {
+          "ordinal": 193,
+          "token_ready": 2.944474186,
+          "server_sent": 2.944698086
+        },
+        {
+          "ordinal": 194,
+          "token_ready": 2.927128796,
+          "server_sent": 2.927310496
+        },
+        {
+          "ordinal": 195,
+          "token_ready": 2.938058359,
+          "server_sent": 2.938278259
+        },
+        {
+          "ordinal": 196,
+          "token_ready": 2.932389032,
+          "server_sent": 2.932602532
+        },
+        {
+          "ordinal": 197,
+          "token_ready": 2.935328271,
+          "server_sent": 2.935502371
+        },
+        {
+          "ordinal": 198,
+          "token_ready": 2.923907993,
+          "server_sent": 2.924063193
+        },
+        {
+          "ordinal": 199,
+          "token_ready": 2.936395637,
+          "server_sent": 2.936609337
+        },
+        {
+          "ordinal": 200,
+          "token_ready": 2.936611117,
+          "server_sent": 2.936826117
+        },
+        {
+          "ordinal": 201,
+          "token_ready": 2.932779571,
+          "server_sent": 2.932932271
+        },
+        {
+          "ordinal": 202,
+          "token_ready": 2.941810515,
+          "server_sent": 2.941968315
+        },
+        {
+          "ordinal": 203,
+          "token_ready": 2.940500975,
+          "server_sent": 2.940856475
+        },
+        {
+          "ordinal": 204,
+          "token_ready": 2.926956797,
+          "server_sent": 2.927101697
+        },
+        {
+          "ordinal": 205,
+          "token_ready": 2.929451646,
+          "server_sent": 2.929663646
+        },
+        {
+          "ordinal": 206,
+          "token_ready": 2.919975577,
+          "server_sent": 2.920133877
+        },
+        {
+          "ordinal": 207,
+          "token_ready": 2.922459336,
+          "server_sent": 2.922662736
+        },
+        {
+          "ordinal": 208,
+          "token_ready": 2.925759148,
+          "server_sent": 2.925958248
+        },
+        {
+          "ordinal": 209,
+          "token_ready": 2.934418942,
+          "server_sent": 2.934616242
+        },
+        {
+          "ordinal": 210,
+          "token_ready": 2.935161803,
+          "server_sent": 2.935365803
+        },
+        {
+          "ordinal": 211,
+          "token_ready": 2.93359347,
+          "server_sent": 2.93379757
+        },
+        {
+          "ordinal": 212,
+          "token_ready": 2.936987929,
+          "server_sent": 2.937228029
+        },
+        {
+          "ordinal": 213,
+          "token_ready": 2.941097746,
+          "server_sent": 2.941261246
+        },
+        {
+          "ordinal": 214,
+          "token_ready": 2.93979009,
+          "server_sent": 2.94002089
+        },
+        {
+          "ordinal": 215,
+          "token_ready": 2.934546579,
+          "server_sent": 2.934772379
+        },
+        {
+          "ordinal": 216,
+          "token_ready": 2.929213005,
+          "server_sent": 2.929434305
+        },
+        {
+          "ordinal": 217,
+          "token_ready": 2.934436764,
+          "server_sent": 2.934663764
+        },
+        {
+          "ordinal": 218,
+          "token_ready": 2.927060167,
+          "server_sent": 2.927261167
+        },
+        {
+          "ordinal": 219,
+          "token_ready": 2.920354816,
+          "server_sent": 2.920561716
+        },
+        {
+          "ordinal": 220,
+          "token_ready": 2.91642592,
+          "server_sent": 2.91665882
+        },
+        {
+          "ordinal": 221,
+          "token_ready": 2.937893827,
+          "server_sent": 2.938120227
+        },
+        {
+          "ordinal": 222,
+          "token_ready": 2.936701442,
+          "server_sent": 2.936909042
+        },
+        {
+          "ordinal": 223,
+          "token_ready": 2.931107549,
+          "server_sent": 2.931304649
+        },
+        {
+          "ordinal": 224,
+          "token_ready": 2.935966464,
+          "server_sent": 2.936202464
+        },
+        {
+          "ordinal": 225,
+          "token_ready": 2.933676765,
+          "server_sent": 2.933853865
+        },
+        {
+          "ordinal": 226,
+          "token_ready": 2.931943758,
+          "server_sent": 2.932134758
+        },
+        {
+          "ordinal": 227,
+          "token_ready": 2.929189271,
+          "server_sent": 2.929434271
+        },
+        {
+          "ordinal": 228,
+          "token_ready": 2.932458779,
+          "server_sent": 2.932641179
+        },
+        {
+          "ordinal": 229,
+          "token_ready": 2.932752346,
+          "server_sent": 2.932991646
+        },
+        {
+          "ordinal": 230,
+          "token_ready": 2.937639563,
+          "server_sent": 2.937849563
+        },
+        {
+          "ordinal": 231,
+          "token_ready": 2.929468809,
+          "server_sent": 2.929665509
+        },
+        {
+          "ordinal": 232,
+          "token_ready": 2.929840738,
+          "server_sent": 2.930042438
+        },
+        {
+          "ordinal": 233,
+          "token_ready": 2.940942743,
+          "server_sent": 2.941123343
+        },
+        {
+          "ordinal": 234,
+          "token_ready": 2.933602298,
+          "server_sent": 2.933776998
+        },
+        {
+          "ordinal": 235,
+          "token_ready": 2.936046486,
+          "server_sent": 2.936226986
+        },
+        {
+          "ordinal": 236,
+          "token_ready": 2.922564581,
+          "server_sent": 2.922762081
+        },
+        {
+          "ordinal": 237,
+          "token_ready": 2.924928261,
+          "server_sent": 2.925109761
+        },
+        {
+          "ordinal": 238,
+          "token_ready": 2.931385344,
+          "server_sent": 2.931574444
+        },
+        {
+          "ordinal": 239,
+          "token_ready": 2.94374017,
+          "server_sent": 2.94393757
+        },
+        {
+          "ordinal": 240,
+          "token_ready": 2.943462814,
+          "server_sent": 2.943662114
+        },
+        {
+          "ordinal": 241,
+          "token_ready": 2.937423696,
+          "server_sent": 2.937608696
+        },
+        {
+          "ordinal": 242,
+          "token_ready": 2.92490599,
+          "server_sent": 2.92508429
+        },
+        {
+          "ordinal": 243,
+          "token_ready": 2.928739775,
+          "server_sent": 2.928927675
+        },
+        {
+          "ordinal": 244,
+          "token_ready": 2.92305825,
+          "server_sent": 2.92326935
+        },
+        {
+          "ordinal": 245,
+          "token_ready": 2.934873677,
+          "server_sent": 2.935040677
+        },
+        {
+          "ordinal": 246,
+          "token_ready": 2.93462804,
+          "server_sent": 2.93479854
+        },
+        {
+          "ordinal": 247,
+          "token_ready": 2.932834449,
+          "server_sent": 2.933041349
+        },
+        {
+          "ordinal": 248,
+          "token_ready": 2.927178421,
+          "server_sent": 2.927366421
+        },
+        {
+          "ordinal": 249,
+          "token_ready": 2.928226285,
+          "server_sent": 2.928405685
+        },
+        {
+          "ordinal": 250,
+          "token_ready": 2.937075134,
+          "server_sent": 2.937243534
+        },
+        {
+          "ordinal": 251,
+          "token_ready": 2.939232398,
+          "server_sent": 2.939420398
+        },
+        {
+          "ordinal": 252,
+          "token_ready": 3.102383377,
+          "server_sent": 3.102679877
+        },
+        {
+          "ordinal": 253,
+          "token_ready": 2.934643275,
+          "server_sent": 2.934833275
+        },
+        {
+          "ordinal": 254,
+          "token_ready": 2.930482437,
+          "server_sent": 2.930762037
+        },
+        {
+          "ordinal": 255,
+          "token_ready": 2.926756519,
+          "server_sent": 2.926939719
+        },
+        {
+          "ordinal": 256,
+          "token_ready": 2.929366041,
+          "server_sent": 2.929551741
+        },
+        {
+          "ordinal": 257,
+          "token_ready": 2.918214733,
+          "server_sent": 2.918413433
+        },
+        {
+          "ordinal": 258,
+          "token_ready": 2.922884062,
+          "server_sent": 2.923054262
+        },
+        {
+          "ordinal": 259,
+          "token_ready": 2.935908906,
+          "server_sent": 2.936090106
+        },
+        {
+          "ordinal": 260,
+          "token_ready": 2.933143963,
+          "server_sent": 2.933352363
+        },
+        {
+          "ordinal": 261,
+          "token_ready": 2.943473045,
+          "server_sent": 2.943667745
+        },
+        {
+          "ordinal": 262,
+          "token_ready": 2.936459685,
+          "server_sent": 2.936681585
+        },
+        {
+          "ordinal": 263,
+          "token_ready": 2.930661614,
+          "server_sent": 2.930881514
+        },
+        {
+          "ordinal": 264,
+          "token_ready": 2.927424191,
+          "server_sent": 2.927655591
+        },
+        {
+          "ordinal": 265,
+          "token_ready": 2.93036143,
+          "server_sent": 2.93114793
+        },
+        {
+          "ordinal": 266,
+          "token_ready": 2.934105748,
+          "server_sent": 2.934291448
+        },
+        {
+          "ordinal": 267,
+          "token_ready": 2.931348289,
+          "server_sent": 2.931525689
+        },
+        {
+          "ordinal": 268,
+          "token_ready": 2.931703442,
+          "server_sent": 2.931887642
+        },
+        {
+          "ordinal": 269,
+          "token_ready": 2.9301154,
+          "server_sent": 2.930324
+        },
+        {
+          "ordinal": 270,
+          "token_ready": 2.929376825,
+          "server_sent": 2.929580325
+        },
+        {
+          "ordinal": 271,
+          "token_ready": 2.936744414,
+          "server_sent": 2.937069214
+        },
+        {
+          "ordinal": 272,
+          "token_ready": 2.939816746,
+          "server_sent": 2.940006346
+        },
+        {
+          "ordinal": 273,
+          "token_ready": 2.936742268,
+          "server_sent": 2.936917268
+        },
+        {
+          "ordinal": 274,
+          "token_ready": 2.930207336,
+          "server_sent": 2.930399536
+        },
+        {
+          "ordinal": 275,
+          "token_ready": 2.937838263,
+          "server_sent": 2.938029263
+        },
+        {
+          "ordinal": 276,
+          "token_ready": 2.941474128,
+          "server_sent": 2.941666328
+        },
+        {
+          "ordinal": 277,
+          "token_ready": 2.940264382,
+          "server_sent": 2.940444582
+        },
+        {
+          "ordinal": 278,
+          "token_ready": 2.938738588,
+          "server_sent": 2.938942488
+        },
+        {
+          "ordinal": 279,
+          "token_ready": 2.938878715,
+          "server_sent": 2.939070615
+        },
+        {
+          "ordinal": 280,
+          "token_ready": 2.938266383,
+          "server_sent": 2.938646183
+        },
+        {
+          "ordinal": 281,
+          "token_ready": 2.936443986,
+          "server_sent": 2.936700086
+        },
+        {
+          "ordinal": 282,
+          "token_ready": 2.931949936,
+          "server_sent": 2.932181536
+        },
+        {
+          "ordinal": 283,
+          "token_ready": 2.927934435,
+          "server_sent": 2.928160135
+        },
+        {
+          "ordinal": 284,
+          "token_ready": 2.93121974,
+          "server_sent": 2.93141304
+        },
+        {
+          "ordinal": 285,
+          "token_ready": 2.935084474,
+          "server_sent": 2.935302174
+        },
+        {
+          "ordinal": 286,
+          "token_ready": 2.932073429,
+          "server_sent": 2.932689929
+        },
+        {
+          "ordinal": 287,
+          "token_ready": 2.935495943,
+          "server_sent": 2.935702443
+        },
+        {
+          "ordinal": 288,
+          "token_ready": 2.934382731,
+          "server_sent": 2.934548231
+        },
+        {
+          "ordinal": 289,
+          "token_ready": 2.930867471,
+          "server_sent": 2.931100171
+        },
+        {
+          "ordinal": 290,
+          "token_ready": 2.932036211,
+          "server_sent": 2.932212211
+        },
+        {
+          "ordinal": 291,
+          "token_ready": 2.927214162,
+          "server_sent": 2.927432562
+        },
+        {
+          "ordinal": 292,
+          "token_ready": 2.928781854,
+          "server_sent": 2.929036854
+        },
+        {
+          "ordinal": 293,
+          "token_ready": 2.938531064,
+          "server_sent": 2.938705564
+        },
+        {
+          "ordinal": 294,
+          "token_ready": 2.925501972,
+          "server_sent": 2.925724972
+        },
+        {
+          "ordinal": 295,
+          "token_ready": 2.926068778,
+          "server_sent": 2.926287178
+        },
+        {
+          "ordinal": 296,
+          "token_ready": 2.929731,
+          "server_sent": 2.9300366
+        },
+        {
+          "ordinal": 297,
+          "token_ready": 2.930264609,
+          "server_sent": 2.930456709
+        },
+        {
+          "ordinal": 298,
+          "token_ready": 2.934144267,
+          "server_sent": 2.934445367
+        },
+        {
+          "ordinal": 299,
+          "token_ready": 2.92913658,
+          "server_sent": 2.92932978
+        }
+      ],
+      "distributions_seconds": {
+        "token_ready": {
+          "count": 300,
+          "min": 2.906875104,
+          "mean": 3.0042105905,
+          "p50": 2.9304054995,
+          "p75": 2.935296954,
+          "p90": 2.9398170108,
+          "p99": 3.10442136628,
+          "max": 19.531598538
+        },
+        "server_sent": {
+          "count": 300,
+          "min": 2.907100804,
+          "mean": 3.004398769833,
+          "p50": 2.9306597325,
+          "p75": 2.935448179,
+          "p90": 2.9400078004,
+          "p99": 3.10471630528,
+          "max": 19.532013938
+        },
+        "ready_to_sent": {
+          "count": 300,
+          "min": 0.0001256,
+          "mean": 0.000188179333,
+          "p50": 0.00017695,
+          "p75": 0.000207075,
+          "p90": 0.00022981,
+          "p99": 0.000380156,
+          "max": 0.0007865
+        }
+      },
+      "strict_under_threshold_counts": {
+        "4": 298,
+        "8": 299,
+        "12": 299,
+        "30": 300
+      },
+      "passes": {
+        "p50": true,
+        "p75": true,
+        "p90": true,
+        "p99": true
+      }
+    }
+  },
+  "validation": {
+    "nsight": {
+      "sqlite_integrity_check": "ok",
+      "session_start_utc_epoch_ns": 1785236131502931643,
+      "alloc_extend_marker_count_total": 2400,
+      "alloc_extend_marker_counts_by_pp_device": {
+        "0": 600,
+        "1": 600,
+        "2": 600,
+        "3": 600
+      },
+      "pp0_global_pid": 281480949399552,
+      "pp0_marker_count": 600,
+      "first_chunk_markers": 300,
+      "second_chunk_markers": 300
+    },
+    "scheduler": {
+      "policy": "fcfs",
+      "pp_size": 4,
+      "chunk_tokens": 32768,
+      "pp0_measured_log_rows": 600,
+      "pp0_analysis_rows": 600,
+      "chunk_sequence_exactly_1_2_repeated": true,
+      "stage_prefill_rows": {
+        "0": 600,
+        "1": 600,
+        "2": 600,
+        "3": 600
+      }
+    },
+    "request_mapping": {
+      "receive_count": 300,
+      "unique_receive_count": 300,
+      "finish_count": 300,
+      "unique_finish_count": 300,
+      "receive_finish_fcfs_order_mismatch_count": 0,
+      "marker_request_pairing_mismatch_count": 0,
+      "numeric_request_id_differs_from_fcfs_ordinal_count": 37,
+      "note": "Synthetic request 0084 arrived at FCFS ordinal 48, shifting ordinals 48 through 84; mapping uses logged FCFS order rather than the numeric suffix."
+    },
+    "token_ledgers": {
+      "requests": 300,
+      "input_tokens_per_request": 65536,
+      "chunks_per_request": 2,
+      "tokens_per_chunk": 32768,
+      "expected_prompt_tokens": 19660800,
+      "client_prompt_tokens": 19660800,
+      "pp0_new_prefill_tokens": 19660800,
+      "client_cached_tokens": 0,
+      "pp0_cached_prefill_tokens": 0,
+      "completion_tokens": 300
+    },
+    "mismatch_count": 0,
+    "all_gates_passed": true
+  },
+  "sources": [
+    {
+      "role": "nsight_sqlite",
+      "path": "/cpfs01/codex-profiles/glm52_neimeng_pp4_dual_20260728_181559/uncached_65k/glm52_neimeng_pp4_uncached_65k_20260728_181559.sqlite",
+      "sha256": "f863a31f035862afe9f25e35b6d658a78ac9ed18c92e4d5d1110ea568bcdd2f6"
+    },
+    {
+      "role": "server_log",
+      "path": "/home/tom/sglang2/z_local/prefill_profile_neimeng/glm52_neimeng_pp4_dual_20260728_181559/uncached_65k/server_external.log",
+      "sha256": "9fdf6e643e49b82f282c0a65ea91c7494fb759028cbeefe6d8aca83ae3675699"
+    },
+    {
+      "role": "client_results",
+      "path": "/home/tom/sglang2/z_local/prefill_profile_neimeng/glm52_neimeng_pp4_dual_20260728_181559/uncached_65k/request_results.jsonl",
+      "sha256": "c2abf4195edc434a3314119c1976ae98ed81a2d4831c33ac79cd941a48707c47"
+    },
+    {
+      "role": "analysis",
+      "path": "/home/tom/sglang2/z_local/prefill_profile_neimeng/glm52_neimeng_pp4_dual_20260728_181559/uncached_65k/report/analysis.json",
+      "sha256": "57cb161e578b55c65639e45588aa629bd80517a386f045167cd5a22b07856c6c"
+    },
+    {
+      "role": "provenance",
+      "path": "/home/tom/sglang2/z_local/prefill_profile_neimeng/glm52_neimeng_pp4_dual_20260728_181559/uncached_65k/run_provenance.json",
+      "sha256": "ff1026e703d9e0be7d7e5efd9fe84262ee71753913a8e007ec4364e50682b8a5"
+    }
+  ]
+}
