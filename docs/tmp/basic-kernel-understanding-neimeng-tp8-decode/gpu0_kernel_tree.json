@@ -61,6 +61,9 @@
     "minimum_gb": 8.732319744,
     "precision": "mixed work normalized to dense B300 FP4",
     "work_note": "all 2,331 graph nodes assigned once; parent denominator includes every child kernel duration",
+    "effective_tb_per_second": 0.7356826415667546,
+    "assessment": "Do not compare 9.20% with a published whole-model MBU target: this denominator includes the 1.633 ms TP wait, collectives, and support kernels while the numerator includes only modeled useful bytes.",
+    "assessment_level": "not-comparable",
     "branch": "root",
     "children": [
       {
@@ -76,6 +79,9 @@
         "minimum_gb": null,
         "precision": "trace-only subtotal",
         "work_note": "no model-work numerator assigned",
+        "effective_tb_per_second": null,
+        "assessment": "No utilization grade: almost all time is the initial TP arrival wait, not model math or a local HBM stream.",
+        "assessment_level": "not-applicable",
         "branch": "setup",
         "children": [
           {
@@ -91,6 +97,9 @@
             "minimum_gb": null,
             "precision": "trace-only subtotal",
             "work_note": "no defensible Tensor-Core or byte numerator assigned",
+            "effective_tb_per_second": null,
+            "assessment": "No MFU/MBU grade: these are masks, fills, and setup kernels. Judge their absolute latency or fuse them.",
+            "assessment_level": "not-applicable",
             "branch": "setup",
             "children": [
               {
@@ -106,6 +115,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use S1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -122,6 +133,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use S1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -138,6 +151,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use S1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -154,6 +169,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use S1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -170,6 +187,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use S1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -188,6 +207,9 @@
             "minimum_gb": null,
             "precision": "trace-only subtotal",
             "work_note": "no defensible Tensor-Core or byte numerator assigned",
+            "effective_tb_per_second": null,
+            "assessment": "Not a memory-kernel result. The 1.633 ms is rank-arrival wait; compare collective latency and start skew.",
+            "assessment_level": "not-applicable",
             "branch": "collective",
             "children": [
               {
@@ -203,6 +225,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use S2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -223,6 +247,9 @@
         "minimum_gb": 5.965258752,
         "precision": "mixed work normalized to dense B300 FP4",
         "work_note": "modeled work divided by this full branch's summed kernel time",
+        "effective_tb_per_second": 1.0151091985494693,
+        "assessment": "The 12.7% parent value is deliberately diluted by TP reduction and unmodeled support time; inspect A1\u2013A5 separately.",
+        "assessment_level": "context-dependent",
         "branch": "attention",
         "children": [
           {
@@ -238,137 +265,454 @@
             "minimum_gb": 5.812125696,
             "precision": "BF16 Tensor-Core work \u00d76 into FP4-equivalent",
             "work_note": "78 attention pipelines + 21 DSA setup projections",
+            "effective_tb_per_second": 1.8644031155260168,
+            "assessment": "Mixed one-token BF16 GEMVs. The aggregate is plausible, but the operation children are the valid optimization units.",
+            "assessment_level": "context-dependent",
             "branch": "projection",
             "children": [
               {
                 "id": "A1.1",
-                "title": "nvjet_sm103_tst_16x64_64x16_4x1_v_bz_TNN",
-                "role": "attention projection",
+                "title": "fused_qkv_a_proj_with_mqa",
+                "role": "All 78 layers \u00b7 [1, 6,144] \u2192 [1, 2,624] query latent, KV latent, and shared RoPE key.",
                 "event_count": 156,
-                "aggregate_kernel_ms": 0.825344,
-                "mfu_percent": null,
-                "mbu_percent": null,
-                "modeled_gflop": null,
-                "equivalent_gflop": null,
-                "minimum_gb": null,
-                "precision": "not independently modeled",
-                "work_note": "exact raw-name subtotal",
-                "branch": "raw",
-                "children": []
+                "aggregate_kernel_ms": 0.931975,
+                "mfu_percent": 0.11993690989565171,
+                "mbu_percent": 33.73225590815204,
+                "modeled_gflop": 2.515009536,
+                "equivalent_gflop": 15.090057216,
+                "minimum_gb": 2.515009536,
+                "effective_tb_per_second": 2.698580472652163,
+                "logical_invocations": 78,
+                "useful_mb_per_invocation": 32.243712,
+                "average_invocation_us": 11.948397435897435,
+                "precision": "BF16 projection work \u00d76 into dense B300 FP4-equivalent",
+                "work_note": "78 logical invocations; one modeled BF16 weight pass per invocation",
+                "assessment": "Plausible for a one-token skinny GEMV, but not bulk-streaming peak: each layer also pays a split-K reduction.",
+                "assessment_level": "plausible",
+                "prefill_step": "2.1.2",
+                "prefill_title": "fused_qkv_a_proj_with_mqa",
+                "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                "branch": "projection-operation",
+                "children": [
+                  {
+                    "id": "A1.1.k1",
+                    "title": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_splitK_TNT",
+                    "role": "2.1.2 \u00b7 backend GEMV kernel for fused_qkv_a_proj_with_mqa.",
+                    "event_count": 78,
+                    "aggregate_kernel_ms": 0.683397,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.1 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.2",
+                    "prefill_title": "fused_qkv_a_proj_with_mqa",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  },
+                  {
+                    "id": "A1.1.k2",
+                    "title": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, __nv_bfloat16, float, __nv_bfloat16, (bool)0, float, __nv_bfloat16, __nv_bfloat16, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T10 *, T9 *, T5 *, const T6 *, const T6 *, const T11 *, const T4 *, T11 *, void *, long, T6 *, int *, T6 *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
+                    "role": "2.1.2 \u00b7 split-K reduction for fused_qkv_a_proj_with_mqa.",
+                    "event_count": 78,
+                    "aggregate_kernel_ms": 0.248578,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.1 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.2",
+                    "prefill_title": "fused_qkv_a_proj_with_mqa",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  }
+                ]
               },
               {
                 "id": "A1.2",
-                "title": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_TNT",
-                "role": "attention projection",
-                "event_count": 156,
-                "aggregate_kernel_ms": 0.800448,
-                "mfu_percent": null,
-                "mbu_percent": null,
-                "modeled_gflop": null,
-                "equivalent_gflop": null,
-                "minimum_gb": null,
-                "precision": "not independently modeled",
-                "work_note": "exact raw-name subtotal",
-                "branch": "raw",
-                "children": []
+                "title": "q_b_proj \u00b7 TP-rank query-head expansion",
+                "role": "All 78 layers \u00b7 GPU 0 owns 8 of 64 heads: [1, 2,048] \u2192 [1, 8, 256].",
+                "event_count": 78,
+                "aggregate_kernel_ms": 0.545056,
+                "mfu_percent": 0.0533532476173702,
+                "mbu_percent": 15.00560089238537,
+                "modeled_gflop": 0.654311424,
+                "equivalent_gflop": 3.925868544,
+                "minimum_gb": 0.654311424,
+                "effective_tb_per_second": 1.2004480713908297,
+                "logical_invocations": 78,
+                "useful_mb_per_invocation": 8.388608,
+                "average_invocation_us": 6.987897435897437,
+                "precision": "BF16 projection work \u00d76 into dense B300 FP4-equivalent",
+                "work_note": "78 logical invocations; one modeled BF16 weight pass per invocation",
+                "assessment": "Expected-low useful-byte MBU: TP=8 leaves only 8.39 MB of weights per layer, too little work to approach HBM peak.",
+                "assessment_level": "expected-low",
+                "prefill_step": "2.1.4",
+                "prefill_title": "q_b_proj: expand all MLA queries",
+                "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                "branch": "projection-operation",
+                "children": [
+                  {
+                    "id": "A1.2.k1",
+                    "title": "nvjet_sm103_tst_16x64_64x16_4x1_v_bz_TNN",
+                    "role": "2.1.4 \u00b7 backend GEMV kernel for q_b_proj \u00b7 TP-rank query-head expansion.",
+                    "event_count": 78,
+                    "aggregate_kernel_ms": 0.545056,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.2 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.4",
+                    "prefill_title": "q_b_proj: expand all MLA queries",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  }
+                ]
               },
               {
                 "id": "A1.3",
-                "title": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_splitK_TNT",
-                "role": "attention projection",
-                "event_count": 78,
-                "aggregate_kernel_ms": 0.683397,
-                "mfu_percent": null,
-                "mbu_percent": null,
-                "modeled_gflop": null,
-                "equivalent_gflop": null,
-                "minimum_gb": null,
-                "precision": "not independently modeled",
-                "work_note": "exact raw-name subtotal",
-                "branch": "raw",
-                "children": []
+                "title": "DSA index-query projection",
+                "role": "21 selector-refresh layers \u00b7 [1, 2,048] \u2192 [1, 32, 128] index queries.",
+                "event_count": 42,
+                "aggregate_kernel_ms": 0.1576,
+                "mfu_percent": 0.09935745516074451,
+                "mbu_percent": 27.944284263959396,
+                "modeled_gflop": 0.352321536,
+                "equivalent_gflop": 2.113929216,
+                "minimum_gb": 0.352321536,
+                "effective_tb_per_second": 2.2355427411167517,
+                "logical_invocations": 21,
+                "useful_mb_per_invocation": 16.777216,
+                "average_invocation_us": 7.504761904761905,
+                "precision": "BF16 projection work \u00d76 into dense B300 FP4-equivalent",
+                "work_note": "21 logical invocations; one modeled BF16 weight pass per invocation",
+                "assessment": "Plausible: this is the largest DSA setup matrix, but every refresh still pays a separate split-K reduction.",
+                "assessment_level": "plausible",
+                "prefill_step": "2.1.5 \u2192 A \u2192 A1",
+                "prefill_title": "Indexer projections \u00b7 query",
+                "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                "branch": "projection-operation",
+                "children": [
+                  {
+                    "id": "A1.3.k1",
+                    "title": "nvjet_sm103_tss_64x8_64x16_1x1_h_bz_splitK_TNT",
+                    "role": "2.1.5 \u2192 A \u2192 A1 \u00b7 backend GEMV kernel for DSA index-query projection.",
+                    "event_count": 21,
+                    "aggregate_kernel_ms": 0.09312,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.3 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.5 \u2192 A \u2192 A1",
+                    "prefill_title": "Indexer projections \u00b7 query",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  },
+                  {
+                    "id": "A1.3.k2",
+                    "title": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, float, float, float, (bool)0, float, float, float, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T10 *, T9 *, T5 *, const T6 *, const T6 *, const T11 *, const T4 *, T11 *, void *, long, T6 *, int *, T6 *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
+                    "role": "2.1.5 \u2192 A \u2192 A1 \u00b7 split-K reduction for DSA index-query projection.",
+                    "event_count": 21,
+                    "aggregate_kernel_ms": 0.06448,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.3 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.5 \u2192 A \u2192 A1",
+                    "prefill_title": "Indexer projections \u00b7 query",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  }
+                ]
               },
               {
                 "id": "A1.4",
-                "title": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, __nv_bfloat16, float, __nv_bfloat16, (bool)0, float, __nv_bfloat16, __nv_bfloat16, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T10 *, T9 *, T5 *, const T6 *, const T6 *, const T11 *, const T4 *, T11 *, void *, long, T6 *, int *, T6 *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
-                "role": "memory elementwise",
-                "event_count": 99,
-                "aggregate_kernel_ms": 0.300322,
-                "mfu_percent": null,
-                "mbu_percent": null,
-                "modeled_gflop": null,
-                "equivalent_gflop": null,
-                "minimum_gb": null,
-                "precision": "not independently modeled",
-                "work_note": "exact raw-name subtotal",
-                "branch": "raw",
-                "children": []
+                "title": "DSA index-key projection",
+                "role": "21 selector-refresh layers \u00b7 [1, 6,144] \u2192 [1, 128] index key.",
+                "event_count": 21,
+                "aggregate_kernel_ms": 0.162114,
+                "mfu_percent": 0.009055395585822322,
+                "mbu_percent": 2.5468300085125284,
+                "modeled_gflop": 0.033030144,
+                "equivalent_gflop": 0.198180864,
+                "minimum_gb": 0.033030144,
+                "effective_tb_per_second": 0.20374640068100222,
+                "logical_invocations": 21,
+                "useful_mb_per_invocation": 1.572864,
+                "average_invocation_us": 7.719714285714286,
+                "precision": "BF16 projection work \u00d76 into dense B300 FP4-equivalent",
+                "work_note": "21 logical invocations; one modeled BF16 weight pass per invocation",
+                "assessment": "Expected-low: only 1.57 MB of useful weights are streamed per refresh, so fixed scheduling and tile costs dominate.",
+                "assessment_level": "expected-low",
+                "prefill_step": "2.1.5 \u2192 A \u2192 A1",
+                "prefill_title": "Indexer projections \u00b7 key",
+                "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                "branch": "projection-operation",
+                "children": [
+                  {
+                    "id": "A1.4.k1",
+                    "title": "nvjet_sm103_tst_32x64_64x16_4x1_v_bz_TNN",
+                    "role": "2.1.5 \u2192 A \u2192 A1 \u00b7 backend GEMV kernel for DSA index-key projection.",
+                    "event_count": 21,
+                    "aggregate_kernel_ms": 0.162114,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.4 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.5 \u2192 A \u2192 A1",
+                    "prefill_title": "Indexer projections \u00b7 key",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  }
+                ]
               },
               {
                 "id": "A1.5",
-                "title": "nvjet_sm103_tst_32x64_64x16_4x1_v_bz_splitK_TNN",
-                "role": "attention projection",
-                "event_count": 21,
-                "aggregate_kernel_ms": 0.188194,
-                "mfu_percent": null,
-                "mbu_percent": null,
-                "modeled_gflop": null,
-                "equivalent_gflop": null,
-                "minimum_gb": null,
-                "precision": "not independently modeled",
-                "work_note": "exact raw-name subtotal",
-                "branch": "raw",
-                "children": []
+                "title": "DSA 32-head gate projection",
+                "role": "21 selector-refresh layers \u00b7 [1, 6,144] \u2192 [1, 32] head gates.",
+                "event_count": 42,
+                "aggregate_kernel_ms": 0.239938,
+                "mfu_percent": 0.0015295684718552292,
+                "mbu_percent": 0.4301911327092832,
+                "modeled_gflop": 0.008257536,
+                "equivalent_gflop": 0.049545216,
+                "minimum_gb": 0.008257536,
+                "effective_tb_per_second": 0.03441529061674266,
+                "logical_invocations": 21,
+                "useful_mb_per_invocation": 0.393216,
+                "average_invocation_us": 11.425619047619048,
+                "precision": "BF16 projection work \u00d76 into dense B300 FP4-equivalent",
+                "work_note": "21 logical invocations; one modeled BF16 weight pass per invocation",
+                "assessment": "Expected to look extremely low\u2014and a fusion target: just 0.393 MB of weights pays both a GEMV launch and split-K reduce.",
+                "assessment_level": "fusion-target",
+                "prefill_step": "2.1.5 \u2192 A \u2192 A1",
+                "prefill_title": "Indexer projections \u00b7 gates",
+                "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                "branch": "projection-operation",
+                "children": [
+                  {
+                    "id": "A1.5.k1",
+                    "title": "nvjet_sm103_tst_32x64_64x16_4x1_v_bz_splitK_TNN",
+                    "role": "2.1.5 \u2192 A \u2192 A1 \u00b7 backend GEMV kernel for DSA 32-head gate projection.",
+                    "event_count": 21,
+                    "aggregate_kernel_ms": 0.188194,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.5 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.5 \u2192 A \u2192 A1",
+                    "prefill_title": "Indexer projections \u00b7 gates",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  },
+                  {
+                    "id": "A1.5.k2",
+                    "title": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, __nv_bfloat16, float, __nv_bfloat16, (bool)0, float, __nv_bfloat16, __nv_bfloat16, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T10 *, T9 *, T5 *, const T6 *, const T6 *, const T11 *, const T4 *, T11 *, void *, long, T6 *, int *, T6 *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
+                    "role": "2.1.5 \u2192 A \u2192 A1 \u00b7 split-K reduction for DSA 32-head gate projection.",
+                    "event_count": 21,
+                    "aggregate_kernel_ms": 0.051744,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.5 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.5 \u2192 A \u2192 A1",
+                    "prefill_title": "Indexer projections \u00b7 gates",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  }
+                ]
               },
               {
                 "id": "A1.6",
-                "title": "nvjet_sm103_tst_32x64_64x16_4x1_v_bz_TNN",
-                "role": "attention projection",
-                "event_count": 21,
-                "aggregate_kernel_ms": 0.162114,
-                "mfu_percent": null,
-                "mbu_percent": null,
-                "modeled_gflop": null,
-                "equivalent_gflop": null,
-                "minimum_gb": null,
-                "precision": "not independently modeled",
-                "work_note": "exact raw-name subtotal",
-                "branch": "raw",
-                "children": []
+                "title": "Absorbed MLA query \u00b7 key view of kv_b_proj",
+                "role": "All 78 layers \u00b7 GPU 0's 8 heads: [1, 8, 192] \u2192 [1, 8, 512].",
+                "event_count": 78,
+                "aggregate_kernel_ms": 0.21616,
+                "mfu_percent": 0.025224811250925242,
+                "mbu_percent": 7.094478164322724,
+                "modeled_gflop": 0.122683392,
+                "equivalent_gflop": 0.736100352,
+                "minimum_gb": 0.122683392,
+                "effective_tb_per_second": 0.567558253145818,
+                "logical_invocations": 78,
+                "useful_mb_per_invocation": 1.572864,
+                "average_invocation_us": 2.7712820512820513,
+                "precision": "BF16 projection work \u00d76 into dense B300 FP4-equivalent",
+                "work_note": "78 logical invocations; one modeled BF16 weight pass per invocation",
+                "assessment": "Expected-low: this per-rank key-view multiply streams only 1.57 MB per layer, despite being memory-dominated.",
+                "assessment_level": "expected-low",
+                "prefill_step": "2.1.6",
+                "prefill_title": "Prepare the absorbed MLA query",
+                "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                "branch": "projection-operation",
+                "children": [
+                  {
+                    "id": "A1.6.k1",
+                    "title": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_TNT",
+                    "role": "2.1.6 \u00b7 backend GEMV kernel for Absorbed MLA query \u00b7 key view of kv_b_proj.",
+                    "event_count": 78,
+                    "aggregate_kernel_ms": 0.21616,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.6 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.6",
+                    "prefill_title": "Prepare the absorbed MLA query",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  }
+                ]
               },
               {
                 "id": "A1.7",
-                "title": "nvjet_sm103_tss_64x8_64x16_1x1_h_bz_splitK_TNT",
-                "role": "attention projection",
-                "event_count": 21,
-                "aggregate_kernel_ms": 0.09312,
-                "mfu_percent": null,
-                "mbu_percent": null,
-                "modeled_gflop": null,
-                "equivalent_gflop": null,
-                "minimum_gb": null,
-                "precision": "not independently modeled",
-                "work_note": "exact raw-name subtotal",
-                "branch": "raw",
-                "children": []
+                "title": "Latent-value expansion \u00b7 value view of kv_b_proj",
+                "role": "All 78 layers \u00b7 GPU 0's 8 heads: [1, 8, 512] \u2192 [1, 8, 256].",
+                "event_count": 78,
+                "aggregate_kernel_ms": 0.280288,
+                "mfu_percent": 0.025938059900293034,
+                "mbu_percent": 7.295079346957417,
+                "modeled_gflop": 0.163577856,
+                "equivalent_gflop": 0.981467136,
+                "minimum_gb": 0.163577856,
+                "effective_tb_per_second": 0.5836063477565933,
+                "logical_invocations": 78,
+                "useful_mb_per_invocation": 2.097152,
+                "average_invocation_us": 3.5934358974358966,
+                "precision": "BF16 projection work \u00d76 into dense B300 FP4-equivalent",
+                "work_note": "78 logical invocations; one modeled BF16 weight pass per invocation",
+                "assessment": "Expected-low: 2.10 MB per layer is still a tiny one-wave decode shape; memory-bound does not imply bandwidth-saturated.",
+                "assessment_level": "expected-low",
+                "prefill_step": "2.1.8",
+                "prefill_title": "Latent-value expansion",
+                "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                "branch": "projection-operation",
+                "children": [
+                  {
+                    "id": "A1.7.k1",
+                    "title": "nvjet_sm103_tst_16x64_64x16_4x1_v_bz_TNN",
+                    "role": "2.1.8 \u00b7 backend GEMV kernel for Latent-value expansion \u00b7 value view of kv_b_proj.",
+                    "event_count": 78,
+                    "aggregate_kernel_ms": 0.280288,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.7 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.8",
+                    "prefill_title": "Latent-value expansion",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  }
+                ]
               },
               {
                 "id": "A1.8",
-                "title": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, float, float, float, (bool)0, float, float, float, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T10 *, T9 *, T5 *, const T6 *, const T6 *, const T11 *, const T4 *, T11 *, void *, long, T6 *, int *, T6 *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
-                "role": "memory elementwise",
-                "event_count": 21,
-                "aggregate_kernel_ms": 0.06448,
-                "mfu_percent": null,
-                "mbu_percent": null,
-                "modeled_gflop": null,
-                "equivalent_gflop": null,
-                "minimum_gb": null,
-                "precision": "not independently modeled",
-                "work_note": "exact raw-name subtotal",
-                "branch": "raw",
-                "children": []
+                "title": "o_proj \u00b7 TP-rank attention output",
+                "role": "All 78 layers \u00b7 [1, 2,048] TP-rank value slice \u2192 [1, 6,144] partial residual.",
+                "event_count": 78,
+                "aggregate_kernel_ms": 0.584288,
+                "mfu_percent": 0.14931253628347663,
+                "mbu_percent": 41.99415082972779,
+                "modeled_gflop": 1.962934272,
+                "equivalent_gflop": 11.777605632,
+                "minimum_gb": 1.962934272,
+                "effective_tb_per_second": 3.359532066378224,
+                "logical_invocations": 78,
+                "useful_mb_per_invocation": 25.165824,
+                "average_invocation_us": 7.490871794871795,
+                "precision": "BF16 projection work \u00d76 into dense B300 FP4-equivalent",
+                "work_note": "78 logical invocations; one modeled BF16 weight pass per invocation",
+                "assessment": "Healthy relative to this trace: the 25.17 MB per-layer stream is A1's largest and reaches the highest A1 useful-byte rate.",
+                "assessment_level": "healthy-for-shape",
+                "prefill_step": "2.1.9",
+                "prefill_title": "o_proj",
+                "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                "branch": "projection-operation",
+                "children": [
+                  {
+                    "id": "A1.8.k1",
+                    "title": "nvjet_sm103_tst_64x8_64x16_4x1_v_bz_TNT",
+                    "role": "2.1.9 \u00b7 backend GEMV kernel for o_proj \u00b7 TP-rank attention output.",
+                    "event_count": 78,
+                    "aggregate_kernel_ms": 0.584288,
+                    "mfu_percent": null,
+                    "mbu_percent": null,
+                    "modeled_gflop": null,
+                    "equivalent_gflop": null,
+                    "minimum_gb": null,
+                    "precision": "modeled at the logical operation parent",
+                    "work_note": "exact operation-local raw-name subtotal",
+                    "assessment": "Exact implementation leaf; use A1.8 for MFU and useful-byte MBU.",
+                    "assessment_level": "raw",
+                    "prefill_step": "2.1.9",
+                    "prefill_title": "o_proj",
+                    "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree",
+                    "branch": "raw",
+                    "children": []
+                  }
+                ]
               }
-            ]
+            ],
+            "prefill_step": "2.1.2\u20132.1.9",
+            "prefill_title": "Attention projection crosswalk; see A1.1\u2013A1.8",
+            "prefill_href": "../../glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree"
           },
           {
             "id": "A2",
@@ -383,6 +727,9 @@
             "minimum_gb": 0.048340992,
             "precision": "FP8 candidate-score work \u00d73 into FP4-equivalent",
             "work_note": "21 refresh layers \u00d7 16,384 candidates; key/scale/logit/ID byte floor",
+            "effective_tb_per_second": 0.10465955383123181,
+            "assessment": "Do not read 1.31% as DRAM utilization: the numerator omits TopK comparison, workspace, and transaction traffic.",
+            "assessment_level": "context-dependent",
             "branch": "indexer",
             "children": [
               {
@@ -398,6 +745,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -414,6 +763,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -430,6 +781,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -448,6 +801,9 @@
             "minimum_gb": 0.104792064,
             "precision": "E4M3 selected-key MMA work \u00d73 into FP4-equivalent",
             "work_note": "78 layers \u00d7 2,048 selected keys; latent-KV byte floor",
+            "effective_tb_per_second": 0.129013591774022,
+            "assessment": "The 1.61% value covers only selected latent-KV useful bytes. Counter-based DRAM traffic is required to grade the fused scan.",
+            "assessment_level": "context-dependent",
             "branch": "mla",
             "children": [
               {
@@ -463,6 +819,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -479,6 +837,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -497,6 +857,9 @@
             "minimum_gb": null,
             "precision": "trace-only subtotal",
             "work_note": "no defensible Tensor-Core or byte numerator assigned",
+            "effective_tb_per_second": null,
+            "assessment": "MFU/MBU do not apply to TP reduction. Use payload latency, link throughput, and rank skew.",
+            "assessment_level": "not-applicable",
             "branch": "collective",
             "children": [
               {
@@ -512,6 +875,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A4 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -530,6 +895,9 @@
             "minimum_gb": null,
             "precision": "trace-only subtotal",
             "work_note": "no defensible Tensor-Core or byte numerator assigned",
+            "effective_tb_per_second": null,
+            "assessment": "No complete static numerator. Judge the 0.923 ms absolute subtotal and seek fusion or fewer boundaries.",
+            "assessment_level": "not-applicable",
             "branch": "support",
             "children": [
               {
@@ -545,6 +913,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -561,6 +931,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -577,6 +949,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -593,6 +967,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -609,6 +985,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -625,6 +1003,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -641,6 +1021,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -657,6 +1039,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -673,6 +1057,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -689,6 +1075,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -705,6 +1093,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use A5 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -725,6 +1115,9 @@
         "minimum_gb": 0.169869312,
         "precision": "mixed work normalized to dense B300 FP4",
         "work_note": "modeled work divided by this full branch's summed kernel time",
+        "effective_tb_per_second": 1.9459002932551321,
+        "assessment": "Plausible batch-one branch result. The compute child is the useful kernel reading; the parent also includes TP reduction.",
+        "assessment_level": "context-dependent",
         "branch": "dense",
         "children": [
           {
@@ -740,6 +1133,9 @@
             "minimum_gb": 0.169869312,
             "precision": "BF16 dense-FFN work \u00d76 into FP4-equivalent",
             "work_note": "3 dense SwiGLU layers",
+            "effective_tb_per_second": 2.5856872868972234,
+            "assessment": "Plausible for three batch-one BF16 FFNs; 32.3% useful-byte MBU is well below a bulk copy but not anomalous for skinny GEMVs.",
+            "assessment_level": "context-dependent",
             "branch": "dense",
             "children": [
               {
@@ -755,6 +1151,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use D1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -771,6 +1169,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use D1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -787,6 +1187,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use D1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -803,6 +1205,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use D1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -821,6 +1225,9 @@
             "minimum_gb": null,
             "precision": "trace-only subtotal",
             "work_note": "no defensible Tensor-Core or byte numerator assigned",
+            "effective_tb_per_second": null,
+            "assessment": "MFU/MBU do not apply. Compare the three reduction latencies and their payload sizes.",
+            "assessment_level": "not-applicable",
             "branch": "collective",
             "children": [
               {
@@ -836,6 +1243,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use D2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -856,6 +1265,9 @@
         "minimum_gb": 2.359296,
         "precision": "mixed work normalized to dense B300 FP4",
         "work_note": "modeled work divided by this full branch's summed kernel time",
+        "effective_tb_per_second": 0.5637227892724993,
+        "assessment": "Expected-low for batch-one MoE: expert work is fragmented and the parent includes routing, quantization, finalize, and TP reduction.",
+        "assessment_level": "context-dependent",
         "branch": "moe",
         "children": [
           {
@@ -871,6 +1283,9 @@
             "minimum_gb": 0.7077888,
             "precision": "BF16 shared-expert work \u00d76 into FP4-equivalent",
             "work_note": "75 layers \u00d7 one TP-sharded shared expert",
+            "effective_tb_per_second": 0.6415023610343235,
+            "assessment": "Expected-low: one token, a TP-sharded expert, activation work, and multiple kernels dilute useful weight bandwidth.",
+            "assessment_level": "context-dependent",
             "branch": "moe",
             "children": [
               {
@@ -886,6 +1301,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -902,6 +1319,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -918,6 +1337,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -934,6 +1355,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -952,6 +1375,9 @@
             "minimum_gb": 0.2359296,
             "precision": "BF16 router projection \u00d76 into FP4-equivalent",
             "work_note": "75 replicated 6,144 \u00d7 256 router projections",
+            "effective_tb_per_second": 0.2655907780979827,
+            "assessment": "Expected-low: the router projection is small and the subtotal also contains non-GEMM top-8 selection work.",
+            "assessment_level": "context-dependent",
             "branch": "router",
             "children": [
               {
@@ -967,6 +1393,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -983,6 +1411,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -999,6 +1429,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -1017,6 +1449,9 @@
             "minimum_gb": 1.4155776,
             "precision": "native NVFP4 routed-expert work \u00d71",
             "work_note": "75 layers \u00d7 top-8 TP-sharded routed experts",
+            "effective_tb_per_second": 0.8424196799397276,
+            "assessment": "Expected-low for batch one: top-8 work is fragmented into small expert groups plus quantize/finalize kernels.",
+            "assessment_level": "context-dependent",
             "branch": "routed",
             "children": [
               {
@@ -1032,6 +1467,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -1048,6 +1485,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -1064,6 +1503,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -1080,6 +1521,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -1096,6 +1539,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -1114,6 +1559,9 @@
             "minimum_gb": null,
             "precision": "trace-only subtotal",
             "work_note": "no defensible Tensor-Core or byte numerator assigned",
+            "effective_tb_per_second": null,
+            "assessment": "MFU/MBU do not apply. Use collective latency and payload/link metrics.",
+            "assessment_level": "not-applicable",
             "branch": "collective",
             "children": [
               {
@@ -1129,6 +1577,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M4 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -1145,6 +1595,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use M4 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -1165,6 +1617,9 @@
         "minimum_gb": 0.23789568,
         "precision": "mixed work normalized to dense B300 FP4",
         "work_note": "modeled work divided by this full branch's summed kernel time",
+        "effective_tb_per_second": 3.0468196721311473,
+        "assessment": "The LM head itself is the healthy 67.3% control; AllGather and tail support dilute the parent to 38.1%.",
+        "assessment_level": "context-dependent",
         "branch": "output",
         "children": [
           {
@@ -1180,6 +1635,9 @@
             "minimum_gb": 0.23789568,
             "precision": "BF16 sharded LM-head work \u00d76 into FP4-equivalent",
             "work_note": "2 \u00d7 6,144 \u00d7 19,360 TP-rank vocabulary",
+            "effective_tb_per_second": 5.383229543808834,
+            "assessment": "Healthy relative control: this is the largest contiguous BF16 weight stream in the graph and reaches 67.3% useful-byte MBU.",
+            "assessment_level": "context-dependent",
             "branch": "output",
             "children": [
               {
@@ -1195,6 +1653,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use O1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -1211,6 +1671,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use O1 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -1229,6 +1691,9 @@
             "minimum_gb": null,
             "precision": "trace-only subtotal",
             "work_note": "no defensible Tensor-Core or byte numerator assigned",
+            "effective_tb_per_second": null,
+            "assessment": "MFU/MBU do not apply to AllGather; use payload latency and link throughput.",
+            "assessment_level": "not-applicable",
             "branch": "collective",
             "children": [
               {
@@ -1244,6 +1709,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use O2 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -1262,6 +1729,9 @@
             "minimum_gb": null,
             "precision": "trace-only subtotal",
             "work_note": "no defensible Tensor-Core or byte numerator assigned",
+            "effective_tb_per_second": null,
+            "assessment": "No complete numerator. Its 13.6 \u00b5s absolute latency is the useful quantity.",
+            "assessment_level": "not-applicable",
             "branch": "support",
             "children": [
               {
@@ -1277,6 +1747,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use O3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               },
@@ -1293,6 +1765,8 @@
                 "minimum_gb": null,
                 "precision": "not independently modeled",
                 "work_note": "exact raw-name subtotal",
+                "assessment": "Implementation leaf; use O3 for the modeled efficiency reading.",
+                "assessment_level": "raw",
                 "branch": "raw",
                 "children": []
               }
@@ -2009,8 +2483,8 @@
   "method": {
     "time": "t\u03a3 is summed GPU-0 trace duration for every kernel in the displayed branch; it is not wall span, and overlap remains additive.",
     "mfu": "MFU uses static GLM-5.2 model math normalized to the B300 dense FP4 reference: native NVFP4 \u00d71, FP8 \u00d73, and BF16 \u00d76.",
-    "mbu": "MBUmin uses a conservative static byte floor and the 8 TB/s B300 reference bandwidth, not measured DRAM traffic.",
+    "mbu": "MBUmin uses modeled useful bytes and the 8 TB/s B300 reference bandwidth. It is not Nsight Compute measured DRAM traffic, and cache hits, transactions, workspace, and unmodeled support traffic can make the physical value differ in either direction.",
     "precision": "Precision mapping follows the established Neimeng NVFP4 ledger and raw E4M3/E2M1 kernel evidence; it is not an Nsight Compute hardware-counter measurement.",
-    "classification": "Layer boundaries come from the repeated q-lora/kv-lora RMSNorm motif and two TP reductions per layer. Raw names and trace families then assign every graph node exactly once."
+    "classification": "Layer boundaries come from the repeated q-lora/kv-lora RMSNorm motif and two TP reductions per layer. A1.1\u2013A1.8 additionally use within-layer order and split-K adjacency to disambiguate reused raw names; all operation children reconcile exactly to A1."
   }
 }
