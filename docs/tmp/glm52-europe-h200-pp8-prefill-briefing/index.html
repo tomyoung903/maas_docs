@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Pre-run briefing for the GLM-5.2 FP8 PP8 three-hour one-token prefill trace replay on one idle Europe H200 node.">
+  <link rel="icon" href="data:,">
+  <title>GLM-5.2 Europe H200 PP8 Prefill Replay Briefing</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182332;
+      --muted: #5e6b78;
+      --line: #d7dfe7;
+      --soft: #f4f7f9;
+      --paper: #ffffff;
+      --navy: #183b5b;
+      --blue: #256d91;
+      --blue-soft: #eaf4f8;
+      --purple: #76538e;
+      --purple-soft: #f3edf7;
+      --green: #26724b;
+      --green-soft: #eaf5ef;
+      --amber: #9a681d;
+      --amber-soft: #fbf3df;
+      --red: #9b4249;
+      --red-soft: #faecee;
+      --gray-soft: #eef1f3;
+      --shadow: 0 8px 24px rgba(24, 35, 50, .07);
+      --radius: 7px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--soft); }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--soft);
+      font: 15px/1.58 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    a { color: #175f92; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    code {
+      border-radius: 4px;
+      background: #edf2f5;
+      padding: 1px 5px;
+      font: .92em/1.45 "SFMono-Regular", Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+    .skip-link {
+      position: absolute;
+      top: -52px;
+      left: 14px;
+      z-index: 50;
+      border-radius: 5px;
+      background: var(--ink);
+      color: #fff;
+      padding: 8px 12px;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 12px; }
+
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .96);
+    }
+    .topbar-inner {
+      width: min(100% - 40px, 1480px);
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 12px 0;
+    }
+    .brand { color: var(--navy); font-weight: 800; }
+    .top-links { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; }
+
+    .hero {
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .hero-inner {
+      width: min(100% - 40px, 1480px);
+      margin: auto;
+      padding: 43px 0 37px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 1130px;
+      margin: 0 0 13px;
+      font-size: clamp(34px, 4.2vw, 54px);
+      line-height: 1.05;
+      letter-spacing: -.025em;
+    }
+    .hero .lede {
+      max-width: 1030px;
+      margin: 0 0 21px;
+      color: #465665;
+      font-size: 17px;
+    }
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px 18px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .status-strip strong { color: var(--amber); }
+
+    .layout {
+      width: min(100% - 40px, 1480px);
+      margin: auto;
+      display: grid;
+      grid-template-columns: 224px minmax(0, 1fr);
+      gap: 36px;
+      padding: 0 0 70px;
+    }
+    aside { padding-top: 30px; }
+    .toc {
+      position: sticky;
+      top: 18px;
+      border-left: 2px solid var(--line);
+      padding-left: 15px;
+    }
+    .toc strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .toc a {
+      display: block;
+      border-left: 3px solid transparent;
+      color: #3c4b59;
+      padding: 6px 8px;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .toc a:hover { border-left-color: var(--blue); background: var(--blue-soft); }
+    main { min-width: 0; }
+    section {
+      padding: 39px 0;
+      border-bottom: 1px solid var(--line);
+      scroll-margin-top: 18px;
+    }
+    section:last-child { border-bottom: 0; }
+    h2 { margin: 0 0 12px; font-size: 26px; line-height: 1.2; }
+    h3 { margin: 0 0 9px; font-size: 17px; line-height: 1.3; }
+    p { max-width: 1080px; }
+    .section-lede { max-width: 1050px; margin: 0 0 20px; color: var(--muted); }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(125px, 1fr));
+      gap: 10px;
+      margin: 22px 0;
+    }
+    .metric {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 15px;
+      box-shadow: var(--shadow);
+    }
+    .metric .label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .metric .value {
+      display: block;
+      margin-top: 5px;
+      font-size: 22px;
+      font-weight: 780;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+    }
+    .metric .detail { margin-top: 5px; color: var(--muted); font-size: 11px; }
+
+    .callout {
+      margin: 20px 0;
+      border-left: 5px solid var(--blue);
+      background: var(--blue-soft);
+      padding: 16px 18px;
+    }
+    .callout.good { border-left-color: var(--green); background: var(--green-soft); }
+    .callout.wait { border-left-color: var(--amber); background: var(--amber-soft); }
+    .callout.warning { border-left-color: var(--red); background: var(--red-soft); }
+
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .state-card {
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 16px;
+    }
+    .state-card.done { border-top-color: var(--green); }
+    .state-card.wait { border-top-color: var(--amber); }
+    .state-card.pending { border-top-color: var(--red); }
+    .state-label {
+      display: inline-flex;
+      margin-bottom: 8px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .done .state-label { color: var(--green); }
+    .wait .state-label { color: var(--amber); }
+    .pending .state-label { color: var(--red); }
+    .state-card p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    thead th {
+      background: #f1f4f6;
+      color: #4d5a66;
+      font-size: 10px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    tbody th { min-width: 190px; color: #3e4b56; }
+    .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+    .config-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
+    .config-pill {
+      display: inline-flex;
+      border: 1px solid #b9cad5;
+      border-radius: 999px;
+      background: #f6fafc;
+      padding: 5px 10px;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 780;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(88px, 1fr));
+      gap: 7px;
+      margin: 19px 0;
+      overflow-x: auto;
+    }
+    .stage {
+      min-width: 88px;
+      border: 1px solid #b7ccd8;
+      border-top: 4px solid var(--blue);
+      border-radius: 5px;
+      background: var(--paper);
+      padding: 11px 8px;
+      text-align: center;
+    }
+    .stage strong { display: block; color: var(--navy); }
+    .stage span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+
+    .equations {
+      display: grid;
+      gap: 8px;
+      margin: 18px 0;
+    }
+    .equation-row {
+      display: grid;
+      grid-template-columns: minmax(155px, 230px) 28px minmax(420px, 1fr);
+      align-items: baseline;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      padding: 11px 14px;
+      overflow-x: auto;
+    }
+    .equation-row .lhs, .equation-row .rhs {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 18px;
+      white-space: nowrap;
+    }
+    .equation-row .equals { text-align: center; }
+    .equation-note {
+      border-left: 3px solid var(--purple);
+      background: var(--purple-soft);
+      padding: 12px 15px;
+      color: #574a60;
+      font-size: 13px;
+    }
+    .math-var { font-family: Georgia, "Times New Roman", serif; font-style: italic; }
+    .math-upright { font-family: Georgia, "Times New Roman", serif; font-style: normal; }
+    .sym-time { color: var(--purple); }
+    .sym-queue { color: #65717a; }
+    .sym-limit { color: var(--blue); }
+
+    .timing-flow {
+      display: grid;
+      grid-template-columns: 1fr 36px 1.15fr 36px 1.8fr 36px 1.15fr 36px 1fr;
+      gap: 7px;
+      align-items: stretch;
+      margin: 22px 0;
+    }
+    .timing-node {
+      display: grid;
+      place-items: center;
+      min-height: 92px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 12px;
+      text-align: center;
+    }
+    .timing-node small { display: block; margin-top: 5px; color: var(--muted); }
+    .timing-node.excluded { border-color: #c8ced3; background: var(--gray-soft); }
+    .timing-node.measured { border-color: #bda9cb; background: var(--purple-soft); }
+    .timing-node.crosscheck { border-color: #d6bd87; background: var(--amber-soft); }
+    .flow-arrow { display: grid; place-items: center; color: var(--muted); font-size: 23px; }
+
+    .lifecycle {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 20px 0;
+      counter-reset: lifecycle;
+    }
+    .life-step {
+      position: relative;
+      min-height: 132px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 16px 14px 14px 46px;
+    }
+    .life-step::before {
+      counter-increment: lifecycle;
+      content: counter(lifecycle);
+      position: absolute;
+      top: 15px;
+      left: 14px;
+      display: grid;
+      width: 24px;
+      height: 24px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .life-step h3 { font-size: 14px; }
+    .life-step p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 19px 0;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      padding: 17px;
+      box-shadow: var(--shadow);
+    }
+    .card p { color: var(--muted); }
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 22px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .checks li {
+      position: relative;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 0 10px 27px;
+    }
+    .checks li::before {
+      content: "OK";
+      position: absolute;
+      left: 0;
+      color: var(--green);
+      font-size: 10px;
+      font-weight: 850;
+    }
+    .fine { color: var(--muted); font-size: 12px; }
+    footer {
+      padding: 28px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1120px) {
+      .summary-grid { grid-template-columns: repeat(3, 1fr); }
+      .state-grid { grid-template-columns: repeat(2, 1fr); }
+      .lifecycle { grid-template-columns: repeat(2, 1fr); }
+      .timing-flow { grid-template-columns: 1fr; }
+      .flow-arrow { transform: rotate(90deg); }
+    }
+    @media (max-width: 860px) {
+      .layout { display: block; width: min(100% - 28px, 1480px); }
+      aside { padding-top: 18px; }
+      .toc {
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px 12px;
+        border-left: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 0 0 14px;
+      }
+      .toc strong { width: 100%; }
+      .toc a { border-left: 0; border-bottom: 2px solid transparent; padding: 5px 2px; }
+      .equation-row {
+        grid-template-columns: minmax(112px, max-content) 24px max-content;
+        gap: 3px;
+      }
+      .equation-row .equals { text-align: center; }
+      .topbar-inner { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 590px) {
+      .topbar-inner, .hero-inner { width: min(100% - 28px, 1480px); }
+      .summary-grid, .state-grid, .lifecycle, .two-col, .checks { grid-template-columns: 1fr; }
+      .pipeline { grid-template-columns: repeat(8, 92px); }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">MaaS Docs / Experiment Briefing</div>
+      <nav class="top-links" aria-label="Pack navigation">
+        <a href="../">Temporary reports</a>
+        <a href="../../">MaaS Docs</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Pre-run briefing · Europe H200 · Results pending</p>
+      <h1>GLM-5.2 FP8 PP8 Three-Hour Prefill Trace Replay</h1>
+      <p class="lede">One standalone GLM-5.2 worker will use all eight H200 GPUs on one strictly idle Europe node. The replay keeps the worker saturated for an exact three-hour admission window, generates one token per request, and measures first-token processing time only after each request leaves SGLang's initial scheduler queue.</p>
+      <div class="status-strip">
+        <strong>Prepared and scheduled; GPU execution has not started</strong>
+        <span>Operational gate: 2026-07-31 19:00 CST</span>
+        <span>Briefing snapshot: 2026-07-31 09:54 CST</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="layout">
+    <aside>
+      <nav class="toc" aria-label="Page overview">
+        <strong>On this page</strong>
+        <a href="#state">Current state</a>
+        <a href="#contract">Experiment contract</a>
+        <a href="#topology">PP8 topology</a>
+        <a href="#workload">Three-hour workload</a>
+        <a href="#timing">Internal TTFT</a>
+        <a href="#lifecycle">Execution lifecycle</a>
+        <a href="#safety">Safety and privacy</a>
+        <a href="#readiness">Readiness evidence</a>
+        <a href="#completion">Completion evidence</a>
+      </nav>
+    </aside>
+
+    <main id="main">
+      <section id="state">
+        <h2>Current State: Ready to Run, Not Yet Measured</h2>
+        <p class="section-lede">This page records the accepted experiment contract before GPUs are claimed. It deliberately contains no invented throughput, cache, or TTFT result.</p>
+        <div class="summary-grid">
+          <div class="metric"><span class="label">Worker</span><span class="value">1 node</span><div class="detail">eight H200 GPUs</div></div>
+          <div class="metric"><span class="label">Parallelism</span><span class="value">PP 8</span><div class="detail">TP 1 · DP 1</div></div>
+          <div class="metric"><span class="label">Issue window</span><span class="value">3 hours</span><div class="detail">10,800 seconds</div></div>
+          <div class="metric"><span class="label">Output</span><span class="value">1 token</span><div class="detail">per request</div></div>
+          <div class="metric"><span class="label">Source</span><span class="value">36,773</span><div class="detail">validated records</div></div>
+          <div class="metric"><span class="label">Measured so far</span><span class="value">0</span><div class="detail">requests and GPUs</div></div>
+        </div>
+        <div class="state-grid">
+          <article class="state-card done">
+            <span class="state-label">Complete</span>
+            <h3>Implementation and validation</h3>
+            <p>Replay, exact timing, safety guardian, report builder, validators, and cleanup paths are prepared and checksum-pinned.</p>
+          </article>
+          <article class="state-card wait">
+            <span class="state-label">Waiting</span>
+            <h3>19:00 source confirmation</h3>
+            <p>The latest source location will be re-confirmed before the Europe cluster is inspected.</p>
+          </article>
+          <article class="state-card wait">
+            <span class="state-label">Waiting</span>
+            <h3>Strict idle-node gate</h3>
+            <p>If no node qualifies at 19:00, the non-mutating watcher continues every ten minutes without a finite poll limit.</p>
+          </article>
+          <article class="state-card pending">
+            <span class="state-label">Not started</span>
+            <h3>GPU deployment</h3>
+            <p>No temporary Pod, model server, guardian, or GPU reservation currently exists.</p>
+          </article>
+          <article class="state-card pending">
+            <span class="state-label">Not started</span>
+            <h3>Formal replay</h3>
+            <p>No formal request has been admitted; the three-hour clock has not begun.</p>
+          </article>
+          <article class="state-card pending">
+            <span class="state-label">Pending evidence</span>
+            <h3>Results and cleanup</h3>
+            <p>Percentiles, token rates, cache statistics, validation receipt, and release proof will appear only after a valid run.</p>
+          </article>
+        </div>
+        <div class="callout warning"><strong>Important boundary.</strong> “Prepared” does not mean “measured.” As of this snapshot, the experiment has allocated zero GPUs, sent zero formal requests, and produced no TTFT distribution. The page will need a post-run results update.</div>
+      </section>
+
+      <section id="contract">
+        <h2>Experiment Contract</h2>
+        <p class="section-lede">The standalone shape deliberately preserves the Europe production-style SGLang settings that matter for prefill while omitting Dynamo registration, disaggregation, Mooncake transfer, and any separate decode worker.</p>
+        <div class="config-row" aria-label="Parallel configuration">
+          <span class="config-pill">Model: GLM-5.2 FP8</span>
+          <span class="config-pill">TP 1</span>
+          <span class="config-pill">PP 8</span>
+          <span class="config-pill">DP 1</span>
+          <span class="config-pill">Eight H200 GPUs</span>
+          <span class="config-pill">Standalone SGLang</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Dimension</th><th>Accepted value</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Cluster and node</th><td>Europe H200; one qualifying node selected at runtime</td><td>No node is preempted or selected from stale utilization data.</td></tr>
+              <tr><th scope="row">Model precision</th><td>GLM-5.2 FP8 checkpoint</td><td>The complete indexed checkpoint and all 141 shards must be present.</td></tr>
+              <tr><th scope="row">Pipeline</th><td>Eight stages, one GPU per stage</td><td>Layers are partitioned across the node; there is no within-layer tensor shard.</td></tr>
+              <tr><th scope="row">Context capacity</th><td class="num">1,048,576 tokens</td><td>Maximum configured sequence context.</td></tr>
+              <tr><th scope="row">Prefill chunk</th><td class="num">8,192 tokens</td><td>Chunked and maximum prefill-token settings are both 8,192.</td></tr>
+              <tr><th scope="row">Running requests</th><td class="num">48 maximum</td><td>The client cap is higher, so the worker remains work-conserving under load.</td></tr>
+              <tr><th scope="row">KV cache</th><td>FP8 E4M3 · page size 64</td><td>Static memory fraction is 0.85; hierarchical cache is enabled and reset after smoke.</td></tr>
+              <tr><th scope="row">CUDA graphs</th><td>Decode and piecewise graphs disabled</td><td>The one-token workload follows the prefill/extend path; zero measured decode rows are required.</td></tr>
+              <tr><th scope="row">Output contract</th><td class="num">Exactly one token</td><td>Every successful formal request must finish by the configured length limit.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="topology">
+        <h2>What PP8 Means on One Node</h2>
+        <p class="section-lede">Each pipeline rank owns a consecutive model partition. A request advances through all eight stages before the sampled token returns to the API process. Pipeline microbatches may overlap, but every request still depends on all stages.</p>
+        <div class="pipeline" role="img" aria-label="Eight-stage pipeline across eight H200 GPUs">
+          <div class="stage"><strong>PP0</strong><span>H200 0 · entry</span></div>
+          <div class="stage"><strong>PP1</strong><span>H200 1</span></div>
+          <div class="stage"><strong>PP2</strong><span>H200 2</span></div>
+          <div class="stage"><strong>PP3</strong><span>H200 3</span></div>
+          <div class="stage"><strong>PP4</strong><span>H200 4</span></div>
+          <div class="stage"><strong>PP5</strong><span>H200 5</span></div>
+          <div class="stage"><strong>PP6</strong><span>H200 6</span></div>
+          <div class="stage"><strong>PP7</strong><span>H200 7 · token</span></div>
+        </div>
+        <div class="two-col">
+          <article class="card">
+            <h3>What is partitioned</h3>
+            <p>Model layers and their parameters are split into eight pipeline stages. Stage-to-stage activations cross the node's local GPU fabric.</p>
+          </article>
+          <article class="card">
+            <h3>What is not partitioned</h3>
+            <p>There is one data replica and tensor-parallel size one. This is not DP attention, and it does not divide one layer's indexer or attention operation across eight tensor ranks.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="workload">
+        <h2>Exact Three-Hour Workload Semantics</h2>
+        <p class="section-lede">“Do as many requests as possible” is implemented as a bounded backlog: source records remain in order, and every free client slot is refilled immediately. The replay does not preserve the source's original inter-arrival delays.</p>
+        <div class="equations" aria-label="Workload equations">
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-limit">D</span></span>
+            <span class="equals">=</span>
+            <span class="rhs">10,800 <span class="math-upright">s</span></span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-limit">M</span></span>
+            <span class="equals">=</span>
+            <span class="rhs">80 <span class="math-upright">client requests in flight</span></span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-limit">S</span></span>
+            <span class="equals">=</span>
+            <span class="rhs">48 <span class="math-upright">server running requests</span></span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-time">t<sub>end</sub></span></span>
+            <span class="equals">=</span>
+            <span class="rhs"><span class="math-var sym-time">t<sub>0</sub></span> + <span class="math-var sym-limit">D</span></span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-upright">admit request</span></span>
+            <span class="equals">⇔</span>
+            <span class="rhs"><span class="math-var">t</span> &lt; <span class="math-var sym-time">t<sub>end</sub></span> <span class="math-upright">and a client slot is free</span></span>
+          </div>
+        </div>
+        <div class="equation-note"><span class="math-var sym-time">t<sub>0</sub></span> is the monotonic timestamp of the first formal admission. Model startup, smoke, and cache reset occur before it. At <span class="math-var sym-time">t<sub>end</sub></span>, no new request may be admitted; already-issued requests may drain for at most 3,600 seconds.</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Source property</th><th>Validated contract</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Logical records</th><td class="num">36,773</td></tr>
+              <tr><th scope="row">Source bytes</th><td class="num">7,823,231,401</td></tr>
+              <tr><th scope="row">Timestamp span</th><td>4 h 27 min 6 s in the source; arrival cadence is not replayed</td></tr>
+              <tr><th scope="row">SHA-256</th><td><code>a64a31f403957594db504d192abc080c97bd5163a9f210cbbe729c0bd03e1cbb</code></td></tr>
+              <tr><th scope="row">Ordering</th><td>Original file order; no retries and no cycling</td></tr>
+              <tr><th scope="row">Client cadence</th><td>Bounded backlog with immediate slot refill</td></tr>
+              <tr><th scope="row">Cache boundary</th><td>Smoke is followed by device-radix and host hierarchical-cache reset before the formal log boundary.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout wait"><strong>Early source exhaustion is not hidden.</strong> If all records finish before the three-hour deadline, the client does not repeat them because repetition would change cache semantics. The exact three-hour validation then fails and the report must say why.</div>
+      </section>
+
+      <section id="timing">
+        <h2>Internal TTFT: Scheduler Processing Entry to First Token</h2>
+        <p class="section-lede">The primary number excludes the request's initial SGLang waiting queue, all client-side waiting, API dispatch before scheduler entry, and server-to-client delivery. It begins when the selected request enters its first model forward and ends when the sampled token IDs are CPU-visible.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Symbol</th><th>Exact meaning</th></tr></thead>
+            <tbody>
+              <tr><th scope="row"><span class="math-var sym-queue">q<sub>i</sub></span></th><td>Server-reported initial scheduler queue duration for request <span class="math-var">i</span>; reported separately.</td></tr>
+              <tr><th scope="row"><span class="math-var sym-time">s<sub>i</sub></span></th><td><code>forward_entry_time</code>: first timestamp after the request leaves the waiting queue and before batch construction.</td></tr>
+              <tr><th scope="row"><span class="math-var sym-time">f<sub>i</sub></span></th><td><code>prefill_finished_time</code>: patched timestamp immediately after sampled token IDs are converted to a CPU list.</td></tr>
+              <tr><th scope="row"><span class="math-var sym-time">c<sub>i</sub></span></th><td>One-token request completion endpoint, including a small amount of finish bookkeeping after token readiness.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="equations" aria-label="Internal TTFT equations">
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-time">T<sup>internal</sup><sub>i</sub></span></span>
+            <span class="equals">=</span>
+            <span class="rhs"><span class="math-var sym-time">f<sub>i</sub></span> − <span class="math-var sym-time">s<sub>i</sub></span></span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-time">T<sup>completion</sup><sub>i</sub></span></span>
+            <span class="equals">=</span>
+            <span class="rhs"><span class="math-var sym-time">c<sub>i</sub></span> − <span class="math-var sym-time">s<sub>i</sub></span></span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-time">T<sup>internal</sup><sub>i</sub></span></span>
+            <span class="equals">≤</span>
+            <span class="rhs"><span class="math-var sym-time">T<sup>completion</sup><sub>i</sub></span> + 10 <span class="math-upright">μs</span></span>
+          </div>
+        </div>
+        <p>Plainly: the primary internal TTFT starts after initial queueing, spans every prefill chunk plus any inter-chunk scheduling delay after first admission, crosses PP0 through PP7, and stops before optional log-probability materialization or response delivery. The 10-microsecond allowance is one complete display quantum of the cross-check log.</p>
+        <div class="timing-flow" role="img" aria-label="Request timing boundary from receive through first token">
+          <div class="timing-node"><strong>Server receive</strong><small>not the metric start</small></div>
+          <div class="flow-arrow">→</div>
+          <div class="timing-node excluded"><strong>Initial scheduler queue</strong><small><span class="math-var sym-queue">q<sub>i</sub></span> · excluded</small></div>
+          <div class="flow-arrow">→</div>
+          <div class="timing-node measured"><strong>Forward entry → PP0…PP7 → sampled token ready</strong><small><span class="math-var sym-time">s<sub>i</sub></span> to <span class="math-var sym-time">f<sub>i</sub></span> · primary interval</small></div>
+          <div class="flow-arrow">→</div>
+          <div class="timing-node crosscheck"><strong>Finish bookkeeping</strong><small>ends at <span class="math-var sym-time">c<sub>i</sub></span></small></div>
+          <div class="flow-arrow">→</div>
+          <div class="timing-node"><strong>Client receives token</strong><small>reported separately</small></div>
+        </div>
+        <div class="callout good"><strong>Exact join and rank gate.</strong> Deterministic request IDs join client rows, structured request events, and request-time rows. Every successful request must have exactly one usable row from each of PP0 through PP7, exact one-token completion semantics, and no measured decode batch.</div>
+      </section>
+
+      <section id="lifecycle">
+        <h2>Execution Lifecycle</h2>
+        <p class="section-lede">The flow is intentionally front-loaded with fail-closed gates. A GPU is claimed only after the source and node are both proven safe.</p>
+        <div class="lifecycle">
+          <article class="life-step"><h3>Confirm source at 19:00</h3><p>Read the latest source location and revalidate identity before cluster mutation.</p></article>
+          <article class="life-step"><h3>Find a strictly idle node</h3><p>Check Kubernetes, GPU processes, utilization, memory residue, Docker commands, and checkpoint completeness.</p></article>
+          <article class="life-step"><h3>Launch one temporary Pod</h3><p>Pin one nonce-owned Pod to the qualified node and start the external collision guardian.</p></article>
+          <article class="life-step"><h3>Prove one-token semantics</h3><p>Run one isolated smoke request; require PP0–PP7 timing, one token, and zero decode.</p></article>
+          <article class="life-step"><h3>Flush and mark boundary</h3><p>Reset device and host cache state, then freeze the formal server-log start.</p></article>
+          <article class="life-step"><h3>Issue for exactly three hours</h3><p>Maintain the bounded backlog until the monotonic deadline, then stop new admissions.</p></article>
+          <article class="life-step"><h3>Drain, join, and validate</h3><p>Account for every request, build percentiles and token/cache totals, and checksum the result pack.</p></article>
+          <article class="life-step"><h3>Release the node</h3><p>UID-delete only the experiment Pod, stop its guardian, and prove all eight GPUs are released.</p></article>
+        </div>
+      </section>
+
+      <section id="safety">
+        <h2>Safety, Collision, and Privacy Gates</h2>
+        <div class="two-col">
+          <article class="card">
+            <h3>Strict idle-node qualification</h3>
+            <ul>
+              <li>Node is Ready and schedulable.</li>
+              <li>Active Kubernetes GPU requests and limits are zero.</li>
+              <li>All eight GPU indices are present with no compute process.</li>
+              <li>Utilization is zero and memory residue is at most 10 MiB per GPU.</li>
+              <li>Running Docker containers and commands are inspected.</li>
+              <li>A remaining utility container requires two empty samples at least ten minutes apart.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Ownership and collision handling</h3>
+            <ul>
+              <li>A guardian outside the Pod checks GPU process cgroups throughout the run.</li>
+              <li>A foreign process invalidates the run; it is never signaled or restarted.</li>
+              <li>Cleanup uses the exact Pod UID and launch nonce.</li>
+              <li>A same-name foreign replacement is never deleted.</li>
+              <li>Only run-specific temporary resources and residue are removed.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Privacy-safe request evidence</h3>
+            <ul>
+              <li>Published rows retain deterministic IDs, numeric timing, tokens, cache counts, and sanitized completion type.</li>
+              <li>Prompts, messages, headers, generated text, token IDs, and arbitrary request extensions are excluded.</li>
+              <li>The request-logging patch is source-hash and anchor verified before SGLang import.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Failure posture</h3>
+            <ul>
+              <li>No idle node means continued read-only polling, not eviction.</li>
+              <li>Failed smoke or cache reset prevents the formal clock from starting.</li>
+              <li>Missing timing, rank, request, or privacy evidence prevents report certification.</li>
+              <li>Raw evidence is retained when safe cleanup is needed after failure.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="readiness">
+        <h2>Readiness Evidence Already Available</h2>
+        <ul class="checks">
+          <li>89 Python tests passed.</li>
+          <li>12 embedded subtests passed.</li>
+          <li>Seven replay self-tests passed.</li>
+          <li>All staged shell entrypoints pass syntax validation.</li>
+          <li>Prepared-artifact SHA-256 manifest verifies cleanly.</li>
+          <li>Rendered Kubernetes Pod YAML parses successfully.</li>
+          <li>Idle watcher supports explicit non-expiring operation.</li>
+          <li>First-token timing patch verifies the pinned source and three anchors.</li>
+          <li>Privacy logger patch verifies the pinned source and two anchors.</li>
+          <li>Runtime patch receipts are retained in the final checksum pack.</li>
+          <li>Source JSONL passed a full structural and monotonic-timestamp scan.</li>
+          <li>No GPU or foreign workload was touched during preparation.</li>
+        </ul>
+        <div class="callout"><strong>What the tests prove.</strong> They prove the prepared client, launch, timing, privacy, validation, reporting, and cleanup contracts behave as designed on local fixtures. They do not prove that a Europe node is currently idle or that the future GPU run will succeed.</div>
+      </section>
+
+      <section id="completion">
+        <h2>Evidence Required Before This Becomes a Results Report</h2>
+        <p class="section-lede">Completion is not “the client exited.” The final pack must reconcile the full workload, all eight pipeline stages, exact timing semantics, and node release.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Result area</th><th>Required evidence</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Workload volume</th><td>Issued, successful, failed, cancelled, and final in-flight counts; request rate and exact three-hour deadline proof.</td></tr>
+              <tr><th scope="row">Token throughput</th><td>Total prompt, cached, uncached, and completion tokens; full-span and issue-window TPM with explicit denominators.</td></tr>
+              <tr><th scope="row">Cache behavior</th><td>Per-request cached tokens, weighted hit distribution, and aggregate reconciliation.</td></tr>
+              <tr><th scope="row">Internal TTFT</th><td>P50, P75, P90, P99, mean, min, max, and rolling ten-minute percentiles from <span class="math-var sym-time">f<sub>i</sub></span> − <span class="math-var sym-time">s<sub>i</sub></span>.</td></tr>
+              <tr><th scope="row">Other latency</th><td>Initial queue, client-observed first token, and one-token forward completion reported under distinct labels.</td></tr>
+              <tr><th scope="row">Pipeline proof</th><td>Exactly one usable request-time row from PP0 through PP7 for every successful request.</td></tr>
+              <tr><th scope="row">One-token prefill proof</th><td>Exactly one completion token per success and zero decode batches in the measured window.</td></tr>
+              <tr><th scope="row">Integrity and privacy</th><td>Validation receipt, formal log-boundary chain, artifact checksums, and publishable-output privacy scan.</td></tr>
+              <tr><th scope="row">Resource release</th><td>Temporary Pod absent, guardian stopped, zero experiment GPU allocation, and all eight GPUs free of experiment processes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout wait"><strong>Next update.</strong> After a strictly idle node is obtained and the run passes every gate, this briefing should be revised in place with measured request volume, throughput, cache, internal-TTFT distributions, exceptions, and cleanup proof.</div>
+        <footer>Static pre-run briefing generated from the validated 2026-07-31 experiment bundle. No external JavaScript or CDN dependencies. Operational state may advance after the snapshot time.</footer>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
