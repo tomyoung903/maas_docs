@@ -342,6 +342,44 @@
       background: var(--legend);
     }
     .chart-fallback { color: var(--muted); font-size: 13px; }
+    .l2-window-detail {
+      min-height: 112px;
+      margin-top: 13px;
+      border: 1px solid #e1d1ae;
+      border-radius: 6px;
+      background: var(--amber-soft);
+      padding: 13px 15px;
+      color: #584a31;
+      font-size: 12px;
+    }
+    .l2-window-detail strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+    .l2-window-detail p { margin: 3px 0; }
+    .l2-window-detail .request-list {
+      color: #624c20;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+    .chart .interactive-bar { cursor: pointer; }
+    .chart .interactive-bar:focus {
+      outline: none;
+      stroke: var(--ink);
+      stroke-width: 2;
+    }
+    .certainty {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .certainty.exact { background: var(--green-soft); color: var(--green); }
+    .certainty.bounded { background: var(--purple-soft); color: var(--purple); }
 
     .cache-composition {
       margin: 18px 0;
@@ -514,6 +552,7 @@
         <a href="#verdict">Result</a>
         <a href="#definitions">Definitions</a>
         <a href="#rates">Throughput</a>
+        <a href="#l2-reads">L2 request reads</a>
         <a href="#latency">TTFT</a>
         <a href="#workload">Workload shape</a>
         <a href="#method">Method</a>
@@ -664,6 +703,89 @@
         </div>
       </section>
 
+      <section id="l2-reads">
+        <h2>Which Requests Read from L2?</h2>
+        <p class="section-lede">The saved metrics identify the exact set of requests reported in each approximately one-second scrape window and the aggregate number of cached tokens served from host memory in that window. They usually do not identify how those host tokens were divided among several requests, so this section reports mathematical bounds rather than inventing a proportional split.</p>
+
+        <div class="summary-grid">
+          <div class="metric"><span class="label">Observed L2 tokens</span><span class="value">3.161M</span><div class="detail">Logical cached prompt tokens through the last valid scrape</div></div>
+          <div class="metric"><span class="label">L2-positive windows</span><span class="value">127</span><div class="detail">Approximately one-second Prometheus intervals</div></div>
+          <div class="metric"><span class="label">Definite readers</span><span class="value">7</span><div class="detail">3 exact amounts · 4 bounded positive amounts</div></div>
+          <div class="metric"><span class="label">Possible readers</span><span class="value">864</span><div class="detail">Host use occurred in their shared reporting window</div></div>
+          <div class="metric"><span class="label">Definite non-readers</span><span class="value">3,937</span><div class="detail">No host delta in their window, or zero cached tokens</div></div>
+          <div class="metric"><span class="label">Beyond last scrape</span><span class="value">2</span><div class="detail">Requests 4,809–4,810 remain unobserved for source split</div></div>
+        </div>
+
+        <h3>Attribution symbols and bounds</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><th><span class="math-var sym-cache">H<sub>2</sub>(t<sub>j</sub>)</span></th><td>Cumulative logical cached tokens reported from L2 at scrape <span class="math-var">j</span>.</td></tr>
+              <tr><th><span class="math-var sym-cache">ΔH<sub>2,j</sub></span></th><td>L2-token increase between two adjacent valid scrapes.</td></tr>
+              <tr><th><span class="math-var">R<sub>j</sub></span></th><td>The exact set of requests included by the prompt-token counter between those scrapes.</td></tr>
+              <tr><th><span class="math-var">c<sub>i</sub></span>, <span class="math-var sym-cache">h<sub>i</sub></span></th><td>Total cached tokens and the unknown L2 portion for request <span class="math-var">i</span>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="equations">
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-cache">ΔH<sub>2,j</sub></span></span>
+            <span class="equals">=</span>
+            <span class="rhs"><span class="math-var sym-cache">H<sub>2</sub>(t<sub>j</sub>)</span> − <span class="math-var sym-cache">H<sub>2</sub>(t<sub>j−1</sub>)</span></span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-upright">Σ</span><sub><span class="math-var">i</span>∈<span class="math-var">R<sub>j</sub></span></sub> <span class="math-var sym-cache">h<sub>i</sub></span></span>
+            <span class="equals">=</span>
+            <span class="rhs"><span class="math-var sym-cache">ΔH<sub>2,j</sub></span></span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-cache">h<sub>i,min</sub></span></span>
+            <span class="equals">=</span>
+            <span class="rhs"><span class="math-upright">max</span>(0, <span class="math-var sym-cache">ΔH<sub>2,j</sub></span> − <span class="math-upright">Σ</span><sub><span class="math-var">k</span>∈<span class="math-var">R<sub>j</sub></span>, <span class="math-var">k</span>≠<span class="math-var">i</span></sub> <span class="math-var">c<sub>k</sub></span>)</span>
+          </div>
+          <div class="equation-row">
+            <span class="lhs"><span class="math-var sym-cache">h<sub>i,max</sub></span></span>
+            <span class="equals">=</span>
+            <span class="rhs"><span class="math-upright">min</span>(<span class="math-var">c<sub>i</sub></span>, <span class="math-var sym-cache">ΔH<sub>2,j</sub></span>)</span>
+          </div>
+        </div>
+        <div class="equation-note">Plain-language interpretation: if a request’s lower bound is above zero, that request definitely read from L2. If its lower bound is zero while the window has a positive L2 delta, it remains a possible reader. The prompt and cached counters matched all 1,096 valid scrape checkpoints exactly, validating every request-window boundary.</div>
+
+        <article class="chart-card wide">
+          <h3>L2-read evidence by request-reporting window</h3>
+          <p class="chart-subtitle">Bar height is the measured L2-token delta. Hover, focus, or tap a bar to see the candidate request ordinals. This is a metrics-reporting timeline, not the exact CPU→GPU DMA start time.</p>
+          <div id="l2-request-chart" class="chart"><p class="chart-fallback">Loading L2 attribution chart…</p></div>
+          <div class="legend">
+            <span style="--legend:#23724a">Exact request attribution</span>
+            <span style="--legend:#76538f">Contains a definite bounded reader</span>
+            <span style="--legend:#9a681c">Ambiguous candidate set</span>
+          </div>
+          <div id="l2-window-detail" class="l2-window-detail" aria-live="polite">
+            <strong>Loading request-window details…</strong>
+          </div>
+        </article>
+
+        <h3>Requests proven to have read from L2</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Request</th><th>Attribution</th><th class="num">L2 tokens</th><th class="num">L1 tokens</th><th class="num">Cached total</th><th class="num">Prompt tokens</th><th class="num">Window end UTC</th></tr></thead>
+            <tbody>
+              <tr><th>#554</th><td><span class="certainty exact">Exact</span></td><td class="num">960</td><td class="num">3,584</td><td class="num">4,544</td><td class="num">44,600</td><td class="num">06:08:38.056</td></tr>
+              <tr><th>#657</th><td><span class="certainty exact">Exact</span></td><td class="num">9,728</td><td class="num">4,352</td><td class="num">14,080</td><td class="num">57,590</td><td class="num">06:09:04.056</td></tr>
+              <tr><th>#1,549</th><td><span class="certainty bounded">Definite, bounded</span></td><td class="num">3,136–37,632</td><td class="num">0–34,496</td><td class="num">37,632</td><td class="num">41,869</td><td class="num">06:12:36.057</td></tr>
+              <tr><th>#1,859</th><td><span class="certainty exact">Exact</span></td><td class="num">64</td><td class="num">0</td><td class="num">64</td><td class="num">171,433</td><td class="num">06:13:48.057</td></tr>
+              <tr><th>#2,023</th><td><span class="certainty bounded">Definite, bounded</span></td><td class="num">4,928–107,712</td><td class="num">0–102,784</td><td class="num">107,712</td><td class="num">109,657</td><td class="num">06:14:17.057</td></tr>
+              <tr><th>#3,131</th><td><span class="certainty bounded">Definite, bounded</span></td><td class="num">56,704–116,736</td><td class="num">0–60,032</td><td class="num">116,736</td><td class="num">124,683</td><td class="num">06:18:07.057</td></tr>
+              <tr><th>#4,341</th><td><span class="certainty bounded">Definite, bounded</span></td><td class="num">159,168–181,056</td><td class="num">14,272–36,160</td><td class="num">195,328</td><td class="num">197,847</td><td class="num">06:21:56.056</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout wait"><strong>Evidence boundary.</strong> Across 127 L2-positive windows, only three windows isolate one exact reader and four more force a particular request to have a positive L2 contribution. The other 120 windows contain several feasible readers. Their 864 cached-positive requests are deliberately labeled possible, not definite.</div>
+      </section>
+
       <section id="latency">
         <h2>TTFT: Model Service Versus Queueing</h2>
         <p class="section-lede">Internal TTFT is the primary queue-free metric. Client TTFT answers a different question: how long the saturated replay waited and executed end to end.</p>
@@ -808,6 +930,7 @@
               <tr><th>Client TTFT</th><td>Replay header-sent timestamp to first streamed token. Includes server queue and client/server transport overhead.</td></tr>
               <tr><th>Percentiles</th><td>Linear interpolation at <span class="math-var">(<i>n</i> − 1)<i>q</i></span>, equivalent to the common R-7 / NumPy default estimator.</td></tr>
               <tr><th>Time series</th><td>Fixed UTC-aligned 60-second bins. Completions, token totals, success, and TTFT are assigned by client EOF.</td></tr>
+              <tr><th>L2 attribution</th><td>Approximately one-second Prometheus scrapes. The cumulative prompt counter partitions the request-finish order into exact reporting windows; the source-split cached counter supplies each window’s aggregate L1 and L2 token totals.</td></tr>
               <tr><th>TPOT</th><td>Not available: one output token leaves no inter-token interval.</td></tr>
             </tbody>
           </table>
@@ -816,12 +939,14 @@
 
       <section id="quality">
         <h2>Evidence Boundary and Reproducibility</h2>
-        <p class="section-lede">The public sidecar contains aggregates only. The sealed private artifacts retain the canonical per-request join and exact formal server-log slice.</p>
+        <p class="section-lede">The public sidecar contains aggregates plus privacy-safe request ordinals and mathematical L2 attribution bounds. The sealed private artifacts retain request IDs, the canonical per-request join, and the exact formal server-log slice.</p>
 
         <ul class="checks">
           <li>4,810 unique durable client rows joined to 4,810 structured server finishes</li>
           <li>Accepted rows are contiguous source ordinals 1–4,810 with no gaps</li>
           <li>4,810 exact internal-TTFT timestamp pairs and ordered PP0 cross-checks</li>
+          <li>1,096 / 1,096 prompt-counter checkpoints match unique request-prefix sums</li>
+          <li>1,096 / 1,096 device-plus-host cached counters match the same request prefixes</li>
           <li>4,810 HTTP 200 responses with exactly one completion token</li>
           <li>Zero decode-batch lines in the measured formal log window</li>
           <li>4,805 / 4,810 completed rows have full PP0–PP7 timing evidence</li>
@@ -838,9 +963,9 @@
           <div><strong>Postmortem manifest</strong><code>c41abe4c973417d00592ca5d8353f42d05e87ebd491fb2444f5442f7ce19741d</code></div>
         </div>
 
-        <div class="callout"><strong>Privacy.</strong> No prompt text, chat messages, tool schemas, request bodies, response text, output IDs, headers, credentials, or source identities appear in this page or <a href="analysis.json">its aggregate JSON</a>.</div>
+        <div class="callout"><strong>Privacy.</strong> The L2 chart publishes request ordinals, cached-token counts, reporting-window times, and attribution bounds only. No request IDs, prompt text, chat messages, tool schemas, request bodies, response text, output IDs, hashes, headers, credentials, or source identities appear in this page or <a href="analysis.json">its public sidecar</a>.</div>
 
-        <footer>GLM-5.2 Europe H200 PP8 completed-prefix analysis · Generated 2026-07-31T14:45:33+08:00 · Static, dependency-free MaaS Docs page.</footer>
+        <footer>GLM-5.2 Europe H200 PP8 completed-prefix analysis · Updated 2026-07-31T16:31:34+08:00 · Static, dependency-free MaaS Docs page.</footer>
       </section>
     </main>
   </div>
@@ -963,6 +1088,177 @@
       target.appendChild(svg);
     }
 
+    function formatInteger(value) {
+      return Math.round(Number(value)).toLocaleString("en-US");
+    }
+
+    function shortUtc(value) {
+      return String(value).slice(11, 23);
+    }
+
+    function l2AttributionChart(targetId, detailId, attribution) {
+      const target = document.getElementById(targetId);
+      const detail = document.getElementById(detailId);
+      if (!target || !detail) return;
+      const rows = attribution?.positive_windows || [];
+      if (!rows.length) {
+        target.innerHTML = '<p class="chart-fallback">No L2-positive reporting windows were found.</p>';
+        detail.innerHTML = "<strong>No L2 request attribution is available.</strong>";
+        return;
+      }
+
+      target.textContent = "";
+      const width = 1100, height = 390;
+      const margin = {top: 30, right: 28, bottom: 68, left: 82};
+      const innerW = width - margin.left - margin.right;
+      const innerH = height - margin.top - margin.bottom;
+      const maxElapsed = Math.max(...rows.map(row => Number(row.elapsed_end_seconds))) * 1.01;
+      const maxY = niceMax(Math.max(...rows.map(row => Number(row.l2_tokens))) * 1.04);
+      const svg = el("svg", {
+        viewBox: `0 0 ${width} ${height}`,
+        role: "img",
+        "aria-label": "L2 cached-token deltas by metrics reporting window"
+      });
+      const x = value => margin.left + Number(value) * innerW / maxElapsed;
+      const y = value => margin.top + innerH - Number(value) * innerH / maxY;
+
+      for (let i = 0; i <= 4; i++) {
+        const value = maxY * i / 4;
+        const yy = y(value);
+        svg.appendChild(el("line", {
+          x1: margin.left,
+          x2: width - margin.right,
+          y1: yy,
+          y2: yy,
+          class: "grid"
+        }));
+        svg.appendChild(el("text", {
+          x: margin.left - 10,
+          y: yy + 4,
+          "text-anchor": "end"
+        }, value === 0 ? "0" : `${(value / 1000).toFixed(0)}K`));
+      }
+      for (let i = 0; i <= 6; i++) {
+        const elapsed = maxElapsed * i / 6;
+        const xx = x(elapsed);
+        svg.appendChild(el("text", {
+          x: xx,
+          y: height - 34,
+          "text-anchor": "middle"
+        }, `${(elapsed / 60).toFixed(0)} min`));
+      }
+      svg.appendChild(el("line", {
+        x1: margin.left,
+        x2: margin.left,
+        y1: margin.top,
+        y2: height - margin.bottom,
+        class: "axis"
+      }));
+      svg.appendChild(el("line", {
+        x1: margin.left,
+        x2: width - margin.right,
+        y1: height - margin.bottom,
+        y2: height - margin.bottom,
+        class: "axis"
+      }));
+      svg.appendChild(el("text", {
+        x: 18,
+        y: margin.top + innerH / 2,
+        transform: `rotate(-90 18 ${margin.top + innerH / 2})`,
+        "text-anchor": "middle"
+      }, "L2-served cached tokens"));
+      svg.appendChild(el("text", {
+        x: margin.left + innerW / 2,
+        y: height - 8,
+        "text-anchor": "middle"
+      }, "elapsed time after first metrics sample"));
+
+      function showWindow(row) {
+        detail.textContent = "";
+        const heading = document.createElement("strong");
+        heading.textContent = `${shortUtc(row.window_end_utc)} UTC · ${formatInteger(row.l2_tokens)} L2 tokens`;
+        detail.appendChild(heading);
+
+        const counts = document.createElement("p");
+        const requestNoun = Number(row.completed_requests) === 1 ? "request was" : "requests were";
+        counts.textContent = `${formatInteger(row.completed_requests)} ${requestNoun} reported in this window; ${formatInteger(row.candidate_count)} had cached tokens and could have contributed.`;
+        detail.appendChild(counts);
+
+        const candidates = document.createElement("p");
+        candidates.className = "request-list";
+        candidates.textContent = `Candidate request ordinals: ${row.candidate_ordinals.map(value => `#${formatInteger(value)}`).join(", ")}`;
+        detail.appendChild(candidates);
+
+        const definite = [
+          ...(row.exact_reader_ordinals || []).map(value => `#${formatInteger(value)} exact`),
+          ...(row.definite_bounded_reader_ordinals || []).map(value => `#${formatInteger(value)} definite, bounded`)
+        ];
+        if (definite.length) {
+          const proof = document.createElement("p");
+          proof.textContent = `Proven reader: ${definite.join("; ")}.`;
+          detail.appendChild(proof);
+        } else {
+          const caveat = document.createElement("p");
+          caveat.textContent = "The aggregate host-token delta does not distinguish which candidate request supplied the L2 read.";
+          detail.appendChild(caveat);
+        }
+      }
+
+      rows.forEach(row => {
+        const xx = x(row.elapsed_end_seconds);
+        const yy = y(row.l2_tokens);
+        const barHeight = height - margin.bottom - yy;
+        let color = COLORS.amber;
+        if (row.classification === "exact_request_attribution") color = COLORS.green;
+        if (row.classification === "contains_definite_bounded_reader") color = COLORS.purple;
+        const candidates = row.candidate_ordinals.map(value => `#${formatInteger(value)}`).join(", ");
+        const bar = el("rect", {
+          x: xx - 2.3,
+          y: yy,
+          width: 4.6,
+          height: Math.max(1.5, barHeight),
+          rx: 1,
+          fill: color,
+          opacity: .88,
+          class: "interactive-bar",
+          tabindex: "0",
+          role: "button",
+          "aria-label": `${shortUtc(row.window_end_utc)} UTC, ${formatInteger(row.l2_tokens)} L2 tokens, candidates ${candidates}`
+        });
+        bar.appendChild(el("title", {}, `${shortUtc(row.window_end_utc)} UTC · ${formatInteger(row.l2_tokens)} L2 tokens · candidates ${candidates}`));
+        bar.addEventListener("mouseenter", () => showWindow(row));
+        bar.addEventListener("focus", () => showWindow(row));
+        bar.addEventListener("click", () => showWindow(row));
+        svg.appendChild(bar);
+
+        const proven = [
+          ...(row.exact_reader_ordinals || []),
+          ...(row.definite_bounded_reader_ordinals || [])
+        ];
+        if (proven.length) {
+          const marker = el("circle", {
+            cx: xx,
+            cy: Math.max(margin.top + 5, yy - 7),
+            r: 4.5,
+            fill: color,
+            stroke: "#ffffff",
+            "stroke-width": 1.5
+          });
+          marker.appendChild(el("title", {}, `Proven L2 reader ${proven.map(value => `#${formatInteger(value)}`).join(", ")}`));
+          svg.appendChild(marker);
+          svg.appendChild(el("text", {
+            x: xx,
+            y: Math.max(margin.top + 2, yy - 14),
+            "text-anchor": "middle",
+            class: "series-label"
+          }, proven.map(value => `#${formatInteger(value)}`).join(",")));
+        }
+      });
+
+      target.appendChild(svg);
+      showWindow(rows[0]);
+    }
+
     function categoricalChart(targetId, rows) {
       const mapped = rows.map(row => ({
         end_utc: row.label,
@@ -985,6 +1281,11 @@
       .then(data => {
         const rows = data.timeseries_60s;
         stackedTokenChart("token-rate-chart", rows);
+        l2AttributionChart(
+          "l2-request-chart",
+          "l2-window-detail",
+          data.l2_request_attribution
+        );
         lineChart("rpm-chart", rows, [
           {key: "successful_rpm", label: "Successful RPM", color: COLORS.blue, tooltip: v => `${v.toFixed(0)} RPM`}
         ], {minY: 0, maxY: 350, yTicks: 5, yLabel: "requests/min", formatY: v => v.toFixed(0), aria: "Completed requests per minute"});
@@ -1007,6 +1308,8 @@
         document.querySelectorAll(".chart-fallback").forEach(node => {
           node.textContent = `Aggregate chart unavailable (${error.message}). The exact values remain in the adjacent tables and analysis.json.`;
         });
+        const detail = document.getElementById("l2-window-detail");
+        if (detail) detail.innerHTML = `<strong>L2 attribution chart unavailable.</strong><p>${error.message}</p>`;
       });
   </script>
 </body>
