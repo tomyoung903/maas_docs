@@ -181,6 +181,23 @@ milliseconds unless a key explicitly names another unit.
     "note": "Optional interpretation",
     "children": []
   },
+  "one_rank_tree": {
+    "scope": {
+      "device": 0,
+      "rank_label": "DP0 / TP0 / EP0",
+      "launch_count": 3575,
+      "graph_wall_span_ms": 23.911701,
+      "aggregate_kernel_ms": 24.472106
+    },
+    "constants": {
+      "fp8_peak_tflops": 1979.0,
+      "bf16_peak_tflops": 989.5,
+      "hbm_tb_per_second": 4.8
+    },
+    "tree": {},
+    "layer_ledger": [],
+    "method": {}
+  },
   "top_kernels": [
     {
       "name": "kernel symbol",
@@ -219,10 +236,18 @@ The generator always writes these normalized artifacts:
 
 - `report_data.json` — the validated, normalized sidecar used by the page.
 - `timeline_data.json` — an alias retained for the baseline report format.
+- `gpu0_kernel_tree.json` — all three exact GPU-0 operation trees, modeled
+  numerators, raw-name leaves, and 78-layer ledgers.
 - `experiment_summary.json` — compact cross-batch timing and efficiency data.
 - `validation.json` — validation ledger.
 - `batch_summary.csv` — one row per batch.
 - `kernel_summary.csv` — one row per batch and kernel family.
+
+For this capture-specific generator, `one_rank_tree` is derived from the full
+adjacent `kernel_events.csv.gz` rather than trusted from the input JSON. The
+classifier uses GPU 0 graph-node order, validates all 78 layer motifs, and
+requires every useful node and nanosecond of summed kernel time to reconcile
+exactly once.
 
 ## Artifact manifest
 

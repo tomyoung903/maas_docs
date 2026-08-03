@@ -32,9 +32,19 @@
     "computed_decode_tokens_per_sequence": 1,
     "precision": "FP8",
     "hardware": {
-      "peak_tflops": null,
-      "hbm_tb_s": null,
-      "sources": []
+      "peak_tflops": 1979.0,
+      "bf16_peak_tflops": 989.5,
+      "hbm_tb_s": 4.8,
+      "sources": [
+        {
+          "label": "NVIDIA H200 Tensor Core GPU specifications",
+          "url": "https://www.nvidia.com/en-us/data-center/h200/"
+        },
+        {
+          "label": "Reviewed GLM-5.2 H200 decode roofline ledger",
+          "url": "../../glm52-flops/glm52_decode_roofline.html"
+        }
+      ]
     },
     "contract": [
       "All sequences in each measured batch enter one native batched /generate call.",
@@ -43,7 +53,8 @@
     ],
     "limitations": [
       "Kernel residency is captured device time, not CUDA occupancy or wall latency.",
-      "MFU and MBU are intentionally omitted until a separately reviewed model is supplied."
+      "Tree MFU and MBUmin are static lower-bound models, not Nsight Compute counter measurements.",
+      "Routed expert IDs were not retained, so B=10/B=100 expert-weight bytes use a maximum-reuse lower bound."
     ],
     "rank_mapping_source": "CUPTI deviceId",
     "graph_execution_source": "graph-node correlation fallback",
