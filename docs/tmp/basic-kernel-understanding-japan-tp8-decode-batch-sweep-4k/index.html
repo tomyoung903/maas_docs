@@ -872,12 +872,12 @@
           <div class="tool-head"><div><h3>Useful-graph launches by GPU</h3><p>Time is relative to the earliest useful-graph kernel.</p></div></div>
           <div class="controls"><label class="control">Start <input id="timeline-start" type="range" min="0" max="1000" value="0"><span id="timeline-start-label">0%</span></label><label class="control">Width <input id="timeline-width" type="range" min="25" max="1000" value="1000"><span id="timeline-width-label">100%</span></label></div>
           <div class="family-controls" id="timeline-family-controls"></div>
-          <div class="canvas-wrap"><canvas id="timeline-canvas" height="310"></canvas></div>
+          <div class="canvas-wrap"><canvas id="timeline-canvas" height="310" data-logical-height="310"></canvas></div>
           <div class="status-line" id="timeline-status"></div>
         </div>
         <div class="tool">
           <div class="tool-head"><div><h3>Kernel residency density</h3><p>Stacked GPU-ms by time bin; the capacity reference follows the sidecar.</p></div></div>
-          <div class="viz-shell"><canvas id="density-canvas" height="250"></canvas></div>
+          <div class="viz-shell"><canvas id="density-canvas" height="280" data-logical-height="280"></canvas></div>
           <div class="status-line" id="density-status"></div>
         </div>
       </section>
@@ -889,7 +889,7 @@
         <h3>Residency by family</h3><div class="legend"><span><i class="swatch" style="background:linear-gradient(90deg,#2563eb,#c2413b)"></i>Family color = useful</span><span><i class="swatch" style="background:#f4a340"></i>Cleanup overlay</span></div><div class="bar-list" id="comparison-bars"></div>
         <div class="callout finding" id="comparison-conclusion"></div>
         <h3>Cross-batch latency and throughput</h3>
-        <div class="viz-shell"><canvas id="comparison-canvas" height="280"></canvas></div>
+        <div class="viz-shell"><canvas id="comparison-canvas" height="280" data-logical-height="280"></canvas></div>
         <div id="comparison-observations"></div>
       </section>
 
@@ -1082,7 +1082,21 @@
     const kernels=batch.top_kernels || []; byId("top-kernels-body").innerHTML=kernels.length?kernels.slice(0,50).map(row=>`<tr><td class="mono">${esc(row.name)}</td><td>${esc(categoryLabel(row.category))}</td><td class="num">${fmt(row.launches,0)}</td><td class="num">${ms(row.residency_ms)}</td><td class="num">${pct(row.share_pct)}</td><td class="num">${finite(row.mean_us)?`${fmt(row.mean_us,2)} µs`:"—"}</td></tr>`).join(""):`<tr><td colspan="6">No raw-kernel summary was supplied.</td></tr>`;
   }
 
-  function canvasSize(canvas) { const ratio=window.devicePixelRatio || 1; const width=Math.max(620,canvas.clientWidth); const height=Number(canvas.getAttribute("height"))||280; canvas.width=Math.round(width*ratio); canvas.height=Math.round(height*ratio); const ctx=canvas.getContext("2d"); ctx.setTransform(ratio,0,0,ratio,0,0); return {ctx,width,height}; }
+  function canvasSize(canvas) {
+    const ratio=window.devicePixelRatio || 1;
+    const width=Math.max(620,canvas.clientWidth);
+    // `canvas.height` mutates the HTML height attribute. Reading that mutated
+    // attribute on the next batch switch multiplies the logical height by DPR
+    // again (310 -> 620 -> 1240 at DPR=2), so keep a separate immutable
+    // logical height and explicitly pin the CSS box to it.
+    const height=Number(canvas.dataset.logicalHeight)||280;
+    canvas.style.height=`${height}px`;
+    canvas.width=Math.round(width*ratio);
+    canvas.height=Math.round(height*ratio);
+    const ctx=canvas.getContext("2d");
+    ctx.setTransform(ratio,0,0,ratio,0,0);
+    return {ctx,width,height};
+  }
   function setupTimelineControls(batch) {
     const families=[...new Set((batch.events || []).map(row=>row.category))].sort();timelineFamilies=new Set(families);byId("timeline-start").value="0";byId("timeline-width").value="1000";
     byId("timeline-family-controls").innerHTML=families.length?families.map(family=>`<button type="button" class="family-toggle" data-family="${esc(family)}"><i class="swatch" style="background:${esc(categoryColor(family))}"></i>${esc(categoryLabel(family))}</button>`).join(""):`<span class="small-note">No event families.</span>`;
