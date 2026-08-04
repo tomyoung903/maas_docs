@@ -14,8 +14,10 @@ python3 build_html_report.py \
 ```
 
 The only required top-level keys are `schema_version`, `experiment`, and
-`batches`. `batches` must contain exactly the string keys `"1"`, `"10"`, and
-`"100"`.
+`batches`. `batches` must contain the string keys `"1"`, `"10"`, `"100"`,
+`"200"`, and `"500"`. Every batch must resolve to a positive context length:
+prefer its own `context_tokens`, then `experiment.context_tokens_by_batch`,
+then the legacy global `experiment.context_tokens` fallback.
 
 ## Shape
 
@@ -25,18 +27,20 @@ The only required top-level keys are `schema_version`, `experiment`, and
   "generated_at": "2026-08-03T15:00:00+08:00",
   "experiment": {
     "title": "GLM-5.2 FP8 TP=8 Decode Batch Sweep",
-    "subtitle": "One computed decode step at batch sizes 1, 10, and 100.",
+    "subtitle": "One computed decode step at batch sizes 1, 10, 100, 200, and 500.",
     "cluster": "Japan",
     "node": "gpu-h200-36",
     "gpu": "NVIDIA H200",
     "model": "zai-org/GLM-5.2-FP8",
     "model_revision": "ba978f7d347eaf65d22f1a86833408afdb953541",
     "runtime_image": "registry/image:tag",
-    "context_tokens": 4096,
+    "context_tokens_by_batch": {
+      "1": 4096, "10": 4096, "100": 4096, "200": 832, "500": 832
+    },
     "max_new_tokens": 2,
     "precision": "FP8",
     "topology": {"tp": 8, "dp": 1, "ep": 1, "pp": 1},
-    "cuda_graph_batches": [1, 10, 100],
+    "cuda_graph_batches": [1, 10, 100, 200, 500],
     "hardware": {
       "peak_tflops": null,
       "hbm_tb_s": null,
@@ -54,7 +58,9 @@ The only required top-level keys are `schema_version`, `experiment`, and
   "batches": {
     "1": {"status": "complete"},
     "10": {"status": "complete"},
-    "100": {"status": "complete"}
+    "100": {"status": "complete"},
+    "200": {"status": "complete", "context_tokens": 832},
+    "500": {"status": "complete", "context_tokens": 832}
   },
   "comparison": {
     "headline": "Optional authored comparison conclusion.",
@@ -73,6 +79,7 @@ milliseconds unless a key explicitly names another unit.
 ```json
 {
   "status": "complete",
+  "context_tokens": 832,
   "errors": [],
   "warnings": [],
   "proof": {
@@ -259,7 +266,7 @@ The generator always writes these normalized artifacts:
 
 - `report_data.json` — the validated, normalized sidecar used by the page.
 - `timeline_data.json` — an alias retained for the baseline report format.
-- `gpu0_kernel_tree.json` — all three exact GPU-0 operation trees, modeled
+- `gpu0_kernel_tree.json` — all five exact GPU-0 operation trees, modeled
   numerators, raw-name leaves, and 78-layer ledgers.
 - `experiment_summary.json` — compact cross-batch timing and efficiency data.
 - `validation.json` — validation ledger.
