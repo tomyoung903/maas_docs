@@ -97,6 +97,20 @@ milliseconds unless a key explicitly names another unit.
     "latency_inflation_vs_b1": 2.7,
     "effective_parallel_gain": 3.7
   },
+  "kernel_timing": {
+    "boundary": "gpu0_active_kernel_interval_union",
+    "active_union_ms": 22.756136,
+    "kernel_active_tokens_s": 439.441916,
+    "batch_scale_vs_b1": 10,
+    "active_time_inflation_vs_b1": 1.25208,
+    "kernel_rate_gain_vs_b1": 7.986707,
+    "ratio_identity_product": 10.0,
+    "graph_wall_span_ms": 23.911701,
+    "idle_gap_ms": 1.155565,
+    "summed_residency_ms": 24.472106,
+    "overlap_excess_ms": 1.71597,
+    "http_request_latency_included": false
+  },
   "graph": {
     "wall_span_ms": 20.1,
     "aggregate_kernel_ms": 148.2,
@@ -187,7 +201,10 @@ milliseconds unless a key explicitly names another unit.
       "rank_label": "DP0 / TP0 / EP0",
       "launch_count": 3575,
       "graph_wall_span_ms": 23.911701,
-      "aggregate_kernel_ms": 24.472106
+      "active_union_ms": 22.756136,
+      "idle_gap_ms": 1.155565,
+      "aggregate_kernel_ms": 24.472106,
+      "overlap_excess_ms": 1.71597
     },
     "constants": {
       "fp8_peak_tflops": 1979.0,
@@ -232,6 +249,12 @@ optional `label`. Existing files are copied under `report_maas/downloads/`.
 Missing declared files are rejected, because publishing a broken evidence link
 would make the report misleading.
 
+The input `timing` object is the unprofiled client HTTP envelope. For this
+batch-sweep report, the generator removes it from the published normalized
+batch objects after validating the input and derives `kernel_timing` from the
+exact GPU-0 kernel intervals. The raw timing-sample CSV remains downloadable as
+excluded evidence, but it is not used by any displayed time, rate, or ratio.
+
 The generator always writes these normalized artifacts:
 
 - `report_data.json` — the validated, normalized sidecar used by the page.
@@ -246,8 +269,9 @@ The generator always writes these normalized artifacts:
 For this capture-specific generator, `one_rank_tree` is derived from the full
 adjacent `kernel_events.csv.gz` rather than trusted from the input JSON. The
 classifier uses GPU 0 graph-node order, validates all 78 layer motifs, and
-requires every useful node and nanosecond of summed kernel time to reconcile
-exactly once.
+requires every useful node to reconcile exactly once. Each node carries both
+the interval union used for MFU/MBU and the overlap-additive summed residency
+retained as a diagnostic; child interval unions are intentionally non-additive.
 
 ## Artifact manifest
 
