@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Search and browse all MaaS technical documentation, model-analysis references, operational guides, and experiment reports.">
   <title>MaaS Docs</title>
   <style>
     :root {
@@ -122,8 +123,246 @@
       font-weight: 750;
     }
 
+    .search-shell {
+      max-width: 780px;
+      margin-top: 24px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+      padding: 14px;
+    }
+
+    .search-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .search-control {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      width: 19px;
+      height: 19px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid #aebdc7;
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 11px 52px 11px 44px;
+      color: var(--ink);
+      font: inherit;
+      font-size: 16px;
+    }
+
+    .search-input::placeholder {
+      color: #73808b;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      outline: 3px solid rgba(15, 118, 110, 0.18);
+    }
+
+    .search-input:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .search-shortcut {
+      position: absolute;
+      right: 12px;
+      min-width: 25px;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      background: #f8fbfc;
+      padding: 1px 6px;
+      color: var(--muted);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .search-input:not(:placeholder-shown) + .search-shortcut {
+      display: none;
+    }
+
+    .search-hint {
+      margin: 7px 2px 0;
+      font-size: 13px;
+    }
+
     main {
       padding: 32px 0 52px;
+    }
+
+    main section + section {
+      margin-top: 38px;
+    }
+
+    .section-heading {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px 20px;
+      margin-bottom: 16px;
+    }
+
+    .section-heading h2 {
+      margin-bottom: 0;
+    }
+
+    .result-status {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .result-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px 12px;
+    }
+
+    .document-toggle {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--paper);
+      padding: 5px 10px;
+      color: #15559b;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .document-toggle:hover {
+      border-color: #91a6b2;
+      background: #f8fbfc;
+    }
+
+    .document-toggle:focus-visible {
+      border-color: var(--accent);
+      outline: 3px solid rgba(15, 118, 110, 0.18);
+      outline-offset: 2px;
+    }
+
+    .document-toggle[hidden] {
+      display: none;
+    }
+
+    .doc-results {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .doc-result {
+      min-width: 0;
+    }
+
+    .doc-result > a {
+      display: grid;
+      height: 100%;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 14px;
+      color: inherit;
+      text-decoration: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+    }
+
+    .doc-result > a:hover {
+      border-color: #91a6b2;
+      box-shadow: var(--shadow);
+      transform: translateY(-1px);
+    }
+
+    .doc-result > a:focus-visible,
+    .links a:focus-visible {
+      border-color: var(--accent);
+      outline: 3px solid rgba(15, 118, 110, 0.18);
+      outline-offset: 2px;
+    }
+
+    .doc-result-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .doc-result h3 {
+      color: #15559b;
+      font-size: 17px;
+      overflow-wrap: anywhere;
+    }
+
+    .doc-result-tag {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      padding: 2px 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    .doc-result-tag.temporary {
+      border-color: #dfc4bc;
+      background: #fbf2ef;
+      color: #8a3d2d;
+    }
+
+    .doc-result-summary {
+      display: -webkit-box;
+      margin: 0;
+      overflow: hidden;
+      font-size: 14px;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .doc-result-path {
+      align-self: end;
+      color: #425361;
+      font-size: 12px;
+    }
+
+    .catalog-message {
+      grid-column: 1 / -1;
+      margin: 0;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 18px;
+      color: var(--muted);
     }
 
     .pack-grid {
@@ -242,6 +481,36 @@
       .pack-grid {
         grid-template-columns: minmax(0, 1fr);
       }
+
+      .search-shell {
+        padding: 12px;
+      }
+
+      .search-input {
+        padding-right: 14px;
+      }
+
+      .search-shortcut {
+        display: none;
+      }
+
+      .section-heading,
+      .result-controls {
+        align-items: flex-start;
+        justify-content: flex-start;
+      }
+
+      .doc-results {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .doc-result-top {
+        display: grid;
+      }
+
+      .doc-result-tag {
+        justify-self: start;
+      }
     }
   </style>
 </head>
@@ -252,6 +521,18 @@
       <div class="eyebrow">Serving and model references</div>
       <h1>MaaS Docs</h1>
       <p class="subtitle">Technical documentation for serving efficiency, model FLOPs, architecture, operations, and experiment reports.</p>
+      <form id="doc-search-form" class="search-shell" role="search" action="./" method="get">
+        <label class="search-label" for="doc-search">Search all docs</label>
+        <div class="search-control">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"></circle>
+            <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+          <input id="doc-search" class="search-input" type="search" name="q" autocomplete="off" spellcheck="false" placeholder="Search titles, summaries, or paths…" aria-controls="doc-results" aria-describedby="search-hint">
+          <kbd class="search-shortcut" aria-hidden="true">/</kbd>
+        </div>
+        <p id="search-hint" class="search-hint">Search covers every published HTML document by title, summary, and path. Press <kbd>/</kbd> to focus.</p>
+      </form>
       <div id="catalog-meta" class="meta" aria-label="Catalog metadata" aria-live="polite">
         <span class="pill">Loading live catalog</span>
       </div>
@@ -259,6 +540,19 @@
   </header>
 
   <main id="main">
+    <section aria-labelledby="all-docs">
+      <div class="section-heading">
+        <h2 id="all-docs">All Documents</h2>
+        <div class="result-controls">
+          <p id="search-status" class="result-status" role="status" aria-live="polite">Discovering documents…</p>
+          <button id="show-all-docs" class="document-toggle" type="button" aria-controls="doc-results" aria-expanded="false" hidden>Show all documents</button>
+        </div>
+      </div>
+      <ul id="doc-results" class="doc-results" aria-busy="true">
+        <li class="catalog-message">Loading the searchable document catalog…</li>
+      </ul>
+    </section>
+
     <section aria-labelledby="doc-packs">
       <h2 id="doc-packs">Doc Packs</h2>
       <div id="pack-grid" class="pack-grid" aria-busy="true">
@@ -280,16 +574,89 @@
 
       const treeUrl = "https://api.github.com/repos/tomyoung903/maas_docs/git/trees/main?recursive=1";
       const pathPrefix = "docs/";
+      const metadataByteLimit = 32 * 1024;
+      const metadataConcurrency = 6;
+      const documentPreviewLimit = 8;
       const packGrid = document.querySelector("#pack-grid");
       const catalogMeta = document.querySelector("#catalog-meta");
+      const searchForm = document.querySelector("#doc-search-form");
+      const searchInput = document.querySelector("#doc-search");
+      const searchStatus = document.querySelector("#search-status");
+      const docResults = document.querySelector("#doc-results");
+      const showAllDocumentsButton = document.querySelector("#show-all-docs");
+
+      let documents = [];
+      let metadataLoading = false;
+      let showAllDocuments = false;
 
       const normalizeText = (value) => value.replace(/\s+/g, " ").trim();
 
+      const wordNames = new Map([
+        ["api", "API"],
+        ["b200", "B200"],
+        ["b300", "B300"],
+        ["cuda", "CUDA"],
+        ["dpa", "DPA"],
+        ["dsa", "DSA"],
+        ["eagle", "EAGLE"],
+        ["flops", "FLOPs"],
+        ["fp4", "FP4"],
+        ["fp8", "FP8"],
+        ["glm52", "GLM-5.2"],
+        ["gpu", "GPU"],
+        ["h200", "H200"],
+        ["html", "HTML"],
+        ["k8s", "K8s"],
+        ["kimi25", "Kimi K2.5"],
+        ["kv", "KV"],
+        ["maas", "MaaS"],
+        ["mbu", "MBU"],
+        ["mfu", "MFU"],
+        ["mla", "MLA"],
+        ["moe", "MoE"],
+        ["nvfp4", "NVFP4"],
+        ["sglang", "SGLang"],
+        ["tp", "TP"],
+      ]);
+
+      const formatWord = (value) => {
+        const word = value.toLowerCase();
+        if (wordNames.has(word)) return wordNames.get(word);
+        if (/^(?:b|h)\d{3}$/.test(word)) return word.toUpperCase();
+        if (/^(?:cp|dp|ep|fp|pp|tp)\d+$/.test(word)) return word.toUpperCase();
+        if (/^\d+k$/.test(word)) return word.toUpperCase();
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      };
+
       const titleFromSlug = (slug) => slug
-        .split("-")
+        .split(/[-_.]+/)
         .filter(Boolean)
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .map(formatWord)
         .join(" ");
+
+      const titleFromPath = (path) => {
+        const segments = path.split("/").filter(Boolean);
+        const filename = segments.at(-1) || "document";
+        const source = filename === "index.html"
+          ? segments.at(-2) || "document"
+          : filename.replace(/\.html$/i, "");
+        return titleFromSlug(source);
+      };
+
+      const hrefFromPath = (path) => {
+        const segments = path.split("/").filter(Boolean);
+        const encoded = segments.map(encodeURIComponent);
+        if (encoded.at(-1) === "index.html") {
+          return `./${encoded.slice(0, -1).join("/")}/`;
+        }
+        return `./${encoded.join("/")}`;
+      };
+
+      const truncateText = (value, limit = 220) => {
+        const text = normalizeText(value);
+        if (text.length <= limit) return text;
+        return `${text.slice(0, limit - 1).trimEnd()}…`;
+      };
 
       const appendPill = (container, text) => {
         const pill = document.createElement("span");
@@ -311,6 +678,81 @@
           title,
           summary: normalizeText(description?.content || paragraph || `Documentation under ${slug}.`),
         };
+      };
+
+      const extractDocumentMetadata = (html, record) => {
+        const childDocument = new DOMParser().parseFromString(html, "text/html");
+        const pageTitle = childDocument.querySelector("title");
+        const heading = childDocument.querySelector("h1");
+        const description = childDocument.querySelector('meta[name="description"]');
+        const refresh = Array.from(childDocument.querySelectorAll("meta[http-equiv]"))
+          .some((node) => (node.getAttribute("http-equiv") || "").toLowerCase() === "refresh");
+        const canonical = childDocument.querySelector('link[rel="canonical"]')?.getAttribute("href");
+        const title = refresh
+          ? `${titleFromPath(record.path)} (redirect)`
+          : normalizeText(pageTitle?.textContent || heading?.textContent || record.title);
+        const paragraph = Array.from(childDocument.querySelectorAll("main p, header p, body > p"))
+          .map((node) => normalizeText(node.textContent || ""))
+          .find((text) => text && text !== title);
+        const fallbackSummary = refresh && canonical
+          ? `Redirects to ${canonical}.`
+          : record.summary;
+        return {
+          title,
+          summary: truncateText(description?.content || paragraph || fallbackSummary),
+          redirect: refresh,
+        };
+      };
+
+      const readResponsePrefix = async (response) => {
+        if (!response.body?.getReader) {
+          return (await response.text()).slice(0, metadataByteLimit);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let received = 0;
+        let text = "";
+
+        while (received < metadataByteLimit) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const remaining = metadataByteLimit - received;
+          const chunk = value.subarray(0, Math.min(value.byteLength, remaining));
+          received += chunk.byteLength;
+          text += decoder.decode(chunk, { stream: true });
+          if (received >= metadataByteLimit) {
+            await reader.cancel();
+            break;
+          }
+        }
+
+        return text + decoder.decode();
+      };
+
+      const loadDocumentMetadata = async (record) => {
+        const separator = record.href.includes("?") ? "&" : "?";
+        const response = await fetch(`${record.href}${separator}catalog-revision=${record.sha}`, {
+          cache: "force-cache",
+          headers: { Range: `bytes=0-${metadataByteLimit - 1}` },
+        });
+        if (!response.ok) throw new Error(`Could not read metadata for ${record.path}`);
+        return extractDocumentMetadata(await readResponsePrefix(response), record);
+      };
+
+      const mapWithConcurrency = async (items, limit, mapper) => {
+        const results = new Array(items.length);
+        let cursor = 0;
+        const workerCount = Math.min(limit, items.length);
+        const workers = Array.from({ length: workerCount }, async () => {
+          while (cursor < items.length) {
+            const index = cursor;
+            cursor += 1;
+            results[index] = await mapper(items[index], index);
+          }
+        });
+        await Promise.all(workers);
+        return results;
       };
 
       const loadPack = async (entry, tree) => {
@@ -374,6 +816,122 @@
         });
       };
 
+      const documentSearchText = (record) => normalizeText([
+        record.title,
+        record.summary,
+        record.path,
+        record.pack,
+      ].join(" ")).toLowerCase();
+
+      const documentRank = (record, query) => {
+        const title = record.title.toLowerCase();
+        const path = record.path.toLowerCase();
+        if (title === query) return 0;
+        if (title.startsWith(query)) return 1;
+        if (title.includes(query)) return 2;
+        if (path.includes(query)) return 3;
+        return 4;
+      };
+
+      const renderDocuments = () => {
+        const focusedPath = docResults.contains(document.activeElement)
+          ? document.activeElement?.dataset.documentPath
+          : null;
+        const query = normalizeText(searchInput.value).toLowerCase();
+        const terms = query.split(" ").filter(Boolean);
+        const matches = documents
+          .filter((record) => {
+            const haystack = documentSearchText(record);
+            return terms.every((term) => haystack.includes(term));
+          })
+          .sort((left, right) => {
+            if (query) {
+              const rankDifference = documentRank(left, query) - documentRank(right, query);
+              if (rankDifference) return rankDifference;
+            }
+            return left.path.localeCompare(right.path);
+          });
+        const visibleMatches = !query && !showAllDocuments
+          ? matches.slice(0, documentPreviewLimit)
+          : matches;
+
+        docResults.replaceChildren();
+        docResults.setAttribute("aria-busy", metadataLoading ? "true" : "false");
+
+        if (!matches.length) {
+          const message = document.createElement("li");
+          message.className = "catalog-message";
+          message.textContent = query
+            ? `No documents match “${searchInput.value.trim()}”.`
+            : "No published HTML documents were found.";
+          docResults.append(message);
+        } else {
+          visibleMatches.forEach((record) => {
+            const item = document.createElement("li");
+            item.className = "doc-result";
+
+            const link = document.createElement("a");
+            link.href = record.href;
+            link.dataset.documentPath = record.path;
+
+            const top = document.createElement("div");
+            top.className = "doc-result-top";
+            const heading = document.createElement("h3");
+            heading.textContent = record.title;
+            const tag = document.createElement("span");
+            tag.className = "doc-result-tag";
+            if (record.redirect) {
+              tag.textContent = "Redirect";
+            } else if (record.pack === "tmp") {
+              tag.classList.add("temporary");
+              tag.textContent = "Temporary";
+            } else {
+              tag.textContent = titleFromSlug(record.pack);
+            }
+            top.append(heading, tag);
+
+            const summary = document.createElement("p");
+            summary.className = "doc-result-summary";
+            summary.textContent = record.summary;
+
+            const path = document.createElement("code");
+            path.className = "doc-result-path";
+            path.textContent = record.path;
+
+            link.append(top, summary, path);
+            item.append(link);
+            docResults.append(item);
+          });
+        }
+
+        const count = query
+          ? `${matches.length} of ${documents.length} documents`
+          : visibleMatches.length < documents.length
+            ? `${visibleMatches.length} of ${documents.length} documents shown`
+            : `${documents.length} ${documents.length === 1 ? "document" : "documents"}`;
+        searchStatus.textContent = metadataLoading ? `${count} · loading titles…` : count;
+
+        const canToggle = !query && documents.length > documentPreviewLimit;
+        showAllDocumentsButton.hidden = !canToggle;
+        showAllDocumentsButton.setAttribute("aria-expanded", String(showAllDocuments));
+        showAllDocumentsButton.textContent = showAllDocuments
+          ? "Show fewer documents"
+          : `Show all ${documents.length} documents`;
+
+        if (focusedPath) {
+          const focusTarget = Array.from(docResults.querySelectorAll("a"))
+            .find((link) => link.dataset.documentPath === focusedPath);
+          focusTarget?.focus({ preventScroll: true });
+        }
+      };
+
+      const updateCatalogMeta = (packCount, documentCount, indexing = false) => {
+        catalogMeta.replaceChildren();
+        appendPill(catalogMeta, `${packCount} ${packCount === 1 ? "doc pack" : "doc packs"}`);
+        appendPill(catalogMeta, `${documentCount} ${documentCount === 1 ? "document" : "documents"}`);
+        if (indexing) appendPill(catalogMeta, "Indexing titles");
+      };
+
       const renderError = (error) => {
         packGrid.replaceChildren();
         packGrid.setAttribute("aria-busy", "false");
@@ -381,6 +939,15 @@
         message.className = "status-message error";
         message.textContent = "The live catalog could not be loaded. Open the GitHub directory link below to browse its contents.";
         packGrid.append(message);
+        docResults.replaceChildren();
+        docResults.setAttribute("aria-busy", "false");
+        const searchMessage = document.createElement("li");
+        searchMessage.className = "catalog-message status-message error";
+        searchMessage.textContent = "The searchable document list could not be loaded.";
+        docResults.append(searchMessage);
+        searchStatus.textContent = "Catalog unavailable";
+        showAllDocumentsButton.hidden = true;
+        searchInput.disabled = true;
         catalogMeta.replaceChildren();
         appendPill(catalogMeta, "Catalog unavailable");
         console.error(error);
@@ -395,9 +962,51 @@
             throw new Error("GitHub returned an incomplete repository tree");
           }
 
+          const pageEntries = payload.tree
+            .filter((entry) => (
+              entry.type === "blob"
+              && entry.path.startsWith(pathPrefix)
+              && entry.path.endsWith(".html")
+              && entry.path !== `${pathPrefix}index.html`
+            ))
+            .sort((left, right) => left.path.localeCompare(right.path));
+
+          documents = pageEntries.map((entry) => {
+            const path = entry.path.slice(pathPrefix.length);
+            const title = titleFromPath(path);
+            return {
+              sha: entry.sha,
+              path,
+              href: hrefFromPath(path),
+              pack: path.split("/")[0],
+              title,
+              summary: `Open ${title}.`,
+              redirect: false,
+            };
+          });
+          searchInput.disabled = false;
+          metadataLoading = true;
+          renderDocuments();
+
           const entries = payload.tree
             .filter((entry) => entry.type === "blob" && /^docs\/[^/]+\/index\.html$/.test(entry.path))
             .sort((left, right) => left.path.localeCompare(right.path));
+
+          updateCatalogMeta(entries.length, documents.length, true);
+
+          const metadataPromise = mapWithConcurrency(
+            documents,
+            metadataConcurrency,
+            async (record) => {
+              try {
+                return { ...record, ...(await loadDocumentMetadata(record)) };
+              } catch (error) {
+                console.warn(error);
+                return record;
+              }
+            },
+          );
+
           const packs = await Promise.all(entries.map(async (entry) => {
             try {
               return await loadPack(entry, payload.tree);
@@ -419,12 +1028,57 @@
           }));
 
           renderPacks(packs);
-          catalogMeta.replaceChildren();
-          appendPill(catalogMeta, `${packs.length} ${packs.length === 1 ? "doc pack" : "doc packs"}`);
+          documents = await metadataPromise;
+          metadataLoading = false;
+          renderDocuments();
+          updateCatalogMeta(packs.length, documents.length);
         } catch (error) {
           renderError(error);
         }
       };
+
+      const initialQuery = new URLSearchParams(window.location.search).get("q");
+      if (initialQuery) searchInput.value = initialQuery;
+
+      searchInput.addEventListener("input", () => {
+        renderDocuments();
+        const url = new URL(window.location.href);
+        const query = searchInput.value.trim();
+        if (query) url.searchParams.set("q", query);
+        else url.searchParams.delete("q");
+        window.history.replaceState(null, "", url);
+      });
+
+      showAllDocumentsButton.addEventListener("click", () => {
+        showAllDocuments = !showAllDocuments;
+        renderDocuments();
+        showAllDocumentsButton.focus({ preventScroll: true });
+      });
+
+      searchInput.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && searchInput.value) {
+          event.preventDefault();
+          searchInput.value = "";
+          searchInput.dispatchEvent(new Event("input"));
+        }
+      });
+
+      searchForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        docResults.querySelector("a")?.focus();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        const target = event.target;
+        const isTyping = target instanceof HTMLInputElement
+          || target instanceof HTMLTextAreaElement
+          || target instanceof HTMLSelectElement
+          || target?.isContentEditable;
+        if (event.key === "/" && !isTyping && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          event.preventDefault();
+          searchInput.focus();
+        }
+      });
 
       initialize();
     })();
