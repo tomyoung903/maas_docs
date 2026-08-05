@@ -249,23 +249,31 @@ milliseconds unless a key explicitly names another unit.
 }
 ```
 
-## Optional B=500 DP8/EP8 tree-only view
+## Optional complete B=500 DP8/EP8 display view
 
-The five keys under `batches` remain the page-wide TP8/DP1/EP1 experiment.
-An independently captured B=500 DP8/EP8 execution tree can be added under the
-optional `tree_views.b500_dp8_ep8` key. When present, it appears as a sixth
-`B=500 (DP&EP)` choice in the primary **Displayed batch** selector. It is a
-display view, not a sixth `batches` record: only the execution tree and its
-downloadable evidence use the DP8/EP8 capture. The page marks every other panel
-as the original native B=500 TP8/DP1/EP1 data, and the alternate view never
-enters the batch comparison, headline rate, timeline, event table, CSVs, or
-global experiment topology.
+The five keys under `batches` remain the original TP8/DP1/EP1 batch sweep. An
+independently captured B=500 TP8/DP8/EP8 experiment is added under
+`display_views.b500_dp8_ep8`. When present, it appears as the sixth
+`B=500 (DP&EP)` choice in the primary **Displayed batch** selector.
+
+This is a complete experiment view, not a tree overlay and not a sixth numeric
+`batches` key. Its required `batch` object uses the same normalized per-batch
+contract documented above. When selected, every batch-dependent panel consumes
+that object: overview, proof, quantities, chronology, rendezvous, efficiency,
+tree, timeline, density, useful-versus-cleanup, kernel families, events, and
+evidence. The view also carries its own experiment topology, validation ledger,
+comparison prose, limitations, and provenance. A renderer must show an
+explicit `unavailable` state for omitted optional evidence; it must never fall
+back to `batches["500"]`.
+
+Serialized inputs using the legacy `tree_views` key are rejected. A tree-only
+capture cannot be presented as a complete experiment tab.
 
 ```json
 {
-  "tree_views": {
+  "display_views": {
     "b500_dp8_ep8": {
-      "label": "B=500 · DP8/EP8",
+      "label": "B=500 · TP8/DP8/EP8",
       "batch_size": 500,
       "context_tokens": 3072,
       "topology": {
@@ -276,6 +284,30 @@ global experiment topology.
           "output": "DP zero-fill/copy + AllReduce before LM head; TP vocabulary AllGather after LM head"
         }
       },
+      "experiment": {
+        "title": "GLM-5.2 FP8 TP8/DP8/EP8 Decode",
+        "cluster": "Japan",
+        "node": "gpu-h200-36",
+        "gpu": "NVIDIA H200",
+        "model": "zai-org/GLM-5.2-FP8",
+        "precision": "FP8",
+        "topology": {"tp": 8, "dp": 8, "ep": 8, "pp": 1},
+        "hardware": {"sources": []},
+        "contract": ["Global real batch is 500; each DP lane executes a padded physical graph of 63 rows."]
+      },
+      "validation": {
+        "status": "pass",
+        "checks": [
+          {"name": "DP8 semantic trace audit", "status": "pass", "evidence": "..."}
+        ]
+      },
+      "comparison": {
+        "headline": "GPU0 timings describe one physical DP lane and are not native-DP1 scaling points.",
+        "observations": []
+      },
+      "limitations": [
+        "The 62/63 real-row assignment cannot be attributed to a specific DP rank from this trace."
+      ],
       "provenance": {
         "capture_id": "stable capture identifier",
         "validation_status": "pass",
@@ -292,49 +324,104 @@ global experiment topology.
           }
         ]
       },
-      "one_rank_tree": {
-        "scope": {
-          "device": 0,
-          "rank_label": "DP0 / TP0 / EP0",
-          "batch_size": 500,
-          "local_physical_batch_size": 63,
-          "context_tokens": 3072,
-          "launch_count": 3355,
-          "graph_wall_span_ms": 51.63345,
-          "active_union_ms": 40.560798,
-          "aggregate_kernel_ms": 43.02675
+      "batch": {
+        "status": "complete",
+        "context_tokens": 3072,
+        "proof": {
+          "requested_batch": 500,
+          "observed_real_batch": 500,
+          "cuda_graph_batch": 63,
+          "prefill_rows": 0,
+          "decode_rows": 1,
+          "speculative": false
         },
-        "constants": {},
-        "tree": {
-          "id": "GPU0-DP8-EP8",
-          "title": "Measured DP8/EP8 GPU 0 graph",
-          "role": "one physical rank as attention, dense, and expert groups change",
-          "event_count": 3355,
-          "active_union_ms": 40.560798,
-          "aggregate_kernel_ms": 43.02675,
-          "wall_span_ms": 51.63345,
-          "children": []
+        "request": {"receive_epoch_ns": 0},
+        "kernel_timing": {
+          "boundary": "full_model_graph_envelope",
+          "primary_time_label": "Full model-graph envelope",
+          "primary_time_ms": 282.461119,
+          "kernel_active_tokens_s": 1770.155134,
+          "rate_label": "Full-capture useful computed-token rate",
+          "rate_unit": "tok/s",
+          "rate_scope": "global_useful_computed_tokens_per_full_model_envelope",
+          "rate_numerator_tokens": 500,
+          "comparable_to_b1": false,
+          "batch_scale_vs_b1": null,
+          "active_time_inflation_vs_b1": null,
+          "kernel_rate_gain_vs_b1": null,
+          "ratio_identity_product": null,
+          "active_union_ms": 153.4,
+          "graph_wall_span_ms": 282.461119,
+          "summed_residency_ms": 164.2,
+          "gpu0_capture_wall_span_ms": 282.1,
+          "http_request_latency_included": false
         },
-        "layer_ledger": ["exactly 78 rows, layers 0 through 77"],
-        "method": {},
-        "download_href": "gpu0_kernel_tree.json"
+        "graph": {},
+        "rendezvous": {},
+        "rank_spans": [],
+        "efficiency": {},
+        "categories": [],
+        "chronology": [],
+        "density_bins": [],
+        "top_kernels": [],
+        "events": [],
+        "notes": [],
+        "warnings": [],
+        "errors": [],
+        "artifacts": [],
+        "one_rank_tree": {
+          "scope": {
+            "device": 0,
+            "rank_label": "representative GPU0 physical graph",
+            "batch_size": 500,
+            "local_physical_batch_size": 63,
+            "context_tokens": 3072,
+            "launch_count": 3355,
+            "graph_wall_span_ms": 51.63345,
+            "active_union_ms": 40.560798,
+            "aggregate_kernel_ms": 43.02675
+          },
+          "constants": {},
+          "tree": {
+            "id": "GPU0-DP8-EP8",
+            "title": "Measured DP8/EP8 GPU 0 graph",
+            "role": "one physical rank as attention, dense, and expert groups change",
+            "event_count": 3355,
+            "active_union_ms": 40.560798,
+            "aggregate_kernel_ms": 43.02675,
+            "wall_span_ms": 51.63345,
+            "children": []
+          },
+          "layer_ledger": ["exactly 78 rows, layers 0 through 77"],
+          "method": {},
+          "download_href": "gpu0_kernel_tree.json"
+        }
       }
     }
   }
 }
 ```
 
-The generator rejects an alternate view unless its configured topology is
-exactly TP8/DP8/EP8/PP1, its provenance says validation passed, its scope and
-root timing reconcile, child event counts add to their parents, and its layer
-ledger covers all 78 decoder layers. The generator does not derive or invent
-this alternate tree from the TP8/DP1/EP1 `kernel_events.csv.gz`. The primary
-selector renders exactly five choices when this object is absent and exactly
-six when it is present; no nested topology selector is emitted.
+The generator rejects the view unless its configured and experiment topologies
+are both TP8/DP8/EP8/PP1, its validation and provenance pass, its view/batch/tree
+context counts agree, its scope and root timing reconcile, child event counts
+add to their parents, and its layer ledger covers all 78 decoder layers. The
+primary selector renders five choices when `display_views` is absent and six
+when it is present; no nested topology selector is emitted.
+
+The primary displayed DP8 rate divides the 500 useful computed tokens by the
+audited full model-graph envelope across the capture. The representative GPU0
+tree remains a narrower diagnostic: its physical local graph has 63 padded rows
+and a 40.560798 ms active union. It is invalid to divide global B=500 by that
+representative active union. Native-B1 scaling fields remain null because the
+DP8 envelope, topology, and context are not comparable to the native DP1 GPU0
+active-union boundary.
 
 When `provenance.artifacts` supplies relative `path` values, the generator
 publishes those evidence files under `downloads/` without changing the native
-five-batch `downloads` declaration. The measured DP8 view intentionally omits
+five-batch objects. The selected evidence panel uses the view's capture IDs,
+hashes, limitations, and downloads rather than the native B=500 manifest. The
+measured DP8 view intentionally omits
 `mfu_percent`, `mbu_percent`, FLOP numerators, and byte numerators until a
 separately reviewed utilization model exists; the renderer displays dashes.
 

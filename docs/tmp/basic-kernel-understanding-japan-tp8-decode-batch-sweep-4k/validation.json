@@ -1,129 +1,178 @@
 {
-  "status": "pass",
-  "overall_ok": true,
-  "errors": [],
-  "checks": [
-    {
-      "name": "B=1 request, scheduler, graph, and no-prefill proof",
-      "status": "pass",
-      "evidence": "real_bs=1; graph_bs=1; prefill=0; speculative=False"
-    },
-    {
-      "name": "B=10 request, scheduler, graph, and no-prefill proof",
-      "status": "pass",
-      "evidence": "real_bs=10; graph_bs=10; prefill=0; speculative=False"
-    },
-    {
-      "name": "B=100 request, scheduler, graph, and no-prefill proof",
-      "status": "pass",
-      "evidence": "real_bs=100; graph_bs=100; prefill=0; speculative=False"
-    },
-    {
-      "name": "B=200 request, scheduler, graph, and no-prefill proof",
-      "status": "pass",
-      "evidence": "real_bs=200; graph_bs=200; prefill=0; speculative=False"
-    },
-    {
-      "name": "B=500 request, scheduler, graph, and no-prefill proof",
-      "status": "pass",
-      "evidence": "real_bs=500; graph_bs=500; prefill=0; speculative=False"
-    },
-    {
-      "name": "Cross-capture graph-generation alignment",
-      "status": "pass",
-      "evidence": "Every batch selects one chronological CUDA-graph generation across all eight TP ranks; B=500 wall span is below 100 ms."
-    },
-    {
-      "name": "GPU0 active-union boundary",
-      "status": "pass",
-      "evidence": "B=1: 18.174659 ms; B=10: 22.756136 ms; B=100: 46.768545 ms; B=200: 45.206759 ms; B=500: 79.083388 ms"
-    },
-    {
-      "name": "GPU0 interval reconciliation",
-      "status": "pass",
-      "evidence": "For B=1/10/100/200/500: wall = union + idle gap and summed residency = union + overlap excess."
-    },
-    {
-      "name": "Matched kernel time/rate identity",
-      "status": "pass",
-      "evidence": "For B=1/10/100/200/500: active-time ratio multiplied by kernel-active-rate ratio equals batch ratio."
-    },
-    {
-      "name": "HTTP timing exclusion",
-      "status": "pass",
-      "evidence": "Published batch objects contain kernel_timing and no timing object; raw client samples remain excluded evidence only."
+  "native": {
+    "status": "pass",
+    "overall_ok": true,
+    "errors": [],
+    "checks": [
+      {
+        "name": "B=1 request, scheduler, graph, and no-prefill proof",
+        "status": "pass",
+        "evidence": "real_bs=1; graph_bs=1; prefill=0; speculative=False"
+      },
+      {
+        "name": "B=10 request, scheduler, graph, and no-prefill proof",
+        "status": "pass",
+        "evidence": "real_bs=10; graph_bs=10; prefill=0; speculative=False"
+      },
+      {
+        "name": "B=100 request, scheduler, graph, and no-prefill proof",
+        "status": "pass",
+        "evidence": "real_bs=100; graph_bs=100; prefill=0; speculative=False"
+      },
+      {
+        "name": "B=200 request, scheduler, graph, and no-prefill proof",
+        "status": "pass",
+        "evidence": "real_bs=200; graph_bs=200; prefill=0; speculative=False"
+      },
+      {
+        "name": "B=500 request, scheduler, graph, and no-prefill proof",
+        "status": "pass",
+        "evidence": "real_bs=500; graph_bs=500; prefill=0; speculative=False"
+      },
+      {
+        "name": "Cross-capture graph-generation alignment",
+        "status": "pass",
+        "evidence": "Every batch selects one chronological CUDA-graph generation across all eight TP ranks; B=500 wall span is below 100 ms."
+      },
+      {
+        "name": "GPU0 active-union boundary",
+        "status": "pass",
+        "evidence": "B=1: 18.174659 ms; B=10: 22.756136 ms; B=100: 46.768545 ms; B=200: 45.206759 ms; B=500: 79.083388 ms"
+      },
+      {
+        "name": "GPU0 interval reconciliation",
+        "status": "pass",
+        "evidence": "For B=1/10/100/200/500: wall = union + idle gap and summed residency = union + overlap excess."
+      },
+      {
+        "name": "Matched kernel time/rate identity",
+        "status": "pass",
+        "evidence": "For B=1/10/100/200/500: active-time ratio multiplied by kernel-active-rate ratio equals batch ratio."
+      },
+      {
+        "name": "HTTP timing exclusion",
+        "status": "pass",
+        "evidence": "Published batch objects contain kernel_timing and no timing object; raw client samples remain excluded evidence only."
+      }
+    ],
+    "expected_batches": [
+      1,
+      10,
+      100,
+      200,
+      500
+    ],
+    "expected_gpu_count": 8,
+    "raw_capture_kernel_count": 306008,
+    "analysis_kernel_count": 306008,
+    "graph_execution_count": 80,
+    "runtime_graph_launch_api_count": 80,
+    "capture_validations": {
+      "B=1/10/100 @ 4K context": {
+        "status": "pass",
+        "checks": [
+          {
+            "name": "B=1 request, scheduler, graph, and no-prefill proof",
+            "status": "pass",
+            "evidence": "real_bs=1; graph_bs=1; prefill=0; speculative=False"
+          },
+          {
+            "name": "B=10 request, scheduler, graph, and no-prefill proof",
+            "status": "pass",
+            "evidence": "real_bs=10; graph_bs=10; prefill=0; speculative=False"
+          },
+          {
+            "name": "B=100 request, scheduler, graph, and no-prefill proof",
+            "status": "pass",
+            "evidence": "real_bs=100; graph_bs=100; prefill=0; speculative=False"
+          }
+        ],
+        "overall_ok": true,
+        "errors": [],
+        "expected_batches": [
+          1,
+          10,
+          100
+        ],
+        "expected_gpu_count": 8,
+        "raw_capture_kernel_count": 173536,
+        "analysis_kernel_count": 173536,
+        "graph_execution_count": 48,
+        "runtime_graph_launch_api_count": 48
+      },
+      "B=200/500 @ 832-token context": {
+        "status": "pass",
+        "checks": [
+          {
+            "name": "B=200 request, scheduler, graph, and no-prefill proof",
+            "status": "pass",
+            "evidence": "real_bs=200; graph_bs=200; prefill=0; speculative=False"
+          },
+          {
+            "name": "B=500 request, scheduler, graph, and no-prefill proof",
+            "status": "pass",
+            "evidence": "real_bs=500; graph_bs=500; prefill=0; speculative=False"
+          }
+        ],
+        "overall_ok": true,
+        "errors": [],
+        "expected_batches": [
+          200,
+          500
+        ],
+        "expected_gpu_count": 8,
+        "raw_capture_kernel_count": 132472,
+        "analysis_kernel_count": 132472,
+        "graph_execution_count": 32,
+        "runtime_graph_launch_api_count": 32
+      }
     }
-  ],
-  "expected_batches": [
-    1,
-    10,
-    100,
-    200,
-    500
-  ],
-  "expected_gpu_count": 8,
-  "raw_capture_kernel_count": 306008,
-  "analysis_kernel_count": 306008,
-  "graph_execution_count": 80,
-  "runtime_graph_launch_api_count": 80,
-  "capture_validations": {
-    "B=1/10/100 @ 4K context": {
+  },
+  "display_views": {
+    "b500_dp8_ep8": {
       "status": "pass",
       "checks": [
         {
-          "name": "B=1 request, scheduler, graph, and no-prefill proof",
+          "name": "semantic motif discovery",
           "status": "pass",
-          "evidence": "real_bs=1; graph_bs=1; prefill=0; speculative=False"
+          "evidence": "32 graph executions independently resolved to 78 layers"
         },
         {
-          "name": "B=10 request, scheduler, graph, and no-prefill proof",
+          "name": "unique event ownership",
           "status": "pass",
-          "evidence": "real_bs=10; graph_bs=10; prefill=0; speculative=False"
+          "evidence": "110472 = 3140 graphless + 107332 full-model + 0 auxiliary events"
         },
         {
-          "name": "B=100 request, scheduler, graph, and no-prefill proof",
+          "name": "per-device timing",
           "status": "pass",
-          "evidence": "real_bs=100; graph_bs=100; prefill=0; speculative=False"
+          "evidence": "interval unions were computed independently per GPU; raw residency and overlap excess remain separate"
+        },
+        {
+          "name": "no fixed ordinal-offset classifier",
+          "status": "pass",
+          "evidence": "Logical ownership uses capture-local graph-node order and semantic anchors only: MLA split/combine, fused attention/FFN boundaries, dense AllGather/ReduceScatter, sparse DeepEP dispatch/combine, index-refresh, and independent-stream shared-expert quant/GEMM/activation motifs. GPU timestamps are used only for timing; no fixed graph-node offsets are used."
+        },
+        {
+          "name": "complete graph-family coverage",
+          "status": "pass",
+          "evidence": "all 32 executions of graph family 2 passed; auxiliary families=[]"
+        },
+        {
+          "name": "server-log batch evidence",
+          "status": "pass",
+          "evidence": "physical CUDA graph batch 63 and target-sized decode rows appear on every DP rank"
+        },
+        {
+          "name": "Complete four-wave, eight-device generation",
+          "status": "pass",
+          "evidence": "107332 events across 32 full-model graph executions in four waves; global envelope 282.461119 ms"
+        },
+        {
+          "name": "Local physical-rate scope",
+          "status": "pass",
+          "evidence": "GPU0 physical CUDA graph B=63; global B=500 is never divided by the GPU0 active-union denominator"
         }
-      ],
-      "overall_ok": true,
-      "errors": [],
-      "expected_batches": [
-        1,
-        10,
-        100
-      ],
-      "expected_gpu_count": 8,
-      "raw_capture_kernel_count": 173536,
-      "analysis_kernel_count": 173536,
-      "graph_execution_count": 48,
-      "runtime_graph_launch_api_count": 48
-    },
-    "B=200/500 @ 832-token context": {
-      "status": "pass",
-      "checks": [
-        {
-          "name": "B=200 request, scheduler, graph, and no-prefill proof",
-          "status": "pass",
-          "evidence": "real_bs=200; graph_bs=200; prefill=0; speculative=False"
-        },
-        {
-          "name": "B=500 request, scheduler, graph, and no-prefill proof",
-          "status": "pass",
-          "evidence": "real_bs=500; graph_bs=500; prefill=0; speculative=False"
-        }
-      ],
-      "overall_ok": true,
-      "errors": [],
-      "expected_batches": [
-        200,
-        500
-      ],
-      "expected_gpu_count": 8,
-      "raw_capture_kernel_count": 132472,
-      "analysis_kernel_count": 132472,
-      "graph_execution_count": 32,
-      "runtime_graph_launch_api_count": 32
+      ]
     }
   }
 }
