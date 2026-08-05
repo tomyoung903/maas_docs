@@ -249,6 +249,75 @@ milliseconds unless a key explicitly names another unit.
 }
 ```
 
+## Optional complete B=100 DP8/EP8 display view
+
+The five keys under `batches` remain the original TP8/DP1/EP1 batch sweep,
+including native B=500. A separately captured B=100 TP8/DP8/EP8 experiment is
+added under `display_views.b100_dp8_ep8`. When present, it appears as the sixth
+`B=100 (DP&EP)` choice in the primary **Displayed batch** selector.
+
+This is a complete experiment view, not a tree overlay and not a sixth numeric
+`batches` key. Every batch-dependent panel consumes its `batch` object. Missing
+optional evidence is rendered as unavailable and must never fall back to the
+native `batches["100"]` object. Serialized inputs using the legacy `tree_views`
+key are rejected.
+
+The fixed experiment contract is:
+
+- global real batch: 100;
+- effective context: 4,096 tokens;
+- topology: TP=8, DP=8, EP=8, PP=1 with DP attention enabled;
+- local real-batch multiset: four lanes at B=12 and four lanes at B=13;
+- physical CUDA graph: B=13 per lane, 104 physical rows total and four padded
+  rows total;
+- one GPU-computed decode token per sequence, with HTTP timing excluded.
+
+The view must carry these structural fields:
+
+```text
+display_views.b100_dp8_ep8
+  label, batch_size=100, context_tokens=4096
+  topology.configured={tp:8, dp:8, ep:8, pp:1}
+  experiment.topology={tp:8, dp:8, ep:8, pp:1}
+  validation.status=pass
+  provenance.capture_id, provenance.validation_status=pass, evidence hashes
+  batch
+    status=complete, context_tokens=4096
+    proof.requested_batch=100, proof.observed_real_batch=100
+    proof.cuda_graph_batch=13
+    graph.scheduler_wave_count               # trace-derived, never hard-coded
+    graph.graph_execution_count              # trace-derived
+    kernel_timing.boundary=full_model_graph_envelope
+    kernel_timing.rate_numerator_tokens=100
+    one_rank_tree.scope.batch_size=100
+    one_rank_tree.scope.local_physical_batch_size=13
+    one_rank_tree.scope.context_tokens=4096
+    one_rank_tree.layer_ledger                # exactly layers 0 through 77
+```
+
+All timing values, wave counts, execution counts, launch counts, category
+ledgers, and kernel rows must come from the genuine B=100 capture and its passing
+semantic audit. The adapter intentionally refuses the copied B=500 ledger and
+does not provide placeholder metrics.
+
+The generator rejects the view unless its configured and experiment topologies
+match, validation and provenance pass, view/batch/tree context counts agree,
+scope and root timing reconcile, child event counts add to their parents, and
+the layer ledger covers all 78 decoder layers. The primary selector renders
+five choices when `display_views` is absent and six when it is present.
+
+The primary displayed DP8 rate divides 100 useful computed tokens by the
+audited full model-graph envelope across the capture. The representative GPU0
+tree is a narrower physical B=13 diagnostic; global B=100 must never be divided
+by that representative replay's active union. Native-B1 scaling fields remain
+null because the DP8 full-capture boundary and topology differ from the native
+DP1 GPU0-active-union boundary, even though both use a 4,096-token context.
+
+When `provenance.artifacts` supplies relative paths, the generator publishes
+those evidence files under `downloads/` without changing the five native batch
+objects. The measured DP8 view intentionally omits MFU, MBU, FLOP numerators,
+and byte numerators until a separately reviewed utilization model exists.
+
 ## Download declarations
 
 `downloads` can contain a relative path string or an object with `path` and an
