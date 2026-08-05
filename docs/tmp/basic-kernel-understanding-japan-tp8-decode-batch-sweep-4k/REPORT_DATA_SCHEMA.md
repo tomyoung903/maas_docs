@@ -249,6 +249,70 @@ milliseconds unless a key explicitly names another unit.
 }
 ```
 
+## Optional B=500 DP8/EP8 tree-only view
+
+The five keys under `batches` remain the page-wide TP8/DP1/EP1 experiment.
+An independently captured B=500 DP8/EP8 execution tree can be added under the
+optional `tree_views.b500_dp8_ep8` key. It affects only the nested selector in
+the `one-rank-tree` section; it never enters the batch comparison, headline
+rate, timeline, event table, or global experiment topology.
+
+```json
+{
+  "tree_views": {
+    "b500_dp8_ep8": {
+      "label": "B=500 · DP8/EP8",
+      "batch_size": 500,
+      "context_tokens": 4096,
+      "topology": {
+        "configured": {"tp": 8, "dp": 8, "ep": 8, "pp": 1},
+        "phase_roles": {
+          "attention": "DP8 × attention-TP1",
+          "dense": "TP8",
+          "moe": "EP8"
+        }
+      },
+      "provenance": {
+        "capture_id": "stable capture identifier",
+        "validation_status": "pass"
+      },
+      "one_rank_tree": {
+        "scope": {
+          "device": 0,
+          "rank_label": "DP0 / TP0 / EP0",
+          "batch_size": 500,
+          "context_tokens": 4096,
+          "launch_count": 1,
+          "graph_wall_span_ms": 1.0,
+          "active_union_ms": 1.0,
+          "aggregate_kernel_ms": 1.0
+        },
+        "constants": {},
+        "tree": {
+          "id": "GPU0-DP8-EP8",
+          "title": "Measured DP8/EP8 GPU 0 graph",
+          "role": "one physical rank as attention, dense, and expert groups change",
+          "event_count": 1,
+          "active_union_ms": 1.0,
+          "aggregate_kernel_ms": 1.0,
+          "wall_span_ms": 1.0,
+          "children": []
+        },
+        "layer_ledger": ["exactly 78 rows, layers 0 through 77"],
+        "method": {},
+        "download_href": "gpu0_kernel_tree.json"
+      }
+    }
+  }
+}
+```
+
+The generator rejects an alternate view unless its configured topology is
+exactly TP8/DP8/EP8/PP1, its provenance says validation passed, its scope and
+root timing reconcile, child event counts add to their parents, and its layer
+ledger covers all 78 decoder layers. The generator does not derive or invent
+this alternate tree from the TP8/DP1/EP1 `kernel_events.csv.gz`.
+
 ## Download declarations
 
 `downloads` can contain a relative path string or an object with `path` and an

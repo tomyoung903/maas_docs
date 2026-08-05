@@ -18990,5 +18990,3421 @@
         "moe_bytes": "Routed expert IDs were not captured, so the expert-weight byte numerator assumes maximum reuse and is only a strict lower bound."
       }
     }
+  },
+  "tree_views": {
+    "b500_dp8_ep8": {
+      "label": "B=500 \u00b7 TP8/DP8/EP8 \u00b7 GPU0 local graph B=63",
+      "batch_size": 500,
+      "context_tokens": 3072,
+      "topology": {
+        "configured": {
+          "tp": 8,
+          "dp": 8,
+          "ep": 8,
+          "pp": 1
+        },
+        "phase_roles": {
+          "attention": "DP-attention lanes partition the global request batch",
+          "moe": "TP8/EP8 model-parallel routed and shared expert execution",
+          "output": "DP hidden-state zero-fill/copy + AllReduce before LM head; TP vocabulary AllGather after LM head"
+        }
+      },
+      "provenance": {
+        "capture_id": "sha256:5896e0eeec95f684:gpu0:graph2:execution72031",
+        "validation_status": "pass",
+        "audit_sha256": "bb96bef01bae8f60ea89b4b4834b008c8e6e79566c5ce961c7b7fccf71c850dc",
+        "ledger_sha256": "5896e0eeec95f68446c55011d711a55c8dabd3db9127f757bc3459a6c5c9cbaa",
+        "event_ownership_sha256": "26e433d9393a57f3311045f826730a59d133a3ebf8525275e2f86c90b7871475",
+        "representative_execution": {
+          "graph_family": 2,
+          "device": 0,
+          "execution": "72031"
+        },
+        "artifacts": [
+          {
+            "role": "compact_kernel_ledger",
+            "path": "dp8_evidence/codex_dp8_b500_ctx3072_kernel_events_20260805.csv.gz",
+            "sha256": "5896e0eeec95f68446c55011d711a55c8dabd3db9127f757bc3459a6c5c9cbaa",
+            "size_bytes": 2256447
+          },
+          {
+            "role": "final_trace_audit",
+            "path": "dp8_evidence/dp8_trace_audit.json",
+            "sha256": "bb96bef01bae8f60ea89b4b4834b008c8e6e79566c5ce961c7b7fccf71c850dc",
+            "size_bytes": 508151
+          },
+          {
+            "role": "experiment_contract",
+            "path": "dp8_evidence/experiment_contract.md",
+            "sha256": "bab130abb383e143e0621a1863c2562f04cfe3cebfc85436221ad9c82ff69473",
+            "size_bytes": 2093
+          },
+          {
+            "role": "request_outcome",
+            "path": "dp8_evidence/outcome.json",
+            "sha256": "cf902c617ad323feda89fe1c38d39c33691c24da3e34fc3c3d2ccee6d32023f0",
+            "size_bytes": 75837
+          },
+          {
+            "role": "extraction_metadata",
+            "path": "dp8_evidence/codex_dp8_b500_ctx3072_extraction_metadata_20260805.json",
+            "sha256": "b31d94f164edd57100dc594555f203c15fc325b4d58c3f9a92ca9b670f658df0",
+            "size_bytes": 667
+          }
+        ],
+        "boundary_note": "The tree contains one complete representative GPU-0 graph-family-2 execution (correlation 72031). Global B=500 is distributed over DP8; this physical graph computes 63 local rows at 3,072 context tokens. It is not an eight-rank summed timeline."
+      },
+      "one_rank_tree": {
+        "scope": {
+          "device": 0,
+          "rank_label": "Representative GPU 0 physical graph; real 62/63 request assignment to a specific DP rank is not inferred",
+          "graph_key": 2,
+          "correlation": "72031",
+          "batch_size": 500,
+          "local_physical_batch_size": 63,
+          "context_tokens": 3072,
+          "launch_count": 3355,
+          "distinct_kernel_names": 56,
+          "graph_wall_span_ms": 51.63345,
+          "aggregate_kernel_ms": 43.02675,
+          "active_union_ms": 40.560798,
+          "overlap_excess_ms": 2.465952,
+          "idle_gap_ms": 11.072652,
+          "refresh_layers": [
+            0,
+            1,
+            2,
+            6,
+            10,
+            14,
+            18,
+            22,
+            26,
+            30,
+            34,
+            38,
+            42,
+            46,
+            50,
+            54,
+            58,
+            62,
+            66,
+            70,
+            74
+          ],
+          "dense_layers": 3,
+          "sparse_moe_layers": 75
+        },
+        "constants": {
+          "utilization_model": "not emitted; reviewed MFU/MBU numerators unavailable",
+          "sources": [
+            {
+              "label": "Final DP8 semantic trace audit"
+            },
+            {
+              "label": "Compact GPU kernel-event ledger"
+            }
+          ]
+        },
+        "tree": {
+          "id": "GPU0-DP8",
+          "title": "GPU 0 TP8/DP8/EP8 decode graph \u00b7 global B=500 \u00b7 local CUDA graph B=63",
+          "role": "One representative physical CUDA graph on GPU 0; global request count is contractual and not a per-GPU launch count.",
+          "event_count": 3355,
+          "aggregate_kernel_ms": 43.02675,
+          "active_union_ms": 40.560798,
+          "overlap_excess_ms": 2.465952,
+          "wall_span_ms": 51.63345,
+          "idle_gap_ms": 11.072652,
+          "precision": "trace-measured timing; no MFU/MBU numerator",
+          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+          "assessment": "This is a measured structural and timing view. MFU and MBU remain blank because no reviewed arithmetic or byte numerator was supplied.",
+          "assessment_level": "trace-only",
+          "branch": "root",
+          "children": [
+            {
+              "id": "2",
+              "title": "Decoder stack",
+              "role": "Execute 78 layers; each layer owns one attention branch and one dense or sparse feed-forward branch.",
+              "event_count": 3342,
+              "aggregate_kernel_ms": 42.14022,
+              "active_union_ms": 39.674268,
+              "overlap_excess_ms": 2.465952,
+              "wall_span_ms": 50.738984,
+              "idle_gap_ms": 11.064716,
+              "precision": "trace-measured timing; no MFU/MBU numerator",
+              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+              "assessment_level": "trace-only",
+              "branch": "decoder",
+              "children": [
+                {
+                  "id": "2.1",
+                  "title": "Attention sublayers \u00b7 78 measured layer calls",
+                  "role": "Aggregate the 78 semantically discovered attention branches, including refresh/reuse indexer work, MLA, projections, and TP handoffs.",
+                  "event_count": 1743,
+                  "aggregate_kernel_ms": 14.149556,
+                  "active_union_ms": 13.293715,
+                  "overlap_excess_ms": 0.855841,
+                  "wall_span_ms": 50.568039,
+                  "idle_gap_ms": 37.274324,
+                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                  "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                  "assessment_level": "trace-only",
+                  "branch": "attention",
+                  "children": [
+                    {
+                      "id": "2.1.C1",
+                      "title": "Attention Indexer",
+                      "role": "Trace taxonomy: attention_indexer",
+                      "event_count": 63,
+                      "aggregate_kernel_ms": 0.35104,
+                      "active_union_ms": 0.35104,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 49.291492,
+                      "idle_gap_ms": 48.940452,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "2.1.C1.K1",
+                          "title": "<unnamed>::topk_transform_decode_kernel(<unnamed>::FastTopKParams, int *, const int *, long)",
+                          "role": "Attention Indexer",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.238976,
+                          "active_union_ms": 0.238976,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.283044,
+                          "idle_gap_ms": 49.044068,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C1.K2",
+                          "title": "void <unnamed>::fused_store_indexer_cache<__nv_bfloat16, long, (unsigned int)6, (bool)1>(<unnamed>::FusedStoreCacheParam)",
+                          "role": "Attention Indexer",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.029792,
+                          "active_union_ms": 0.029792,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.27306,
+                          "idle_gap_ms": 49.243268,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C1.K3",
+                          "title": "void deep_gemm::sm90_fp8_paged_mqa_logits<(unsigned int)1, (unsigned int)32, (unsigned int)128, (unsigned int)64, (bool)1, (bool)0, (unsigned int)3, (unsigned int)3, (unsigned int)256, (unsigned int)128, (unsigned int)512, float>(unsigned int, unsigned int, unsigned int, const unsigned int *, T12 *, const unsigned int *, const unsigned int *, const unsigned int *, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                          "role": "Attention Indexer",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.082272,
+                          "active_union_ms": 0.082272,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.27546,
+                          "idle_gap_ms": 49.193188,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2.1.C2",
+                      "title": "Attention Mla",
+                      "role": "Trace taxonomy: attention_mla",
+                      "event_count": 568,
+                      "aggregate_kernel_ms": 6.373038,
+                      "active_union_ms": 6.040428,
+                      "overlap_excess_ms": 0.33261,
+                      "wall_span_ms": 50.560263,
+                      "idle_gap_ms": 44.519835,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "2.1.C2.K1",
+                          "title": "<unnamed>::concat_mla_absorb_q_kernel(__nv_bfloat16 *, __nv_bfloat16 *, __nv_bfloat16 *, int, int, long, int, long, int, long, int)",
+                          "role": "Attention Mla",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.22256,
+                          "active_union_ms": 0.22256,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.353927,
+                          "idle_gap_ms": 50.131367,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C2.K2",
+                          "title": "kernel_cutlass_kernel_flashinfernormkernelsfused_add_rmsnormFusedAddRMSNormKernel_object_at__tensorptrbf16gmemalign128o614461441_tensorptrbf16gmemalign128o614461441_tensorptrbf16gmemalign_0",
+                          "role": "Attention Mla",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.310017,
+                          "active_union_ms": 0.310017,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.354567,
+                          "idle_gap_ms": 50.04455,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C2.K3",
+                          "title": "kernel_cutlass_kernel_flashinfernormkernelslayernormLayerNormKernel_object_at__tensorptrbf16gmemalign16o128div41_tensorptrbf16gmemalign16o128div41_tensorptrf32gmemalign16o1281_tensorptrf3_0",
+                          "role": "Attention Mla",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.030208,
+                          "active_union_ms": 0.030208,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.27322,
+                          "idle_gap_ms": 49.243012,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C2.K4",
+                          "title": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign128o614461441_tensorptrbf16gmemalign16o61441_tensorptrbf16gmemalign128o614461441___True_2__0",
+                          "role": "Attention Mla",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.0032,
+                          "active_union_ms": 0.0032,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.0032,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C2.K5",
+                          "title": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16o2048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16o2048i64div81___Tru_0",
+                          "role": "Attention Mla",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.178847,
+                          "active_union_ms": 0.178847,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.394471,
+                          "idle_gap_ms": 50.215624,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C2.K6",
+                          "title": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16o512i64div81_tensorptrbf16gmemalign16o5121_tensorptrbf16gmemalign16o512i64div81___True_4_0",
+                          "role": "Attention Mla",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.115905,
+                          "active_union_ms": 0.115905,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.393863,
+                          "idle_gap_ms": 50.277958,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C2.K7",
+                          "title": "set_mla_kv_buffer_kernel",
+                          "role": "Attention Mla",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.12368,
+                          "active_union_ms": 0.12368,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.352647,
+                          "idle_gap_ms": 50.228967,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C2.K8",
+                          "title": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+                          "role": "Attention Mla",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 4.871947,
+                          "active_union_ms": 4.871947,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.413191,
+                          "idle_gap_ms": 45.541244,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C2.K9",
+                          "title": "void smxx::decode::flash_fwd_mla_combine_kernel<cutlass::bfloat16_t, (int)512, (int)8, (int)160, (int)256>(CombineParams)",
+                          "role": "Attention Mla",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.516674,
+                          "active_union_ms": 0.516674,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.357383,
+                          "idle_gap_ms": 49.840709,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2.1.C3",
+                      "title": "Attention Projection",
+                      "role": "Trace taxonomy: attention_projection",
+                      "event_count": 177,
+                      "aggregate_kernel_ms": 1.388833,
+                      "active_union_ms": 1.388833,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 50.501478,
+                      "idle_gap_ms": 49.112645,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "2.1.C3.K1",
+                          "title": "nvjet_sm90_tss_64x8_64x16_1x4_h_bz_splitK_TNT",
+                          "role": "Attention Projection",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.154335,
+                          "active_union_ms": 0.154335,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.281604,
+                          "idle_gap_ms": 49.127269,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C3.K2",
+                          "title": "nvjet_sm90_tst_128x64_64x8_2x1_v_bz_TNT",
+                          "role": "Attention Projection",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.699392,
+                          "active_union_ms": 0.699392,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.35991,
+                          "idle_gap_ms": 49.660518,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C3.K3",
+                          "title": "nvjet_sm90_tst_256x64_64x5_2x1_v_bz_TNT",
+                          "role": "Attention Projection",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.535106,
+                          "active_union_ms": 0.535106,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.357639,
+                          "idle_gap_ms": 49.822533,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2.1.C4",
+                      "title": "Gemm Other",
+                      "role": "Trace taxonomy: gemm_other",
+                      "event_count": 552,
+                      "aggregate_kernel_ms": 5.217924,
+                      "active_union_ms": 5.068484,
+                      "overlap_excess_ms": 0.14944,
+                      "wall_span_ms": 50.553158,
+                      "idle_gap_ms": 45.484674,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "2.1.C4.K1",
+                          "title": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+                          "role": "Gemm Other",
+                          "event_count": 276,
+                          "aggregate_kernel_ms": 0.50944,
+                          "active_union_ms": 0.507936,
+                          "overlap_excess_ms": 0.001504,
+                          "wall_span_ms": 50.518791,
+                          "idle_gap_ms": 50.010855,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C4.K2",
+                          "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)8, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                          "role": "Gemm Other",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 1.014499,
+                          "active_union_ms": 1.014499,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.404359,
+                          "idle_gap_ms": 49.38986,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C4.K3",
+                          "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)16, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)32, (unsigned int)16, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                          "role": "Gemm Other",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.176832,
+                          "active_union_ms": 0.176832,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.280964,
+                          "idle_gap_ms": 49.104132,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C4.K4",
+                          "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)32, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)16, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                          "role": "Gemm Other",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.764067,
+                          "active_union_ms": 0.764067,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.402599,
+                          "idle_gap_ms": 49.638532,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C4.K5",
+                          "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)48, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)32, (unsigned int)15, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                          "role": "Gemm Other",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 2.622974,
+                          "active_union_ms": 2.622974,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.384902,
+                          "idle_gap_ms": 47.761928,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C4.K6",
+                          "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)64, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)13, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)72, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                          "role": "Gemm Other",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.130112,
+                          "active_union_ms": 0.130112,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.276644,
+                          "idle_gap_ms": 49.146532,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2.1.C5",
+                      "title": "Memory Elementwise",
+                      "role": "Trace taxonomy: memory_elementwise",
+                      "event_count": 101,
+                      "aggregate_kernel_ms": 0.300704,
+                      "active_union_ms": 0.300704,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 50.444935,
+                      "idle_gap_ms": 50.144231,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "2.1.C5.K1",
+                          "title": "void at::native::elementwise_kernel<(int)128, (int)4, void at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 12)]::operator ()() const::[lambda(c10::BFloat16) (instance 1)]>(at::TensorIteratorBase &, const T1 &)::[lambda(int) (instance 1)]>(int, T3)",
+                          "role": "Memory Elementwise",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.168672,
+                          "active_union_ms": 0.168672,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.353159,
+                          "idle_gap_ms": 50.184487,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C5.K2",
+                          "title": "void at::native::vectorized_elementwise_kernel<(int)4, at::native::FillFunctor<float>, std::array<char *, (unsigned long)1>>(int, T2, T3)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.00112,
+                          "active_union_ms": 0.00112,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.00112,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C5.K3",
+                          "title": "void at::native::vectorized_gather_kernel<(int)16, long>(char *, char *, T2 *, int, long, long, long, long, bool)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.001824,
+                          "active_union_ms": 0.001824,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.001824,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C5.K4",
+                          "title": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, float, float, float, (bool)0, float, float, float, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T10 *, T9 *, T5 *, const T6 *, const T6 *, const T11 *, const T4 *, T11 *, void *, long, T6 *, int *, T6 *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
+                          "role": "Memory Elementwise",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.129088,
+                          "active_union_ms": 0.129088,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.277988,
+                          "idle_gap_ms": 49.1489,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2.1.C6",
+                      "title": "Norm Rope Quant",
+                      "role": "Trace taxonomy: norm_rope_quant",
+                      "event_count": 198,
+                      "aggregate_kernel_ms": 0.376897,
+                      "active_union_ms": 0.376897,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 50.390087,
+                      "idle_gap_ms": 50.01319,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "2.1.C6.K1",
+                          "title": "_act_quant_kernel",
+                          "role": "Norm Rope Quant",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.038913,
+                          "active_union_ms": 0.038913,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.273444,
+                          "idle_gap_ms": 49.234531,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C6.K2",
+                          "title": "_quantize_k_cache_fast_kernel",
+                          "role": "Norm Rope Quant",
+                          "event_count": 78,
+                          "aggregate_kernel_ms": 0.140384,
+                          "active_union_ms": 0.140384,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.352743,
+                          "idle_gap_ms": 50.212359,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C6.K3",
+                          "title": "void <unnamed>::fused_rope_kernel<(bool)0, (long)64, (bool)1, __nv_bfloat16, long, (unsigned int)8>(<unnamed>::FusedRopeParams)",
+                          "role": "Norm Rope Quant",
+                          "event_count": 99,
+                          "aggregate_kernel_ms": 0.1976,
+                          "active_union_ms": 0.1976,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 50.385479,
+                          "idle_gap_ms": 50.187879,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2.1.C7",
+                      "title": "Other",
+                      "role": "Trace taxonomy: other",
+                      "event_count": 84,
+                      "aggregate_kernel_ms": 0.14112,
+                      "active_union_ms": 0.098368,
+                      "overlap_excess_ms": 0.042752,
+                      "wall_span_ms": 49.29706,
+                      "idle_gap_ms": 49.198692,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "2.1.C7.K1",
+                          "title": "triton_poi_fused_mul_0",
+                          "role": "Other",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.024224,
+                          "active_union_ms": 0.024224,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.27226,
+                          "idle_gap_ms": 49.248036,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C7.K2",
+                          "title": "triton_poi_fused_mul_unsqueeze_0",
+                          "role": "Other",
+                          "event_count": 21,
+                          "aggregate_kernel_ms": 0.023328,
+                          "active_union_ms": 0.023328,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 49.272932,
+                          "idle_gap_ms": 49.249604,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "2.1.C7.K3",
+                          "title": "void <unnamed>::fast_hadamard_transform_kernel<<unnamed>::FastHadamardKernelTraits<(int)16, (int)7, __nv_bfloat16>>(HadamardParamsBase)",
+                          "role": "Other",
+                          "event_count": 42,
+                          "aggregate_kernel_ms": 0.093568,
+                          "active_union_ms": 0.050816,
+                          "overlap_excess_ms": 0.042752,
+                          "wall_span_ms": 49.273956,
+                          "idle_gap_ms": 49.22314,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "2.2",
+                  "title": "Feed-forward sublayers",
+                  "role": "Dense layers 0\u20132 followed by sparse MoE layers 3\u201377 in graph-node order.",
+                  "event_count": 1599,
+                  "aggregate_kernel_ms": 27.990664,
+                  "active_union_ms": 26.394249,
+                  "overlap_excess_ms": 1.596415,
+                  "wall_span_ms": 50.519944,
+                  "idle_gap_ms": 24.125695,
+                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                  "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                  "assessment_level": "trace-only",
+                  "branch": "feed-forward",
+                  "children": [
+                    {
+                      "id": "2.2.D",
+                      "title": "Dense SwiGLU branch \u00b7 layers 0\u20132",
+                      "role": "Three dense feed-forward layers, each closed by its own audited residual boundary.",
+                      "event_count": 24,
+                      "aggregate_kernel_ms": 14.024805,
+                      "active_union_ms": 14.024037,
+                      "overlap_excess_ms": 0.000768,
+                      "wall_span_ms": 24.669986,
+                      "idle_gap_ms": 10.645949,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "dense",
+                      "children": [
+                        {
+                          "id": "2.2.D1",
+                          "title": "Dense FFN collectives \u00b7 layers 0\u20132",
+                          "role": "Exact dense AllGather and ReduceScatter events discovered inside the first three layer closures.",
+                          "event_count": 6,
+                          "aggregate_kernel_ms": 13.839014,
+                          "active_union_ms": 13.839014,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 24.666338,
+                          "idle_gap_ms": 10.827324,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                          "assessment_level": "trace-only",
+                          "branch": "collective",
+                          "children": [
+                            {
+                              "id": "2.2.D1.C1",
+                              "title": "Nccl Sync",
+                              "role": "Trace taxonomy: nccl_sync",
+                              "event_count": 6,
+                              "aggregate_kernel_ms": 13.839014,
+                              "active_union_ms": 13.839014,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 24.666338,
+                              "idle_gap_ms": 10.827324,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.D1.C1.K1",
+                                  "title": "ncclDevKernel_AllGather_RING_LL(ncclDevKernelArgsStorage<(unsigned long)4096>)",
+                                  "role": "Nccl Sync",
+                                  "event_count": 3,
+                                  "aggregate_kernel_ms": 1.429957,
+                                  "active_union_ms": 1.429957,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 2.386055,
+                                  "idle_gap_ms": 0.956098,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.D1.C1.K2",
+                                  "title": "ncclDevKernel_ReduceScatter_Sum_bf16_RING_LL(ncclDevKernelArgsStorage<(unsigned long)4096>)",
+                                  "role": "Nccl Sync",
+                                  "event_count": 3,
+                                  "aggregate_kernel_ms": 12.409057,
+                                  "active_union_ms": 12.409057,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 23.23715,
+                                  "idle_gap_ms": 10.828093,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "2.2.D2",
+                          "title": "Dense FFN compute and support \u00b7 layers 0\u20132",
+                          "role": "All non-collective dense-branch events inside the audited layer boundaries.",
+                          "event_count": 18,
+                          "aggregate_kernel_ms": 0.185791,
+                          "active_union_ms": 0.185791,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 23.309758,
+                          "idle_gap_ms": 23.123967,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                          "assessment_level": "trace-only",
+                          "branch": "dense",
+                          "children": [
+                            {
+                              "id": "2.2.D2.C1",
+                              "title": "Attention Mla",
+                              "role": "Trace taxonomy: attention_mla",
+                              "event_count": 3,
+                              "aggregate_kernel_ms": 0.01232,
+                              "active_union_ms": 0.01232,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 22.963613,
+                              "idle_gap_ms": 22.951293,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.D2.C1.K1",
+                                  "title": "kernel_cutlass_kernel_flashinfernormkernelsfused_add_rmsnormFusedAddRMSNormKernel_object_at__tensorptrbf16gmemalign128o614461441_tensorptrbf16gmemalign128o614461441_tensorptrbf16gmemalign_0",
+                                  "role": "Attention Mla",
+                                  "event_count": 3,
+                                  "aggregate_kernel_ms": 0.01232,
+                                  "active_union_ms": 0.01232,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 22.963613,
+                                  "idle_gap_ms": 22.951293,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.D2.C2",
+                              "title": "Gemm Other",
+                              "role": "Trace taxonomy: gemm_other",
+                              "event_count": 12,
+                              "aggregate_kernel_ms": 0.167297,
+                              "active_union_ms": 0.167297,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 1.084419,
+                              "idle_gap_ms": 0.917122,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.D2.C2.K1",
+                                  "title": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+                                  "role": "Gemm Other",
+                                  "event_count": 6,
+                                  "aggregate_kernel_ms": 0.014944,
+                                  "active_union_ms": 0.014944,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 1.050755,
+                                  "idle_gap_ms": 1.035811,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.D2.C2.K2",
+                                  "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)128, (unsigned int)192, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)4, (unsigned int)128, (unsigned int)256, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                                  "role": "Gemm Other",
+                                  "event_count": 3,
+                                  "aggregate_kernel_ms": 0.099905,
+                                  "active_union_ms": 0.099905,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 1.058819,
+                                  "idle_gap_ms": 0.958914,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.D2.C2.K3",
+                                  "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)128, (unsigned int)96, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)7, (unsigned int)128, (unsigned int)256, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                                  "role": "Gemm Other",
+                                  "event_count": 3,
+                                  "aggregate_kernel_ms": 0.052448,
+                                  "active_union_ms": 0.052448,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 1.043139,
+                                  "idle_gap_ms": 0.990691,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.D2.C3",
+                              "title": "Memory Elementwise",
+                              "role": "Trace taxonomy: memory_elementwise",
+                              "event_count": 3,
+                              "aggregate_kernel_ms": 0.006174,
+                              "active_union_ms": 0.006174,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 1.027458,
+                              "idle_gap_ms": 1.021284,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.D2.C3.K1",
+                                  "title": "void <unnamed>::act_and_mul_kernel<__nv_bfloat16, (<unnamed>::ActivationKind)0, (bool)1, (bool)0>(<unnamed>::ActivationParams)",
+                                  "role": "Memory Elementwise",
+                                  "event_count": 3,
+                                  "aggregate_kernel_ms": 0.006174,
+                                  "active_union_ms": 0.006174,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 1.027458,
+                                  "idle_gap_ms": 1.021284,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2.2.M",
+                      "title": "Sparse MoE branch \u00b7 layers 3\u201377",
+                      "role": "Seventy-five sparse layers with separately owned routed, shared, and support paths.",
+                      "event_count": 1575,
+                      "aggregate_kernel_ms": 13.965859,
+                      "active_union_ms": 12.370212,
+                      "overlap_excess_ms": 1.595647,
+                      "wall_span_ms": 25.679429,
+                      "idle_gap_ms": 13.309217,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "moe",
+                      "children": [
+                        {
+                          "id": "2.2.M1",
+                          "title": "Routed-expert path \u00b7 75 sparse layers",
+                          "role": "DeepEP dispatch, routed expert GEMMs, DeepEP combine, and their semantically enclosed stream work.",
+                          "event_count": 825,
+                          "aggregate_kernel_ms": 11.001085,
+                          "active_union_ms": 10.997053,
+                          "overlap_excess_ms": 0.004032,
+                          "wall_span_ms": 25.660805,
+                          "idle_gap_ms": 14.663752,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                          "assessment_level": "trace-only",
+                          "branch": "moe-routed",
+                          "children": [
+                            {
+                              "id": "2.2.M1.C1",
+                              "title": "Deepep Exchange",
+                              "role": "Trace taxonomy: deepep_exchange",
+                              "event_count": 300,
+                              "aggregate_kernel_ms": 4.156139,
+                              "active_union_ms": 4.156139,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.640741,
+                              "idle_gap_ms": 21.484602,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M1.C1.K1",
+                                  "title": "void deep_ep::internode_ll::combine<(bool)0, (int)6144, (int)11, (int)4>(void *, void *, int *, void *, const void *, const long *, const float *, const int *, const long *, long *, int *, int, int *, int, int, int, int, int, int, int, int, int, int, bool)",
+                                  "role": "Deepep Exchange",
+                                  "event_count": 150,
+                                  "aggregate_kernel_ms": 3.023496,
+                                  "active_union_ms": 3.023496,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.571365,
+                                  "idle_gap_ms": 22.547869,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.M1.C1.K2",
+                                  "title": "void deep_ep::internode_ll::dispatch<(bool)1, (bool)0, (int)6144>(void *, void *, int *, long *, int *, int *, long *, void *, int *, void *, const void *, const long *, int *, int *, int *, int, int, int, int, int, int, int, int, int, bool, int)",
+                                  "role": "Deepep Exchange",
+                                  "event_count": 150,
+                                  "aggregate_kernel_ms": 1.132643,
+                                  "active_union_ms": 1.132643,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.525956,
+                                  "idle_gap_ms": 24.393313,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M1.C2",
+                              "title": "Gemm Other",
+                              "role": "Trace taxonomy: gemm_other",
+                              "event_count": 75,
+                              "aggregate_kernel_ms": 0.201952,
+                              "active_union_ms": 0.201952,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.542757,
+                              "idle_gap_ms": 25.340805,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M1.C2.K1",
+                                  "title": "void deep_gemm::transpose_fp32<(unsigned int)512, (unsigned int)64, (unsigned int)16, (unsigned int)17>(const float *, float *, unsigned int)",
+                                  "role": "Gemm Other",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.201952,
+                                  "active_union_ms": 0.201952,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.542757,
+                                  "idle_gap_ms": 25.340805,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M1.C3",
+                              "title": "Memory Elementwise",
+                              "role": "Trace taxonomy: memory_elementwise",
+                              "event_count": 75,
+                              "aggregate_kernel_ms": 0.417312,
+                              "active_union_ms": 0.417312,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.515812,
+                              "idle_gap_ms": 25.0985,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M1.C3.K1",
+                                  "title": "void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 4)]::operator ()() const::[lambda(long) (instance 1)], std::array<char *, (unsigned long)2>, (int)4, TrivialOffsetCalculator<(int)1, unsigned int>, TrivialOffsetCalculator<(int)1, unsigned int>, at::native::memory::LoadWithCast<(int)1>, at::native::memory::StoreWithCast<(int)1>>(int, T1, T2, T4, T5, T6, T7)",
+                                  "role": "Memory Elementwise",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.417312,
+                                  "active_union_ms": 0.417312,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.515812,
+                                  "idle_gap_ms": 25.0985,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M1.C4",
+                              "title": "Moe Down Gemm",
+                              "role": "Trace taxonomy: moe_down_gemm",
+                              "event_count": 75,
+                              "aggregate_kernel_ms": 1.80941,
+                              "active_union_ms": 1.80941,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.572453,
+                              "idle_gap_ms": 23.763043,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M1.C4.K1",
+                                  "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)6144, (unsigned int)2048, (unsigned int)32, (unsigned int)64, (unsigned int)192, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)6, (unsigned int)128, (unsigned int)128, (unsigned int)2, (bool)0, (unsigned int)132, (deep_gemm::GemmType)2, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                                  "role": "Moe Down Gemm",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 1.80941,
+                                  "active_union_ms": 1.80941,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.572453,
+                                  "idle_gap_ms": 23.763043,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M1.C5",
+                              "title": "Moe Routing",
+                              "role": "Trace taxonomy: moe_routing",
+                              "event_count": 150,
+                              "aggregate_kernel_ms": 0.977406,
+                              "active_union_ms": 0.976414,
+                              "overlap_excess_ms": 0.000992,
+                              "wall_span_ms": 25.521188,
+                              "idle_gap_ms": 24.544774,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M1.C5.K1",
+                                  "title": "<unnamed>::mask_topk_ids_padded_region(<unnamed>::TopKParams)",
+                                  "role": "Moe Routing",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.118048,
+                                  "active_union_ms": 0.118048,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.508932,
+                                  "idle_gap_ms": 25.390884,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.M1.C5.K2",
+                                  "title": "void <unnamed>::grouped_topk_single_group_kernel<(int)256>(const float *, float *, int *, const float *, long, long, long, bool, float)",
+                                  "role": "Moe Routing",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.859358,
+                                  "active_union_ms": 0.859358,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.519876,
+                                  "idle_gap_ms": 24.660518,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M1.C6",
+                              "title": "Moe Up Gemm",
+                              "role": "Trace taxonomy: moe_up_gemm",
+                              "event_count": 75,
+                              "aggregate_kernel_ms": 2.894642,
+                              "active_union_ms": 2.894642,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.565573,
+                              "idle_gap_ms": 22.670931,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M1.C6.K1",
+                                  "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)4096, (unsigned int)6144, (unsigned int)32, (unsigned int)64, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)8, (unsigned int)128, (unsigned int)128, (unsigned int)2, (bool)0, (unsigned int)132, (deep_gemm::GemmType)2, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                                  "role": "Moe Up Gemm",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 2.894642,
+                                  "active_union_ms": 2.894642,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.565573,
+                                  "idle_gap_ms": 22.670931,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M1.C7",
+                              "title": "Norm Rope Quant",
+                              "role": "Trace taxonomy: norm_rope_quant",
+                              "event_count": 75,
+                              "aggregate_kernel_ms": 0.544224,
+                              "active_union_ms": 0.544224,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.547109,
+                              "idle_gap_ms": 25.002885,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M1.C7.K1",
+                                  "title": "void <unnamed>::silu_mul_quant_varlen_kernel<(bool)0, (bool)0, (bool)0, (bool)1, (bool)0>(<unnamed>::SiluMulQuantVarlenParams)",
+                                  "role": "Norm Rope Quant",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.544224,
+                                  "active_union_ms": 0.544224,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.547109,
+                                  "idle_gap_ms": 25.002885,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "2.2.M2",
+                          "title": "Shared-expert path \u00b7 75 sparse layers",
+                          "role": "Independent-stream shared-expert quantization, two type-0 DeepGEMMs, and activation motifs.",
+                          "event_count": 375,
+                          "aggregate_kernel_ms": 1.751426,
+                          "active_union_ms": 1.74861,
+                          "overlap_excess_ms": 0.002816,
+                          "wall_span_ms": 25.534148,
+                          "idle_gap_ms": 23.785538,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                          "assessment_level": "trace-only",
+                          "branch": "moe-shared",
+                          "children": [
+                            {
+                              "id": "2.2.M2.C1",
+                              "title": "Gemm Other",
+                              "role": "Trace taxonomy: gemm_other",
+                              "event_count": 300,
+                              "aggregate_kernel_ms": 1.640835,
+                              "active_union_ms": 1.640515,
+                              "overlap_excess_ms": 0.00032,
+                              "wall_span_ms": 25.534148,
+                              "idle_gap_ms": 23.893633,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M2.C1.K1",
+                                  "title": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+                                  "role": "Gemm Other",
+                                  "event_count": 150,
+                                  "aggregate_kernel_ms": 0.257666,
+                                  "active_union_ms": 0.257666,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.526532,
+                                  "idle_gap_ms": 25.268866,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.M2.C1.K2",
+                                  "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)32, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)16, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                                  "role": "Gemm Other",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.859073,
+                                  "active_union_ms": 0.859073,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.52058,
+                                  "idle_gap_ms": 24.661507,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.M2.C1.K3",
+                                  "title": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)48, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)32, (unsigned int)15, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+                                  "role": "Gemm Other",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.524096,
+                                  "active_union_ms": 0.524096,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.515844,
+                                  "idle_gap_ms": 24.991748,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M2.C2",
+                              "title": "Memory Elementwise",
+                              "role": "Trace taxonomy: memory_elementwise",
+                              "event_count": 75,
+                              "aggregate_kernel_ms": 0.110591,
+                              "active_union_ms": 0.110591,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.510212,
+                              "idle_gap_ms": 25.399621,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M2.C2.K1",
+                                  "title": "void <unnamed>::act_and_mul_kernel<__nv_bfloat16, (<unnamed>::ActivationKind)0, (bool)1, (bool)0>(<unnamed>::ActivationParams)",
+                                  "role": "Memory Elementwise",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.110591,
+                                  "active_union_ms": 0.110591,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.510212,
+                                  "idle_gap_ms": 25.399621,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "2.2.M3",
+                          "title": "Sparse-layer support and residual closure",
+                          "role": "Remaining uniquely owned events inside each sparse FFN boundary.",
+                          "event_count": 375,
+                          "aggregate_kernel_ms": 1.213348,
+                          "active_union_ms": 1.212868,
+                          "overlap_excess_ms": 0.00048,
+                          "wall_span_ms": 25.679429,
+                          "idle_gap_ms": 24.466561,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                          "assessment_level": "trace-only",
+                          "branch": "support",
+                          "children": [
+                            {
+                              "id": "2.2.M3.C1",
+                              "title": "Attention Mla",
+                              "role": "Trace taxonomy: attention_mla",
+                              "event_count": 75,
+                              "aggregate_kernel_ms": 0.299583,
+                              "active_union_ms": 0.299583,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.560677,
+                              "idle_gap_ms": 25.261094,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M3.C1.K1",
+                                  "title": "kernel_cutlass_kernel_flashinfernormkernelsfused_add_rmsnormFusedAddRMSNormKernel_object_at__tensorptrbf16gmemalign128o614461441_tensorptrbf16gmemalign128o614461441_tensorptrbf16gmemalign_0",
+                                  "role": "Attention Mla",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.299583,
+                                  "active_union_ms": 0.299583,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.560677,
+                                  "idle_gap_ms": 25.261094,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M3.C2",
+                              "title": "Attention Projection",
+                              "role": "Trace taxonomy: attention_projection",
+                              "event_count": 75,
+                              "aggregate_kernel_ms": 0.376162,
+                              "active_union_ms": 0.376162,
+                              "overlap_excess_ms": 0.0,
+                              "wall_span_ms": 25.513924,
+                              "idle_gap_ms": 25.137762,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M3.C2.K1",
+                                  "title": "nvjet_sm90_tst_64x16_64x16_2x4_h_bz_splitK_TNT",
+                                  "role": "Attention Projection",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.376162,
+                                  "active_union_ms": 0.376162,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.513924,
+                                  "idle_gap_ms": 25.137762,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": "2.2.M3.C3",
+                              "title": "Memory Elementwise",
+                              "role": "Trace taxonomy: memory_elementwise",
+                              "event_count": 225,
+                              "aggregate_kernel_ms": 0.537603,
+                              "active_union_ms": 0.537123,
+                              "overlap_excess_ms": 0.00048,
+                              "wall_span_ms": 25.670021,
+                              "idle_gap_ms": 25.132898,
+                              "precision": "trace-measured timing; no MFU/MBU numerator",
+                              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                              "assessment_level": "trace-only",
+                              "branch": "category",
+                              "children": [
+                                {
+                                  "id": "2.2.M3.C3.K1",
+                                  "title": "void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 7)]::operator ()() const::[lambda(float) (instance 1)], std::array<char *, (unsigned long)2>, (int)4, TrivialOffsetCalculator<(int)1, unsigned int>, TrivialOffsetCalculator<(int)1, unsigned int>, at::native::memory::LoadWithCast<(int)1>, at::native::memory::StoreWithCast<(int)1>>(int, T1, T2, T4, T5, T6, T7)",
+                                  "role": "Memory Elementwise",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.272514,
+                                  "active_union_ms": 0.272514,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.513092,
+                                  "idle_gap_ms": 25.240578,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.M3.C3.K2",
+                                  "title": "void at::native::vectorized_elementwise_kernel<(int)8, at::native::CUDAFunctor_add<c10::BFloat16>, std::array<char *, (unsigned long)3>>(int, T2, T3)",
+                                  "role": "Memory Elementwise",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.137632,
+                                  "active_union_ms": 0.137632,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.558533,
+                                  "idle_gap_ms": 25.420901,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                },
+                                {
+                                  "id": "2.2.M3.C3.K3",
+                                  "title": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, __nv_bfloat16, float, __nv_bfloat16, (bool)0, float, __nv_bfloat16, __nv_bfloat16, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T10 *, T9 *, T5 *, const T6 *, const T6 *, const T11 *, const T4 *, T11 *, void *, long, T6 *, int *, T6 *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
+                                  "role": "Memory Elementwise",
+                                  "event_count": 75,
+                                  "aggregate_kernel_ms": 0.127457,
+                                  "active_union_ms": 0.127457,
+                                  "overlap_excess_ms": 0.0,
+                                  "wall_span_ms": 25.510564,
+                                  "idle_gap_ms": 25.383107,
+                                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                                  "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                                  "assessment_level": "trace-only",
+                                  "branch": "raw",
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "3",
+              "title": "Output tail",
+              "role": "Finalize the hidden state, perform the DP gather chain, run the local LM head, assemble TP vocabulary logits, and hand off output.",
+              "event_count": 13,
+              "aggregate_kernel_ms": 0.88653,
+              "active_union_ms": 0.88653,
+              "overlap_excess_ms": 0.0,
+              "wall_span_ms": 0.89405,
+              "idle_gap_ms": 0.00752,
+              "precision": "trace-measured timing; no MFU/MBU numerator",
+              "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+              "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+              "assessment_level": "trace-only",
+              "branch": "output",
+              "children": [
+                {
+                  "id": "T1",
+                  "title": "Tail preparation before DP hidden-state gather",
+                  "role": "Final normalization and index/copy support preceding the DP gather chain.",
+                  "event_count": 4,
+                  "aggregate_kernel_ms": 0.004416,
+                  "active_union_ms": 0.004416,
+                  "overlap_excess_ms": 0.0,
+                  "wall_span_ms": 0.0056,
+                  "idle_gap_ms": 0.001184,
+                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                  "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                  "assessment_level": "trace-only",
+                  "branch": "support",
+                  "children": [
+                    {
+                      "id": "T1.C1",
+                      "title": "Memory Elementwise",
+                      "role": "Trace taxonomy: memory_elementwise",
+                      "event_count": 2,
+                      "aggregate_kernel_ms": 0.002144,
+                      "active_union_ms": 0.002144,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 0.0056,
+                      "idle_gap_ms": 0.003456,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "T1.C1.K1",
+                          "title": "void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 4)]::operator ()() const::[lambda(long) (instance 1)], std::array<char *, (unsigned long)2>, (int)4, TrivialOffsetCalculator<(int)1, unsigned int>, TrivialOffsetCalculator<(int)1, unsigned int>, at::native::memory::LoadWithCast<(int)1>, at::native::memory::StoreWithCast<(int)1>>(int, T1, T2, T4, T5, T6, T7)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.00128,
+                          "active_union_ms": 0.00128,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.00128,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "T1.C1.K2",
+                          "title": "void at::native::vectorized_elementwise_kernel<(int)4, at::native::FillFunctor<int>, std::array<char *, (unsigned long)1>>(int, T2, T3)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.000864,
+                          "active_union_ms": 0.000864,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.000864,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "T1.C2",
+                      "title": "Other",
+                      "role": "Trace taxonomy: other",
+                      "event_count": 2,
+                      "aggregate_kernel_ms": 0.002272,
+                      "active_union_ms": 0.002272,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 0.002656,
+                      "idle_gap_ms": 0.000384,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "T1.C2.K1",
+                          "title": "void at_cuda_detail::cub::detail::scan::DeviceScanInitKernel<at_cuda_detail::cub::ScanTileState<long, (bool)1>>(T1, int)",
+                          "role": "Other",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.000832,
+                          "active_union_ms": 0.000832,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.000832,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "T1.C2.K2",
+                          "title": "void at_cuda_detail::cub::detail::scan::DeviceScanKernel<at_cuda_detail::cub::detail::scan::policy_hub<long, long, long, unsigned int, std::plus<long>>::Policy1000, const long *, long *, at_cuda_detail::cub::ScanTileState<long, (bool)1>, std::plus<long>, at_cuda_detail::cub::NullType, unsigned int, long, (bool)0, at_cuda_detail::cub::NullType>(T2, T3, T4, int, T5, T6, T7)",
+                          "role": "Other",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.00144,
+                          "active_union_ms": 0.00144,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.00144,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "T2",
+                  "title": "DP hidden-state gather \u00b7 BF16 zero-fill/copy + AllReduce before LM head",
+                  "role": "One BF16 zero-fill, one memcpy_triton copy, then one BF16 all_reduce_two_shot; this is not an AllGather.",
+                  "event_count": 3,
+                  "aggregate_kernel_ms": 0.048256,
+                  "active_union_ms": 0.048256,
+                  "overlap_excess_ms": 0.0,
+                  "wall_span_ms": 0.0488,
+                  "idle_gap_ms": 0.000544,
+                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                  "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                  "assessment_level": "trace-only",
+                  "branch": "collective",
+                  "children": [
+                    {
+                      "id": "T2.C1",
+                      "title": "Memory Elementwise",
+                      "role": "Trace taxonomy: memory_elementwise",
+                      "event_count": 2,
+                      "aggregate_kernel_ms": 0.04656,
+                      "active_union_ms": 0.04656,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 0.0488,
+                      "idle_gap_ms": 0.00224,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "T2.C1.K1",
+                          "title": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::PullController)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.043968,
+                          "active_union_ms": 0.043968,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.043968,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "T2.C1.K2",
+                          "title": "void at::native::vectorized_elementwise_kernel<(int)8, at::native::FillFunctor<c10::BFloat16>, std::array<char *, (unsigned long)1>>(int, T2, T3)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.002592,
+                          "active_union_ms": 0.002592,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.002592,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "T2.C2",
+                      "title": "Other",
+                      "role": "Trace taxonomy: other",
+                      "event_count": 1,
+                      "aggregate_kernel_ms": 0.001696,
+                      "active_union_ms": 0.001696,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 0.001696,
+                      "idle_gap_ms": 0.0,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "T2.C2.K1",
+                          "title": "memcpy_triton_kernel",
+                          "role": "Other",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.001696,
+                          "active_union_ms": 0.001696,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.001696,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "T4",
+                  "title": "Sharded LM head",
+                  "role": "Compute the local vocabulary projection after the DP hidden-state gather.",
+                  "event_count": 1,
+                  "aggregate_kernel_ms": 0.165312,
+                  "active_union_ms": 0.165312,
+                  "overlap_excess_ms": 0.0,
+                  "wall_span_ms": 0.165312,
+                  "idle_gap_ms": 0.0,
+                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                  "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                  "assessment_level": "trace-only",
+                  "branch": "output",
+                  "children": [
+                    {
+                      "id": "T4.C1",
+                      "title": "Attention Projection",
+                      "role": "Trace taxonomy: attention_projection",
+                      "event_count": 1,
+                      "aggregate_kernel_ms": 0.165312,
+                      "active_union_ms": 0.165312,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 0.165312,
+                      "idle_gap_ms": 0.0,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "T4.C1.K1",
+                          "title": "nvjet_sm90_tst_160x256_64x4_2x1_v_bz_coopA_TNN",
+                          "role": "Attention Projection",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.165312,
+                          "active_union_ms": 0.165312,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.165312,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "T6",
+                  "title": "TP vocabulary gather \u00b7 AllGather after LM head",
+                  "role": "One NCCL AllGather assembles the TP-sharded vocabulary after the local LM head.",
+                  "event_count": 1,
+                  "aggregate_kernel_ms": 0.428354,
+                  "active_union_ms": 0.428354,
+                  "overlap_excess_ms": 0.0,
+                  "wall_span_ms": 0.428354,
+                  "idle_gap_ms": 0.0,
+                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                  "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                  "assessment_level": "trace-only",
+                  "branch": "collective",
+                  "children": [
+                    {
+                      "id": "T6.C1",
+                      "title": "Nccl Sync",
+                      "role": "Trace taxonomy: nccl_sync",
+                      "event_count": 1,
+                      "aggregate_kernel_ms": 0.428354,
+                      "active_union_ms": 0.428354,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 0.428354,
+                      "idle_gap_ms": 0.0,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "T6.C1.K1",
+                          "title": "ncclDevKernel_AllGather_RING_LL(ncclDevKernelArgsStorage<(unsigned long)4096>)",
+                          "role": "Nccl Sync",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.428354,
+                          "active_union_ms": 0.428354,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.428354,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "T7",
+                  "title": "Output handoff after TP vocabulary gather",
+                  "role": "Post-AllGather copies, fills, and output handoff support.",
+                  "event_count": 4,
+                  "aggregate_kernel_ms": 0.240192,
+                  "active_union_ms": 0.240192,
+                  "overlap_excess_ms": 0.0,
+                  "wall_span_ms": 0.24144,
+                  "idle_gap_ms": 0.001248,
+                  "precision": "trace-measured timing; no MFU/MBU numerator",
+                  "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                  "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                  "assessment_level": "trace-only",
+                  "branch": "support",
+                  "children": [
+                    {
+                      "id": "T7.C1",
+                      "title": "Memory Elementwise",
+                      "role": "Trace taxonomy: memory_elementwise",
+                      "event_count": 3,
+                      "aggregate_kernel_ms": 0.229056,
+                      "active_union_ms": 0.229056,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 0.24144,
+                      "idle_gap_ms": 0.012384,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "T7.C1.K1",
+                          "title": "void at::native::elementwise_kernel<(int)128, (int)4, void at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 12)]::operator ()() const::[lambda(c10::BFloat16) (instance 1)]>(at::TensorIteratorBase &, const T1 &)::[lambda(int) (instance 1)]>(int, T3)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.197248,
+                          "active_union_ms": 0.197248,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.197248,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "T7.C1.K2",
+                          "title": "void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 7)]::operator ()() const::[lambda(float) (instance 1)], std::array<char *, (unsigned long)2>, (int)4, TrivialOffsetCalculator<(int)1, unsigned int>, TrivialOffsetCalculator<(int)1, unsigned int>, at::native::memory::LoadWithCast<(int)1>, at::native::memory::StoreWithCast<(int)1>>(int, T1, T2, T4, T5, T6, T7)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.025312,
+                          "active_union_ms": 0.025312,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.025312,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        },
+                        {
+                          "id": "T7.C1.K3",
+                          "title": "void at::native::vectorized_elementwise_kernel<(int)8, at::native::FillFunctor<c10::BFloat16>, std::array<char *, (unsigned long)1>>(int, T2, T3)",
+                          "role": "Memory Elementwise",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.006496,
+                          "active_union_ms": 0.006496,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.006496,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "T7.C2",
+                      "title": "Other",
+                      "role": "Trace taxonomy: other",
+                      "event_count": 1,
+                      "aggregate_kernel_ms": 0.011136,
+                      "active_union_ms": 0.011136,
+                      "overlap_excess_ms": 0.0,
+                      "wall_span_ms": 0.011136,
+                      "idle_gap_ms": 0.0,
+                      "precision": "trace-measured timing; no MFU/MBU numerator",
+                      "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                      "assessment": "Trace subtotal. Read launch count, active union, summed residency, overlap excess, wall span, and idle gap directly.",
+                      "assessment_level": "trace-only",
+                      "branch": "category",
+                      "children": [
+                        {
+                          "id": "T7.C2.K1",
+                          "title": "memcpy_triton_kernel",
+                          "role": "Other",
+                          "event_count": 1,
+                          "aggregate_kernel_ms": 0.011136,
+                          "active_union_ms": 0.011136,
+                          "overlap_excess_ms": 0.0,
+                          "wall_span_ms": 0.011136,
+                          "idle_gap_ms": 0.0,
+                          "precision": "trace-measured timing; no MFU/MBU numerator",
+                          "work_note": "Measured event ownership and intervals only; MFU, MBU, modeled FLOPs, and modeled bytes are intentionally omitted.",
+                          "assessment": "Exact raw-name subtotal; no independent utilization model is assigned.",
+                          "assessment_level": "trace-only",
+                          "branch": "raw",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "layer_ledger": [
+          {
+            "layer": 0,
+            "selector": "refresh",
+            "ffn": "dense",
+            "node_range": "0\u201347",
+            "launch_count": 45,
+            "active_union_ms": 1.903716,
+            "aggregate_kernel_ms": 1.933988,
+            "overlap_excess_ms": 0.030272,
+            "wall_span_ms": 1.929509,
+            "idle_gap_ms": 0.025793,
+            "source_row_range": [
+              443,
+              659
+            ]
+          },
+          {
+            "layer": 1,
+            "selector": "refresh",
+            "ffn": "dense",
+            "node_range": "48\u201391",
+            "launch_count": 42,
+            "active_union_ms": 0.40336,
+            "aggregate_kernel_ms": 0.432704,
+            "overlap_excess_ms": 0.029344,
+            "wall_span_ms": 0.426977,
+            "idle_gap_ms": 0.023617,
+            "source_row_range": [
+              665,
+              994
+            ]
+          },
+          {
+            "layer": 2,
+            "selector": "refresh",
+            "ffn": "dense",
+            "node_range": "92\u2013135",
+            "launch_count": 42,
+            "active_union_ms": 12.325536,
+            "aggregate_kernel_ms": 12.354592,
+            "overlap_excess_ms": 0.029056,
+            "wall_span_ms": 22.532796,
+            "idle_gap_ms": 10.20726,
+            "source_row_range": [
+              1001,
+              1422
+            ]
+          },
+          {
+            "layer": 3,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "136\u2013174",
+            "launch_count": 39,
+            "active_union_ms": 0.28384,
+            "aggregate_kernel_ms": 0.308608,
+            "overlap_excess_ms": 0.024768,
+            "wall_span_ms": 0.293377,
+            "idle_gap_ms": 0.009537,
+            "source_row_range": [
+              1431,
+              1743
+            ]
+          },
+          {
+            "layer": 4,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "175\u2013213",
+            "launch_count": 39,
+            "active_union_ms": 0.274272,
+            "aggregate_kernel_ms": 0.300768,
+            "overlap_excess_ms": 0.026496,
+            "wall_span_ms": 0.284352,
+            "idle_gap_ms": 0.01008,
+            "source_row_range": [
+              1756,
+              2054
+            ]
+          },
+          {
+            "layer": 5,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "214\u2013252",
+            "launch_count": 39,
+            "active_union_ms": 0.272064,
+            "aggregate_kernel_ms": 0.297568,
+            "overlap_excess_ms": 0.025504,
+            "wall_span_ms": 0.281857,
+            "idle_gap_ms": 0.009793,
+            "source_row_range": [
+              2065,
+              2369
+            ]
+          },
+          {
+            "layer": 6,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "253\u2013307",
+            "launch_count": 55,
+            "active_union_ms": 0.308384,
+            "aggregate_kernel_ms": 0.357696,
+            "overlap_excess_ms": 0.049312,
+            "wall_span_ms": 0.321409,
+            "idle_gap_ms": 0.013025,
+            "source_row_range": [
+              2379,
+              2822
+            ]
+          },
+          {
+            "layer": 7,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "308\u2013346",
+            "launch_count": 39,
+            "active_union_ms": 0.278464,
+            "aggregate_kernel_ms": 0.303936,
+            "overlap_excess_ms": 0.025472,
+            "wall_span_ms": 0.288384,
+            "idle_gap_ms": 0.00992,
+            "source_row_range": [
+              2834,
+              3132
+            ]
+          },
+          {
+            "layer": 8,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "347\u2013385",
+            "launch_count": 39,
+            "active_union_ms": 0.283297,
+            "aggregate_kernel_ms": 0.308737,
+            "overlap_excess_ms": 0.02544,
+            "wall_span_ms": 0.294209,
+            "idle_gap_ms": 0.010912,
+            "source_row_range": [
+              3141,
+              3449
+            ]
+          },
+          {
+            "layer": 9,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "386\u2013424",
+            "launch_count": 39,
+            "active_union_ms": 0.303936,
+            "aggregate_kernel_ms": 0.329696,
+            "overlap_excess_ms": 0.02576,
+            "wall_span_ms": 0.314433,
+            "idle_gap_ms": 0.010497,
+            "source_row_range": [
+              3459,
+              3767
+            ]
+          },
+          {
+            "layer": 10,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "425\u2013479",
+            "launch_count": 55,
+            "active_union_ms": 0.34656,
+            "aggregate_kernel_ms": 0.396864,
+            "overlap_excess_ms": 0.050304,
+            "wall_span_ms": 0.360129,
+            "idle_gap_ms": 0.013569,
+            "source_row_range": [
+              3777,
+              4219
+            ]
+          },
+          {
+            "layer": 11,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "480\u2013518",
+            "launch_count": 39,
+            "active_union_ms": 0.3016,
+            "aggregate_kernel_ms": 0.327232,
+            "overlap_excess_ms": 0.025632,
+            "wall_span_ms": 0.311393,
+            "idle_gap_ms": 0.009793,
+            "source_row_range": [
+              4230,
+              4528
+            ]
+          },
+          {
+            "layer": 12,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "519\u2013557",
+            "launch_count": 39,
+            "active_union_ms": 0.312704,
+            "aggregate_kernel_ms": 0.33872,
+            "overlap_excess_ms": 0.026016,
+            "wall_span_ms": 0.321953,
+            "idle_gap_ms": 0.009249,
+            "source_row_range": [
+              4540,
+              4847
+            ]
+          },
+          {
+            "layer": 13,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "558\u2013596",
+            "launch_count": 39,
+            "active_union_ms": 0.304511,
+            "aggregate_kernel_ms": 0.329919,
+            "overlap_excess_ms": 0.025408,
+            "wall_span_ms": 0.314176,
+            "idle_gap_ms": 0.009665,
+            "source_row_range": [
+              4857,
+              5163
+            ]
+          },
+          {
+            "layer": 14,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "597\u2013651",
+            "launch_count": 55,
+            "active_union_ms": 0.340449,
+            "aggregate_kernel_ms": 0.389441,
+            "overlap_excess_ms": 0.048992,
+            "wall_span_ms": 0.355105,
+            "idle_gap_ms": 0.014656,
+            "source_row_range": [
+              5173,
+              5609
+            ]
+          },
+          {
+            "layer": 15,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "652\u2013690",
+            "launch_count": 39,
+            "active_union_ms": 0.309728,
+            "aggregate_kernel_ms": 0.333984,
+            "overlap_excess_ms": 0.024256,
+            "wall_span_ms": 0.320257,
+            "idle_gap_ms": 0.010529,
+            "source_row_range": [
+              5616,
+              5938
+            ]
+          },
+          {
+            "layer": 16,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "691\u2013729",
+            "launch_count": 39,
+            "active_union_ms": 0.337825,
+            "aggregate_kernel_ms": 0.363617,
+            "overlap_excess_ms": 0.025792,
+            "wall_span_ms": 0.348257,
+            "idle_gap_ms": 0.010432,
+            "source_row_range": [
+              5945,
+              6243
+            ]
+          },
+          {
+            "layer": 17,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "730\u2013768",
+            "launch_count": 39,
+            "active_union_ms": 0.309793,
+            "aggregate_kernel_ms": 0.336289,
+            "overlap_excess_ms": 0.026496,
+            "wall_span_ms": 0.318913,
+            "idle_gap_ms": 0.00912,
+            "source_row_range": [
+              6256,
+              6570
+            ]
+          },
+          {
+            "layer": 18,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "769\u2013823",
+            "launch_count": 55,
+            "active_union_ms": 0.342112,
+            "aggregate_kernel_ms": 0.389472,
+            "overlap_excess_ms": 0.04736,
+            "wall_span_ms": 0.356225,
+            "idle_gap_ms": 0.014113,
+            "source_row_range": [
+              6580,
+              7005
+            ]
+          },
+          {
+            "layer": 19,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "824\u2013862",
+            "launch_count": 39,
+            "active_union_ms": 0.311265,
+            "aggregate_kernel_ms": 0.336866,
+            "overlap_excess_ms": 0.025601,
+            "wall_span_ms": 0.321377,
+            "idle_gap_ms": 0.010112,
+            "source_row_range": [
+              7016,
+              7325
+            ]
+          },
+          {
+            "layer": 20,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "863\u2013901",
+            "launch_count": 39,
+            "active_union_ms": 0.307263,
+            "aggregate_kernel_ms": 0.333215,
+            "overlap_excess_ms": 0.025952,
+            "wall_span_ms": 0.317313,
+            "idle_gap_ms": 0.01005,
+            "source_row_range": [
+              7336,
+              7641
+            ]
+          },
+          {
+            "layer": 21,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "902\u2013940",
+            "launch_count": 39,
+            "active_union_ms": 0.304352,
+            "aggregate_kernel_ms": 0.331712,
+            "overlap_excess_ms": 0.02736,
+            "wall_span_ms": 0.314529,
+            "idle_gap_ms": 0.010177,
+            "source_row_range": [
+              7650,
+              7957
+            ]
+          },
+          {
+            "layer": 22,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "941\u2013995",
+            "launch_count": 55,
+            "active_union_ms": 0.343457,
+            "aggregate_kernel_ms": 0.392833,
+            "overlap_excess_ms": 0.049376,
+            "wall_span_ms": 0.357857,
+            "idle_gap_ms": 0.0144,
+            "source_row_range": [
+              7967,
+              8417
+            ]
+          },
+          {
+            "layer": 23,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "996\u20131034",
+            "launch_count": 39,
+            "active_union_ms": 0.308928,
+            "aggregate_kernel_ms": 0.334432,
+            "overlap_excess_ms": 0.025504,
+            "wall_span_ms": 0.31952,
+            "idle_gap_ms": 0.010592,
+            "source_row_range": [
+              8424,
+              8723
+            ]
+          },
+          {
+            "layer": 24,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1035\u20131073",
+            "launch_count": 39,
+            "active_union_ms": 0.316992,
+            "aggregate_kernel_ms": 0.341952,
+            "overlap_excess_ms": 0.02496,
+            "wall_span_ms": 0.326881,
+            "idle_gap_ms": 0.009889,
+            "source_row_range": [
+              8735,
+              9050
+            ]
+          },
+          {
+            "layer": 25,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1074\u20131112",
+            "launch_count": 39,
+            "active_union_ms": 0.311776,
+            "aggregate_kernel_ms": 0.337632,
+            "overlap_excess_ms": 0.025856,
+            "wall_span_ms": 0.321217,
+            "idle_gap_ms": 0.009441,
+            "source_row_range": [
+              9060,
+              9357
+            ]
+          },
+          {
+            "layer": 26,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "1113\u20131167",
+            "launch_count": 55,
+            "active_union_ms": 0.359936,
+            "aggregate_kernel_ms": 0.410048,
+            "overlap_excess_ms": 0.050112,
+            "wall_span_ms": 0.373313,
+            "idle_gap_ms": 0.013377,
+            "source_row_range": [
+              9369,
+              9813
+            ]
+          },
+          {
+            "layer": 27,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1168\u20131206",
+            "launch_count": 39,
+            "active_union_ms": 0.324671,
+            "aggregate_kernel_ms": 0.34979,
+            "overlap_excess_ms": 0.025119,
+            "wall_span_ms": 0.334177,
+            "idle_gap_ms": 0.009506,
+            "source_row_range": [
+              9823,
+              10131
+            ]
+          },
+          {
+            "layer": 28,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1207\u20131245",
+            "launch_count": 39,
+            "active_union_ms": 0.321985,
+            "aggregate_kernel_ms": 0.350465,
+            "overlap_excess_ms": 0.02848,
+            "wall_span_ms": 0.331425,
+            "idle_gap_ms": 0.00944,
+            "source_row_range": [
+              10142,
+              10443
+            ]
+          },
+          {
+            "layer": 29,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1246\u20131284",
+            "launch_count": 39,
+            "active_union_ms": 0.307361,
+            "aggregate_kernel_ms": 0.332769,
+            "overlap_excess_ms": 0.025408,
+            "wall_span_ms": 0.317857,
+            "idle_gap_ms": 0.010496,
+            "source_row_range": [
+              10454,
+              10763
+            ]
+          },
+          {
+            "layer": 30,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "1285\u20131339",
+            "launch_count": 55,
+            "active_union_ms": 0.3448,
+            "aggregate_kernel_ms": 0.395936,
+            "overlap_excess_ms": 0.051136,
+            "wall_span_ms": 0.357473,
+            "idle_gap_ms": 0.012673,
+            "source_row_range": [
+              10776,
+              11210
+            ]
+          },
+          {
+            "layer": 31,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1340\u20131378",
+            "launch_count": 39,
+            "active_union_ms": 0.358751,
+            "aggregate_kernel_ms": 0.385055,
+            "overlap_excess_ms": 0.026304,
+            "wall_span_ms": 0.368513,
+            "idle_gap_ms": 0.009762,
+            "source_row_range": [
+              11222,
+              11534
+            ]
+          },
+          {
+            "layer": 32,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1379\u20131417",
+            "launch_count": 39,
+            "active_union_ms": 0.304705,
+            "aggregate_kernel_ms": 0.329984,
+            "overlap_excess_ms": 0.025279,
+            "wall_span_ms": 0.313729,
+            "idle_gap_ms": 0.009024,
+            "source_row_range": [
+              11544,
+              11847
+            ]
+          },
+          {
+            "layer": 33,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1418\u20131456",
+            "launch_count": 39,
+            "active_union_ms": 0.320416,
+            "aggregate_kernel_ms": 0.346912,
+            "overlap_excess_ms": 0.026496,
+            "wall_span_ms": 0.330464,
+            "idle_gap_ms": 0.010048,
+            "source_row_range": [
+              11857,
+              12170
+            ]
+          },
+          {
+            "layer": 34,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "1457\u20131511",
+            "launch_count": 55,
+            "active_union_ms": 0.365729,
+            "aggregate_kernel_ms": 0.415298,
+            "overlap_excess_ms": 0.049569,
+            "wall_span_ms": 0.379873,
+            "idle_gap_ms": 0.014144,
+            "source_row_range": [
+              12179,
+              12630
+            ]
+          },
+          {
+            "layer": 35,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1512\u20131550",
+            "launch_count": 39,
+            "active_union_ms": 0.308321,
+            "aggregate_kernel_ms": 0.336449,
+            "overlap_excess_ms": 0.028128,
+            "wall_span_ms": 0.316801,
+            "idle_gap_ms": 0.00848,
+            "source_row_range": [
+              12635,
+              12943
+            ]
+          },
+          {
+            "layer": 36,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1551\u20131589",
+            "launch_count": 39,
+            "active_union_ms": 0.315264,
+            "aggregate_kernel_ms": 0.339583,
+            "overlap_excess_ms": 0.024319,
+            "wall_span_ms": 0.324705,
+            "idle_gap_ms": 0.009441,
+            "source_row_range": [
+              12955,
+              13255
+            ]
+          },
+          {
+            "layer": 37,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1590\u20131628",
+            "launch_count": 39,
+            "active_union_ms": 0.303968,
+            "aggregate_kernel_ms": 0.330689,
+            "overlap_excess_ms": 0.026721,
+            "wall_span_ms": 0.314977,
+            "idle_gap_ms": 0.011009,
+            "source_row_range": [
+              13267,
+              13573
+            ]
+          },
+          {
+            "layer": 38,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "1629\u20131683",
+            "launch_count": 55,
+            "active_union_ms": 0.351553,
+            "aggregate_kernel_ms": 0.400737,
+            "overlap_excess_ms": 0.049184,
+            "wall_span_ms": 0.365025,
+            "idle_gap_ms": 0.013472,
+            "source_row_range": [
+              13585,
+              14024
+            ]
+          },
+          {
+            "layer": 39,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1684\u20131722",
+            "launch_count": 39,
+            "active_union_ms": 0.316865,
+            "aggregate_kernel_ms": 0.343713,
+            "overlap_excess_ms": 0.026848,
+            "wall_span_ms": 0.326849,
+            "idle_gap_ms": 0.009984,
+            "source_row_range": [
+              14036,
+              14354
+            ]
+          },
+          {
+            "layer": 40,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1723\u20131761",
+            "launch_count": 39,
+            "active_union_ms": 0.341952,
+            "aggregate_kernel_ms": 0.367392,
+            "overlap_excess_ms": 0.02544,
+            "wall_span_ms": 0.351521,
+            "idle_gap_ms": 0.009569,
+            "source_row_range": [
+              14361,
+              14662
+            ]
+          },
+          {
+            "layer": 41,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1762\u20131800",
+            "launch_count": 39,
+            "active_union_ms": 0.311841,
+            "aggregate_kernel_ms": 0.338049,
+            "overlap_excess_ms": 0.026208,
+            "wall_span_ms": 0.320737,
+            "idle_gap_ms": 0.008896,
+            "source_row_range": [
+              14673,
+              14981
+            ]
+          },
+          {
+            "layer": 42,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "1801\u20131855",
+            "launch_count": 55,
+            "active_union_ms": 0.378145,
+            "aggregate_kernel_ms": 0.427392,
+            "overlap_excess_ms": 0.049247,
+            "wall_span_ms": 0.392065,
+            "idle_gap_ms": 0.01392,
+            "source_row_range": [
+              14992,
+              15431
+            ]
+          },
+          {
+            "layer": 43,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1856\u20131894",
+            "launch_count": 39,
+            "active_union_ms": 0.34448,
+            "aggregate_kernel_ms": 0.370336,
+            "overlap_excess_ms": 0.025856,
+            "wall_span_ms": 0.354465,
+            "idle_gap_ms": 0.009985,
+            "source_row_range": [
+              15440,
+              15749
+            ]
+          },
+          {
+            "layer": 44,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1895\u20131933",
+            "launch_count": 39,
+            "active_union_ms": 0.347745,
+            "aggregate_kernel_ms": 0.373313,
+            "overlap_excess_ms": 0.025568,
+            "wall_span_ms": 0.357985,
+            "idle_gap_ms": 0.01024,
+            "source_row_range": [
+              15759,
+              16068
+            ]
+          },
+          {
+            "layer": 45,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "1934\u20131972",
+            "launch_count": 39,
+            "active_union_ms": 0.324032,
+            "aggregate_kernel_ms": 0.349664,
+            "overlap_excess_ms": 0.025632,
+            "wall_span_ms": 0.334241,
+            "idle_gap_ms": 0.010209,
+            "source_row_range": [
+              16081,
+              16394
+            ]
+          },
+          {
+            "layer": 46,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "1973\u20132027",
+            "launch_count": 55,
+            "active_union_ms": 0.353889,
+            "aggregate_kernel_ms": 0.404897,
+            "overlap_excess_ms": 0.051008,
+            "wall_span_ms": 0.366177,
+            "idle_gap_ms": 0.012288,
+            "source_row_range": [
+              16403,
+              16843
+            ]
+          },
+          {
+            "layer": 47,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2028\u20132066",
+            "launch_count": 39,
+            "active_union_ms": 0.318592,
+            "aggregate_kernel_ms": 0.344,
+            "overlap_excess_ms": 0.025408,
+            "wall_span_ms": 0.327648,
+            "idle_gap_ms": 0.009056,
+            "source_row_range": [
+              16852,
+              17155
+            ]
+          },
+          {
+            "layer": 48,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2067\u20132105",
+            "launch_count": 39,
+            "active_union_ms": 0.378432,
+            "aggregate_kernel_ms": 0.403136,
+            "overlap_excess_ms": 0.024704,
+            "wall_span_ms": 0.388737,
+            "idle_gap_ms": 0.010305,
+            "source_row_range": [
+              17168,
+              17475
+            ]
+          },
+          {
+            "layer": 49,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2106\u20132144",
+            "launch_count": 39,
+            "active_union_ms": 0.31904,
+            "aggregate_kernel_ms": 0.344672,
+            "overlap_excess_ms": 0.025632,
+            "wall_span_ms": 0.329217,
+            "idle_gap_ms": 0.010177,
+            "source_row_range": [
+              17485,
+              17796
+            ]
+          },
+          {
+            "layer": 50,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "2145\u20132199",
+            "launch_count": 55,
+            "active_union_ms": 0.391201,
+            "aggregate_kernel_ms": 0.444001,
+            "overlap_excess_ms": 0.0528,
+            "wall_span_ms": 0.404993,
+            "idle_gap_ms": 0.013792,
+            "source_row_range": [
+              17807,
+              18257
+            ]
+          },
+          {
+            "layer": 51,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2200\u20132238",
+            "launch_count": 39,
+            "active_union_ms": 0.325312,
+            "aggregate_kernel_ms": 0.349952,
+            "overlap_excess_ms": 0.02464,
+            "wall_span_ms": 0.334881,
+            "idle_gap_ms": 0.009569,
+            "source_row_range": [
+              18263,
+              18570
+            ]
+          },
+          {
+            "layer": 52,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2239\u20132277",
+            "launch_count": 39,
+            "active_union_ms": 0.345921,
+            "aggregate_kernel_ms": 0.371553,
+            "overlap_excess_ms": 0.025632,
+            "wall_span_ms": 0.355393,
+            "idle_gap_ms": 0.009472,
+            "source_row_range": [
+              18581,
+              18895
+            ]
+          },
+          {
+            "layer": 53,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2278\u20132316",
+            "launch_count": 39,
+            "active_union_ms": 0.341057,
+            "aggregate_kernel_ms": 0.365857,
+            "overlap_excess_ms": 0.0248,
+            "wall_span_ms": 0.351265,
+            "idle_gap_ms": 0.010208,
+            "source_row_range": [
+              18900,
+              19199
+            ]
+          },
+          {
+            "layer": 54,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "2317\u20132371",
+            "launch_count": 55,
+            "active_union_ms": 0.361504,
+            "aggregate_kernel_ms": 0.411648,
+            "overlap_excess_ms": 0.050144,
+            "wall_span_ms": 0.374273,
+            "idle_gap_ms": 0.012769,
+            "source_row_range": [
+              19211,
+              19649
+            ]
+          },
+          {
+            "layer": 55,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2372\u20132410",
+            "launch_count": 39,
+            "active_union_ms": 0.323713,
+            "aggregate_kernel_ms": 0.348577,
+            "overlap_excess_ms": 0.024864,
+            "wall_span_ms": 0.333761,
+            "idle_gap_ms": 0.010048,
+            "source_row_range": [
+              19658,
+              19975
+            ]
+          },
+          {
+            "layer": 56,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2411\u20132449",
+            "launch_count": 39,
+            "active_union_ms": 0.346209,
+            "aggregate_kernel_ms": 0.371745,
+            "overlap_excess_ms": 0.025536,
+            "wall_span_ms": 0.356545,
+            "idle_gap_ms": 0.010336,
+            "source_row_range": [
+              19984,
+              20287
+            ]
+          },
+          {
+            "layer": 57,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2450\u20132488",
+            "launch_count": 39,
+            "active_union_ms": 0.338561,
+            "aggregate_kernel_ms": 0.364193,
+            "overlap_excess_ms": 0.025632,
+            "wall_span_ms": 0.349281,
+            "idle_gap_ms": 0.01072,
+            "source_row_range": [
+              20298,
+              20604
+            ]
+          },
+          {
+            "layer": 58,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "2489\u20132543",
+            "launch_count": 55,
+            "active_union_ms": 0.390816,
+            "aggregate_kernel_ms": 0.44112,
+            "overlap_excess_ms": 0.050304,
+            "wall_span_ms": 0.403361,
+            "idle_gap_ms": 0.012545,
+            "source_row_range": [
+              20612,
+              21052
+            ]
+          },
+          {
+            "layer": 59,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2544\u20132582",
+            "launch_count": 39,
+            "active_union_ms": 0.344863,
+            "aggregate_kernel_ms": 0.369503,
+            "overlap_excess_ms": 0.02464,
+            "wall_span_ms": 0.355041,
+            "idle_gap_ms": 0.010178,
+            "source_row_range": [
+              21063,
+              21370
+            ]
+          },
+          {
+            "layer": 60,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2583\u20132621",
+            "launch_count": 39,
+            "active_union_ms": 0.34992,
+            "aggregate_kernel_ms": 0.375808,
+            "overlap_excess_ms": 0.025888,
+            "wall_span_ms": 0.360097,
+            "idle_gap_ms": 0.010177,
+            "source_row_range": [
+              21380,
+              21693
+            ]
+          },
+          {
+            "layer": 61,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2622\u20132660",
+            "launch_count": 39,
+            "active_union_ms": 0.351329,
+            "aggregate_kernel_ms": 0.376737,
+            "overlap_excess_ms": 0.025408,
+            "wall_span_ms": 0.360577,
+            "idle_gap_ms": 0.009248,
+            "source_row_range": [
+              21702,
+              22026
+            ]
+          },
+          {
+            "layer": 62,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "2661\u20132715",
+            "launch_count": 55,
+            "active_union_ms": 0.384481,
+            "aggregate_kernel_ms": 0.435201,
+            "overlap_excess_ms": 0.05072,
+            "wall_span_ms": 0.397729,
+            "idle_gap_ms": 0.013248,
+            "source_row_range": [
+              22034,
+              22478
+            ]
+          },
+          {
+            "layer": 63,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2716\u20132754",
+            "launch_count": 39,
+            "active_union_ms": 0.383393,
+            "aggregate_kernel_ms": 0.408609,
+            "overlap_excess_ms": 0.025216,
+            "wall_span_ms": 0.392545,
+            "idle_gap_ms": 0.009152,
+            "source_row_range": [
+              22490,
+              22791
+            ]
+          },
+          {
+            "layer": 64,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2755\u20132793",
+            "launch_count": 39,
+            "active_union_ms": 0.321121,
+            "aggregate_kernel_ms": 0.347521,
+            "overlap_excess_ms": 0.0264,
+            "wall_span_ms": 0.331361,
+            "idle_gap_ms": 0.01024,
+            "source_row_range": [
+              22802,
+              23109
+            ]
+          },
+          {
+            "layer": 65,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2794\u20132832",
+            "launch_count": 39,
+            "active_union_ms": 0.349825,
+            "aggregate_kernel_ms": 0.374338,
+            "overlap_excess_ms": 0.024513,
+            "wall_span_ms": 0.360801,
+            "idle_gap_ms": 0.010976,
+            "source_row_range": [
+              23119,
+              23424
+            ]
+          },
+          {
+            "layer": 66,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "2833\u20132887",
+            "launch_count": 55,
+            "active_union_ms": 0.393569,
+            "aggregate_kernel_ms": 0.444737,
+            "overlap_excess_ms": 0.051168,
+            "wall_span_ms": 0.408481,
+            "idle_gap_ms": 0.014912,
+            "source_row_range": [
+              23436,
+              23870
+            ]
+          },
+          {
+            "layer": 67,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2888\u20132926",
+            "launch_count": 39,
+            "active_union_ms": 0.381951,
+            "aggregate_kernel_ms": 0.407583,
+            "overlap_excess_ms": 0.025632,
+            "wall_span_ms": 0.391681,
+            "idle_gap_ms": 0.00973,
+            "source_row_range": [
+              23881,
+              24192
+            ]
+          },
+          {
+            "layer": 68,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2927\u20132965",
+            "launch_count": 39,
+            "active_union_ms": 0.345889,
+            "aggregate_kernel_ms": 0.371713,
+            "overlap_excess_ms": 0.025824,
+            "wall_span_ms": 0.356129,
+            "idle_gap_ms": 0.01024,
+            "source_row_range": [
+              24203,
+              24528
+            ]
+          },
+          {
+            "layer": 69,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "2966\u20133004",
+            "launch_count": 39,
+            "active_union_ms": 0.3464,
+            "aggregate_kernel_ms": 0.371488,
+            "overlap_excess_ms": 0.025088,
+            "wall_span_ms": 0.355905,
+            "idle_gap_ms": 0.009505,
+            "source_row_range": [
+              24540,
+              24850
+            ]
+          },
+          {
+            "layer": 70,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "3005\u20133059",
+            "launch_count": 55,
+            "active_union_ms": 0.384545,
+            "aggregate_kernel_ms": 0.433697,
+            "overlap_excess_ms": 0.049152,
+            "wall_span_ms": 0.398721,
+            "idle_gap_ms": 0.014176,
+            "source_row_range": [
+              24859,
+              25297
+            ]
+          },
+          {
+            "layer": 71,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "3060\u20133098",
+            "launch_count": 39,
+            "active_union_ms": 0.3424,
+            "aggregate_kernel_ms": 0.36848,
+            "overlap_excess_ms": 0.02608,
+            "wall_span_ms": 0.351969,
+            "idle_gap_ms": 0.009569,
+            "source_row_range": [
+              25309,
+              25610
+            ]
+          },
+          {
+            "layer": 72,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "3099\u20133137",
+            "launch_count": 39,
+            "active_union_ms": 0.310784,
+            "aggregate_kernel_ms": 0.336096,
+            "overlap_excess_ms": 0.025312,
+            "wall_span_ms": 0.319873,
+            "idle_gap_ms": 0.009089,
+            "source_row_range": [
+              25618,
+              25925
+            ]
+          },
+          {
+            "layer": 73,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "3138\u20133176",
+            "launch_count": 39,
+            "active_union_ms": 0.353216,
+            "aggregate_kernel_ms": 0.379424,
+            "overlap_excess_ms": 0.026208,
+            "wall_span_ms": 0.362177,
+            "idle_gap_ms": 0.008961,
+            "source_row_range": [
+              25936,
+              26251
+            ]
+          },
+          {
+            "layer": 74,
+            "selector": "refresh",
+            "ffn": "sparse",
+            "node_range": "3177\u20133231",
+            "launch_count": 55,
+            "active_union_ms": 0.417505,
+            "aggregate_kernel_ms": 0.466977,
+            "overlap_excess_ms": 0.049472,
+            "wall_span_ms": 0.429825,
+            "idle_gap_ms": 0.01232,
+            "source_row_range": [
+              26258,
+              26684
+            ]
+          },
+          {
+            "layer": 75,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "3232\u20133270",
+            "launch_count": 39,
+            "active_union_ms": 0.320576,
+            "aggregate_kernel_ms": 0.346368,
+            "overlap_excess_ms": 0.025792,
+            "wall_span_ms": 0.329921,
+            "idle_gap_ms": 0.009345,
+            "source_row_range": [
+              26696,
+              27013
+            ]
+          },
+          {
+            "layer": 76,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "3271\u20133309",
+            "launch_count": 39,
+            "active_union_ms": 0.348671,
+            "aggregate_kernel_ms": 0.374239,
+            "overlap_excess_ms": 0.025568,
+            "wall_span_ms": 0.360385,
+            "idle_gap_ms": 0.011714,
+            "source_row_range": [
+              27024,
+              27348
+            ]
+          },
+          {
+            "layer": 77,
+            "selector": "reuse",
+            "ffn": "sparse",
+            "node_range": "3310\u20133348",
+            "launch_count": 39,
+            "active_union_ms": 0.324575,
+            "aggregate_kernel_ms": 0.350303,
+            "overlap_excess_ms": 0.025728,
+            "wall_span_ms": 0.335265,
+            "idle_gap_ms": 0.01069,
+            "source_row_range": [
+              27359,
+              27665
+            ]
+          }
+        ],
+        "download_href": "gpu0_kernel_tree.json",
+        "method": {
+          "boundary": "The tree contains one complete representative GPU-0 graph-family-2 execution (correlation 72031). Global B=500 is distributed over DP8; this physical graph computes 63 local rows at 3,072 context tokens. It is not an eight-rank summed timeline.",
+          "ordering": "Layer and branch ownership follows capture-local CUDA graph-node order and audited semantic anchors. GPU timestamps are used only for timing; asynchronous timestamps never determine logical adjacency.",
+          "timing": "Active union merges overlapping intervals once on GPU 0; summed residency adds every kernel duration and therefore includes overlap; wall span is last end minus first start; idle gap is wall minus union.",
+          "aggregation": "Operation rows aggregate disjoint layer branches. Their wall span is the measured first-to-last envelope across all included invocations, while active union excludes intervening idle intervals.",
+          "tail": "The DP hidden-state gather is BF16 zero-fill + memcpy_triton + BF16 all_reduce_two_shot before the LM head. Only the post-LM-head NCCL operation is labeled the TP vocabulary AllGather.",
+          "utilization": "No MFU/MBU values or FLOP/byte numerators are emitted. The final audit explicitly marks those quantities unavailable for this capture.",
+          "provenance": "Every layer subtotal is replayed against the final audit's event count, category counts, marker counts, ordered-name fingerprint, and timing."
+        }
+      }
+    }
   }
 }
