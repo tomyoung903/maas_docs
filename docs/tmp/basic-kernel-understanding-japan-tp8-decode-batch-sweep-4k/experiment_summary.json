@@ -1535,8 +1535,295 @@
     }
   },
   "display_views": {
+    "b20_eagle": {
+      "label": "B=20 (EAGLE)",
+      "batch_size": 20,
+      "context_tokens": 4096,
+      "topology": {
+        "configured": {
+          "tp": 8,
+          "dp": 1,
+          "ep": 1,
+          "pp": 1
+        },
+        "phase_roles": {
+          "draft": "one recurrent NextN/MTP layer",
+          "target_verify": "full 78-layer target model at 120 candidate rows",
+          "accept": "sampling and KV commit",
+          "catchup": "one MTP-layer state update"
+        }
+      },
+      "experiment": {
+        "title": "GLM-5.2 FP8 TP=8 B=20 EAGLE Decode",
+        "subtitle": "One selected steady speculative-decode cycle with real 4K KV-cache prefixes.",
+        "cluster": "Japan",
+        "node": "gpu-h200-36",
+        "gpu": "NVIDIA H200",
+        "model": "zai-org/GLM-5.2-FP8",
+        "precision": "FP8 target with BF16 MLA work normalized to FP8-equivalent",
+        "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime@sha256:cd6c3e975a0d3ed7db05a902b551ea4028961a89168171dfc28686624ffc56cc",
+        "sglang_version": "0.5.10.dev4874+gb24575242",
+        "sglang_revision": "b2457524273b07fb9d103e7cf9a3999343cba64d",
+        "topology": {
+          "tp": 8,
+          "dp": 1,
+          "ep": 1,
+          "pp": 1
+        },
+        "hardware": {
+          "peak_tflops": 1979.0,
+          "hbm_tb_s": 4.8,
+          "sources": [
+            {
+              "label": "NVIDIA H200 Tensor Core GPU specifications",
+              "url": "https://www.nvidia.com/en-us/data-center/h200/"
+            },
+            {
+              "label": "Official GLM-5.2-FP8 config",
+              "url": "https://huggingface.co/zai-org/GLM-5.2-FP8/blob/main/config.json"
+            }
+          ]
+        },
+        "contract": [
+          "Twenty requests use genuine 4,096-token prefixes: 4,032 cached tokens plus a 64-token recomputed tail per sequence.",
+          "EAGLE uses five speculative steps, top-k one, and six draft candidates per request.",
+          "The selected steady cycle is draft proposal \u2192 target verification \u2192 acceptance/KV commit \u2192 draft-state catch-up.",
+          "Target verification runs one full 78-layer model pass over 20 \u00d7 6 = 120 candidate rows."
+        ],
+        "limitations": [
+          "The selected cycle is a GPU-0 module-efficiency scope, not end-to-end serving TPOT.",
+          "Average acceptance length is measured over the full request, not reconstructed for this individual cycle.",
+          "MFU and MBU minimum use static modeled numerators and theoretical H200 peak denominators."
+        ]
+      },
+      "validation": {
+        "status": "pass",
+        "checks": [
+          {
+            "name": "Measured request and real batch",
+            "status": "pass",
+            "evidence": "HTTP 200; 20 responses; exact prompt, completion, and request-ID accounting."
+          },
+          {
+            "name": "Real KV-cache prefixes",
+            "status": "pass",
+            "evidence": "Every sequence reused exactly 4,032 cached tokens and recomputed a 64-token tail."
+          },
+          {
+            "name": "Selected-cycle ownership",
+            "status": "pass",
+            "evidence": "4,231 GPU-0 events assigned exactly once across four non-overlapping phases and 320 tree nodes."
+          },
+          {
+            "name": "Target verification across ranks",
+            "status": "pass",
+            "evidence": "All eight TP ranks contain 3,709 classified target events and the same 78-layer refresh/reuse ledger."
+          },
+          {
+            "name": "Privacy boundary",
+            "status": "pass",
+            "evidence": "No raw prompt text, token IDs, response text, or private prefix corpus is published."
+          }
+        ]
+      },
+      "comparison": {
+        "headline": "B=20 EAGLE is a separate speculative-decode execution mode: its primary time is one selected GPU-0 four-phase cycle, not one standard-decode step.",
+        "observations": [
+          "Target verification dominates the selected cycle and evaluates 120 candidate rows in one 78-layer pass.",
+          "The sequence-cycle rate divides 20 requested sequences by cycle active union; it does not multiply by average acceptance length.",
+          "Use the execution tree for phase and kernel efficiency; do not place this tab on the native B=1 scaling identity."
+        ]
+      },
+      "provenance": {
+        "capture_id": "japan-h200-36-glm52-tp8-eagle-b20-4k-20260805",
+        "validation_status": "pass",
+        "artifacts": [
+          {
+            "path": "eagle_b20/eagle_cycle_tree.json",
+            "label": "Audited EAGLE cycle tree",
+            "role": "EAGLE capture evidence",
+            "kind": "json",
+            "size_bytes": 609586,
+            "sha256": "5f27d2197084fa666f8d628386d3eaf5bba0dfdb917a5bfbf8fd820b9d267af4",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "eagle_b20/rank_audit.json",
+            "label": "Eight-rank target audit",
+            "role": "EAGLE capture evidence",
+            "kind": "json",
+            "size_bytes": 3634,
+            "sha256": "acf81a78667d3ef67855c0cff4e0e6546aee9b778bff9e1573822976c530cece",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "eagle_b20/selected_cycle_rank0_intervals.csv.gz",
+            "label": "Selected GPU-0 cycle intervals",
+            "role": "EAGLE capture evidence",
+            "kind": "gz",
+            "size_bytes": 71695,
+            "sha256": "df764591007a9d004a34426d718c83836cee3ebe38412b73fb2def7c7102dc1e",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "eagle_b20/target_verify_all_ranks_intervals.csv.gz",
+            "label": "All-rank target intervals",
+            "role": "EAGLE capture evidence",
+            "kind": "gz",
+            "size_bytes": 573155,
+            "sha256": "4bdaa77c80024fd4fb38dae7e6451bcb5024213e29fb120d3d98a79a1f861dc0",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "eagle_b20/target_verify_rank0.csv.gz",
+            "label": "GPU-0 target-verification ledger",
+            "role": "EAGLE capture evidence",
+            "kind": "gz",
+            "size_bytes": 59391,
+            "sha256": "786e73366d184b8f3e73c36c627abeb43978b30e9042748599fd8a8034c62009",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "eagle_b20/trace_inspection.json",
+            "label": "Trace recurrence inspection",
+            "role": "EAGLE capture evidence",
+            "kind": "json",
+            "size_bytes": 4032508,
+            "sha256": "d7b7306ed471c43410958f819bd27454477c780c6a7881cd9baab19c13fc0c0c",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "eagle_b20/report_summary.json",
+            "label": "EAGLE report summary",
+            "role": "EAGLE capture evidence",
+            "kind": "json",
+            "size_bytes": 9224,
+            "sha256": "5f56e9e9cfe5d7cc6edc4b8023d9914d7eaac33652a857a90d2706dd65a316c8",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "eagle_b20/outcome.json",
+            "label": "Measured request outcome",
+            "role": "EAGLE capture evidence",
+            "kind": "json",
+            "size_bytes": 1871,
+            "sha256": "e1180b6b101bb51733ae4339171ffa8f948376a6666faa5263e2bbe291cd127d",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "eagle_b20/experiment_contract.md",
+            "label": "EAGLE experiment contract",
+            "role": "EAGLE capture evidence",
+            "kind": "md",
+            "size_bytes": 2077,
+            "sha256": "05fdd4568b6aabe59b6550d9f5006695bcb38d6fb9aef3bfe04cb0eb23cfad75",
+            "integrity": "sha256 recorded"
+          }
+        ]
+      },
+      "batch": {
+        "status": "complete",
+        "context_tokens": 4096,
+        "proof": {
+          "requested_batch": 20,
+          "observed_real_batch": 20,
+          "cuda_graph_batch": "draft B=20; target verify B=120",
+          "cuda_graph_batch_scope": "phase-dependent speculative cycle",
+          "target_verification_rows": 120,
+          "speculative_num_steps": 5,
+          "speculative_topk": 1,
+          "draft_tokens": 6,
+          "average_spec_accept_length": 3.3879472693032016,
+          "selected_cycle_index": 2,
+          "prefill_rows": 0,
+          "decode_rows": 20,
+          "scheduler_waves": 1,
+          "full_model_graph_executions": 1,
+          "computed_decode_generations": "one selected EAGLE cycle",
+          "speculative": true
+        },
+        "kernel_timing": {
+          "boundary": "gpu0_eagle_cycle_active_kernel_interval_union",
+          "primary_time_label": "GPU0 EAGLE-cycle active union",
+          "primary_time_ms": 45.041003,
+          "active_union_ms": 45.041003,
+          "kernel_active_tokens_s": 444.039845,
+          "rate_label": "Kernel-active sequence-cycle rate",
+          "rate_unit": "sequence-cycles/s",
+          "rate_scope": "requested_sequences_per_selected_eagle_cycle_union",
+          "rate_numerator_tokens": 20,
+          "comparable_to_b1": false,
+          "non_comparable_reason": "EAGLE executes a draft/verify/accept/catch-up cycle, while the native tabs contain one standard-decode model step.",
+          "batch_scale_vs_b1": null,
+          "active_time_inflation_vs_b1": null,
+          "kernel_rate_gain_vs_b1": null,
+          "ratio_identity_product": null,
+          "context_tokens": 4096,
+          "context_ratio_vs_b1": 1.0,
+          "same_context_as_b1": true,
+          "graph_wall_span_ms": 55.036054,
+          "idle_gap_ms": 9.995051,
+          "summed_residency_ms": 46.451376,
+          "overlap_excess_ms": 1.410373,
+          "http_request_latency_included": false
+        },
+        "graph": {
+          "wall_span_ms": 55.036054,
+          "aggregate_kernel_ms": 46.451376,
+          "launches": 4231,
+          "distinct_kernel_names": 114,
+          "start_offset_ms": 0,
+          "graph_execution_count": 2,
+          "scheduler_wave_count": 1,
+          "phase_count": 4,
+          "complete_cycle_count": 54,
+          "phase_event_counts": {
+            "draft_proposal": 371,
+            "target_verify": 3709,
+            "accept_commit": 29,
+            "draft_catchup": 122
+          },
+          "cleanup_wall_span_ms": null,
+          "cleanup_aggregate_kernel_ms": null,
+          "cleanup_graph_execution_count": 0
+        },
+        "rendezvous": {
+          "arrival_spread_ms": null,
+          "first_collective_ms": null,
+          "latest_rank": null,
+          "notes": [
+            "The complete four-phase cycle is embedded for GPU 0. All eight ranks were independently audited for the 3,709-launch target-verification graph."
+          ]
+        },
+        "efficiency": {
+          "active_union_ms_by_rank": {
+            "0": 45.041003
+          },
+          "summed_residency_ms_by_rank": {
+            "0": 46.451376
+          },
+          "all_rank_active_union_ms": null,
+          "overlap_excess_ms": 1.410373,
+          "metric_label": "Modeled FP8-equivalent",
+          "modeled_flops_t": 2.422632612,
+          "mfu_pct": 2.7179014905258434,
+          "modeled_min_bytes_gb": 22.188687360000003,
+          "mbu_min_pct": 10.263188854830789,
+          "notes": [
+            "MFU normalizes mixed work to dense H200 FP8; BF16 MLA work counts twice.",
+            "MBU minimum uses a modeled useful-byte floor, not measured DRAM traffic.",
+            "The selected-cycle efficiency scope is one GPU rank; target verification alone was cross-rank audited."
+          ]
+        },
+        "notes": [
+          "Real-prefix admission is excluded from the selected steady-cycle timing.",
+          "The trace contains 54 complete EAGLE cycles; zero-based cycle 2 is expanded.",
+          "Every selected-cycle GPU-0 event is assigned to exactly one of four phases and one tree leaf."
+        ]
+      }
+    },
     "b100_dp8_ep8": {
-      "label": "B=100 \u00b7 TP8/DP8/EP8 \u00b7 complete capture",
+      "label": "B=100 (DP&EP)",
       "batch_size": 100,
       "context_tokens": 4096,
       "topology": {

@@ -249,18 +249,64 @@ milliseconds unless a key explicitly names another unit.
 }
 ```
 
-## Optional complete B=100 DP8/EP8 display view
+## Optional complete experiment views
 
 The five keys under `batches` remain the original TP8/DP1/EP1 batch sweep,
-including native B=500. A separately captured B=100 TP8/DP8/EP8 experiment is
-added under `display_views.b100_dp8_ep8`. When present, it appears as the sixth
-`B=100 (DP&EP)` choice in the primary **Displayed batch** selector.
+including native B=500. Separately captured experiments may be added under
+`display_views`: B=20 speculative decoding at `b20_eagle`, and B=100
+TP8/DP8/EP8 at `b100_dp8_ep8`. When both are present, the primary **Displayed
+batch** selector reads B=1, B=10, B=20 (EAGLE), B=100, B=200, B=500, and
+B=100 (DP&EP).
 
-This is a complete experiment view, not a tree overlay and not a sixth numeric
-`batches` key. Every batch-dependent panel consumes its `batch` object. Missing
+Each is a complete experiment view, not a tree overlay and not another numeric
+`batches` key. Every batch-dependent panel consumes its own `batch` object. Missing
 optional evidence is rendered as unavailable and must never fall back to the
-native `batches["100"]` object. Serialized inputs using the legacy `tree_views`
-key are rejected.
+similarly sized native object. Serialized inputs using the legacy `tree_views`
+key are rejected. Every view requires matching configured and experiment
+topologies, passing validation and provenance, a reconciling tree, and a layer
+ledger covering decoder layers 0 through 77.
+
+### B=20 EAGLE
+
+`display_views.b20_eagle` contains one selected steady GPU-0 EAGLE cycle at a
+real request batch of 20 and a 4,096-token context. It uses TP=8, DP=1, EP=1,
+PP=1 and must keep the four phases separate: draft proposal, target
+verification, acceptance/KV commit, and draft-state catch-up. The target pass
+evaluates 20 requests times six candidates, or 120 verification rows, in one
+full 78-layer target-model invocation.
+
+The view's primary boundary is the selected cycle's GPU-0 active-kernel union.
+Its scoped rate divides 20 requested sequences by that union and is labeled
+`sequence-cycles/s`. It deliberately does not multiply by the request-level
+average acceptance length and is not placed on the native B=1 scaling identity.
+Real-prefix admission and HTTP request time remain evidence outside the selected
+cycle. The tree may publish modeled FP8-equivalent MFU and minimum-byte MBU when
+the static numerator, active-union denominator, and sourced H200 peak constants
+are all present.
+
+Required EAGLE fields include:
+
+```text
+display_views.b20_eagle
+  batch_size=20, context_tokens=4096, kind=eagle
+  topology.configured={tp:8, dp:1, ep:1, pp:1}
+  experiment.topology={tp:8, dp:1, ep:1, pp:1}
+  validation.status=pass
+  provenance.capture_id, provenance.validation_status=pass
+  batch
+    status=complete, context_tokens=4096
+    proof.requested_batch=20, proof.observed_real_batch=20
+    proof.target_verification_rows=120, proof.speculative=true
+    kernel_timing.boundary=gpu0_eagle_cycle_active_kernel_interval_union
+    one_rank_tree.scope.batch_size=20
+    one_rank_tree.scope.context_tokens=4096
+    one_rank_tree.layer_ledger                # target layers 0 through 77
+```
+
+### B=100 DP8/EP8
+
+A separately captured B=100 TP8/DP8/EP8 experiment is added under
+`display_views.b100_dp8_ep8` and appears as `B=100 (DP&EP)`.
 
 The fixed experiment contract is:
 
@@ -304,7 +350,8 @@ The generator rejects the view unless its configured and experiment topologies
 match, validation and provenance pass, view/batch/tree context counts agree,
 scope and root timing reconcile, child event counts add to their parents, and
 the layer ledger covers all 78 decoder layers. The primary selector renders
-five choices when `display_views` is absent and six when it is present.
+five choices without optional views, six with either optional view, and seven
+with both.
 
 The primary displayed DP8 rate divides 100 useful computed tokens by the
 audited full model-graph envelope across the capture. The representative GPU0
@@ -335,12 +382,13 @@ The generator always writes these normalized artifacts:
 
 - `report_data.json` — the validated, normalized sidecar used by the page.
 - `timeline_data.json` — an alias retained for the baseline report format.
-- `gpu0_kernel_tree.json` — all five exact GPU-0 operation trees, modeled
-  numerators, raw-name leaves, and 78-layer ledgers.
+- `gpu0_kernel_tree.json` — all five native GPU-0 operation trees plus every
+  optional view tree, including modeled numerators, raw-name leaves, and
+  78-layer ledgers.
 - `experiment_summary.json` — compact cross-batch timing and efficiency data.
 - `validation.json` — validation ledger.
-- `batch_summary.csv` — one row per batch.
-- `kernel_summary.csv` — one row per batch and kernel family.
+- `batch_summary.csv` — one row per selector view.
+- `kernel_summary.csv` — one row per selector view and kernel family.
 
 For this capture-specific generator, `one_rank_tree` is derived from the full
 adjacent `kernel_events.csv.gz` rather than trusted from the input JSON. The

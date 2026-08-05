@@ -129,6 +129,36 @@
     }
   },
   "display_views": {
+    "b20_eagle": {
+      "status": "pass",
+      "checks": [
+        {
+          "name": "Measured request and real batch",
+          "status": "pass",
+          "evidence": "HTTP 200; 20 responses; exact prompt, completion, and request-ID accounting."
+        },
+        {
+          "name": "Real KV-cache prefixes",
+          "status": "pass",
+          "evidence": "Every sequence reused exactly 4,032 cached tokens and recomputed a 64-token tail."
+        },
+        {
+          "name": "Selected-cycle ownership",
+          "status": "pass",
+          "evidence": "4,231 GPU-0 events assigned exactly once across four non-overlapping phases and 320 tree nodes."
+        },
+        {
+          "name": "Target verification across ranks",
+          "status": "pass",
+          "evidence": "All eight TP ranks contain 3,709 classified target events and the same 78-layer refresh/reuse ledger."
+        },
+        {
+          "name": "Privacy boundary",
+          "status": "pass",
+          "evidence": "No raw prompt text, token IDs, response text, or private prefix corpus is published."
+        }
+      ]
+    },
     "b100_dp8_ep8": {
       "status": "pass",
       "checks": [
