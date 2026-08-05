@@ -263,39 +263,52 @@ rate, timeline, event table, or global experiment topology.
     "b500_dp8_ep8": {
       "label": "B=500 · DP8/EP8",
       "batch_size": 500,
-      "context_tokens": 4096,
+      "context_tokens": 3072,
       "topology": {
         "configured": {"tp": 8, "dp": 8, "ep": 8, "pp": 1},
         "phase_roles": {
-          "attention": "DP8 × attention-TP1",
-          "dense": "TP8",
-          "moe": "EP8"
+          "attention": "DP-attention lanes partition the request batch",
+          "moe": "TP8/EP8 expert execution",
+          "output": "DP zero-fill/copy + AllReduce before LM head; TP vocabulary AllGather after LM head"
         }
       },
       "provenance": {
         "capture_id": "stable capture identifier",
-        "validation_status": "pass"
+        "validation_status": "pass",
+        "ledger_sha256": "64 lowercase hexadecimal characters",
+        "audit_sha256": "64 lowercase hexadecimal characters",
+        "event_ownership_sha256": "64 lowercase hexadecimal characters",
+        "artifacts": [
+          {
+            "role": "compact_kernel_ledger",
+            "label": "DP8 compact GPU kernel-event ledger",
+            "path": "dp8_evidence/kernel_events.csv.gz",
+            "sha256": "64 lowercase hexadecimal characters",
+            "size_bytes": 1
+          }
+        ]
       },
       "one_rank_tree": {
         "scope": {
           "device": 0,
           "rank_label": "DP0 / TP0 / EP0",
           "batch_size": 500,
-          "context_tokens": 4096,
-          "launch_count": 1,
-          "graph_wall_span_ms": 1.0,
-          "active_union_ms": 1.0,
-          "aggregate_kernel_ms": 1.0
+          "local_physical_batch_size": 63,
+          "context_tokens": 3072,
+          "launch_count": 3355,
+          "graph_wall_span_ms": 51.63345,
+          "active_union_ms": 40.560798,
+          "aggregate_kernel_ms": 43.02675
         },
         "constants": {},
         "tree": {
           "id": "GPU0-DP8-EP8",
           "title": "Measured DP8/EP8 GPU 0 graph",
           "role": "one physical rank as attention, dense, and expert groups change",
-          "event_count": 1,
-          "active_union_ms": 1.0,
-          "aggregate_kernel_ms": 1.0,
-          "wall_span_ms": 1.0,
+          "event_count": 3355,
+          "active_union_ms": 40.560798,
+          "aggregate_kernel_ms": 43.02675,
+          "wall_span_ms": 51.63345,
           "children": []
         },
         "layer_ledger": ["exactly 78 rows, layers 0 through 77"],
@@ -312,6 +325,12 @@ exactly TP8/DP8/EP8/PP1, its provenance says validation passed, its scope and
 root timing reconcile, child event counts add to their parents, and its layer
 ledger covers all 78 decoder layers. The generator does not derive or invent
 this alternate tree from the TP8/DP1/EP1 `kernel_events.csv.gz`.
+
+When `provenance.artifacts` supplies relative `path` values, the generator
+publishes those evidence files under `downloads/` without changing the native
+five-batch `downloads` declaration. The measured DP8 view intentionally omits
+`mfu_percent`, `mbu_percent`, FLOP numerators, and byte numerators until a
+separately reviewed utilization model exists; the renderer displays dashes.
 
 ## Download declarations
 
