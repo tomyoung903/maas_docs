@@ -253,9 +253,13 @@ milliseconds unless a key explicitly names another unit.
 
 The five keys under `batches` remain the page-wide TP8/DP1/EP1 experiment.
 An independently captured B=500 DP8/EP8 execution tree can be added under the
-optional `tree_views.b500_dp8_ep8` key. It affects only the nested selector in
-the `one-rank-tree` section; it never enters the batch comparison, headline
-rate, timeline, event table, or global experiment topology.
+optional `tree_views.b500_dp8_ep8` key. When present, it appears as a sixth
+`B=500 (DP&EP)` choice in the primary **Displayed batch** selector. It is a
+display view, not a sixth `batches` record: only the execution tree and its
+downloadable evidence use the DP8/EP8 capture. The page marks every other panel
+as the original native B=500 TP8/DP1/EP1 data, and the alternate view never
+enters the batch comparison, headline rate, timeline, event table, CSVs, or
+global experiment topology.
 
 ```json
 {
@@ -324,7 +328,9 @@ The generator rejects an alternate view unless its configured topology is
 exactly TP8/DP8/EP8/PP1, its provenance says validation passed, its scope and
 root timing reconcile, child event counts add to their parents, and its layer
 ledger covers all 78 decoder layers. The generator does not derive or invent
-this alternate tree from the TP8/DP1/EP1 `kernel_events.csv.gz`.
+this alternate tree from the TP8/DP1/EP1 `kernel_events.csv.gz`. The primary
+selector renders exactly five choices when this object is absent and exactly
+six when it is present; no nested topology selector is emitted.
 
 When `provenance.artifacts` supplies relative `path` values, the generator
 publishes those evidence files under `downloads/` without changing the native
