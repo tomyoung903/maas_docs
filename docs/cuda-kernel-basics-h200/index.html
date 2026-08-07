@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A practical model for CUDA streams, kernels, blocks, SMs, shared memory, profiler timelines, and FlashMLA sparse-FP8 decode and timing accounting on NVIDIA H200 GPUs.">
+  <meta name="description" content="A practical model for CUDA streams, kernels, blocks, SMs, shared memory, profiler timelines, and FlashMLA sparse-FP8 decode, warpgroup cycle derivation, and timing accounting on NVIDIA H200 GPUs.">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/cuda-kernel-basics-h200/">
   <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/cuda-kernel-basics-h200/">
   <meta property="og:title" content="CUDA Kernel Fundamentals on H200">
-  <meta property="og:description" content="How PyTorch and SGLang launches become H200 hardware work, with a visual cutaway of FlashMLA sparse decode and an exact interval-union timing audit.">
+  <meta property="og:description" content="How PyTorch and SGLang launches become H200 hardware work, with a FlashMLA sparse-decode cutaway, bottom-up warpgroup cycle derivation, and exact timing audit.">
   <title>CUDA Kernel Fundamentals on H200</title>
   <style>
     :root {
@@ -2019,6 +2019,16 @@
       font-weight: 800;
     }
 
+    .timing-proof.semantic-proof td,
+    .timing-proof.semantic-proof th {
+      text-align: left;
+      white-space: normal;
+    }
+
+    .semantic-proof table {
+      min-width: 720px;
+    }
+
     .pdl-mini {
       margin-top: 18px;
       border: 1px solid #c7ad83;
@@ -2530,6 +2540,7 @@
       <a href="#sglang-case">SGLang PP case</a>
       <a href="#flashmla-internals">FlashMLA internals</a>
       <a href="#flashmla-timing">FlashMLA timing</a>
+      <a href="#flashmla-cycle-derivation">Cycle derivation</a>
       <a href="#checklist">Analysis checklist</a>
       <a href="#sources">Sources</a>
     </nav>
@@ -3331,6 +3342,241 @@ with torch.cuda.stream(forward_stream):
           <strong>Union is not exclusive critical-path cost.</strong> Node 2.1.7 can overlap work assigned to other execution-tree siblings. Removing or accelerating it would not automatically reduce TPOT by exactly 8.583279 ms.
         </div>
 
+        <h3 id="flashmla-cycle-derivation">From three warpgroups to the 103.424 &micro;s main scan</h3>
+        <p>The <a href="#flashmla-internals">FlashMLA cutaway</a> showed what the kernel does. This subsection closes the quantitative gap: exact source geometry &rarr; DeepSeek&rsquo;s ideal per-SM throughput model &rarr; the pinned scheduler&rsquo;s busiest CTA &rarr; the elapsed time observed by Nsight Systems.</p>
+
+        <div class="timing-scope" aria-label="Evidence levels used by the cycle derivation">
+          <span>Source-exact geometry</span>
+          <span>DeepSeek theoretical roof</span>
+          <span>Derived scheduler arithmetic</span>
+          <span>Trace-observed elapsed time</span>
+        </div>
+
+        <div class="callout">
+          <strong>Bottom-line verdict:</strong> the official <span class="math-dim">50 versus 34</span> calculation explains why ideal H64 arithmetic is dequantization-throughput-bound. It does <em>not</em> predict that the complete H200 kernel must finish in either 50 or 34 clock ticks. Those figures are peak-throughput-equivalent SM cycles per selected record, not instruction latency and not profiler-measured cycles.
+        </div>
+
+        <div class="flash-operation-grid" aria-label="Source-derived H64 kernel topology">
+          <div class="flash-operation gather">
+            <span class="operation-kicker">CTA topology</span>
+            <strong>384 threads &rarr; 12 warps &rarr; 3 warpgroups</strong>
+            <p>A Hopper warpgroup is four contiguous warps, or 128 threads. The three source branches are therefore WG0, WG1, and WG2.</p>
+          </div>
+          <div class="flash-operation qk">
+            <span class="operation-kicker">H64 work tile</span>
+            <strong>64 scheduled heads &times; 64 selected records</strong>
+            <p>One main-loop tile forms a <span class="math-dim">64 &times; 64</span> score block, then accumulates a <span class="math-dim">64 &times; 512</span> output.</p>
+          </div>
+          <div class="flash-operation softmax">
+            <span class="operation-kicker">Residency</span>
+            <strong>One large CTA per SM</strong>
+            <p>Q, two K/V buffers, and the score tile occupy exactly 224 KiB; small arrays, barriers, and alignment push the CTA above 225 KiB. Two such CTAs cannot co-reside on a Hopper SM.</p>
+          </div>
+          <div class="flash-operation pv">
+            <span class="operation-kicker">This experiment</span>
+            <strong>H64 &middot; cluster size 1 &middot; 132 partitions</strong>
+            <p>The kernel launches one scheduler partition per H200 SM. Unlike H128, this H64 path has no peer CTA and no DSM crossover.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap timing-proof semantic-proof">
+          <table>
+            <thead>
+              <tr><th>Warpgroup</th><th>Threads</th><th>Exact source role</th><th>Work in one 64-record tile</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>WG0</strong></td>
+                <td>0&ndash;127</td>
+                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L270">QK, online softmax, and the first 256 value dimensions</a></td>
+                <td>36 QK WGMMA operations + 4 PV WGMMA operations</td>
+              </tr>
+              <tr>
+                <td><strong>WG1</strong></td>
+                <td>128&ndash;255</td>
+                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L366-L452">Wait for probabilities, then accumulate value dimensions 256&ndash;511</a></td>
+                <td>4 PV WGMMA operations</td>
+              </tr>
+              <tr>
+                <td><strong>WG2</strong></td>
+                <td>256&ndash;383</td>
+                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L454-L647">Follow sparse addresses, load, dequantize, and publish the next K/V tile</a></td>
+                <td>Two rounds &times; 32 records = 64 prepared records</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="math-block" aria-label="Producer warpgroup mapping for one selected cache record and one tile">
+          <span class="math-lhs"><span class="math-var">N</span><sub>record/tile</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">4 warps &times; 8 unique records per warp &times; 2 rounds = 64 records</span>
+          <span class="math-lhs"><span class="math-var">D</span><sub>NoPE</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">8 dimension chunks &times; 4 collaborating lanes &times; 16 FP8 values = 512 FP8 values</span>
+          <span class="math-lhs"><span class="math-var">B</span><sub>RoPE</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">2 vector loads per lane &times; 4 lanes &times; 16 B = 128 B</span>
+          <span class="math-lhs"><span class="math-var">B</span><sub>logical record</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">512 B FP8 + 16 B scales + 128 B RoPE = 656 B</span>
+        </div>
+        <p class="math-note">Four lanes with the same lane-modulo-eight value collaborate on each record: <span class="math-dim">r, r+8, r+16, r+24</span> (for example, lanes 0, 8, 16, and 24). Their 16-value vector loads are interleaved across the record&rsquo;s 64-dimension segments. Each lane also issues the same 16-byte scale-vector load. Cache/coalescing may suppress duplicate DRAM transactions, but the source-level duplication is another reason that 656 B is a useful logical floor rather than measured physical traffic.</p>
+
+        <div class="record-card">
+          <div class="record-heading">
+            <strong>Roof A &middot; derive the quoted 50 dequantization cycles</strong>
+            <span class="record-total">50 cycles / record</span>
+          </div>
+          <p>DeepSeek models four result streams against the maximum arithmetic throughput of one compute-capability-9.0 SM. Dividing 512 scalar results by each published results-per-clock ceiling gives the following service demand.</p>
+          <div class="table-wrap timing-proof">
+            <table>
+              <thead><tr><th>Conceptual Hopper step</th><th>Results</th><th>Ideal results / SM clock</th><th>Throughput-equivalent cycles</th></tr></thead>
+              <tbody>
+                <tr><td>E4M3 FP8 &rarr; FP16</td><td>512</td><td>64</td><td>8</td></tr>
+                <tr><td>FP16 &rarr; FP32</td><td>512</td><td>64</td><td>8</td></tr>
+                <tr><td>FP32 &rarr; BF16</td><td>512</td><td>16</td><td>32</td></tr>
+                <tr><td>BF16 &times; quantization scale</td><td>512</td><td>256</td><td>2</td></tr>
+                <tr class="timing-total"><td><strong>Producer arithmetic floor</strong></td><td>Four passes</td><td>&mdash;</td><td><strong>50</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="math-block" aria-label="DeepSeek theoretical dequantization throughput calculation">
+            <span class="math-lhs"><span class="math-var">C</span><sub>dequant</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">512 &times; (1/64 + 1/64 + 1/16 + 1/256)</span>
+            <span class="math-lhs"></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">8 + 8 + 32 + 2 = 50 ideal SM-throughput cycles per record</span>
+          </div>
+          <p>The pinned helper vectorizes eight values at a time as <a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/components/dequant.h#L20-L34">FP8 quartets, FP32 vectors, BF16 pairs, and BF16-pair multiplies</a>. Its exact SASS lowering can vary with the compiler, so 50 is the authors&rsquo; throughput roof&mdash;not 50 source instructions or 50 cycles of dependent latency.</p>
+        </div>
+
+        <div class="record-card">
+          <div class="record-heading">
+            <strong>Roof B &middot; derive 44 WGMMA operations and the quoted 34 cycles</strong>
+            <span class="record-total">34 cycles / record</span>
+          </div>
+          <p>The source uses one <span class="math-dim">m64n64k16</span> atom for QK and one <span class="math-dim">m64n256k16</span> atom in each PV consumer. The generic helper emits one warpgroup MMA operation for every 16-wide K slice.</p>
+          <div class="table-wrap timing-proof">
+            <table>
+              <thead><tr><th>Tensor-Core work</th><th>WGMMA atom</th><th>Operations / tile</th><th>FLOP / operation</th><th>FLOP / tile</th><th>Peak-service cycles</th></tr></thead>
+              <tbody>
+                <tr><td><strong>QK &middot; WG0</strong></td><td><span class="math-dim">64 &times; 64 &times; 16</span></td><td>576 / 16 = 36</td><td>131,072</td><td>4,718,592</td><td>1,152</td></tr>
+                <tr><td><strong>PV[0:256] &middot; WG0</strong></td><td><span class="math-dim">64 &times; 256 &times; 16</span></td><td>64 / 16 = 4</td><td>524,288</td><td>2,097,152</td><td>512</td></tr>
+                <tr><td><strong>PV[256:512] &middot; WG1</strong></td><td><span class="math-dim">64 &times; 256 &times; 16</span></td><td>64 / 16 = 4</td><td>524,288</td><td>2,097,152</td><td>512</td></tr>
+                <tr class="timing-total"><td><strong>Total</strong></td><td>&mdash;</td><td><strong>44 warpgroup operations</strong></td><td>&mdash;</td><td><strong>8,912,896</strong></td><td><strong>2,176</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="math-block" aria-label="DeepSeek theoretical Tensor Core throughput calculation">
+            <span class="math-lhs"><span class="math-var">P</span><sub>TC,SM</sub></span>
+            <span class="math-op">&asymp;</span>
+            <span class="math-rhs">989 TFLOP/s &divide; (1.830 GHz &times; 132 SMs) &asymp; 4,096 FLOP per SM clock</span>
+            <span class="math-lhs"><span class="math-var">C</span><sub>QK</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">4,718,592 FLOP &divide; 4,096 = 1,152 cycles per tile = 18 per record</span>
+            <span class="math-lhs"><span class="math-var">C</span><sub>PV</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">4,194,304 FLOP &divide; 4,096 = 1,024 cycles per tile = 16 per record</span>
+            <span class="math-lhs"><span class="math-var">C</span><sub>MMA</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">1,152 + 1,024 = 2,176 cycles per tile = 34 per record</span>
+          </div>
+          <div class="callout warning">
+            <strong>44 WGMMA operations does not mean 44 cycles.</strong> Forty-four is the source-derived count of warpgroup-level MMA collectives. Thirty-four per record is total FLOP divided by an ideal aggregate Tensor-Core throughput. Neither number is a WGMMA issue interval or dependent-result latency; WGMMA executes through Hopper&rsquo;s asynchronous proxy and completes through commit/wait groups.
+          </div>
+        </div>
+
+        <div class="cycle-card">
+          <div class="cycle-head">
+            <strong>Two K/V buffers turn the stages into a relay</strong>
+            <span class="not-sum">Use max, not 50 + 34</span>
+          </div>
+          <div class="cycle-lane">
+            <span class="cycle-label">WG2 producer</span>
+            <div class="cycle-track"><div class="cycle-fill">64 records &times; 50 &middot; tile N+1</div></div>
+            <span class="cycle-value">3,200 cycles / tile</span>
+          </div>
+          <div class="cycle-lane">
+            <span class="cycle-label">WG0 + WG1 Tensor</span>
+            <div class="cycle-track"><div class="cycle-fill mma">64 records &times; 34 &middot; tile N</div></div>
+            <span class="cycle-value">2,176 cycles / tile</span>
+          </div>
+          <div class="math-block" aria-label="Ideal steady-state tile pipeline throughput">
+            <span class="math-lhs"><span class="math-var">C</span><sub>steady tile</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">max(64 &times; 50, 64 &times; 34) = max(3,200, 2,176) = 3,200 cycles</span>
+          </div>
+          <p>While WG0 and WG1 consume tile <span class="math-var">N</span>, WG2 prepares tile <span class="math-var">N</span>+1. The ideal H64 relay is therefore producer-bound. In the H128 crossover variant, each of two clustered CTAs prepares only 32 records: its producer floor becomes <span class="math-dim">32 &times; 50 = 1,600</span> cycles while Tensor work remains 2,176. <strong>That crossover does not apply here:</strong> the padded H64 route has cluster size one.</p>
+        </div>
+
+        <div class="record-card">
+          <div class="record-heading">
+            <strong>Scale the per-tile roof into this B=100 launch</strong>
+            <span class="record-total">source &rarr; scheduler &rarr; trace</span>
+          </div>
+          <p>TopK=2,048 produces 32 physical 64-record tiles per request. The pinned SM90 scheduler adds five virtual block-equivalents whenever it assigns a request fragment, then balances that weighted work across the 132 H64 SM partitions.</p>
+          <div class="math-block" aria-label="B100 scheduler payload derivation">
+            <span class="math-lhs"><span class="math-var">N</span><sub>tile</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">100 requests &times; (2,048 records &divide; 64) = 3,200 physical tiles</span>
+            <span class="math-lhs"><span class="math-var">W</span><sub>virtual</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">100 &times; (32 physical tiles + 5 request-overhead units) = 3,700</span>
+            <span class="math-lhs"><span class="math-var">P</span><sub>scheduler</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">ceil(3,700 &divide; 132) + 5 = 34 weighted units per partition</span>
+          </div>
+          <div class="table-wrap timing-proof">
+            <table>
+              <thead><tr><th>Physical tiles assigned</th><th>CTA partitions</th><th>Selected records / CTA</th><th>Interpretation</th></tr></thead>
+              <tbody>
+                <tr><td><strong>29</strong></td><td>25</td><td>1,856</td><td>Busiest one-fragment partitions</td></tr>
+                <tr><td><strong>27</strong></td><td>25</td><td>1,728</td><td>Request-boundary pattern</td></tr>
+                <tr><td><strong>24</strong></td><td>75</td><td>1,536</td><td>Two-fragment partitions pay two overhead charges</td></tr>
+                <tr><td><strong>0</strong></td><td>7</td><td>0</td><td>Grid partitions return after reading empty metadata</td></tr>
+                <tr class="timing-total"><td><strong>3,200 total tiles</strong></td><td><strong>132 CTAs</strong></td><td>&mdash;</td><td><strong>125 work-bearing; the 29-tile CTA sets the ideal tail</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="math-block" aria-label="Ideal busy-CTA pipeline floor and illustrative time conversion">
+            <span class="math-lhs"><span class="math-var">C</span><sub>ideal,29</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">3,200 fill + 28 &times; max(3,200, 2,176) + 2,176 drain = 94,976 cycles</span>
+            <span class="math-lhs"><span class="math-var">t</span><sub>ideal,1.83</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">94,976 cycles &divide; 1.830 GHz = 51.90 &micro;s</span>
+            <span class="math-lhs"><span class="math-var">R</span><sub>trace/roof</sub></span>
+            <span class="math-op">=</span>
+            <span class="math-rhs">103.424 &micro;s &divide; 51.90 &micro;s = 1.993&times;</span>
+          </div>
+        </div>
+
+        <div class="timing-metric-grid" aria-label="Bridge from the theoretical busy-CTA floor to measured timing">
+          <div class="timing-metric"><strong>1,856 records</strong><span>29 tiles on each busiest CTA, derived from the pinned scheduler.</span></div>
+          <div class="timing-metric"><strong>94,976 cycles</strong><span>Ideal producer/Tensor pipeline fill, steady state, and drain.</span></div>
+          <div class="timing-metric"><strong>51.90 &micro;s</strong><span>Illustrative conversion using the deep-dive&rsquo;s 1.830 GHz H800 reference&mdash;not a measured H200 clock.</span></div>
+          <div class="timing-metric"><strong>103.424 &micro;s</strong><span>Direct Nsight Systems mean for the complete B=100 H200 main scan.</span></div>
+        </div>
+
+        <div class="table-wrap timing-proof semantic-proof">
+          <table>
+            <thead><tr><th>Number</th><th>What it includes</th><th>What it excludes</th><th>Evidence class</th></tr></thead>
+            <tbody>
+              <tr><td><strong>50 cycles / record</strong></td><td>Conceptual conversion and scale-multiply throughput</td><td>Sparse gather, scale loads, RoPE, stores, and stalls</td><td>DeepSeek H800 arithmetic roof</td></tr>
+              <tr><td><strong>34 cycles / record</strong></td><td>All scheduled H64 BF16 QK and PV FLOPs</td><td>Softmax, barriers, data movement, and WGMMA latency</td><td>DeepSeek H800 Tensor roof</td></tr>
+              <tr><td><strong>51.90 &micro;s</strong></td><td>Busiest-CTA two-stage ideal pipeline</td><td>Real H200 clock and every omitted kernel cost</td><td>Source-derived arithmetic floor normalized at 1.830 GHz</td></tr>
+              <tr><td><strong>103.424 &micro;s</strong></td><td>Mean of 78 complete main-kernel launch intervals</td><td>The separate combine kernel</td><td>Direct B=100 H200 trace observation</td></tr>
+              <tr><td><strong>110.042 &micro;s</strong></td><td>Main + combine &minus; 2.949 &micro;s PDL overlap</td><td>Other execution-tree nodes</td><td>Direct interval-union calculation</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout warning">
+          <strong>The unexplained 51.5 &micro;s is not automatically &ldquo;dequantization time.&rdquo;</strong> The theoretical model omits sparse HBM and index loads, page address arithmetic, repeated scale-load instructions, RoPE loads, shared-memory stores, online softmax, fences and barriers, Q/output TMA, request boundaries, pipeline bubbles, compiler lowering, and the real clock during this trace. The independent logical HBM floor is 134.3488 MB &divide; 4.8 TB/s = 27.99 &micro;s, but it is neither additive to the arithmetic floor nor a measurement of scattered transactions. This Nsight Systems capture contains no SM-clock, instruction, stall, or DRAM counters; attributing the residual requires the exact cubin plus Nsight Compute or a controlled microbenchmark.
+        </div>
+
         <h3>Why the MFU and MBU<sub>min</sub> figures reconcile</h3>
         <p>The card uses a useful-work model on the same 8.583279 ms union denominator. Its FLOP numerator counts the eight useful TP-local heads; its byte numerator counts one 656-byte selected cache record per sequence, layer, and selected position.</p>
 
@@ -3388,13 +3634,19 @@ with torch.cuda.stream(forward_stream):
           <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html">NVIDIA CUDA Programming Guide: programming and hardware model</a></li>
           <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/programmatic-dependent-launch.html">NVIDIA CUDA Programming Guide: Programmatic Dependent Launch and same-stream overlap</a></li>
           <li><a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/">NVIDIA Hopper Tuning Guide: occupancy, shared memory, TMA, and block clusters</a></li>
+          <li><a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#throughput-of-native-arithmetic-instructions">NVIDIA CUDA C++ Best Practices Guide: native arithmetic instruction throughput by compute capability</a></li>
+          <li><a href="https://docs.nvidia.com/cuda/parallel-thread-execution/#asynchronous-warpgroup-level-matrix-instructions">NVIDIA PTX ISA: asynchronous warpgroup-level matrix instructions, commit groups, and wait groups</a></li>
           <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/compute-capabilities.html">NVIDIA CUDA Programming Guide: compute capability resource limits</a></li>
           <li><a href="https://www.nvidia.com/en-us/data-center/h200/">NVIDIA H200 product specifications</a></li>
           <li><a href="https://docs.pytorch.org/docs/stable/notes/cuda.html#cuda-streams">PyTorch CUDA semantics: CUDA streams</a></li>
           <li><a href="https://github.com/sgl-project/sglang/blob/f6de147b8d76279445c527a73311e628d8abaaea/python/sglang/srt/layers/attention/dsa_backend.py#L2792-L2851">SGLang DSA backend: FlashMLA query padding, invocation, and output crop</a></li>
           <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/docs/20250929-hopper-fp8-sparse-deep-dive.md">DeepSeek FlashMLA: Hopper sparse-FP8 decode deep dive</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/config.h#L15-L35">FlashMLA SM90 configuration: H64/H128 clusters, CTA size, and tile dimensions</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L623">FlashMLA SM90 sparse decode: QK, online softmax, PV, gather, dequantization, and PDL trigger</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/params.h#L5-L8">FlashMLA model-type mapping: the traced template&rsquo;s <code>ModelType::V32</code></a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/config.h#L15-L130">FlashMLA SM90 configuration: H64/H128 clusters, CTA size, buffers, shared-memory plan, and WGMMA atoms</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L647">FlashMLA SM90 sparse decode: QK, online softmax, PV, gather, dequantization, and producer mapping</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/components/helpers.h#L20-L53">FlashMLA WGMMA helper: K-slice unrolling, asynchronous commit, and wait</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/components/dequant.h#L20-L34">FlashMLA FP8 dequantization helper: vector conversions and BF16 scale multiplication</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/api/common.h#L20-L32">FlashMLA runtime architecture query: scheduler partitions use the device SM count</a></li>
           <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/api/sparse_decode.h#L44-L65">FlashMLA sparse-decode API: 64-record blocks and SM-partition count</a></li>
           <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/get_decoding_sched_meta/get_decoding_sched_meta.cu#L28-L106">FlashMLA decoding scheduler: block assignment and split metadata</a></li>
           <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/combine/combine.cu#L18-L220">FlashMLA split-output combine kernel: dependency synchronization and PDL launch</a></li>
