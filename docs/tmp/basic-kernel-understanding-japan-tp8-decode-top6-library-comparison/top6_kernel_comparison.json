@@ -1,0 +1,1109 @@
+{
+  "schema_version": "top6-kernel-library-comparison-v1",
+  "generated_at": "2026-08-07T10:45:51.832225+00:00",
+  "source_schema_version": "1.0",
+  "source_generated_at": "2026-08-04T07:25:13.361060+00:00",
+  "scope": {
+    "model": "zai-org/GLM-5.2-FP8",
+    "model_revision": "ba978f7d347eaf65d22f1a86833408afdb953541",
+    "cluster": "Japan",
+    "node": "gpu-h200-36",
+    "gpu": "NVIDIA H200",
+    "topology": {
+      "tp": 8,
+      "dp": 1,
+      "ep": 1,
+      "pp": 1
+    },
+    "precision": "FP8",
+    "boundary": "One selected useful decode CUDA-graph generation, exact raw-name subtotals, all eight TP ranks summed."
+  },
+  "batches": [
+    {
+      "batch": 1,
+      "context_tokens": 4096,
+      "wall_ms": 19.39598,
+      "active_union_ms": 18.174659,
+      "aggregate_residency_ms": 123.334413,
+      "top6_residency_ms": 61.864432,
+      "top6_coverage_pct": 50.15991116769656,
+      "rows": [
+        {
+          "rank": 1,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 14.22756,
+          "share_pct": 11.535758,
+          "mean_us": 11.8563
+        },
+        {
+          "rank": 2,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)",
+          "full_name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 13.007169,
+          "share_pct": 10.546261,
+          "mean_us": 812.948062
+        },
+        {
+          "rank": 3,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0,...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 10.580027,
+          "share_pct": 8.578325,
+          "mean_us": 8.53228
+        },
+        {
+          "rank": 4,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)1, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)1, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 9.172028,
+          "share_pct": 7.436714,
+          "mean_us": 5.095571
+        },
+        {
+          "rank": 5,
+          "family_id": "fp8_quant",
+          "family": "SGLang per-token-group FP8 quantization",
+          "family_short": "FP8 quant",
+          "color": "#be123c",
+          "display_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const ...",
+          "full_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "category": "gemm_other",
+          "launches": 2256,
+          "residency_ms": 7.648474,
+          "share_pct": 6.201411,
+          "mean_us": 3.390281
+        },
+        {
+          "rank": 6,
+          "family_id": "deepgemm",
+          "family": "DeepGEMM SM90 FP8 GEMM",
+          "family_short": "DeepGEMM",
+          "color": "#0369a1",
+          "display_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)16, (unsigned int)32, (unsigned i...",
+          "full_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)16, (unsigned int)32, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)16, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+          "category": "gemm_other",
+          "launches": 648,
+          "residency_ms": 7.229174,
+          "share_pct": 5.861441,
+          "mean_us": 11.156133
+        }
+      ]
+    },
+    {
+      "batch": 10,
+      "context_tokens": 4096,
+      "wall_ms": 23.913687,
+      "active_union_ms": 22.756136,
+      "aggregate_residency_ms": 162.361864,
+      "top6_residency_ms": 96.13407300000001,
+      "top6_coverage_pct": 59.20976184407442,
+      "rows": [
+        {
+          "rank": 1,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 33.489184,
+          "share_pct": 20.626262,
+          "mean_us": 27.907653
+        },
+        {
+          "rank": 2,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)",
+          "full_name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 18.188736,
+          "share_pct": 11.202591,
+          "mean_us": 1136.796
+        },
+        {
+          "rank": 3,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0,...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 13.482358,
+          "share_pct": 8.303895,
+          "mean_us": 10.872869
+        },
+        {
+          "rank": 4,
+          "family_id": "sparse_mla",
+          "family": "FlashMLA sparse FP8 decode",
+          "family_short": "Sparse MLA",
+          "color": "#0f766e",
+          "display_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<...",
+          "full_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+          "category": "attention_mla",
+          "launches": 624,
+          "residency_ms": 11.365644,
+          "share_pct": 7.000193,
+          "mean_us": 18.214173
+        },
+        {
+          "rank": 5,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 10.314683,
+          "share_pct": 6.352898,
+          "mean_us": 5.730379
+        },
+        {
+          "rank": 6,
+          "family_id": "fp8_quant",
+          "family": "SGLang per-token-group FP8 quantization",
+          "family_short": "FP8 quant",
+          "color": "#be123c",
+          "display_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const ...",
+          "full_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "category": "gemm_other",
+          "launches": 2256,
+          "residency_ms": 9.293468,
+          "share_pct": 5.723923,
+          "mean_us": 4.119445
+        }
+      ]
+    },
+    {
+      "batch": 100,
+      "context_tokens": 4096,
+      "wall_ms": 47.920824,
+      "active_union_ms": 46.768545,
+      "aggregate_residency_ms": 405.200986,
+      "top6_residency_ms": 325.02930000000003,
+      "top6_coverage_pct": 80.21434084072047,
+      "rows": [
+        {
+          "rank": 1,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0,...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 87.461062,
+          "share_pct": 21.584612,
+          "mean_us": 70.533115
+        },
+        {
+          "rank": 2,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 66.951954,
+          "share_pct": 16.523147,
+          "mean_us": 55.793295
+        },
+        {
+          "rank": 3,
+          "family_id": "fp8_quant",
+          "family": "SGLang per-token-group FP8 quantization",
+          "family_short": "FP8 quant",
+          "color": "#be123c",
+          "display_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const ...",
+          "full_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "category": "gemm_other",
+          "launches": 2256,
+          "residency_ms": 66.88888,
+          "share_pct": 16.507581,
+          "mean_us": 29.649326
+        },
+        {
+          "rank": 4,
+          "family_id": "sparse_mla",
+          "family": "FlashMLA sparse FP8 decode",
+          "family_short": "Sparse MLA",
+          "color": "#0f766e",
+          "display_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<...",
+          "full_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+          "category": "attention_mla",
+          "launches": 624,
+          "residency_ms": 64.651749,
+          "share_pct": 15.955477,
+          "mean_us": 103.608572
+        },
+        {
+          "rank": 5,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::Pu...",
+          "full_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::PullController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 28.021265,
+          "share_pct": 6.915399,
+          "mean_us": 1751.329062
+        },
+        {
+          "rank": 6,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 11.05439,
+          "share_pct": 2.728125,
+          "mean_us": 6.141328
+        }
+      ]
+    },
+    {
+      "batch": 200,
+      "context_tokens": 832,
+      "wall_ms": 52.292862,
+      "active_union_ms": 45.206759,
+      "aggregate_residency_ms": 396.81628,
+      "top6_residency_ms": 307.821227,
+      "top6_coverage_pct": 77.57273139096007,
+      "rows": [
+        {
+          "rank": 1,
+          "family_id": "sparse_mla",
+          "family": "FlashMLA sparse FP8 decode",
+          "family_short": "Sparse MLA",
+          "color": "#0f766e",
+          "display_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<...",
+          "full_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+          "category": "attention_mla",
+          "launches": 624,
+          "residency_ms": 98.272273,
+          "share_pct": 24.765182,
+          "mean_us": 157.487617
+        },
+        {
+          "rank": 2,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0,...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 88.281648,
+          "share_pct": 22.247486,
+          "mean_us": 71.194877
+        },
+        {
+          "rank": 3,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 57.091322,
+          "share_pct": 14.387344,
+          "mean_us": 47.576102
+        },
+        {
+          "rank": 4,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::Pu...",
+          "full_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::PullController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 29.198297,
+          "share_pct": 7.35814,
+          "mean_us": 1824.893562
+        },
+        {
+          "rank": 5,
+          "family_id": "fp8_quant",
+          "family": "SGLang per-token-group FP8 quantization",
+          "family_short": "FP8 quant",
+          "color": "#be123c",
+          "display_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const ...",
+          "full_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "category": "gemm_other",
+          "launches": 2256,
+          "residency_ms": 23.713722,
+          "share_pct": 5.975995,
+          "mean_us": 10.511402
+        },
+        {
+          "rank": 6,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 11.263965,
+          "share_pct": 2.838584,
+          "mean_us": 6.257758
+        }
+      ]
+    },
+    {
+      "batch": 500,
+      "context_tokens": 832,
+      "wall_ms": 81.797127,
+      "active_union_ms": 79.083388,
+      "aggregate_residency_ms": 633.154691,
+      "top6_residency_ms": 508.04079499999995,
+      "top6_coverage_pct": 80.23960056232134,
+      "rows": [
+        {
+          "rank": 1,
+          "family_id": "sparse_mla",
+          "family": "FlashMLA sparse FP8 decode",
+          "family_short": "Sparse MLA",
+          "color": "#0f766e",
+          "display_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<...",
+          "full_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+          "category": "attention_mla",
+          "launches": 624,
+          "residency_ms": 226.9,
+          "share_pct": 35.836424,
+          "mean_us": 363.621795
+        },
+        {
+          "rank": 2,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 109.570301,
+          "share_pct": 17.305455,
+          "mean_us": 91.308584
+        },
+        {
+          "rank": 3,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_twoshot_sync<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0>(fl...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_twoshot_sync<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>, std::array<int, T3>, std::array<int, T3>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 96.952268,
+          "share_pct": 15.312572,
+          "mean_us": 78.187313
+        },
+        {
+          "rank": 4,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::Pu...",
+          "full_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::PullController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 32.530582,
+          "share_pct": 5.137857,
+          "mean_us": 2033.161375
+        },
+        {
+          "rank": 5,
+          "family_id": "deepgemm",
+          "family": "DeepGEMM SM90 FP8 GEMM",
+          "family_short": "DeepGEMM",
+          "color": "#0369a1",
+          "display_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)128, (unsigned int)192, (unsigned...",
+          "full_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)128, (unsigned int)192, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)4, (unsigned int)128, (unsigned int)256, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+          "category": "gemm_other",
+          "launches": 648,
+          "residency_ms": 26.813545,
+          "share_pct": 4.234912,
+          "mean_us": 41.378927
+        },
+        {
+          "rank": 6,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 15.274099,
+          "share_pct": 2.41238,
+          "mean_us": 8.485611
+        }
+      ]
+    }
+  ],
+  "families": {
+    "sparse_mla": {
+      "label": "FlashMLA sparse FP8 decode",
+      "short": "Sparse MLA",
+      "color": "#0f766e",
+      "operation": "Gather selected KV rows, dequantize the FP8 NoPE cache, then execute BF16 QK and PV work.",
+      "upstream": "The capture-pinned SGLang build fetches sgl-project/FlashMLA at commit df022e. Its SM90 kernel requires one KV head, a TopK multiple of 64, 64 or 128 query heads, and uses TMA plus Hopper WGMMA. The upstream README describes 656 bytes per FP8-cache token for the V3.2 layout and reports up to 410 TFLOP/s on H800 for a compute-bound sparse-decode benchmark.",
+      "observed": "Absent from B=1's top six, rank 4 at B=10 and B=100, then rank 1 at B=200 and B=500. It reaches 226.900 ms of eight-rank residency at B=500, 35.84% of all useful-step residency.",
+      "judgment": "The rank transition is directionally expected: each added sequence contributes another selected-KV attention problem. It is especially strong evidence because B=200/500 have only 832 context tokens; even with the shorter context, aggregate batch work makes sparse MLA dominant. Do not compare the measured residency directly with FlashMLA's H800 TFLOP/s headline—the shapes, GPU, and denominator differ.",
+      "links": [
+        [
+          "Pinned sparse decode source",
+          "https://github.com/sgl-project/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh"
+        ],
+        [
+          "FlashMLA README and benchmarks",
+          "https://github.com/deepseek-ai/FlashMLA"
+        ],
+        [
+          "DeepSeek-V3.2 paper",
+          "https://arxiv.org/abs/2512.02556"
+        ]
+      ],
+      "occurrences": [
+        {
+          "batch": 10,
+          "rank": 4,
+          "family_id": "sparse_mla",
+          "family": "FlashMLA sparse FP8 decode",
+          "family_short": "Sparse MLA",
+          "color": "#0f766e",
+          "display_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<...",
+          "full_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+          "category": "attention_mla",
+          "launches": 624,
+          "residency_ms": 11.365644,
+          "share_pct": 7.000193,
+          "mean_us": 18.214173
+        },
+        {
+          "batch": 100,
+          "rank": 4,
+          "family_id": "sparse_mla",
+          "family": "FlashMLA sparse FP8 decode",
+          "family_short": "Sparse MLA",
+          "color": "#0f766e",
+          "display_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<...",
+          "full_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+          "category": "attention_mla",
+          "launches": 624,
+          "residency_ms": 64.651749,
+          "share_pct": 15.955477,
+          "mean_us": 103.608572
+        },
+        {
+          "batch": 200,
+          "rank": 1,
+          "family_id": "sparse_mla",
+          "family": "FlashMLA sparse FP8 decode",
+          "family_short": "Sparse MLA",
+          "color": "#0f766e",
+          "display_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<...",
+          "full_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+          "category": "attention_mla",
+          "launches": 624,
+          "residency_ms": 98.272273,
+          "share_pct": 24.765182,
+          "mean_us": 157.487617
+        },
+        {
+          "batch": 500,
+          "rank": 1,
+          "family_id": "sparse_mla",
+          "family": "FlashMLA sparse FP8 decode",
+          "family_short": "Sparse MLA",
+          "color": "#0f766e",
+          "display_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<...",
+          "full_name": "void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)",
+          "category": "attention_mla",
+          "launches": 624,
+          "residency_ms": 226.9,
+          "share_pct": 35.836424,
+          "mean_us": 363.621795
+        }
+      ]
+    },
+    "flashinfer_ar_norm": {
+      "label": "FlashInfer fused all-reduce + residual + RMSNorm",
+      "short": "Fused AR + norm",
+      "color": "#2563eb",
+      "operation": "Reduce TP partial outputs and fuse residual addition and RMSNorm in the same communication kernel.",
+      "upstream": "Template Pattern 1 is kARResidualRMSNorm, not MLA attention. FlashInfer's one-shot Lamport path pushes the complete payload to peer buffers and polls locally; its two-shot path partitions tokens across ranks, reduces each partition, broadcasts results, then applies the fused epilogue. The library exposes an explicit one-shot/two-shot choice and size heuristic.",
+      "observed": "The one-shot symbol ranks 3, 3, 1, and 2 from B=1 through B=200. At B=500 the symbol changes to two-shot synchronization and remains rank 3. Total launches stay at 1,240, so the increasing mean duration reflects larger token payloads rather than more model invocations.",
+      "judgment": "This is the cleanest library-consistent transition in the sweep. The trace shows the same size-regime crossover encoded by FlashInfer: one shot for smaller payloads, two shot for the largest batch. The legacy category label attention_mla should not be used to infer the operation.",
+      "links": [
+        [
+          "FlashInfer CUDA source",
+          "https://github.com/flashinfer-ai/flashinfer/blob/main/include/flashinfer/comm/trtllm_allreduce_fusion.cuh"
+        ],
+        [
+          "FlashInfer all-reduce API",
+          "https://github.com/flashinfer-ai/flashinfer/blob/main/flashinfer/comm/allreduce.py"
+        ],
+        [
+          "SGLang server-argument source",
+          "https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/server_args.py"
+        ]
+      ],
+      "occurrences": [
+        {
+          "batch": 1,
+          "rank": 3,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0,...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 10.580027,
+          "share_pct": 8.578325,
+          "mean_us": 8.53228
+        },
+        {
+          "batch": 10,
+          "rank": 3,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0,...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 13.482358,
+          "share_pct": 8.303895,
+          "mean_us": 10.872869
+        },
+        {
+          "batch": 100,
+          "rank": 1,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0,...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 87.461062,
+          "share_pct": 21.584612,
+          "mean_us": 70.533115
+        },
+        {
+          "batch": 200,
+          "rank": 2,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0,...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 88.281648,
+          "share_pct": 22.247486,
+          "mean_us": 71.194877
+        },
+        {
+          "batch": 500,
+          "rank": 3,
+          "family_id": "flashinfer_ar_norm",
+          "family": "FlashInfer fused all-reduce + residual + RMSNorm",
+          "family_short": "Fused AR + norm",
+          "color": "#2563eb",
+          "display_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_twoshot_sync<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0>(fl...",
+          "full_name": "void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_twoshot_sync<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>, std::array<int, T3>, std::array<int, T3>)",
+          "category": "attention_mla",
+          "launches": 1240,
+          "residency_ms": 96.952268,
+          "share_pct": 15.312572,
+          "mean_us": 78.187313
+        }
+      ]
+    },
+    "fused_moe": {
+      "label": "SGLang Triton fused MoE GEMM",
+      "short": "Fused MoE",
+      "color": "#7c3aed",
+      "operation": "Multiply routed token blocks by expert matrices after token sorting and expert-block padding.",
+      "upstream": "SGLang's Triton kernel maps program IDs onto expert-conditioned matrix tiles, reads sorted token IDs and expert IDs, and groups output tiles to encourage L2 reuse. The implementation can use FP8 W8A8 and multiply router weights in the kernel. MegaBlocks provides the broader literature analogue: shape-irregular MoE work is re-expressed as blocked sparse computation rather than padded dense work.",
+      "observed": "Rank 1 at B=1 and B=10, rank 2 at B=100, rank 3 at B=200, and rank 2 at B=500. Launch count is fixed at 1,200 while mean duration rises from 11.86 µs to 91.31 µs.",
+      "judgment": "This is expected batch scaling for routed expert GEMMs: larger batches supply more rows per expert and increase work per launch. More rows can improve tile utilization even while absolute kernel time rises. Nsight Systems residency alone cannot establish GEMM efficiency; an NCU counter run or shape-matched backend benchmark is required for achieved TFLOP/s.",
+      "links": [
+        [
+          "SGLang Triton MoE source",
+          "https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/ops/moe/fused_moe_triton_kernels.py"
+        ],
+        [
+          "MegaBlocks paper",
+          "https://arxiv.org/abs/2211.15841"
+        ],
+        [
+          "SGLang MoE benchmark guide",
+          "https://github.com/sgl-project/sglang/tree/main/benchmark/kernels/fused_moe_triton"
+        ]
+      ],
+      "occurrences": [
+        {
+          "batch": 1,
+          "rank": 1,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 14.22756,
+          "share_pct": 11.535758,
+          "mean_us": 11.8563
+        },
+        {
+          "batch": 10,
+          "rank": 1,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 33.489184,
+          "share_pct": 20.626262,
+          "mean_us": 27.907653
+        },
+        {
+          "batch": 100,
+          "rank": 2,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 66.951954,
+          "share_pct": 16.523147,
+          "mean_us": 55.793295
+        },
+        {
+          "batch": 200,
+          "rank": 3,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 57.091322,
+          "share_pct": 14.387344,
+          "mean_us": 47.576102
+        },
+        {
+          "batch": 500,
+          "rank": 2,
+          "family_id": "fused_moe",
+          "family": "SGLang Triton fused MoE GEMM",
+          "family_short": "Fused MoE",
+          "color": "#7c3aed",
+          "display_name": "fused_moe_kernel",
+          "full_name": "fused_moe_kernel",
+          "category": "gemm_other",
+          "launches": 1200,
+          "residency_ms": 109.570301,
+          "share_pct": 17.305455,
+          "mean_us": 91.308584
+        }
+      ]
+    },
+    "custom_ar": {
+      "label": "SGLang custom TP all-reduce",
+      "short": "Custom AR",
+      "color": "#b45309",
+      "operation": "Exchange BF16 TP activations over peer-accessible buffers with a low-latency one-shot or bandwidth-oriented two-shot algorithm.",
+      "upstream": "The capture's one-shot push kernel writes each rank's full input to every peer and then polls/reduces local peer buffers. The two-shot kernel assigns each rank a partition, reduces that partition, and broadcasts it. Current SGLang retains message-size thresholds for selecting one-shot push, one-shot pull, or two-shot paths.",
+      "observed": "The one-shot push symbol is rank 2 at B=1 and B=10. The two-shot symbol replaces it at B=100, B=200, and B=500, ranking 5, 4, and 4. There are only 16 aggregate launches—two per TP rank—so each launch is long and highly visible.",
+      "judgment": "The algorithm switch agrees with collective-library practice: latency-oriented replication is attractive for small messages; partitioned reduce/broadcast avoids replicating all work for larger messages. Compare against NCCL with bus bandwidth, message bytes, and rank skew—not MFU or MBU.",
+      "links": [
+        [
+          "Current SGLang custom all-reduce",
+          "https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/jit/csrc/distributed/custom_all_reduce.cuh"
+        ],
+        [
+          "Current SGLang selection thresholds",
+          "https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/distributed/device_communicators/configs/custom_all_reduce_v2.py"
+        ],
+        [
+          "NCCL all-reduce bandwidth model",
+          "https://github.com/NVIDIA/nccl-tests/blob/master/doc/PERFORMANCE.md"
+        ]
+      ],
+      "occurrences": [
+        {
+          "batch": 1,
+          "rank": 2,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)",
+          "full_name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 13.007169,
+          "share_pct": 10.546261,
+          "mean_us": 812.948062
+        },
+        {
+          "batch": 10,
+          "rank": 2,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)",
+          "full_name": "void <unnamed>::all_reduce_one_shot_push_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(<unnamed>::AllReducePushData, device::distributed::PushController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 18.188736,
+          "share_pct": 11.202591,
+          "mean_us": 1136.796
+        },
+        {
+          "batch": 100,
+          "rank": 5,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::Pu...",
+          "full_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::PullController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 28.021265,
+          "share_pct": 6.915399,
+          "mean_us": 1751.329062
+        },
+        {
+          "batch": 200,
+          "rank": 4,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::Pu...",
+          "full_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::PullController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 29.198297,
+          "share_pct": 7.35814,
+          "mean_us": 1824.893562
+        },
+        {
+          "batch": 500,
+          "rank": 4,
+          "family_id": "custom_ar",
+          "family": "SGLang custom TP all-reduce",
+          "family_short": "Custom AR",
+          "color": "#b45309",
+          "display_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::Pu...",
+          "full_name": "void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::PullController)",
+          "category": "memory_elementwise",
+          "launches": 16,
+          "residency_ms": 32.530582,
+          "share_pct": 5.137857,
+          "mean_us": 2033.161375
+        }
+      ]
+    },
+    "fp8_quant": {
+      "label": "SGLang per-token-group FP8 quantization",
+      "short": "FP8 quant",
+      "color": "#be123c",
+      "operation": "Read BF16 activation groups, reduce each group's absolute maximum, emit E4M3 values, and write group scales.",
+      "upstream": "The SGLang CUDA kernel uses 128-bit vector loads and stores, a subgroup max reduction, saturation to E4M3 range, and optional fused SiLU×multiply. Its group size is 128 in the captured symbol, matching the per-token, per-128-channel activation-scaling convention described in the DeepSeek-V3 FP8 recipe.",
+      "observed": "Ranks 5, 6, 3, and 5 for B=1, B=10, B=100, and B=200; it falls outside B=500's top six. Launches remain fixed at 2,256. The exact raw-name subtotal is non-monotonic: 66.89 ms at B=100 but 23.71 ms at B=200.",
+      "judgment": "The source describes a streaming reduction/convert kernel, so context length should not directly explain the B=100→200 drop. Because those points come from different captures and context regimes, treat the discontinuity as a profiling or shape-regime question. Reproduce this exact quantization shape in isolation before claiming a batch crossover.",
+      "links": [
+        [
+          "SGLang quantization source",
+          "https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/jit/csrc/gemm/per_token_group_quant_8bit_v2.cuh"
+        ],
+        [
+          "DeepSeek-V3 technical report",
+          "https://arxiv.org/abs/2412.19437"
+        ]
+      ],
+      "occurrences": [
+        {
+          "batch": 1,
+          "rank": 5,
+          "family_id": "fp8_quant",
+          "family": "SGLang per-token-group FP8 quantization",
+          "family_short": "FP8 quant",
+          "color": "#be123c",
+          "display_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const ...",
+          "full_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "category": "gemm_other",
+          "launches": 2256,
+          "residency_ms": 7.648474,
+          "share_pct": 6.201411,
+          "mean_us": 3.390281
+        },
+        {
+          "batch": 10,
+          "rank": 6,
+          "family_id": "fp8_quant",
+          "family": "SGLang per-token-group FP8 quantization",
+          "family_short": "FP8 quant",
+          "color": "#be123c",
+          "display_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const ...",
+          "full_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "category": "gemm_other",
+          "launches": 2256,
+          "residency_ms": 9.293468,
+          "share_pct": 5.723923,
+          "mean_us": 4.119445
+        },
+        {
+          "batch": 100,
+          "rank": 3,
+          "family_id": "fp8_quant",
+          "family": "SGLang per-token-group FP8 quantization",
+          "family_short": "FP8 quant",
+          "color": "#be123c",
+          "display_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const ...",
+          "full_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "category": "gemm_other",
+          "launches": 2256,
+          "residency_ms": 66.88888,
+          "share_pct": 16.507581,
+          "mean_us": 29.649326
+        },
+        {
+          "batch": 200,
+          "rank": 5,
+          "family_id": "fp8_quant",
+          "family": "SGLang per-token-group FP8 quantization",
+          "family_short": "FP8 quant",
+          "color": "#be123c",
+          "display_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const ...",
+          "full_name": "void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)",
+          "category": "gemm_other",
+          "launches": 2256,
+          "residency_ms": 23.713722,
+          "share_pct": 5.975995,
+          "mean_us": 10.511402
+        }
+      ]
+    },
+    "deepgemm": {
+      "label": "DeepGEMM SM90 FP8 GEMM",
+      "short": "DeepGEMM",
+      "color": "#0369a1",
+      "operation": "Execute Hopper FP8 matrix multiplication with TMA-fed tiles, WGMMA, fine-grained scales, and a JIT-selected specialization.",
+      "upstream": "DeepGEMM's SM90 implementation uses per-128-channel FP8 scaling, TMA descriptors, staged shared-memory buffers, WGMMA, and shape-specialized launch parameters. The repository explicitly supports masked grouped GEMMs for CUDA-graph decode, where valid expert rows are supplied by a mask.",
+      "observed": "A 16×32-flavored specialization ranks 6 at B=1. A different 128×192-flavored specialization ranks 5 at B=500. These are different raw kernel names selected for different matrix regimes, not one specialization smoothly scaling across all batches.",
+      "judgment": "The specialization change is exactly what a JIT GEMM backend should do as the M dimension grows. Compare each symbol against the matching DeepGEMM shape and configuration; a repository headline such as peak H800 TFLOP/s is not a baseline for these decode GEMMs.",
+      "links": [
+        [
+          "DeepGEMM SM90 implementation",
+          "https://github.com/deepseek-ai/DeepGEMM/blob/main/deep_gemm/include/deep_gemm/impls/sm90_fp8_gemm_1d2d.cuh"
+        ],
+        [
+          "DeepGEMM interfaces and benchmarks",
+          "https://github.com/deepseek-ai/DeepGEMM"
+        ]
+      ],
+      "occurrences": [
+        {
+          "batch": 1,
+          "rank": 6,
+          "family_id": "deepgemm",
+          "family": "DeepGEMM SM90 FP8 GEMM",
+          "family_short": "DeepGEMM",
+          "color": "#0369a1",
+          "display_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)16, (unsigned int)32, (unsigned i...",
+          "full_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)16, (unsigned int)32, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)16, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+          "category": "gemm_other",
+          "launches": 648,
+          "residency_ms": 7.229174,
+          "share_pct": 5.861441,
+          "mean_us": 11.156133
+        },
+        {
+          "batch": 500,
+          "rank": 5,
+          "family_id": "deepgemm",
+          "family": "DeepGEMM SM90 FP8 GEMM",
+          "family_short": "DeepGEMM",
+          "color": "#0369a1",
+          "display_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)128, (unsigned int)192, (unsigned...",
+          "full_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)128, (unsigned int)192, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)4, (unsigned int)128, (unsigned int)256, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+          "category": "gemm_other",
+          "launches": 648,
+          "residency_ms": 26.813545,
+          "share_pct": 4.234912,
+          "mean_us": 41.378927
+        }
+      ]
+    },
+    "pytorch_topk": {
+      "label": "PyTorch single-block TopK gather",
+      "short": "PyTorch TopK",
+      "color": "#475569",
+      "operation": "Find the k-th routing score, scan the input slice, compact winners, and write expert values and indices.",
+      "upstream": "PyTorch's sbtopk namespace means single-block TopK. The CUDA kernel performs radix selection, then two gather phases: values strictly beyond the threshold first, followed by enough values equal to the threshold to fill k. Prefix scans determine output positions.",
+      "observed": "Ranks 4, 5, 6, 6, and 6 across the sweep. Launch count is fixed at 1,800; total residency rises modestly from 9.17 ms to 15.27 ms while mean launch time grows from 5.10 µs to 8.49 µs.",
+      "judgment": "This is a persistent launch-count tax rather than the dominant scaling wall. Larger batches expose more independent slices and GPU parallelism, so time does not grow in proportion to B. Optimization should target fusion or fewer routing stages only after the larger attention, MoE, and collective costs.",
+      "links": [
+        [
+          "PyTorch TensorTopK CUDA source",
+          "https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/cuda/TensorTopK.cu"
+        ]
+      ],
+      "occurrences": [
+        {
+          "batch": 1,
+          "rank": 4,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)1, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)1, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 9.172028,
+          "share_pct": 7.436714,
+          "mean_us": 5.095571
+        },
+        {
+          "batch": 10,
+          "rank": 5,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 10.314683,
+          "share_pct": 6.352898,
+          "mean_us": 5.730379
+        },
+        {
+          "batch": 100,
+          "rank": 6,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 11.05439,
+          "share_pct": 2.728125,
+          "mean_us": 6.141328
+        },
+        {
+          "batch": 200,
+          "rank": 6,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 11.263965,
+          "share_pct": 2.838584,
+          "mean_us": 6.257758
+        },
+        {
+          "batch": 500,
+          "rank": 6,
+          "family_id": "pytorch_topk",
+          "family": "PyTorch single-block TopK gather",
+          "family_short": "PyTorch TopK",
+          "color": "#475569",
+          "display_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>,...",
+          "full_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+          "category": "moe_routing",
+          "launches": 1800,
+          "residency_ms": 15.274099,
+          "share_pct": 2.41238,
+          "mean_us": 8.485611
+        }
+      ]
+    }
+  }
+}

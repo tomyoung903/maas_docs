@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Top-six GLM-5.2 TP8 decode kernels across B=1–500, mapped to upstream backend implementations and literature.">
+  <title>GLM-5.2 TP8 decode · top kernels versus backend libraries</title>
+  <style>
+    :root{--ink:#172033;--muted:#667085;--line:#dce3ec;--paper:#fff;--wash:#f3f6fa;--nav:#10243e;--accent:#0f766e;--warn:#9a6700;--warn-bg:#fff8db;--shadow:0 12px 34px rgba(23,32,51,.08)}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--wash);color:var(--ink);font:15px/1.62 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    a{color:#075f9f} code{font:12px/1.48 ui-monospace,SFMono-Regular,Menlo,monospace} .math-var{font-family:Georgia,"Times New Roman",serif;font-style:italic}
+    .topbar{background:var(--nav);color:#e8f0fa;border-bottom:1px solid #29425f} .topbar-inner{max-width:1500px;margin:auto;padding:13px 24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+    .brand{font-weight:760;color:#fff;text-decoration:none} .topbar nav{display:flex;gap:8px;flex-wrap:wrap} .topbar nav a{color:#c7d7e8;text-decoration:none;padding:5px 9px;border-radius:6px} .topbar nav a:hover{background:#1d3957;color:#fff}
+    .hero{background:linear-gradient(135deg,#10243e 0%,#173a58 58%,#0f766e 150%);color:#fff} .hero-inner{max-width:1260px;margin:auto;padding:58px 28px 52px}
+    .hero .eyebrow{color:#92dbc9} h1{font-size:clamp(32px,5vw,58px);line-height:1.04;letter-spacing:-.04em;margin:10px 0 18px;max-width:1050px} .hero .lede{font-size:18px;max-width:950px;color:#d7e5f1}
+    .hero-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:28px} .hero-kpis div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 16px} .hero-kpis b{display:block;font-size:24px;color:#fff} .hero-kpis span{color:#c9d9e7;font-size:13px}
+    .layout{max-width:1500px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:26px;padding:28px 24px 70px} .rail{align-self:start;position:sticky;top:18px;background:#f9fbfd;border:1px solid var(--line);border-radius:12px;padding:14px}
+    .rail strong{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:#475467;margin:2px 7px 9px} .rail a{display:block;text-decoration:none;color:#42526a;padding:6px 8px;border-radius:6px;font-size:13px} .rail a:hover{background:#e8f1f5;color:#0f5d5a}
+    main{min-width:0} section{scroll-margin-top:18px;margin-bottom:28px} .panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:var(--shadow)} h2{font-size:28px;letter-spacing:-.025em;margin:0 0 12px} h3{margin:0;font-size:21px;line-height:1.25} h4{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:#475467;margin:0 0 7px} p{margin:8px 0 0} .eyebrow{margin:0;text-transform:uppercase;letter-spacing:.11em;font-weight:750;font-size:11px;color:#0f766e}
+    .callout{border-left:4px solid #d79a00;background:var(--warn-bg);padding:15px 17px;border-radius:6px;margin-top:18px} .callout b{color:#684700} .method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px} .method-grid div{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:14px} .method-grid b{display:block;margin-bottom:4px}
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px} table{border-collapse:collapse;width:100%;background:#fff} th,td{padding:11px 12px;border-bottom:1px solid #e8edf3;text-align:left;vertical-align:top} thead th{background:#eef3f7;color:#435169;font-size:12px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap} tbody tr:last-child th,tbody tr:last-child td{border-bottom:0} .rank-matrix th small{display:block;font-weight:500;text-transform:none;letter-spacing:0;color:#7a8799} .rank-matrix td{min-width:150px} .matrix-family,.kernel-family{font-weight:720;display:flex;align-items:center;gap:7px} .matrix-metric{font-size:12px;color:var(--muted);margin:3px 0 0 15px}
+    .family-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:var(--family)} .legend{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px} .legend span{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 9px;font-size:12px}
+    .batch-list,.family-list{display:grid;gap:18px} .batch-card,.family-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden} .batch-card>header,.family-card>header{padding:18px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)} .context-chip{background:#ecf6f4;color:#145c57;border-radius:99px;padding:7px 12px;font-weight:700}
+    .batch-kpis{display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px;background:#f9fbfd;border-bottom:1px solid var(--line)} .batch-kpis span{font-size:12px;color:#596579;padding-right:12px;border-right:1px solid #d7dfe9} .batch-kpis span:last-child{border:0} .batch-card .table-wrap{border:0;border-radius:0} .kernel-table td:nth-child(n+3){white-space:nowrap;font-variant-numeric:tabular-nums} .rank-pill{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:7px;background:#e9eef5;font-weight:800}
+    details{margin-top:5px} summary{cursor:pointer;color:#65758b;font-size:12px} details code{display:block;margin-top:7px;padding:8px;background:#f5f7fa;border-radius:6px;max-width:760px;white-space:normal;overflow-wrap:anywhere;color:#364152}
+    .family-card{border-top:4px solid var(--family)} .family-card>header{justify-content:flex-start;gap:12px} .family-index{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--family) 12%,white);color:var(--family);font-weight:800} .operation{padding:0 20px;margin:15px 0;color:#344054;font-size:16px} .occurrence-strip{display:flex;gap:7px;flex-wrap:wrap;padding:0 20px 17px} .occurrence-strip span{display:flex;align-items:center;gap:5px;background:#f5f7fa;border:1px solid #e1e6ed;border-radius:99px;padding:4px 8px;font-size:12px} .occurrence-strip i{width:7px;height:7px;border-radius:50%;background:var(--family)}
+    .comparison-grid{display:grid;grid-template-columns:1fr 1fr 1.15fr;border-top:1px solid var(--line)} .comparison-grid>div{padding:18px 20px;border-right:1px solid var(--line)} .comparison-grid>div:last-child{border:0} .comparison-grid p{color:#4b586c} .comparison-grid .judgment{background:#f5faf9} .source-links{display:flex;flex-wrap:wrap;gap:8px;padding:13px 20px;border-top:1px solid var(--line);background:#fbfcfe} .source-links a{font-size:12px;text-decoration:none;border:1px solid #cfd9e5;border-radius:6px;padding:5px 8px;background:#fff}
+    .takeaways{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:17px} .takeaways article{border:1px solid var(--line);border-radius:10px;padding:15px;background:#fbfcfe} .takeaways b{display:block;font-size:17px;margin-bottom:5px} .citation-list{display:grid;gap:8px;margin-top:14px} .citation-list a{display:block;background:#f7f9fc;border:1px solid var(--line);border-radius:8px;padding:10px 12px;text-decoration:none}
+    footer{text-align:center;color:#758195;font-size:12px;padding:0 24px 40px}
+    @media(max-width:1050px){.layout{grid-template-columns:1fr}.rail{position:static;display:flex;flex-wrap:wrap;gap:3px}.rail strong{width:100%}.comparison-grid{grid-template-columns:1fr}.comparison-grid>div{border-right:0;border-bottom:1px solid var(--line)}.hero-kpis{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:700px){.hero-inner{padding:40px 18px}.layout{padding:18px 12px 50px}.panel{padding:18px}.hero-kpis,.method-grid,.takeaways{grid-template-columns:1fr}.batch-card>header{align-items:flex-start}th,td{padding:9px 10px}}
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="topbar-inner"><a class="brand" href="../../">MaaS Docs</a><nav>
+    <a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/#timeline">Source timeline</a>
+    <a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/#one-rank-tree">Execution trees</a>
+    <a href="../../glm52-flops/glm52_decode_roofline.html">Decode roofline</a>
+  </nav></div></header>
+  <div class="hero"><div class="hero-inner">
+    <p class="eyebrow">GLM-5.2 · H200 · TP = 8 · standard decode</p>
+    <h1>Which kernels consume the decode step—and do the backend libraries explain them?</h1>
+    <p class="lede">The six largest exact raw-kernel subtotals for each native batch from <span class="math-var">B</span> = 1 through 500, mapped to the actual SGLang, FlashInfer, FlashMLA, DeepGEMM, and PyTorch implementations. This is a mechanism comparison, not a cross-hardware benchmark leaderboard.</p>
+    <div class="hero-kpis"><div><b>5</b><span>captured configurations</span></div><div><b>30</b><span>ranked top-six slots</span></div><div><b>7</b><span>recurring kernel families</span></div><div><b>8 × H200</b><span>one TP replica, no DP or EP</span></div></div>
+  </div></div>
+  <div class="layout">
+    <aside class="rail" aria-label="Page overview"><strong>On this page</strong>
+      <a href="#answer">Answer first</a><a href="#method">Scope & method</a><a href="#rank-matrix">Rank matrix</a><a href="#batch-details">Five top-six lists</a><a href="#library-comparison">Library comparison</a><a href="#conclusions">Conclusions</a><a href="#sources">Sources</a>
+    </aside>
+    <main>
+      <section class="panel" id="answer"><p class="eyebrow">Answer first</p><h2>The bottleneck changes from launch-heavy MoE/collectives to sparse MLA plus larger matrix work.</h2>
+        <p>At <span class="math-var">B</span> = 1 and 10, fused MoE is rank 1 and small-message custom all-reduce is rank 2. At <span class="math-var">B</span> = 100, FlashInfer's fused all-reduce + residual + RMSNorm reaches rank 1. At <span class="math-var">B</span> = 200 and 500, sparse FP8 MLA is rank 1. The backend sources explain the two sharpest transitions: both custom all-reduce families change from one-shot to two-shot algorithms as payloads grow, while DeepGEMM changes tile specialization.</p>
+        <div class="callout"><b>Controlled-comparison limit.</b> <span class="math-var">B</span> = 1, 10, and 100 use 4,096-token contexts; <span class="math-var">B</span> = 200 and 500 use 832-token contexts. Any trend crossing that boundary combines batch and context changes.</div>
+      </section>
+
+      <section class="panel" id="method"><p class="eyebrow">Scope & method</p><h2>Exactly what was ranked</h2>
+        <div class="method-grid"><div><b>Boundary</b>One complete, graph-aligned useful decode generation for each batch; post-finish cleanup excluded.</div><div><b>Metric</b>CUDA kernel residency summed across all eight TP ranks and grouped by exact demangled raw name.</div><div><b>Share</b>Each raw-name subtotal divided by all useful-step kernel residency across eight ranks—not by graph wall time.</div></div>
+        <p>The numbers are read from the normalized sidecar behind the source page. “Top six” therefore means six exact symbols, not six semantic modules. A backend may contribute more than one specialization, and related symbols outside the top six are not silently merged.</p>
+      </section>
+
+      <section class="panel" id="rank-matrix"><p class="eyebrow">Cross-batch view</p><h2>Rank matrix</h2>
+        <div class="legend"><span><i class="family-dot" style="--family:#0f766e"></i>Sparse MLA</span><span><i class="family-dot" style="--family:#2563eb"></i>Fused AR + norm</span><span><i class="family-dot" style="--family:#7c3aed"></i>Fused MoE</span><span><i class="family-dot" style="--family:#b45309"></i>Custom AR</span><span><i class="family-dot" style="--family:#be123c"></i>FP8 quant</span><span><i class="family-dot" style="--family:#0369a1"></i>DeepGEMM</span><span><i class="family-dot" style="--family:#475569"></i>PyTorch TopK</span></div>
+        <div class="table-wrap rank-matrix"><table>
+      <thead><tr><th>Rank</th><th><span class="math-var">B</span> = 1<small>4,096 ctx</small></th><th><span class="math-var">B</span> = 10<small>4,096 ctx</small></th><th><span class="math-var">B</span> = 100<small>4,096 ctx</small></th><th><span class="math-var">B</span> = 200<small>832 ctx</small></th><th><span class="math-var">B</span> = 500<small>832 ctx</small></th></tr></thead>
+      <tbody><tr><th scope="row">#1</th><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                  <div class="matrix-metric">14.228 ms · 11.54%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                  <div class="matrix-metric">33.489 ms · 20.63%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                  <div class="matrix-metric">87.461 ms · 21.58%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
+                  <div class="matrix-metric">98.272 ms · 24.77%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
+                  <div class="matrix-metric">226.900 ms · 35.84%</div>
+                </td></tr><tr><th scope="row">#2</th><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                  <div class="matrix-metric">13.007 ms · 10.55%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                  <div class="matrix-metric">18.189 ms · 11.20%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                  <div class="matrix-metric">66.952 ms · 16.52%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                  <div class="matrix-metric">88.282 ms · 22.25%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                  <div class="matrix-metric">109.570 ms · 17.31%</div>
+                </td></tr><tr><th scope="row">#3</th><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                  <div class="matrix-metric">10.580 ms · 8.58%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                  <div class="matrix-metric">13.482 ms · 8.30%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
+                  <div class="matrix-metric">66.889 ms · 16.51%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                  <div class="matrix-metric">57.091 ms · 14.39%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                  <div class="matrix-metric">96.952 ms · 15.31%</div>
+                </td></tr><tr><th scope="row">#4</th><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                  <div class="matrix-metric">9.172 ms · 7.44%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
+                  <div class="matrix-metric">11.366 ms · 7.00%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
+                  <div class="matrix-metric">64.652 ms · 15.96%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                  <div class="matrix-metric">29.198 ms · 7.36%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                  <div class="matrix-metric">32.531 ms · 5.14%</div>
+                </td></tr><tr><th scope="row">#5</th><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
+                  <div class="matrix-metric">7.648 ms · 6.20%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                  <div class="matrix-metric">10.315 ms · 6.35%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                  <div class="matrix-metric">28.021 ms · 6.92%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
+                  <div class="matrix-metric">23.714 ms · 5.98%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#0369a1"></span>DeepGEMM</div>
+                  <div class="matrix-metric">26.814 ms · 4.23%</div>
+                </td></tr><tr><th scope="row">#6</th><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#0369a1"></span>DeepGEMM</div>
+                  <div class="matrix-metric">7.229 ms · 5.86%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
+                  <div class="matrix-metric">9.293 ms · 5.72%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                  <div class="matrix-metric">11.054 ms · 2.73%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                  <div class="matrix-metric">11.264 ms · 2.84%</div>
+                </td><td>
+                  <div class="matrix-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                  <div class="matrix-metric">15.274 ms · 2.41%</div>
+                </td></tr></tbody>
+    </table></div>
+      </section>
+
+      <section id="batch-details"><div class="panel"><p class="eyebrow">Exact rankings</p><h2>Top six for each captured configuration</h2><p>Expand “raw symbol” to see the exact demangled key used for aggregation. Σ ms is eight-rank summed residency and can exceed the one-step wall envelope.</p></div><div class="batch-list"><article class="batch-card" id="batch-1">
+              <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 1</h3></div>
+                <div class="context-chip"><span class="math-var">T</span><sub>ctx</sub> = 4,096</div></header>
+              <div class="batch-kpis">
+                <span><b>19.396 ms</b> graph envelope</span>
+                <span><b>123.334 ms</b> eight-rank residency</span>
+                <span><b>50.16%</b> covered by top six</span>
+              </div>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+                <tbody><tr>
+                  <td><span class="rank-pill">1</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                    <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
+                  <td>14.228</td><td>11.54%</td>
+                  <td>1,200</td><td>11.856</td>
+                </tr><tr>
+                  <td><span class="rank-pill">2</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_one_shot_push_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(&lt;unnamed&gt;::AllReducePushData, device::distributed::PushController)</code></details></td>
+                  <td>13.007</td><td>10.55%</td>
+                  <td>16</td><td>812.948</td>
+                </tr><tr>
+                  <td><span class="rank-pill">3</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                    <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code></details></td>
+                  <td>10.580</td><td>8.58%</td>
+                  <td>1,240</td><td>8.532</td>
+                </tr><tr>
+                  <td><span class="rank-pill">4</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                    <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)1, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
+                  <td>9.172</td><td>7.44%</td>
+                  <td>1,800</td><td>5.096</td>
+                </tr><tr>
+                  <td><span class="rank-pill">5</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code></details></td>
+                  <td>7.648</td><td>6.20%</td>
+                  <td>2,256</td><td>3.390</td>
+                </tr><tr>
+                  <td><span class="rank-pill">6</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#0369a1"></span>DeepGEMM</div>
+                    <details><summary>raw symbol</summary><code>void deep_gemm::sm90_fp8_gemm_1d2d_impl&lt;(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)16, (unsigned int)32, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)16, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity&gt;(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)</code></details></td>
+                  <td>7.229</td><td>5.86%</td>
+                  <td>648</td><td>11.156</td>
+                </tr></tbody></table></div>
+            </article><article class="batch-card" id="batch-10">
+              <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 10</h3></div>
+                <div class="context-chip"><span class="math-var">T</span><sub>ctx</sub> = 4,096</div></header>
+              <div class="batch-kpis">
+                <span><b>23.914 ms</b> graph envelope</span>
+                <span><b>162.362 ms</b> eight-rank residency</span>
+                <span><b>59.21%</b> covered by top six</span>
+              </div>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+                <tbody><tr>
+                  <td><span class="rank-pill">1</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                    <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
+                  <td>33.489</td><td>20.63%</td>
+                  <td>1,200</td><td>27.908</td>
+                </tr><tr>
+                  <td><span class="rank-pill">2</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_one_shot_push_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(&lt;unnamed&gt;::AllReducePushData, device::distributed::PushController)</code></details></td>
+                  <td>18.189</td><td>11.20%</td>
+                  <td>16</td><td>1136.796</td>
+                </tr><tr>
+                  <td><span class="rank-pill">3</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                    <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code></details></td>
+                  <td>13.482</td><td>8.30%</td>
+                  <td>1,240</td><td>10.873</td>
+                </tr><tr>
+                  <td><span class="rank-pill">4</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
+                    <details><summary>raw symbol</summary><code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code></details></td>
+                  <td>11.366</td><td>7.00%</td>
+                  <td>624</td><td>18.214</td>
+                </tr><tr>
+                  <td><span class="rank-pill">5</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                    <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
+                  <td>10.315</td><td>6.35%</td>
+                  <td>1,800</td><td>5.730</td>
+                </tr><tr>
+                  <td><span class="rank-pill">6</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code></details></td>
+                  <td>9.293</td><td>5.72%</td>
+                  <td>2,256</td><td>4.119</td>
+                </tr></tbody></table></div>
+            </article><article class="batch-card" id="batch-100">
+              <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 100</h3></div>
+                <div class="context-chip"><span class="math-var">T</span><sub>ctx</sub> = 4,096</div></header>
+              <div class="batch-kpis">
+                <span><b>47.921 ms</b> graph envelope</span>
+                <span><b>405.201 ms</b> eight-rank residency</span>
+                <span><b>80.21%</b> covered by top six</span>
+              </div>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+                <tbody><tr>
+                  <td><span class="rank-pill">1</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                    <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code></details></td>
+                  <td>87.461</td><td>21.58%</td>
+                  <td>1,240</td><td>70.533</td>
+                </tr><tr>
+                  <td><span class="rank-pill">2</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                    <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
+                  <td>66.952</td><td>16.52%</td>
+                  <td>1,200</td><td>55.793</td>
+                </tr><tr>
+                  <td><span class="rank-pill">3</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code></details></td>
+                  <td>66.889</td><td>16.51%</td>
+                  <td>2,256</td><td>29.649</td>
+                </tr><tr>
+                  <td><span class="rank-pill">4</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
+                    <details><summary>raw symbol</summary><code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code></details></td>
+                  <td>64.652</td><td>15.96%</td>
+                  <td>624</td><td>103.609</td>
+                </tr><tr>
+                  <td><span class="rank-pill">5</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_two_shot_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(const host::distributed::AllReduceData *, &lt;unnamed&gt;::AllReduceParams, device::distributed::PullController)</code></details></td>
+                  <td>28.021</td><td>6.92%</td>
+                  <td>16</td><td>1751.329</td>
+                </tr><tr>
+                  <td><span class="rank-pill">6</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                    <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
+                  <td>11.054</td><td>2.73%</td>
+                  <td>1,800</td><td>6.141</td>
+                </tr></tbody></table></div>
+            </article><article class="batch-card" id="batch-200">
+              <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 200</h3></div>
+                <div class="context-chip"><span class="math-var">T</span><sub>ctx</sub> = 832</div></header>
+              <div class="batch-kpis">
+                <span><b>52.293 ms</b> graph envelope</span>
+                <span><b>396.816 ms</b> eight-rank residency</span>
+                <span><b>77.57%</b> covered by top six</span>
+              </div>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+                <tbody><tr>
+                  <td><span class="rank-pill">1</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
+                    <details><summary>raw symbol</summary><code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code></details></td>
+                  <td>98.272</td><td>24.77%</td>
+                  <td>624</td><td>157.488</td>
+                </tr><tr>
+                  <td><span class="rank-pill">2</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                    <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code></details></td>
+                  <td>88.282</td><td>22.25%</td>
+                  <td>1,240</td><td>71.195</td>
+                </tr><tr>
+                  <td><span class="rank-pill">3</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                    <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
+                  <td>57.091</td><td>14.39%</td>
+                  <td>1,200</td><td>47.576</td>
+                </tr><tr>
+                  <td><span class="rank-pill">4</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_two_shot_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(const host::distributed::AllReduceData *, &lt;unnamed&gt;::AllReduceParams, device::distributed::PullController)</code></details></td>
+                  <td>29.198</td><td>7.36%</td>
+                  <td>16</td><td>1824.894</td>
+                </tr><tr>
+                  <td><span class="rank-pill">5</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code></details></td>
+                  <td>23.714</td><td>5.98%</td>
+                  <td>2,256</td><td>10.511</td>
+                </tr><tr>
+                  <td><span class="rank-pill">6</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                    <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
+                  <td>11.264</td><td>2.84%</td>
+                  <td>1,800</td><td>6.258</td>
+                </tr></tbody></table></div>
+            </article><article class="batch-card" id="batch-500">
+              <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 500</h3></div>
+                <div class="context-chip"><span class="math-var">T</span><sub>ctx</sub> = 832</div></header>
+              <div class="batch-kpis">
+                <span><b>81.797 ms</b> graph envelope</span>
+                <span><b>633.155 ms</b> eight-rank residency</span>
+                <span><b>80.24%</b> covered by top six</span>
+              </div>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+                <tbody><tr>
+                  <td><span class="rank-pill">1</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
+                    <details><summary>raw symbol</summary><code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code></details></td>
+                  <td>226.900</td><td>35.84%</td>
+                  <td>624</td><td>363.622</td>
+                </tr><tr>
+                  <td><span class="rank-pill">2</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
+                    <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
+                  <td>109.570</td><td>17.31%</td>
+                  <td>1,200</td><td>91.309</td>
+                </tr><tr>
+                  <td><span class="rank-pill">3</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
+                    <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_twoshot_sync&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;, std::array&lt;int, T3&gt;, std::array&lt;int, T3&gt;)</code></details></td>
+                  <td>96.952</td><td>15.31%</td>
+                  <td>1,240</td><td>78.187</td>
+                </tr><tr>
+                  <td><span class="rank-pill">4</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
+                    <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_two_shot_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(const host::distributed::AllReduceData *, &lt;unnamed&gt;::AllReduceParams, device::distributed::PullController)</code></details></td>
+                  <td>32.531</td><td>5.14%</td>
+                  <td>16</td><td>2033.161</td>
+                </tr><tr>
+                  <td><span class="rank-pill">5</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#0369a1"></span>DeepGEMM</div>
+                    <details><summary>raw symbol</summary><code>void deep_gemm::sm90_fp8_gemm_1d2d_impl&lt;(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)128, (unsigned int)192, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)4, (unsigned int)128, (unsigned int)256, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity&gt;(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)</code></details></td>
+                  <td>26.814</td><td>4.23%</td>
+                  <td>648</td><td>41.379</td>
+                </tr><tr>
+                  <td><span class="rank-pill">6</span></td>
+                  <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
+                    <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
+                  <td>15.274</td><td>2.41%</td>
+                  <td>1,800</td><td>8.486</td>
+                </tr></tbody></table></div>
+            </article></div></section>
+
+      <section id="library-comparison"><div class="panel"><p class="eyebrow">Primary-source comparison</p><h2>What each backend implementation predicts</h2><p>The comparison asks whether the observed rank movement and algorithm names agree with upstream design. Published TFLOP/s or speedup headlines are quoted only as library context; none matches this exact GLM-5.2/H200/TP8 shape set closely enough to serve as a numerical baseline.</p></div><div class="family-list"><article class="family-card" id="family-sparse_mla" style="--family:#0f766e">
+              <header><span class="family-index">1</span><div><p class="eyebrow">Kernel family</p><h3>FlashMLA sparse FP8 decode</h3></div></header>
+              <p class="operation">Gather selected KV rows, dequantize the FP8 NoPE cache, then execute BF16 QK and PV work.</p>
+              <div class="occurrence-strip"><span><i style="--family:#0f766e"></i><span class="math-var">B</span>=10: #4, 11.366 ms</span><span><i style="--family:#0f766e"></i><span class="math-var">B</span>=100: #4, 64.652 ms</span><span><i style="--family:#0f766e"></i><span class="math-var">B</span>=200: #1, 98.272 ms</span><span><i style="--family:#0f766e"></i><span class="math-var">B</span>=500: #1, 226.900 ms</span></div>
+              <div class="comparison-grid">
+                <div><h4>Backend or literature</h4><p>The capture-pinned SGLang build fetches sgl-project/FlashMLA at commit df022e. Its SM90 kernel requires one KV head, a TopK multiple of 64, 64 or 128 query heads, and uses TMA plus Hopper WGMMA. The upstream README describes 656 bytes per FP8-cache token for the V3.2 layout and reports up to 410 TFLOP/s on H800 for a compute-bound sparse-decode benchmark.</p></div>
+                <div><h4>What this trace shows</h4><p>Absent from B=1&#x27;s top six, rank 4 at B=10 and B=100, then rank 1 at B=200 and B=500. It reaches 226.900 ms of eight-rank residency at B=500, 35.84% of all useful-step residency.</p></div>
+                <div class="judgment"><h4>Comparison judgment</h4><p>The rank transition is directionally expected: each added sequence contributes another selected-KV attention problem. It is especially strong evidence because B=200/500 have only 832 context tokens; even with the shorter context, aggregate batch work makes sparse MLA dominant. Do not compare the measured residency directly with FlashMLA&#x27;s H800 TFLOP/s headline—the shapes, GPU, and denominator differ.</p></div>
+              </div>
+              <nav class="source-links" aria-label="Sources for FlashMLA sparse FP8 decode"><a href="https://github.com/sgl-project/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh" target="_blank" rel="noreferrer">Pinned sparse decode source<span aria-hidden="true"> ↗</span></a><a href="https://github.com/deepseek-ai/FlashMLA" target="_blank" rel="noreferrer">FlashMLA README and benchmarks<span aria-hidden="true"> ↗</span></a><a href="https://arxiv.org/abs/2512.02556" target="_blank" rel="noreferrer">DeepSeek-V3.2 paper<span aria-hidden="true"> ↗</span></a></nav>
+            </article><article class="family-card" id="family-flashinfer_ar_norm" style="--family:#2563eb">
+              <header><span class="family-index">2</span><div><p class="eyebrow">Kernel family</p><h3>FlashInfer fused all-reduce + residual + RMSNorm</h3></div></header>
+              <p class="operation">Reduce TP partial outputs and fuse residual addition and RMSNorm in the same communication kernel.</p>
+              <div class="occurrence-strip"><span><i style="--family:#2563eb"></i><span class="math-var">B</span>=1: #3, 10.580 ms</span><span><i style="--family:#2563eb"></i><span class="math-var">B</span>=10: #3, 13.482 ms</span><span><i style="--family:#2563eb"></i><span class="math-var">B</span>=100: #1, 87.461 ms</span><span><i style="--family:#2563eb"></i><span class="math-var">B</span>=200: #2, 88.282 ms</span><span><i style="--family:#2563eb"></i><span class="math-var">B</span>=500: #3, 96.952 ms</span></div>
+              <div class="comparison-grid">
+                <div><h4>Backend or literature</h4><p>Template Pattern 1 is kARResidualRMSNorm, not MLA attention. FlashInfer&#x27;s one-shot Lamport path pushes the complete payload to peer buffers and polls locally; its two-shot path partitions tokens across ranks, reduces each partition, broadcasts results, then applies the fused epilogue. The library exposes an explicit one-shot/two-shot choice and size heuristic.</p></div>
+                <div><h4>What this trace shows</h4><p>The one-shot symbol ranks 3, 3, 1, and 2 from B=1 through B=200. At B=500 the symbol changes to two-shot synchronization and remains rank 3. Total launches stay at 1,240, so the increasing mean duration reflects larger token payloads rather than more model invocations.</p></div>
+                <div class="judgment"><h4>Comparison judgment</h4><p>This is the cleanest library-consistent transition in the sweep. The trace shows the same size-regime crossover encoded by FlashInfer: one shot for smaller payloads, two shot for the largest batch. The legacy category label attention_mla should not be used to infer the operation.</p></div>
+              </div>
+              <nav class="source-links" aria-label="Sources for FlashInfer fused all-reduce + residual + RMSNorm"><a href="https://github.com/flashinfer-ai/flashinfer/blob/main/include/flashinfer/comm/trtllm_allreduce_fusion.cuh" target="_blank" rel="noreferrer">FlashInfer CUDA source<span aria-hidden="true"> ↗</span></a><a href="https://github.com/flashinfer-ai/flashinfer/blob/main/flashinfer/comm/allreduce.py" target="_blank" rel="noreferrer">FlashInfer all-reduce API<span aria-hidden="true"> ↗</span></a><a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/server_args.py" target="_blank" rel="noreferrer">SGLang server-argument source<span aria-hidden="true"> ↗</span></a></nav>
+            </article><article class="family-card" id="family-fused_moe" style="--family:#7c3aed">
+              <header><span class="family-index">3</span><div><p class="eyebrow">Kernel family</p><h3>SGLang Triton fused MoE GEMM</h3></div></header>
+              <p class="operation">Multiply routed token blocks by expert matrices after token sorting and expert-block padding.</p>
+              <div class="occurrence-strip"><span><i style="--family:#7c3aed"></i><span class="math-var">B</span>=1: #1, 14.228 ms</span><span><i style="--family:#7c3aed"></i><span class="math-var">B</span>=10: #1, 33.489 ms</span><span><i style="--family:#7c3aed"></i><span class="math-var">B</span>=100: #2, 66.952 ms</span><span><i style="--family:#7c3aed"></i><span class="math-var">B</span>=200: #3, 57.091 ms</span><span><i style="--family:#7c3aed"></i><span class="math-var">B</span>=500: #2, 109.570 ms</span></div>
+              <div class="comparison-grid">
+                <div><h4>Backend or literature</h4><p>SGLang&#x27;s Triton kernel maps program IDs onto expert-conditioned matrix tiles, reads sorted token IDs and expert IDs, and groups output tiles to encourage L2 reuse. The implementation can use FP8 W8A8 and multiply router weights in the kernel. MegaBlocks provides the broader literature analogue: shape-irregular MoE work is re-expressed as blocked sparse computation rather than padded dense work.</p></div>
+                <div><h4>What this trace shows</h4><p>Rank 1 at B=1 and B=10, rank 2 at B=100, rank 3 at B=200, and rank 2 at B=500. Launch count is fixed at 1,200 while mean duration rises from 11.86 µs to 91.31 µs.</p></div>
+                <div class="judgment"><h4>Comparison judgment</h4><p>This is expected batch scaling for routed expert GEMMs: larger batches supply more rows per expert and increase work per launch. More rows can improve tile utilization even while absolute kernel time rises. Nsight Systems residency alone cannot establish GEMM efficiency; an NCU counter run or shape-matched backend benchmark is required for achieved TFLOP/s.</p></div>
+              </div>
+              <nav class="source-links" aria-label="Sources for SGLang Triton fused MoE GEMM"><a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/ops/moe/fused_moe_triton_kernels.py" target="_blank" rel="noreferrer">SGLang Triton MoE source<span aria-hidden="true"> ↗</span></a><a href="https://arxiv.org/abs/2211.15841" target="_blank" rel="noreferrer">MegaBlocks paper<span aria-hidden="true"> ↗</span></a><a href="https://github.com/sgl-project/sglang/tree/main/benchmark/kernels/fused_moe_triton" target="_blank" rel="noreferrer">SGLang MoE benchmark guide<span aria-hidden="true"> ↗</span></a></nav>
+            </article><article class="family-card" id="family-custom_ar" style="--family:#b45309">
+              <header><span class="family-index">4</span><div><p class="eyebrow">Kernel family</p><h3>SGLang custom TP all-reduce</h3></div></header>
+              <p class="operation">Exchange BF16 TP activations over peer-accessible buffers with a low-latency one-shot or bandwidth-oriented two-shot algorithm.</p>
+              <div class="occurrence-strip"><span><i style="--family:#b45309"></i><span class="math-var">B</span>=1: #2, 13.007 ms</span><span><i style="--family:#b45309"></i><span class="math-var">B</span>=10: #2, 18.189 ms</span><span><i style="--family:#b45309"></i><span class="math-var">B</span>=100: #5, 28.021 ms</span><span><i style="--family:#b45309"></i><span class="math-var">B</span>=200: #4, 29.198 ms</span><span><i style="--family:#b45309"></i><span class="math-var">B</span>=500: #4, 32.531 ms</span></div>
+              <div class="comparison-grid">
+                <div><h4>Backend or literature</h4><p>The capture&#x27;s one-shot push kernel writes each rank&#x27;s full input to every peer and then polls/reduces local peer buffers. The two-shot kernel assigns each rank a partition, reduces that partition, and broadcasts it. Current SGLang retains message-size thresholds for selecting one-shot push, one-shot pull, or two-shot paths.</p></div>
+                <div><h4>What this trace shows</h4><p>The one-shot push symbol is rank 2 at B=1 and B=10. The two-shot symbol replaces it at B=100, B=200, and B=500, ranking 5, 4, and 4. There are only 16 aggregate launches—two per TP rank—so each launch is long and highly visible.</p></div>
+                <div class="judgment"><h4>Comparison judgment</h4><p>The algorithm switch agrees with collective-library practice: latency-oriented replication is attractive for small messages; partitioned reduce/broadcast avoids replicating all work for larger messages. Compare against NCCL with bus bandwidth, message bytes, and rank skew—not MFU or MBU.</p></div>
+              </div>
+              <nav class="source-links" aria-label="Sources for SGLang custom TP all-reduce"><a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/jit/csrc/distributed/custom_all_reduce.cuh" target="_blank" rel="noreferrer">Current SGLang custom all-reduce<span aria-hidden="true"> ↗</span></a><a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/distributed/device_communicators/configs/custom_all_reduce_v2.py" target="_blank" rel="noreferrer">Current SGLang selection thresholds<span aria-hidden="true"> ↗</span></a><a href="https://github.com/NVIDIA/nccl-tests/blob/master/doc/PERFORMANCE.md" target="_blank" rel="noreferrer">NCCL all-reduce bandwidth model<span aria-hidden="true"> ↗</span></a></nav>
+            </article><article class="family-card" id="family-fp8_quant" style="--family:#be123c">
+              <header><span class="family-index">5</span><div><p class="eyebrow">Kernel family</p><h3>SGLang per-token-group FP8 quantization</h3></div></header>
+              <p class="operation">Read BF16 activation groups, reduce each group&#x27;s absolute maximum, emit E4M3 values, and write group scales.</p>
+              <div class="occurrence-strip"><span><i style="--family:#be123c"></i><span class="math-var">B</span>=1: #5, 7.648 ms</span><span><i style="--family:#be123c"></i><span class="math-var">B</span>=10: #6, 9.293 ms</span><span><i style="--family:#be123c"></i><span class="math-var">B</span>=100: #3, 66.889 ms</span><span><i style="--family:#be123c"></i><span class="math-var">B</span>=200: #5, 23.714 ms</span></div>
+              <div class="comparison-grid">
+                <div><h4>Backend or literature</h4><p>The SGLang CUDA kernel uses 128-bit vector loads and stores, a subgroup max reduction, saturation to E4M3 range, and optional fused SiLU×multiply. Its group size is 128 in the captured symbol, matching the per-token, per-128-channel activation-scaling convention described in the DeepSeek-V3 FP8 recipe.</p></div>
+                <div><h4>What this trace shows</h4><p>Ranks 5, 6, 3, and 5 for B=1, B=10, B=100, and B=200; it falls outside B=500&#x27;s top six. Launches remain fixed at 2,256. The exact raw-name subtotal is non-monotonic: 66.89 ms at B=100 but 23.71 ms at B=200.</p></div>
+                <div class="judgment"><h4>Comparison judgment</h4><p>The source describes a streaming reduction/convert kernel, so context length should not directly explain the B=100→200 drop. Because those points come from different captures and context regimes, treat the discontinuity as a profiling or shape-regime question. Reproduce this exact quantization shape in isolation before claiming a batch crossover.</p></div>
+              </div>
+              <nav class="source-links" aria-label="Sources for SGLang per-token-group FP8 quantization"><a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/jit/csrc/gemm/per_token_group_quant_8bit_v2.cuh" target="_blank" rel="noreferrer">SGLang quantization source<span aria-hidden="true"> ↗</span></a><a href="https://arxiv.org/abs/2412.19437" target="_blank" rel="noreferrer">DeepSeek-V3 technical report<span aria-hidden="true"> ↗</span></a></nav>
+            </article><article class="family-card" id="family-deepgemm" style="--family:#0369a1">
+              <header><span class="family-index">6</span><div><p class="eyebrow">Kernel family</p><h3>DeepGEMM SM90 FP8 GEMM</h3></div></header>
+              <p class="operation">Execute Hopper FP8 matrix multiplication with TMA-fed tiles, WGMMA, fine-grained scales, and a JIT-selected specialization.</p>
+              <div class="occurrence-strip"><span><i style="--family:#0369a1"></i><span class="math-var">B</span>=1: #6, 7.229 ms</span><span><i style="--family:#0369a1"></i><span class="math-var">B</span>=500: #5, 26.814 ms</span></div>
+              <div class="comparison-grid">
+                <div><h4>Backend or literature</h4><p>DeepGEMM&#x27;s SM90 implementation uses per-128-channel FP8 scaling, TMA descriptors, staged shared-memory buffers, WGMMA, and shape-specialized launch parameters. The repository explicitly supports masked grouped GEMMs for CUDA-graph decode, where valid expert rows are supplied by a mask.</p></div>
+                <div><h4>What this trace shows</h4><p>A 16×32-flavored specialization ranks 6 at B=1. A different 128×192-flavored specialization ranks 5 at B=500. These are different raw kernel names selected for different matrix regimes, not one specialization smoothly scaling across all batches.</p></div>
+                <div class="judgment"><h4>Comparison judgment</h4><p>The specialization change is exactly what a JIT GEMM backend should do as the M dimension grows. Compare each symbol against the matching DeepGEMM shape and configuration; a repository headline such as peak H800 TFLOP/s is not a baseline for these decode GEMMs.</p></div>
+              </div>
+              <nav class="source-links" aria-label="Sources for DeepGEMM SM90 FP8 GEMM"><a href="https://github.com/deepseek-ai/DeepGEMM/blob/main/deep_gemm/include/deep_gemm/impls/sm90_fp8_gemm_1d2d.cuh" target="_blank" rel="noreferrer">DeepGEMM SM90 implementation<span aria-hidden="true"> ↗</span></a><a href="https://github.com/deepseek-ai/DeepGEMM" target="_blank" rel="noreferrer">DeepGEMM interfaces and benchmarks<span aria-hidden="true"> ↗</span></a></nav>
+            </article><article class="family-card" id="family-pytorch_topk" style="--family:#475569">
+              <header><span class="family-index">7</span><div><p class="eyebrow">Kernel family</p><h3>PyTorch single-block TopK gather</h3></div></header>
+              <p class="operation">Find the k-th routing score, scan the input slice, compact winners, and write expert values and indices.</p>
+              <div class="occurrence-strip"><span><i style="--family:#475569"></i><span class="math-var">B</span>=1: #4, 9.172 ms</span><span><i style="--family:#475569"></i><span class="math-var">B</span>=10: #5, 10.315 ms</span><span><i style="--family:#475569"></i><span class="math-var">B</span>=100: #6, 11.054 ms</span><span><i style="--family:#475569"></i><span class="math-var">B</span>=200: #6, 11.264 ms</span><span><i style="--family:#475569"></i><span class="math-var">B</span>=500: #6, 15.274 ms</span></div>
+              <div class="comparison-grid">
+                <div><h4>Backend or literature</h4><p>PyTorch&#x27;s sbtopk namespace means single-block TopK. The CUDA kernel performs radix selection, then two gather phases: values strictly beyond the threshold first, followed by enough values equal to the threshold to fill k. Prefix scans determine output positions.</p></div>
+                <div><h4>What this trace shows</h4><p>Ranks 4, 5, 6, 6, and 6 across the sweep. Launch count is fixed at 1,800; total residency rises modestly from 9.17 ms to 15.27 ms while mean launch time grows from 5.10 µs to 8.49 µs.</p></div>
+                <div class="judgment"><h4>Comparison judgment</h4><p>This is a persistent launch-count tax rather than the dominant scaling wall. Larger batches expose more independent slices and GPU parallelism, so time does not grow in proportion to B. Optimization should target fusion or fewer routing stages only after the larger attention, MoE, and collective costs.</p></div>
+              </div>
+              <nav class="source-links" aria-label="Sources for PyTorch single-block TopK gather"><a href="https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/cuda/TensorTopK.cu" target="_blank" rel="noreferrer">PyTorch TensorTopK CUDA source<span aria-hidden="true"> ↗</span></a></nav>
+            </article></div></section>
+
+      <section class="panel" id="conclusions"><p class="eyebrow">Conclusions</p><h2>How to use this ranking</h2>
+        <div class="takeaways"><article><b>Optimize sparse MLA first at high batch.</b>It owns 35.84% of B=500 eight-rank residency—more than twice the next raw symbol.</article><article><b>Benchmark collectives by message regime.</b>Both custom AR and fused AR+norm visibly cross from one-shot to two-shot paths. Treat them as communication kernels, not MFU candidates.</article><article><b>Use shape-matched microbenchmarks.</b>DeepGEMM changes specialization and the quant kernel is non-monotonic. Generic library peak numbers cannot diagnose either case.</article></div>
+        <div class="callout"><b>Recommended next experiment.</b> Re-capture <span class="math-var">B</span> = 100, 200, and 500 at one common context length, then run NCU only on sparse MLA, fused MoE, the active DeepGEMM specialization, and the exact quantization symbol. For collectives, record payload bytes, algorithm choice, rank skew, and effective bus bandwidth.</div>
+      </section>
+
+      <section class="panel" id="sources"><p class="eyebrow">Evidence</p><h2>Data and primary references</h2>
+        <div class="citation-list"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/report_data.json">Normalized source report data</a><a href="top6_kernel_comparison.json">Derived top-six comparison sidecar</a><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/#timeline">Interactive source timeline</a><a href="https://github.com/deepseek-ai/FlashMLA" target="_blank" rel="noreferrer">FlashMLA repository ↗</a><a href="https://github.com/flashinfer-ai/flashinfer" target="_blank" rel="noreferrer">FlashInfer repository ↗</a><a href="https://github.com/deepseek-ai/DeepGEMM" target="_blank" rel="noreferrer">DeepGEMM repository ↗</a><a href="https://github.com/sgl-project/sglang" target="_blank" rel="noreferrer">SGLang repository ↗</a><a href="https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/cuda/TensorTopK.cu" target="_blank" rel="noreferrer">PyTorch TopK CUDA source ↗</a></div>
+      </section>
+    </main>
+  </div>
+  <footer>Generated from capture-normalized data · 2026-08-07T10:45:51.832225+00:00 · no external runtime dependencies</footer>
+</body>
+</html>
