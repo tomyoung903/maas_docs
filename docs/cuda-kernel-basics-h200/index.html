@@ -2182,6 +2182,83 @@
       line-height: 1.42;
     }
 
+    .gap-ledger {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .gap-ledger-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px 18px;
+    }
+
+    .gap-ledger-head strong {
+      font-size: 16px;
+    }
+
+    .gap-ledger-head span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .gap-stack {
+      display: flex;
+      min-height: 78px;
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      background: var(--soft);
+    }
+
+    .gap-segment {
+      display: flex;
+      min-width: 84px;
+      flex-direction: column;
+      justify-content: center;
+      padding: 10px;
+      color: #ffffff;
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .gap-segment strong {
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gap-segment.roof {
+      background: var(--flash-mma);
+    }
+
+    .gap-segment.locality {
+      background: var(--memory);
+    }
+
+    .gap-segment.in-core {
+      background: var(--flash-softmax);
+    }
+
+    .gap-segment.fixed {
+      min-width: 72px;
+      background: var(--flash-index);
+    }
+
+    .gap-ledger-note {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
     .timing-links {
       display: flex;
       flex-wrap: wrap;
@@ -2502,6 +2579,14 @@
         gap: 5px;
       }
 
+      .gap-stack {
+        flex-direction: column;
+      }
+
+      .gap-segment {
+        min-width: 0;
+      }
+
       .cycle-value {
         text-align: left;
       }
@@ -2541,6 +2626,7 @@
       <a href="#flashmla-internals">FlashMLA internals</a>
       <a href="#flashmla-timing">FlashMLA timing</a>
       <a href="#flashmla-cycle-derivation">Cycle derivation</a>
+      <a href="#flashmla-gap-audit">51.5 &micro;s audit</a>
       <a href="#checklist">Analysis checklist</a>
       <a href="#sources">Sources</a>
     </nav>
@@ -3322,7 +3408,7 @@ with torch.cuda.stream(forward_stream):
             <span class="pdl-overlap-bracket" aria-hidden="true"></span>
             <span class="pdl-overlap-copy">same-stream PDL intersection</span>
           </div>
-          <p>The main kernel <a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L272-L319">signals its dependent launch before its tail is finished</a>. The combine grid is launched with programmatic stream serialization and reaches <a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/combine/combine.cu#L56-L69"><code>cudaGridDependencySynchronize()</code></a> before it consumes the main kernel’s output. The launch/prologue can therefore overlap the main tail without violating the dependency.</p>
+          <p>The main kernel <a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L272-L319">signals its dependent launch before its tail is finished</a>. The combine grid is launched with programmatic stream serialization and reaches <a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/smxx/decode/combine/combine.cu#L56-L69"><code>cudaGridDependencySynchronize()</code></a> before it consumes the main kernel’s output. The launch/prologue can therefore overlap the main tail without violating the dependency.</p>
         </div>
 
         <h3>Choose the clock that answers the question</h3>
@@ -3388,19 +3474,19 @@ with torch.cuda.stream(forward_stream):
               <tr>
                 <td><strong>WG0</strong></td>
                 <td>0&ndash;127</td>
-                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L270">QK, online softmax, and the first 256 value dimensions</a></td>
+                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L270">QK, online softmax, and the first 256 value dimensions</a></td>
                 <td>36 QK WGMMA operations + 4 PV WGMMA operations</td>
               </tr>
               <tr>
                 <td><strong>WG1</strong></td>
                 <td>128&ndash;255</td>
-                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L366-L452">Wait for probabilities, then accumulate value dimensions 256&ndash;511</a></td>
+                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L366-L452">Wait for probabilities, then accumulate value dimensions 256&ndash;511</a></td>
                 <td>4 PV WGMMA operations</td>
               </tr>
               <tr>
                 <td><strong>WG2</strong></td>
                 <td>256&ndash;383</td>
-                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L454-L647">Follow sparse addresses, load, dequantize, and publish the next K/V tile</a></td>
+                <td><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L454-L647">Follow sparse addresses, load, dequantize, and publish the next K/V tile</a></td>
                 <td>Two rounds &times; 32 records = 64 prepared records</td>
               </tr>
             </tbody>
@@ -3449,7 +3535,7 @@ with torch.cuda.stream(forward_stream):
             <span class="math-op">=</span>
             <span class="math-rhs">8 + 8 + 32 + 2 = 50 ideal SM-throughput cycles per record</span>
           </div>
-          <p>The pinned helper vectorizes eight values at a time as <a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/components/dequant.h#L20-L34">FP8 quartets, FP32 vectors, BF16 pairs, and BF16-pair multiplies</a>. Its exact SASS lowering can vary with the compiler, so 50 is the authors&rsquo; throughput roof&mdash;not 50 source instructions or 50 cycles of dependent latency.</p>
+          <p>The pinned helper vectorizes eight values at a time as <a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/components/dequant.h#L20-L34">FP8 quartets, FP32 vectors, BF16 pairs, and BF16-pair multiplies</a>. Its exact SASS lowering can vary with the compiler, so 50 is the authors&rsquo; throughput roof&mdash;not 50 source instructions or 50 cycles of dependent latency.</p>
         </div>
 
         <div class="record-card">
@@ -3573,8 +3659,129 @@ with torch.cuda.stream(forward_stream):
           </table>
         </div>
 
+        <h3 id="flashmla-gap-audit">Controlled H200 audit: close the &ldquo;missing 51.5 &micro;s&rdquo;</h3>
+        <p>On August 7, 2026, the exact published runtime image and its pinned FlashMLA cubin were rerun on <code>gpu-h200-36</code>. The audit kept the B=100, TopK=2,048, H64, FP8-E4M3, 132-CTA launch shape fixed and changed only selected-record address locality. Nsight Systems supplied unobtrusive main/combine timing; single-replay Nsight Compute supplied elapsed cycles and in-kernel clock; multi-replay reports supplied counters only.</p>
+
+        <div class="callout">
+          <strong>Measured answer:</strong> the gap is approximately half sparse-record locality and half work that the two arithmetic roofs never modeled. In a one-replay, clock-measured launch, the original 94,976-cycle roof was 52.471 &micro;s, while the complete main kernel was 105.952 &micro;s. A controlled cycle ledger reconstructs all but 0.390 &micro;s: 24.958 &micro;s responds to selected-record locality, 23.975 &micro;s is additional hot-cache per-tile work, and 4.937 &micro;s is fixed/request-boundary pipeline overhead.
+        </div>
+
+        <div class="table-wrap timing-proof semantic-proof">
+          <table>
+            <thead><tr><th>Run</th><th>Main median</th><th>Combine median</th><th>PDL overlap</th><th>Main + combine union</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Original CUDA graph</strong></td><td>103.424 &micro;s</td><td>9.567 &micro;s</td><td>2.949 &micro;s</td><td>110.042 &micro;s</td><td>Published 78-layer trace; SM clock and selected-index values were not captured.</td></tr>
+              <tr><td><strong>Ordered unique</strong></td><td>104.560 &micro;s</td><td>10.496 &micro;s</td><td>3.488 &micro;s</td><td>111.520 &micro;s</td><td>Timing-matched control: main is within 1.1% and union within 1.3% of the original.</td></tr>
+              <tr><td><strong>Random unique</strong></td><td>108.656 &micro;s</td><td>10.576 &micro;s</td><td>3.520 &micro;s</td><td>115.649 &micro;s</td><td>Same records and instruction shape, but fragmented address order.</td></tr>
+              <tr><td><strong>One hot record / request</strong></td><td>78.112 &micro;s</td><td>9.280 &micro;s</td><td>3.488 &micro;s</td><td>83.936 &micro;s</td><td>Counterfactual cache-residency control; all 2,048 references and all H64 Tensor work remain.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="math-note">Each controlled row is the median of 20 CUDA-range-captured Nsight Systems launches. The ordered control reproduces timing, not the unknown production index order. The hot-record row is deliberately non-production semantics: it isolates address service from arithmetic without changing the kernel specialization.</p>
+
+        <div class="math-block" aria-label="Clock-corrected measured cycle gap">
+          <span class="math-lhs"><span class="math-var">C</span><sub>measured</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">191,780.6 cycles at 1.81007 GHz = 105.952 &micro;s</span>
+          <span class="math-lhs"><span class="math-var">C</span><sub>roof</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">94,976 cycles = 52.471 &micro;s at the same measured clock</span>
+          <span class="math-lhs"><span class="math-var">&Delta;C</span><sub>real&minus;roof</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">96,804.6 cycles = 53.481 &micro;s</span>
+        </div>
+
+        <div class="gap-ledger" role="group" aria-label="Cycle-domain reconstruction of the complete 105.952 microsecond main kernel">
+          <div class="gap-ledger-head">
+            <strong>One measured 105.952 &micro;s main launch</strong>
+            <span>segment width is proportional to positive cycle contribution</span>
+          </div>
+          <div class="gap-stack">
+            <span class="gap-segment roof" style="flex: 94976"><strong>52.471 &micro;s</strong>ideal arithmetic roof</span>
+            <span class="gap-segment locality" style="flex: 45177"><strong>24.958 &micro;s</strong>locality-sensitive path</span>
+            <span class="gap-segment in-core" style="flex: 43397"><strong>23.975 &micro;s</strong>hot-cache per-tile excess</span>
+            <span class="gap-segment fixed" style="flex: 8936"><strong>4.937 &micro;s</strong>fixed / drain</span>
+          </div>
+          <p class="gap-ledger-note">The hot-cache TopK regression misses the measured hot K=2,048 point by &minus;706 cycles (&minus;0.390 &micro;s); that small signed correction is listed below rather than drawn as a positive segment.</p>
+        </div>
+
+        <div class="table-wrap timing-proof semantic-proof">
+          <table>
+            <thead><tr><th>Cycle-ledger term</th><th>Cycles</th><th>At 1.81007 GHz</th><th>Share of residual</th><th>How it is identified</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Original arithmetic roof</strong></td><td>94,976.0</td><td>52.471 &micro;s</td><td>&mdash;</td><td>29 producer tiles at 3,200 cycles plus the final 2,176-cycle Tensor drain.</td></tr>
+              <tr><td><strong>Address-locality sensitivity</strong></td><td>45,176.6</td><td>24.958 &micro;s</td><td>46.7%</td><td>Ordered-unique K=2,048 cycles minus one-hot-record cycles, with identical H64 math.</td></tr>
+              <tr><td><strong>Hot-cache steady-tile excess</strong></td><td>43,397.2</td><td>23.975 &micro;s</td><td>44.8%</td><td><span class="math-dim">(4,696.46 &minus; 3,200) cycles/tile &times; 29 tiles</span>.</td></tr>
+              <tr><td><strong>Fixed / request / drain excess</strong></td><td>8,936.4</td><td>4.937 &micro;s</td><td>9.2%</td><td>Hot-cache regression intercept 11,112.44 minus the ideal 2,176-cycle drain.</td></tr>
+              <tr><td><strong>Regression correction</strong></td><td>&minus;705.7</td><td>&minus;0.390 &micro;s</td><td>&minus;0.7%</td><td>Actual hot K=2,048 cycles minus the fitted hot-cache point.</td></tr>
+              <tr class="timing-total"><td><strong>Reconstructed measured main</strong></td><td><strong>191,780.6</strong></td><td><strong>105.952 &micro;s</strong></td><td><strong>100% of residual</strong></td><td><strong>Matches the one-replay measured cycle count.</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="math-block" aria-label="Measured hot-cache TopK slope compared with the ideal pipeline">
+          <span class="math-lhs"><span class="math-var">C</span><sub>hot</sub>(<span class="math-var">T</span>)</span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">4,696.46 <span class="math-var">T</span> + 11,112.44 cycles, <span class="math-var">R</span><sup>2</sup> = 0.9993</span>
+          <span class="math-lhs"><span class="math-var">C</span><sub>ideal</sub>(<span class="math-var">T</span>)</span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">3,200 <span class="math-var">T</span> + 2,176 cycles</span>
+          <span class="math-lhs"><span class="math-var">c</span><sub>hot,record</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">4,696.46 &divide; 64 = 73.38 measured cycles per record, versus the 50-cycle conversion roof</span>
+        </div>
+        <p class="math-note">The fit uses fully valid TopK=512, 1,024, 1,536, and 2,048 points and regresses elapsed cycles against the exact busiest-CTA tile count, not total grid tiles. It is a critical-path model, not a claim that the listed terms serialize without overlap.</p>
+
+        <h4 id="flashmla-locality-evidence">Why the locality term is real</h4>
+        <div class="table-wrap timing-proof semantic-proof">
+          <table>
+            <thead><tr><th>Selected-address control</th><th>DRAM read</th><th>L1 global-load hit</th><th>L2 read hit</th><th>Long scoreboard</th><th>Barrier wait</th><th>Issue active</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Random unique</strong></td><td>157.309 MB</td><td>17.80%</td><td>36.81%</td><td>3.553 warps</td><td>3.741 warps</td><td>28.92%</td></tr>
+              <tr><td><strong>Ordered unique</strong></td><td>144.908 MB</td><td>18.89%</td><td>39.83%</td><td>3.266 warps</td><td>3.611 warps</td><td>30.04%</td></tr>
+              <tr><td><strong>One hot record / request</strong></td><td>7.958 MB</td><td>95.34%</td><td>25.33%</td><td>1.279 warps</td><td>2.727 warps</td><td>40.30%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="math-note">Traffic and cache columns come from four-replay reports; stall columns come from eight-replay reports and are comparative diagnostics, not the headline latency. &ldquo;Warps&rdquo; is Nsight Compute&rsquo;s average resident warps in that state per issue-active cycle. The hot row&rsquo;s low L2-read-hit percentage is compatible with reuse: 95.34% of global-load sectors hit in L1, so the small remainder reaching L2 has a different mix.</p>
+
+        <div class="callout memory">
+          <strong>Memory latency propagates through the pipeline.</strong> Random-to-hot reuse removes 149.351 MB of measured DRAM reads, cuts long-scoreboard pressure by 64%, reduces barrier waiting, and raises issue-active cycles from 28.92% to 40.30%. WG2 waits on sparse loads; WG0 and WG1 then wait for WG2&rsquo;s ready barrier. The measured 24.958 &micro;s is therefore a causal end-to-end critical-path response, not an additive &ldquo;DRAM time.&rdquo;
+        </div>
+
+        <h4 id="flashmla-hot-work">What remains when the selected record is already hot</h4>
+        <div class="table-wrap timing-proof semantic-proof">
+          <table>
+            <thead><tr><th>Compiled work per 64-record tile</th><th>Exact quantity</th><th>Relationship to the 50 / 34 roofs</th></tr></thead>
+            <tbody>
+              <tr><td><strong>WG2 producer loop</strong></td><td>1,080 static SASS instructions per producer warp</td><td>Only 644 belong to the conversion/multiply sequence represented by the 50-cycle roof; 436 are load, store, address, select, fence, and barrier instructions.</td></tr>
+              <tr><td><strong>Source-requested record reads</strong></td><td>724 B per selected record</td><td>656 B KV floor + duplicated four-lane scale loads + duplicated index loads + validity reread; this is still not physical DRAM traffic.</td></tr>
+              <tr><td><strong>Producer shared-memory publication</strong></td><td>1,152 B dequantized K/V + 1 B validity per record</td><td>Absent from the conversion-throughput roof.</td></tr>
+              <tr><td><strong>WG0 consumer loop</strong></td><td>649 static SASS instructions</td><td>Besides 40 HGMMA operations: online softmax, exponentials, reductions, rescaling, score conversion/store, and synchronization.</td></tr>
+              <tr><td><strong>WG1 consumer loop</strong></td><td>177 static SASS instructions</td><td>Besides four PV HGMMA operations: second-half accumulator rescaling, score handoff, and buffer release.</td></tr>
+              <tr><td><strong>Request boundaries</strong></td><td>200 chunks across 100 requests</td><td>Two Q-TMA prologues and two FP32 split-output epilogues per request; the 24-tile/two-fragment CTA can rival the nominal 29-tile tail.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="timing-metric-grid" aria-label="Hardware evidence that arithmetic remains unchanged in the hot-cache control">
+          <div class="timing-metric"><strong>28.5212672 GFLOP</strong><span>Physical padded-head BF16 Tensor work, confirmed by the HGMMA operation counter.</span></div>
+          <div class="timing-metric"><strong>563,200 HGMMA warp instructions</strong><span>Exactly four warp instructions for each of 140,800 source-level warpgroup operations.</span></div>
+          <div class="timing-metric"><strong>113,868,800 conversions</strong><span>Dynamic conversion-thread instructions are identical in ordered and hot controls.</span></div>
+          <div class="timing-metric"><strong>18.75% occupancy</strong><span>168 registers/thread and 231.424 KB dynamic shared memory enforce one 12-warp CTA per SM.</span></div>
+        </div>
+
         <div class="callout warning">
-          <strong>The unexplained 51.5 &micro;s is not automatically &ldquo;dequantization time.&rdquo;</strong> The theoretical model omits sparse HBM and index loads, page address arithmetic, repeated scale-load instructions, RoPE loads, shared-memory stores, online softmax, fences and barriers, Q/output TMA, request boundaries, pipeline bubbles, compiler lowering, and the real clock during this trace. The independent logical HBM floor is 134.3488 MB &divide; 4.8 TB/s = 27.99 &micro;s, but it is neither additive to the arithmetic floor nor a measurement of scattered transactions. This Nsight Systems capture contains no SM-clock, instruction, stall, or DRAM counters; attributing the residual requires the exact cubin plus Nsight Compute or a controlled microbenchmark.
+          <strong>So the residual is not dequantization by subtraction.</strong> Changing numerical KV values to zero did not materially change timing, and the hot-address control executes the same conversion, FP16, FP32, memory-instruction, and HGMMA counts. What changes sharply is cache service, long-scoreboard waiting, and the downstream ready-barrier wait. The remaining hot-cache slope is the combined cost of real conversion lowering, address/control instructions, shared-memory publication, softmax/rescaling, WGMMA synchronization, and tile handoff. Tensor-pipe activity is only 27.9% of elapsed cycles, while schedulers have no eligible warp on roughly 70% of ordered-control cycles.
+        </div>
+
+        <div class="callout">
+          <strong>What can and cannot be claimed:</strong> the new run gives a quantitative, counter-supported explanation of a faithful reproduction. It cannot retroactively recover the original trace&rsquo;s SM clock, selected-index order, or cache state. Multi-replay stall ratios are not wall-clock slices, and the 24.958 &micro;s locality delta is a counterfactual critical-path effect rather than a standalone memory kernel. Within those boundaries, the model closes the reproduced main-kernel duration to 0.390 &micro;s without double-counting arithmetic and memory overlap.
+        </div>
+
+        <div class="timing-links">
+          <a class="doc-link" href="https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250929-hopper-fp8-sparse-deep-dive.md">Read DeepSeek&rsquo;s 50 / 34-cycle roof derivation</a>
+          <a class="doc-link" href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh">Inspect the exact pinned sparse kernel</a>
         </div>
 
         <h3>Why the MFU and MBU<sub>min</sub> figures reconcile</h3>
@@ -3640,16 +3847,16 @@ with torch.cuda.stream(forward_stream):
           <li><a href="https://www.nvidia.com/en-us/data-center/h200/">NVIDIA H200 product specifications</a></li>
           <li><a href="https://docs.pytorch.org/docs/stable/notes/cuda.html#cuda-streams">PyTorch CUDA semantics: CUDA streams</a></li>
           <li><a href="https://github.com/sgl-project/sglang/blob/f6de147b8d76279445c527a73311e628d8abaaea/python/sglang/srt/layers/attention/dsa_backend.py#L2792-L2851">SGLang DSA backend: FlashMLA query padding, invocation, and output crop</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/docs/20250929-hopper-fp8-sparse-deep-dive.md">DeepSeek FlashMLA: Hopper sparse-FP8 decode deep dive</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/params.h#L5-L8">FlashMLA model-type mapping: the traced template&rsquo;s <code>ModelType::V32</code></a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/config.h#L15-L130">FlashMLA SM90 configuration: H64/H128 clusters, CTA size, buffers, shared-memory plan, and WGMMA atoms</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L647">FlashMLA SM90 sparse decode: QK, online softmax, PV, gather, dequantization, and producer mapping</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/components/helpers.h#L20-L53">FlashMLA WGMMA helper: K-slice unrolling, asynchronous commit, and wait</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/components/dequant.h#L20-L34">FlashMLA FP8 dequantization helper: vector conversions and BF16 scale multiplication</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/api/common.h#L20-L32">FlashMLA runtime architecture query: scheduler partitions use the device SM count</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/api/sparse_decode.h#L44-L65">FlashMLA sparse-decode API: 64-record blocks and SM-partition count</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/get_decoding_sched_meta/get_decoding_sched_meta.cu#L28-L106">FlashMLA decoding scheduler: block assignment and split metadata</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/combine/combine.cu#L18-L220">FlashMLA split-output combine kernel: dependency synchronization and PDL launch</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250929-hopper-fp8-sparse-deep-dive.md">DeepSeek FlashMLA: Hopper sparse-FP8 decode deep dive and theoretical 50 / 34-cycle roofs</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/params.h#L5-L8">Pinned FlashMLA model-type mapping: the traced template&rsquo;s <code>ModelType::V32</code></a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/config.h#L15-L130">Pinned FlashMLA SM90 configuration: H64/H128 clusters, CTA size, buffers, shared-memory plan, and WGMMA atoms</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L647">Pinned FlashMLA SM90 sparse decode: QK, online softmax, PV, gather, dequantization, and producer mapping</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/components/helpers.h#L20-L53">Pinned FlashMLA WGMMA helper: K-slice unrolling, asynchronous commit, and wait</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/components/dequant.h#L20-L34">Pinned FlashMLA FP8 dequantization helper: vector conversions and BF16 scale multiplication</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/api/common.h#L20-L32">Pinned FlashMLA runtime architecture query: scheduler partitions use the device SM count</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/api/sparse_decode.h#L44-L65">Pinned FlashMLA sparse-decode API: 64-record blocks and SM-partition count</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/smxx/decode/get_decoding_sched_meta/get_decoding_sched_meta.cu#L28-L106">Pinned FlashMLA decoding scheduler: block assignment and split metadata</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/smxx/decode/combine/combine.cu#L18-L220">Pinned FlashMLA split-output combine kernel: dependency synchronization and PDL launch</a></li>
           <li><a href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/#one-rank-tree">Measured Japan H200 TP=8 decode batch sweep: B=100 GPU0 execution tree</a></li>
         </ul>
       </section>
