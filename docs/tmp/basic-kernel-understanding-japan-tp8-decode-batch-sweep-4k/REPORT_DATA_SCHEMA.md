@@ -390,12 +390,26 @@ The generator always writes these normalized artifacts:
 - `batch_summary.csv` — one row per selector view.
 - `kernel_summary.csv` — one row per selector view and kernel family.
 
+`report_data.json` and `timeline_data.json` contain the exact normalized object
+embedded in `index.html`; the HTML uses compact JSON while the sidecars use
+indented JSON. A regenerated browser tree must therefore never coexist with a
+stale downloadable native tree.
+
 For this capture-specific generator, `one_rank_tree` is derived from the full
 adjacent `kernel_events.csv.gz` rather than trusted from the input JSON. The
 classifier uses GPU 0 graph-node order, validates all 78 layer motifs, and
 requires every useful node to reconcile exactly once. Each node carries both
 the interval union used for MFU/MBU and the overlap-additive summed residency
 retained as a diagnostic; child interval unions are intentionally non-additive.
+
+The post-MLA-combine motif is asserted in every layer and every native batch:
+BF16 latent-value BMM (`2.1.8`), BF16-to-FP8 quantization plus FP8 `o_proj`
+(`2.1.9`), then the attention TP reduction. The combined `2.1.8–2.1.9` row owns
+all 234 launches, while each child owns only its own kernels. BF16 work is
+converted at 2x into FP8-equivalent MFU. MBUmin counts only compulsory HBM
+streams; potentially cache-resident logits, page-table entries, and selected
+IDs are excluded. Generation fails if any modeled MFU or MBUmin falls outside
+the physical 0–100% range.
 
 ## Artifact manifest
 
