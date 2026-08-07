@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A practical model for CUDA streams, kernels, blocks, SMs, shared memory, profiler timelines, and the internal FlashMLA sparse-FP8 decode pipeline on NVIDIA H200 GPUs.">
+  <meta name="description" content="A practical model for CUDA streams, kernels, blocks, SMs, shared memory, profiler timelines, and FlashMLA sparse-FP8 decode and timing accounting on NVIDIA H200 GPUs.">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/cuda-kernel-basics-h200/">
   <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/cuda-kernel-basics-h200/">
   <meta property="og:title" content="CUDA Kernel Fundamentals on H200">
-  <meta property="og:description" content="How PyTorch and SGLang launches become H200 hardware work, with a visual cutaway of FlashMLA sparse decode, dequantization, QK, softmax, and PV.">
+  <meta property="og:description" content="How PyTorch and SGLang launches become H200 hardware work, with a visual cutaway of FlashMLA sparse decode and an exact interval-union timing audit.">
   <title>CUDA Kernel Fundamentals on H200</title>
   <style>
     :root {
@@ -1890,6 +1890,299 @@
       background: #fdf9f8;
     }
 
+    .timing-scope {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 17px;
+    }
+
+    .timing-scope span {
+      border: 1px solid #a8bdd5;
+      border-radius: 999px;
+      background: #f5f9fd;
+      padding: 5px 10px;
+      color: #294f80;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .timing-verdict {
+      margin-top: 19px;
+      border: 1px solid #92b8a7;
+      border-left: 6px solid var(--good);
+      border-radius: 10px;
+      background: linear-gradient(115deg, var(--good-soft), #ffffff 70%);
+      padding: 19px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .timing-verdict-kicker {
+      display: inline-flex;
+      border-radius: 999px;
+      background: var(--good);
+      padding: 3px 9px;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .timing-verdict > strong {
+      display: block;
+      margin-top: 9px;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .timing-verdict p {
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .timing-reconciliation {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 32px minmax(0, 0.9fr) 32px minmax(0, 1fr);
+      gap: 9px;
+      align-items: stretch;
+      margin-top: 19px;
+    }
+
+    .timing-number-card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--flash-mma);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .timing-number-card.overlap {
+      border-top-color: var(--warning);
+      background: #fffcf6;
+    }
+
+    .timing-number-card.union {
+      border: 2px solid #4c8f86;
+      border-top: 5px solid var(--flash-softmax);
+      background: #f6fbfa;
+    }
+
+    .timing-number-label {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .timing-number-card strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--ink);
+      font-size: 22px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+
+    .timing-number-card small {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .timing-operator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--line-strong);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .timing-proof td:nth-child(n + 2),
+    .timing-proof th:nth-child(n + 2) {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .timing-proof .timing-total td {
+      background: #f6fbfa;
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .pdl-mini {
+      margin-top: 18px;
+      border: 1px solid #c7ad83;
+      border-radius: 9px;
+      background: #fffcf6;
+      padding: 18px;
+    }
+
+    .pdl-mini-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 18px;
+    }
+
+    .pdl-lane {
+      display: grid;
+      grid-template-columns: 135px minmax(0, 1fr) 102px;
+      gap: 10px;
+      align-items: center;
+      margin-top: 11px;
+    }
+
+    .pdl-lane-label,
+    .pdl-lane-value {
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .pdl-lane-value {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .pdl-track {
+      position: relative;
+      min-height: 31px;
+      overflow: hidden;
+      border: 1px solid #d3c3a9;
+      border-radius: 5px;
+      background:
+        repeating-linear-gradient(90deg, #f5efe4, #f5efe4 9px, #fbf8f1 9px, #fbf8f1 18px);
+    }
+
+    .pdl-segment {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 4px;
+    }
+
+    .pdl-segment.main {
+      left: 0;
+      width: 93.98%;
+      background: var(--flash-mma);
+    }
+
+    .pdl-segment.combine {
+      left: 91.31%;
+      width: 8.69%;
+      background: var(--flash-softmax);
+    }
+
+    .pdl-overlap-note {
+      display: grid;
+      grid-template-columns: 135px minmax(0, 1fr) 102px;
+      gap: 10px;
+      align-items: start;
+      margin-top: 6px;
+      color: var(--warning);
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .pdl-overlap-bracket {
+      position: relative;
+      grid-column: 2;
+      min-height: 11px;
+    }
+
+    .pdl-overlap-bracket::after {
+      position: absolute;
+      top: 0;
+      left: 91.31%;
+      width: 2.67%;
+      min-width: 5px;
+      height: 8px;
+      border: 2px solid var(--warning);
+      border-top: 0;
+      content: "";
+    }
+
+    .pdl-overlap-copy {
+      grid-column: 3;
+      line-height: 1.25;
+      text-align: right;
+    }
+
+    .pdl-mini p {
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .timing-metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 11px;
+      margin-top: 18px;
+    }
+
+    .timing-metric {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--line-strong);
+      border-radius: 7px;
+      background: var(--paper);
+      padding: 14px;
+    }
+
+    .timing-metric:nth-child(1) {
+      border-top-color: var(--flash-gather);
+    }
+
+    .timing-metric:nth-child(2) {
+      border-top-color: var(--flash-softmax);
+    }
+
+    .timing-metric:nth-child(3) {
+      border-top-color: var(--flash-mma);
+    }
+
+    .timing-metric:nth-child(4) {
+      border-top-color: var(--memory);
+    }
+
+    .timing-metric strong {
+      display: block;
+      color: var(--ink);
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.25;
+    }
+
+    .timing-metric span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.42;
+    }
+
+    .timing-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 17px;
+    }
+
+    .timing-links .doc-link {
+      margin-top: 0;
+    }
+
     .check-list {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1936,6 +2229,10 @@
       }
 
       .flash-operation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .timing-metric-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
@@ -2028,6 +2325,14 @@
         grid-template-columns: minmax(0, 1fr);
       }
 
+      .timing-reconciliation {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .timing-operator {
+        min-height: 24px;
+      }
+
       .combine-arrow {
         transform: rotate(90deg);
       }
@@ -2065,7 +2370,8 @@
       .check-list,
       .rank-grid,
       .flash-operation-grid,
-      .padding-facts {
+      .padding-facts,
+      .timing-metric-grid {
         grid-template-columns: minmax(0, 1fr);
       }
 
@@ -2115,8 +2421,32 @@
       .record-card,
       .padding-tax,
       .cycle-card,
-      .batch-supply {
+      .batch-supply,
+      .timing-verdict,
+      .pdl-mini {
         padding: 14px;
+      }
+
+      .pdl-lane {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 5px;
+      }
+
+      .pdl-lane-value {
+        text-align: left;
+      }
+
+      .pdl-overlap-note {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .pdl-overlap-bracket,
+      .pdl-overlap-copy {
+        grid-column: 1;
+      }
+
+      .pdl-overlap-copy {
+        text-align: left;
       }
 
       .wg-lanes {
@@ -2199,6 +2529,7 @@
       <a href="#profiler">Read a profiler</a>
       <a href="#sglang-case">SGLang PP case</a>
       <a href="#flashmla-internals">FlashMLA internals</a>
+      <a href="#flashmla-timing">FlashMLA timing</a>
       <a href="#checklist">Analysis checklist</a>
       <a href="#sources">Sources</a>
     </nav>
@@ -2211,7 +2542,7 @@
         <div class="meta-line" role="group" aria-label="Document metadata">
           <span>Audience: inference engineers</span>
           <span>Hardware: Hopper / H200</span>
-          <span>Updated: August 6, 2026</span>
+          <span>Updated: August 7, 2026</span>
         </div>
       </header>
 
@@ -2890,6 +3221,150 @@ with torch.cuda.stream(forward_stream):
         </div>
       </section>
 
+      <section id="flashmla-timing">
+        <h2>Reading 2.1.7: Why 8.583 ms Is the Union, Not the Sum</h2>
+        <p>The B=100 view in the <a href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/#one-rank-tree">Japan H200 TP=8 decode batch sweep</a> maps its two FlashMLA kernels onto logical tree step 2.1.7, “Selected sparse MLA scan.” The timing card is exact, but its union symbol matters: it reports non-double-counted GPU0 coverage, not the sum of all kernel-duration rows.</p>
+
+        <div class="timing-scope" aria-label="Exact measurement scope">
+          <span>GPU0 / TP0</span>
+          <span>TP=8 &middot; DP=1</span>
+          <span>B=100</span>
+          <span>4,096-token context</span>
+          <span>TopK=2,048</span>
+          <span>One computed decode graph</span>
+        </div>
+
+        <div class="timing-verdict">
+          <span class="timing-verdict-kicker">Verdict</span>
+          <strong>8.583279 ms is correct as the GPU0 active interval union.</strong>
+          <p>If “total kernel time” means every physical launch duration added independently, use <strong>8.813296 ms summed residency</strong>. The card’s “&cup; kernel ms” label deliberately answers a different question.</p>
+        </div>
+
+        <h3>First reconcile the 156 launches</h3>
+        <div class="timing-reconciliation" role="group" aria-label="Summed kernel residency minus overlap equals active interval union">
+          <div class="timing-number-card">
+            <span class="timing-number-label">&Sigma; summed residency</span>
+            <strong>8.813296 ms</strong>
+            <small>All 156 physical launch durations added independently.</small>
+          </div>
+          <div class="timing-operator" aria-hidden="true">&minus;</div>
+          <div class="timing-number-card overlap">
+            <span class="timing-number-label">PDL overlap excess</span>
+            <strong>0.230017 ms</strong>
+            <small>Time covered by both kernels in each dependent pair.</small>
+          </div>
+          <div class="timing-operator" aria-hidden="true">=</div>
+          <div class="timing-number-card union">
+            <span class="timing-number-label">&cup; active union</span>
+            <strong>8.583279 ms</strong>
+            <small>GPU0 time covered by at least one selected-scan kernel.</small>
+          </div>
+        </div>
+
+        <div class="table-wrap timing-proof">
+          <table>
+            <thead>
+              <tr><th>Trace component</th><th>Count</th><th>Measured time</th><th>Mean per logical layer</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong><code>splitkv_mla</code> main scan</strong></td><td>78 launches</td><td>8.067085 ms</td><td>103.424167 &micro;s</td></tr>
+              <tr><td><strong><code>combine</code></strong></td><td>78 launches</td><td>0.746211 ms</td><td>9.566808 &micro;s</td></tr>
+              <tr><td><strong>&Sigma; residency</strong></td><td>156 launches</td><td>8.813296 ms</td><td>112.990974 &micro;s</td></tr>
+              <tr><td><strong>Overlapping intersection</strong></td><td>78 pairs</td><td>0.230017 ms</td><td>2.948936 &micro;s</td></tr>
+              <tr class="timing-total"><td><strong>&cup; active union</strong></td><td>156 intervals</td><td>8.583279 ms</td><td>110.042038 &micro;s</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="math-block" aria-label="Exact timing and launch-count reconciliation">
+          <span class="math-lhs"><span class="math-var">T</span><sub>&cup;</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs"><span class="math-var">T</span><sub>&Sigma;</sub> &minus; <span class="math-var">T</span><sub>overlap</sub> = 8.813296 ms &minus; 0.230017 ms = 8.583279 ms</span>
+          <span class="math-lhs"><span class="math-var">N</span><sub>launch</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">78 layers &times; (1 main + 1 combine) = 156 launches</span>
+        </div>
+
+        <div class="callout">
+          <strong>A logical invocation is not a physical launch.</strong> One logical layer scan contains both kernels. Therefore <span class="math-dim">110.042038 &micro;s &times; 78 = 8.583279 ms</span>; multiplying the per-layer union by 156 would count the two-kernel structure twice.
+        </div>
+
+        <h3>What the 0.230 ms overlap means</h3>
+        <p>Every layer’s main and combine events are adjacent graph nodes on the same CUDA stream, yet all 78 pairs overlap by 2.656&ndash;3.552 &micro;s. This is FlashMLA’s Programmatic Dependent Launch handoff rather than a reporting error.</p>
+
+        <div class="pdl-mini" role="group" aria-label="Average FlashMLA main and combine timing within one logical layer scan">
+          <div class="pdl-mini-head">
+            <strong>One average layer pair, normalized to its 110.042 &micro;s union</strong>
+            <span class="not-sum">2.949 &micro;s overlaps</span>
+          </div>
+          <div class="pdl-lane">
+            <span class="pdl-lane-label">Main splitKV scan</span>
+            <div class="pdl-track" aria-label="Main kernel covers the first 103.424 microseconds"><span class="pdl-segment main"></span></div>
+            <span class="pdl-lane-value">103.424 &micro;s</span>
+          </div>
+          <div class="pdl-lane">
+            <span class="pdl-lane-label">Combine</span>
+            <div class="pdl-track" aria-label="Combine begins near 100.475 microseconds and ends at 110.042 microseconds"><span class="pdl-segment combine"></span></div>
+            <span class="pdl-lane-value">9.567 &micro;s</span>
+          </div>
+          <div class="pdl-overlap-note" aria-label="The main and combine kernels overlap by 2.949 microseconds on average">
+            <span class="pdl-overlap-bracket" aria-hidden="true"></span>
+            <span class="pdl-overlap-copy">same-stream PDL intersection</span>
+          </div>
+          <p>The main kernel <a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L272-L319">signals its dependent launch before its tail is finished</a>. The combine grid is launched with programmatic stream serialization and reaches <a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/combine/combine.cu#L56-L69"><code>cudaGridDependencySynchronize()</code></a> before it consumes the main kernel’s output. The launch/prologue can therefore overlap the main tail without violating the dependency.</p>
+        </div>
+
+        <h3>Choose the clock that answers the question</h3>
+        <div class="table-wrap timing-proof">
+          <table>
+            <thead><tr><th>Question</th><th>Use this time</th><th>What it is not</th></tr></thead>
+            <tbody>
+              <tr><td>How much of GPU0’s timeline is covered by at least one node-2.1.7 kernel?</td><td><strong>8.583279 ms &cup;</strong></td><td>Not an additive kernel-duration sum.</td></tr>
+              <tr><td>What is the sum of all 156 GPU0 duration rows?</td><td><strong>8.813296 ms &Sigma;</strong></td><td>Not non-double-counted elapsed time.</td></tr>
+              <tr><td>How far apart are the first scan start and final combine finish?</td><td><strong>40.765435 ms span</strong></td><td>Not 40.8 ms of continuous scan work; 32.182156 ms is interleaved gap time for this node.</td></tr>
+              <tr><td>How much independently unioned work appears across all eight TP ranks?</td><td><strong>68.789671 GPU-ms</strong></td><td>Not wall latency; TP ranks execute in parallel.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout memory">
+          <strong>Union is not exclusive critical-path cost.</strong> Node 2.1.7 can overlap work assigned to other execution-tree siblings. Removing or accelerating it would not automatically reduce TPOT by exactly 8.583279 ms.
+        </div>
+
+        <h3>Why the MFU and MBU<sub>min</sub> figures reconcile</h3>
+        <p>The card uses a useful-work model on the same 8.583279 ms union denominator. Its FLOP numerator counts the eight useful TP-local heads; its byte numerator counts one 656-byte selected cache record per sequence, layer, and selected position.</p>
+
+        <div class="math-block" aria-label="Logical FLOPs, FP8-equivalent FLOPs, and useful selected-record bytes">
+          <span class="math-lhs"><span class="math-var">F</span><sub>logical</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">100 &times; 78 &times; 2,048 &times; 8 &times; 2 &times; (576 + 512) = 278.082355 GFLOP</span>
+          <span class="math-lhs"><span class="math-var">F</span><sub>FP8-eq</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">2 &times; <span class="math-var">F</span><sub>logical</sub> = 556.164710 GFLOP-equivalent</span>
+          <span class="math-lhs"><span class="math-var">B</span><sub>useful</sub></span>
+          <span class="math-op">=</span>
+          <span class="math-rhs">100 &times; 78 &times; 2,048 &times; (512 B + 16 B + 128 B) = 10.4792064 GB</span>
+        </div>
+
+        <div class="timing-metric-grid" aria-label="Derived useful-work metrics">
+          <div class="timing-metric"><strong>134.3488 MB</strong><span>Useful selected-record bytes per batched logical layer invocation.</span></div>
+          <div class="timing-metric"><strong>1.220886 TB/s</strong><span>10.4792064 GB divided by 8.583279 ms of active union.</span></div>
+          <div class="timing-metric"><strong>3.274% useful MFU</strong><span>556.164710 GFLOP-equivalent against the H200 FP8 reference of 1,979 TFLOP/s.</span></div>
+          <div class="timing-metric"><strong>25.435% MBU<sub>min</sub></strong><span>The useful-byte rate against the H200 reference of 4.8 TB/s.</span></div>
+        </div>
+
+        <div class="callout warning">
+          <strong>Measured time and useful MFU have different padding semantics.</strong> The 8.583279 ms trace already includes this route’s eight-to-64 scheduled-head padding, dequantization, and combine overhead. The 278.082355 GFLOP numerator counts only eight useful heads. A simple 64/8 scheduled-head proxy would be about 26.2%, but it is still not hardware-counter MFU. Likewise, MBU<sub>min</sub> counts the logical 656-byte selected-record floor, not measured DRAM transactions; Nsight Compute counters are required for actual traffic.
+        </div>
+
+        <p class="math-note"><strong>Scope label:</strong> “Prefill tree 2.1.7” is an architecture-taxonomy cross-reference. This measurement itself is one GPU0 B=100 decode graph under TP=8 / DP=1, not a 100K-token prefill trace.</p>
+        <div class="timing-links">
+          <a class="doc-link" href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/#one-rank-tree">Open the measured B=100 tree</a>
+          <a class="doc-link" href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/gpu0_kernel_tree.json">Inspect the normalized GPU0 tree JSON</a>
+          <a class="doc-link" href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/downloads/kernel_events.csv.gz">Download the normalized kernel events</a>
+        </div>
+      </section>
+
       <section id="checklist">
         <h2>Kernel Analysis Checklist</h2>
         <p>Use this sequence when a timeline looks surprising:</p>
@@ -2911,6 +3386,7 @@ with torch.cuda.stream(forward_stream):
         <h2>Primary Sources</h2>
         <ul class="source-list">
           <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html">NVIDIA CUDA Programming Guide: programming and hardware model</a></li>
+          <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/programmatic-dependent-launch.html">NVIDIA CUDA Programming Guide: Programmatic Dependent Launch and same-stream overlap</a></li>
           <li><a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/">NVIDIA Hopper Tuning Guide: occupancy, shared memory, TMA, and block clusters</a></li>
           <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/compute-capabilities.html">NVIDIA CUDA Programming Guide: compute capability resource limits</a></li>
           <li><a href="https://www.nvidia.com/en-us/data-center/h200/">NVIDIA H200 product specifications</a></li>
@@ -2918,10 +3394,11 @@ with torch.cuda.stream(forward_stream):
           <li><a href="https://github.com/sgl-project/sglang/blob/f6de147b8d76279445c527a73311e628d8abaaea/python/sglang/srt/layers/attention/dsa_backend.py#L2792-L2851">SGLang DSA backend: FlashMLA query padding, invocation, and output crop</a></li>
           <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/docs/20250929-hopper-fp8-sparse-deep-dive.md">DeepSeek FlashMLA: Hopper sparse-FP8 decode deep dive</a></li>
           <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/config.h#L15-L35">FlashMLA SM90 configuration: H64/H128 clusters, CTA size, and tile dimensions</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L623">FlashMLA SM90 sparse decode: QK, online softmax, PV, gather, and dequantization</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L623">FlashMLA SM90 sparse decode: QK, online softmax, PV, gather, dequantization, and PDL trigger</a></li>
           <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/api/sparse_decode.h#L44-L65">FlashMLA sparse-decode API: 64-record blocks and SM-partition count</a></li>
           <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/get_decoding_sched_meta/get_decoding_sched_meta.cu#L28-L106">FlashMLA decoding scheduler: block assignment and split metadata</a></li>
-          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/combine/combine.cu#L31-L160">FlashMLA split-output log-sum-exp combine kernel</a></li>
+          <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/15f13e5030374295491c5ce31b02d7e63a7772c6/csrc/smxx/decode/combine/combine.cu#L18-L220">FlashMLA split-output combine kernel: dependency synchronization and PDL launch</a></li>
+          <li><a href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/#one-rank-tree">Measured Japan H200 TP=8 decode batch sweep: B=100 GPU0 execution tree</a></li>
         </ul>
       </section>
 
