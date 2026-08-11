@@ -21,7 +21,8 @@
     .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px} table{border-collapse:collapse;width:100%;background:#fff} th,td{padding:11px 12px;border-bottom:1px solid #e8edf3;text-align:left;vertical-align:top} thead th{background:#eef3f7;color:#435169;font-size:12px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap} tbody tr:last-child th,tbody tr:last-child td{border-bottom:0} .rank-matrix th small{display:block;font-weight:500;text-transform:none;letter-spacing:0;color:#7a8799} .rank-matrix td{min-width:150px} .matrix-family,.kernel-family{font-weight:720;display:flex;align-items:center;gap:7px} .matrix-metric{font-size:12px;color:var(--muted);margin:3px 0 0 15px}
     .family-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:var(--family)} .legend{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px} .legend span{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 9px;font-size:12px}
     .batch-list,.family-list{display:grid;gap:18px} .batch-card,.family-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden} .batch-card>header,.family-card>header{padding:18px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)} .context-chip{background:#ecf6f4;color:#145c57;border-radius:99px;padding:7px 12px;font-weight:700}
-    .batch-kpis{display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px;background:#f9fbfd;border-bottom:1px solid var(--line)} .batch-kpis span{font-size:12px;color:#596579;padding-right:12px;border-right:1px solid #d7dfe9} .batch-kpis span:last-child{border:0} .batch-card .table-wrap{border:0;border-radius:0} .kernel-table td:nth-child(n+3){white-space:nowrap;font-variant-numeric:tabular-nums} .rank-pill{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:7px;background:#e9eef5;font-weight:800}
+    .batch-kpis{display:flex;gap:8px;flex-wrap:wrap;padding:12px 20px;background:#f9fbfd;border-bottom:1px solid var(--line)} .batch-kpis span{font-size:12px;color:#596579;padding-right:12px;border-right:1px solid #d7dfe9} .batch-kpis span:last-child{border:0} .batch-card .table-wrap{border:0;border-radius:0} .kernel-table{min-width:1180px} .kernel-table td:nth-child(n+3):nth-child(-n+6){white-space:nowrap;font-variant-numeric:tabular-nums} .kernel-table th:last-child,.kernel-table td:last-child{min-width:280px} .rank-pill{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:7px;background:#e9eef5;font-weight:800}
+    .tree-home-list{display:grid;gap:6px} .tree-home{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px;align-items:start;text-decoration:none;color:#294f6d;border:1px solid #d5e0ea;border-radius:7px;padding:6px 8px;background:#f8fbfd;line-height:1.35} .tree-home:hover{border-color:#75a9c9;background:#edf7fb} .tree-id{font:700 11px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:#0f766e;background:#e3f3ef;border-radius:4px;padding:1px 5px} .tree-proof{margin-top:7px;color:#667085;font-size:11px}
     details{margin-top:5px} summary{cursor:pointer;color:#65758b;font-size:12px} details code{display:block;margin-top:7px;padding:8px;background:#f5f7fa;border-radius:6px;max-width:760px;white-space:normal;overflow-wrap:anywhere;color:#364152}
     .family-card{border-top:4px solid var(--family)} .family-card>header{justify-content:flex-start;gap:12px} .family-index{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--family) 12%,white);color:var(--family);font-weight:800} .operation{padding:0 20px;margin:15px 0;color:#344054;font-size:16px} .occurrence-strip{display:flex;gap:7px;flex-wrap:wrap;padding:0 20px 17px} .occurrence-strip span{display:flex;align-items:center;gap:5px;background:#f5f7fa;border:1px solid #e1e6ed;border-radius:99px;padding:4px 8px;font-size:12px} .occurrence-strip i{width:7px;height:7px;border-radius:50%;background:var(--family)}
     .comparison-grid{display:grid;grid-template-columns:1fr 1fr 1.15fr;border-top:1px solid var(--line)} .comparison-grid>div{padding:18px 20px;border-right:1px solid var(--line)} .comparison-grid>div:last-child{border:0} .comparison-grid p{color:#4b586c} .comparison-grid .judgment{background:#f5faf9} .source-links{display:flex;flex-wrap:wrap;gap:8px;padding:13px 20px;border-top:1px solid var(--line);background:#fbfcfe} .source-links a{font-size:12px;text-decoration:none;border:1px solid #cfd9e5;border-radius:6px;padding:5px 8px;background:#fff}
@@ -56,6 +57,7 @@
       <section class="panel" id="method"><p class="eyebrow">Scope & method</p><h2>Exactly what was ranked</h2>
         <div class="method-grid"><div><b>Boundary</b>One complete, graph-aligned useful decode generation for each batch; post-finish cleanup excluded.</div><div><b>Metric</b>CUDA kernel residency summed across all eight TP ranks and grouped by exact demangled raw name.</div><div><b>Share</b>Each raw-name subtotal divided by all useful-step kernel residency across eight ranks—not by graph wall time.</div></div>
         <p>The numbers are read from the normalized sidecar behind the source page. “Top six” therefore means six exact symbols, not six semantic modules. A backend may contribute more than one specialization, and related symbols outside the top six are not silently merged.</p>
+        <div class="callout"><b>One-step repeatability limit.</b> Each configuration contributes one selected CUDA-graph generation—one computed decode token per sequence. It is a valid snapshot, but it contains no distribution across steps. Repeating steady decode can change context-scan work, routed-expert balance, TP-rank skew, clocks, and overlap. At <span class="math-var">B</span> = 100, fused MoE and FP8 quant differ by only 0.063 ms of eight-rank residency, so their #2/#3 order is not a stable conclusion until a repeated-step run reports a median and spread.</div>
       </section>
 
       <section class="panel" id="rank-matrix"><p class="eyebrow">Cross-batch view</p><h2>Rank matrix</h2>
@@ -156,7 +158,7 @@
     </table></div>
       </section>
 
-      <section id="batch-details"><div class="panel"><p class="eyebrow">Exact rankings</p><h2>Top six for each captured configuration</h2><p>Expand “raw symbol” to see the exact demangled key used for aggregation. Σ ms is eight-rank summed residency and can exceed the one-step wall envelope.</p></div><div class="batch-list"><article class="batch-card" id="batch-1">
+      <section id="batch-details"><div class="panel"><p class="eyebrow">Exact rankings</p><h2>Top six for each captured configuration</h2><p>Expand “raw symbol” to see the exact demangled key used for aggregation. Σ ms is eight-rank summed residency and can exceed the one-step wall envelope. The rightmost column lists every semantic home of that exact symbol in GPU 0’s batch-specific execution tree; each link opens the correct batch, expands its ancestors, and highlights the raw leaf. The launch-count identity below each list proves that no same-name occurrence was omitted.</p></div><div class="batch-list"><article class="batch-card" id="batch-1">
               <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 1</h3></div>
                 <div class="context-chip"><span class="math-var">T</span><sub>ctx</sub> = 4,096</div></header>
               <div class="batch-kpis">
@@ -164,43 +166,100 @@
                 <span><b>123.334 ms</b> eight-rank residency</span>
                 <span><b>50.16%</b> covered by top six</span>
               </div>
-              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th><th>GPU 0 execution-tree home(s)</th></tr></thead>
                 <tbody><tr>
                   <td><span class="rank-pill">1</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
                     <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
                   <td>14.228</td><td>11.54%</td>
                   <td>1,200</td><td>11.856</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=M2.4#one-rank-tree">
+                  <span class="tree-id">M2.4</span>
+                  <span>Shared and routed expert compute</span>
+                </a></div>
+                    <div class="tree-proof">150 GPU 0 launches × 8 ranks = 1,200 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">2</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_one_shot_push_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(&lt;unnamed&gt;::AllReducePushData, device::distributed::PushController)</code></details></td>
                   <td>13.007</td><td>10.55%</td>
                   <td>16</td><td>812.948</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=S2.1#one-rank-tree">
+                  <span class="tree-id">S2.1</span>
+                  <span>Initial TP rendezvous</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=M4.2#one-rank-tree">
+                  <span class="tree-id">M4.2</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">2 GPU 0 launches × 8 ranks = 16 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">3</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
                     <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code></details></td>
                   <td>10.580</td><td>8.58%</td>
                   <td>1,240</td><td>8.532</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=2.1.10.1#one-rank-tree">
+                  <span class="tree-id">2.1.10.1</span>
+                  <span>TP attention output handoff</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=D2.1#one-rank-tree">
+                  <span class="tree-id">D2.1</span>
+                  <span>Dense FFN TP reduction</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=M4.1#one-rank-tree">
+                  <span class="tree-id">M4.1</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">155 GPU 0 launches × 8 ranks = 1,240 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">4</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
                     <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)1, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
                   <td>9.172</td><td>7.44%</td>
                   <td>1,800</td><td>5.096</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=M1.1#one-rank-tree">
+                  <span class="tree-id">M1.1</span>
+                  <span>MoE routing and token alignment</span>
+                </a></div>
+                    <div class="tree-proof">225 GPU 0 launches × 8 ranks = 1,800 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">5</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code></details></td>
                   <td>7.648</td><td>6.20%</td>
                   <td>2,256</td><td>3.390</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=2.1.2.k1#one-rank-tree">
+                  <span class="tree-id">2.1.2.k1</span>
+                  <span>fused_qkv_a_proj_with_mqa</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=2.1.4.k1#one-rank-tree">
+                  <span class="tree-id">2.1.4.k1</span>
+                  <span>q_b_proj · expand all MLA queries</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=A1.2.k1#one-rank-tree">
+                  <span class="tree-id">A1.2.k1</span>
+                  <span>DSA index-key projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=A1.3.k1#one-rank-tree">
+                  <span class="tree-id">A1.3.k1</span>
+                  <span>DSA head-gate projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=2.1.9.k1#one-rank-tree">
+                  <span class="tree-id">2.1.9.k1</span>
+                  <span>Attention output projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=D1.1#one-rank-tree">
+                  <span class="tree-id">D1.1</span>
+                  <span>Dense FFN compute</span>
+                </a></div>
+                    <div class="tree-proof">282 GPU 0 launches × 8 ranks = 2,256 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">6</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#0369a1"></span>DeepGEMM</div>
                     <details><summary>raw symbol</summary><code>void deep_gemm::sm90_fp8_gemm_1d2d_impl&lt;(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)16, (unsigned int)32, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)16, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity&gt;(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)</code></details></td>
                   <td>7.229</td><td>5.86%</td>
                   <td>648</td><td>11.156</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=2.1.2.k2#one-rank-tree">
+                  <span class="tree-id">2.1.2.k2</span>
+                  <span>fused_qkv_a_proj_with_mqa</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=1&amp;view=native&amp;tree=D1.2#one-rank-tree">
+                  <span class="tree-id">D1.2</span>
+                  <span>Dense FFN compute</span>
+                </a></div>
+                    <div class="tree-proof">81 GPU 0 launches × 8 ranks = 648 ✓</div></td>
                 </tr></tbody></table></div>
             </article><article class="batch-card" id="batch-10">
               <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 10</h3></div>
@@ -210,43 +269,97 @@
                 <span><b>162.362 ms</b> eight-rank residency</span>
                 <span><b>59.21%</b> covered by top six</span>
               </div>
-              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th><th>GPU 0 execution-tree home(s)</th></tr></thead>
                 <tbody><tr>
                   <td><span class="rank-pill">1</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
                     <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
                   <td>33.489</td><td>20.63%</td>
                   <td>1,200</td><td>27.908</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=M2.4#one-rank-tree">
+                  <span class="tree-id">M2.4</span>
+                  <span>Shared and routed expert compute</span>
+                </a></div>
+                    <div class="tree-proof">150 GPU 0 launches × 8 ranks = 1,200 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">2</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_one_shot_push_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(&lt;unnamed&gt;::AllReducePushData, device::distributed::PushController)</code></details></td>
                   <td>18.189</td><td>11.20%</td>
                   <td>16</td><td>1136.796</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=S2.1#one-rank-tree">
+                  <span class="tree-id">S2.1</span>
+                  <span>Initial TP rendezvous</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=M4.2#one-rank-tree">
+                  <span class="tree-id">M4.2</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">2 GPU 0 launches × 8 ranks = 16 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">3</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
                     <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code></details></td>
                   <td>13.482</td><td>8.30%</td>
                   <td>1,240</td><td>10.873</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=2.1.10.1#one-rank-tree">
+                  <span class="tree-id">2.1.10.1</span>
+                  <span>TP attention output handoff</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=D2.1#one-rank-tree">
+                  <span class="tree-id">D2.1</span>
+                  <span>Dense FFN TP reduction</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=M4.1#one-rank-tree">
+                  <span class="tree-id">M4.1</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">155 GPU 0 launches × 8 ranks = 1,240 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">4</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
                     <details><summary>raw symbol</summary><code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code></details></td>
                   <td>11.366</td><td>7.00%</td>
                   <td>624</td><td>18.214</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=2.1.7.1#one-rank-tree">
+                  <span class="tree-id">2.1.7.1</span>
+                  <span>Selected sparse MLA scan</span>
+                </a></div>
+                    <div class="tree-proof">78 GPU 0 launches × 8 ranks = 624 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">5</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
                     <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
                   <td>10.315</td><td>6.35%</td>
                   <td>1,800</td><td>5.730</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=M1.1#one-rank-tree">
+                  <span class="tree-id">M1.1</span>
+                  <span>MoE routing and token alignment</span>
+                </a></div>
+                    <div class="tree-proof">225 GPU 0 launches × 8 ranks = 1,800 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">6</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code></details></td>
                   <td>9.293</td><td>5.72%</td>
                   <td>2,256</td><td>4.119</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=2.1.2.k1#one-rank-tree">
+                  <span class="tree-id">2.1.2.k1</span>
+                  <span>fused_qkv_a_proj_with_mqa</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=2.1.4.k1#one-rank-tree">
+                  <span class="tree-id">2.1.4.k1</span>
+                  <span>q_b_proj · expand all MLA queries</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=A1.2.k1#one-rank-tree">
+                  <span class="tree-id">A1.2.k1</span>
+                  <span>DSA index-key projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=A1.3.k1#one-rank-tree">
+                  <span class="tree-id">A1.3.k1</span>
+                  <span>DSA head-gate projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=2.1.9.k1#one-rank-tree">
+                  <span class="tree-id">2.1.9.k1</span>
+                  <span>Attention output projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=10&amp;view=native&amp;tree=D1.1#one-rank-tree">
+                  <span class="tree-id">D1.1</span>
+                  <span>Dense FFN compute</span>
+                </a></div>
+                    <div class="tree-proof">282 GPU 0 launches × 8 ranks = 2,256 ✓</div></td>
                 </tr></tbody></table></div>
             </article><article class="batch-card" id="batch-100">
               <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 100</h3></div>
@@ -256,43 +369,97 @@
                 <span><b>405.201 ms</b> eight-rank residency</span>
                 <span><b>80.21%</b> covered by top six</span>
               </div>
-              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th><th>GPU 0 execution-tree home(s)</th></tr></thead>
                 <tbody><tr>
                   <td><span class="rank-pill">1</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
                     <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code></details></td>
                   <td>87.461</td><td>21.58%</td>
                   <td>1,240</td><td>70.533</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.10.1#one-rank-tree">
+                  <span class="tree-id">2.1.10.1</span>
+                  <span>TP attention output handoff</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=D2.1#one-rank-tree">
+                  <span class="tree-id">D2.1</span>
+                  <span>Dense FFN TP reduction</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M4.1#one-rank-tree">
+                  <span class="tree-id">M4.1</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">155 GPU 0 launches × 8 ranks = 1,240 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">2</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
                     <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
                   <td>66.952</td><td>16.52%</td>
                   <td>1,200</td><td>55.793</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M2.4#one-rank-tree">
+                  <span class="tree-id">M2.4</span>
+                  <span>Shared and routed expert compute</span>
+                </a></div>
+                    <div class="tree-proof">150 GPU 0 launches × 8 ranks = 1,200 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">3</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code></details></td>
                   <td>66.889</td><td>16.51%</td>
                   <td>2,256</td><td>29.649</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.2.k1#one-rank-tree">
+                  <span class="tree-id">2.1.2.k1</span>
+                  <span>fused_qkv_a_proj_with_mqa</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.4.k1#one-rank-tree">
+                  <span class="tree-id">2.1.4.k1</span>
+                  <span>q_b_proj · expand all MLA queries</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=A1.2.k1#one-rank-tree">
+                  <span class="tree-id">A1.2.k1</span>
+                  <span>DSA index-key projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=A1.3.k1#one-rank-tree">
+                  <span class="tree-id">A1.3.k1</span>
+                  <span>DSA head-gate projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.9.k1#one-rank-tree">
+                  <span class="tree-id">2.1.9.k1</span>
+                  <span>Attention output projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=D1.1#one-rank-tree">
+                  <span class="tree-id">D1.1</span>
+                  <span>Dense FFN compute</span>
+                </a></div>
+                    <div class="tree-proof">282 GPU 0 launches × 8 ranks = 2,256 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">4</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
                     <details><summary>raw symbol</summary><code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code></details></td>
                   <td>64.652</td><td>15.96%</td>
                   <td>624</td><td>103.609</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.7.1#one-rank-tree">
+                  <span class="tree-id">2.1.7.1</span>
+                  <span>Selected sparse MLA scan</span>
+                </a></div>
+                    <div class="tree-proof">78 GPU 0 launches × 8 ranks = 624 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">5</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_two_shot_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(const host::distributed::AllReduceData *, &lt;unnamed&gt;::AllReduceParams, device::distributed::PullController)</code></details></td>
                   <td>28.021</td><td>6.92%</td>
                   <td>16</td><td>1751.329</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=S2.1#one-rank-tree">
+                  <span class="tree-id">S2.1</span>
+                  <span>Initial TP rendezvous</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M4.2#one-rank-tree">
+                  <span class="tree-id">M4.2</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">2 GPU 0 launches × 8 ranks = 16 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">6</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
                     <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
                   <td>11.054</td><td>2.73%</td>
                   <td>1,800</td><td>6.141</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M1.1#one-rank-tree">
+                  <span class="tree-id">M1.1</span>
+                  <span>MoE routing and token alignment</span>
+                </a></div>
+                    <div class="tree-proof">225 GPU 0 launches × 8 ranks = 1,800 ✓</div></td>
                 </tr></tbody></table></div>
             </article><article class="batch-card" id="batch-200">
               <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 200</h3></div>
@@ -302,43 +469,97 @@
                 <span><b>396.816 ms</b> eight-rank residency</span>
                 <span><b>77.57%</b> covered by top six</span>
               </div>
-              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th><th>GPU 0 execution-tree home(s)</th></tr></thead>
                 <tbody><tr>
                   <td><span class="rank-pill">1</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
                     <details><summary>raw symbol</summary><code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code></details></td>
                   <td>98.272</td><td>24.77%</td>
                   <td>624</td><td>157.488</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=2.1.7.1#one-rank-tree">
+                  <span class="tree-id">2.1.7.1</span>
+                  <span>Selected sparse MLA scan</span>
+                </a></div>
+                    <div class="tree-proof">78 GPU 0 launches × 8 ranks = 624 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">2</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
                     <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code></details></td>
                   <td>88.282</td><td>22.25%</td>
                   <td>1,240</td><td>71.195</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=2.1.10.1#one-rank-tree">
+                  <span class="tree-id">2.1.10.1</span>
+                  <span>TP attention output handoff</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=D2.1#one-rank-tree">
+                  <span class="tree-id">D2.1</span>
+                  <span>Dense FFN TP reduction</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=M4.1#one-rank-tree">
+                  <span class="tree-id">M4.1</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">155 GPU 0 launches × 8 ranks = 1,240 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">3</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
                     <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
                   <td>57.091</td><td>14.39%</td>
                   <td>1,200</td><td>47.576</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=M2.4#one-rank-tree">
+                  <span class="tree-id">M2.4</span>
+                  <span>Shared and routed expert compute</span>
+                </a></div>
+                    <div class="tree-proof">150 GPU 0 launches × 8 ranks = 1,200 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">4</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_two_shot_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(const host::distributed::AllReduceData *, &lt;unnamed&gt;::AllReduceParams, device::distributed::PullController)</code></details></td>
                   <td>29.198</td><td>7.36%</td>
                   <td>16</td><td>1824.894</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=S2.1#one-rank-tree">
+                  <span class="tree-id">S2.1</span>
+                  <span>Initial TP rendezvous</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=M4.2#one-rank-tree">
+                  <span class="tree-id">M4.2</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">2 GPU 0 launches × 8 ranks = 16 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">5</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#be123c"></span>FP8 quant</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code></details></td>
                   <td>23.714</td><td>5.98%</td>
                   <td>2,256</td><td>10.511</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=2.1.2.k1#one-rank-tree">
+                  <span class="tree-id">2.1.2.k1</span>
+                  <span>fused_qkv_a_proj_with_mqa</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=2.1.4.k1#one-rank-tree">
+                  <span class="tree-id">2.1.4.k1</span>
+                  <span>q_b_proj · expand all MLA queries</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=A1.2.k1#one-rank-tree">
+                  <span class="tree-id">A1.2.k1</span>
+                  <span>DSA index-key projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=A1.3.k1#one-rank-tree">
+                  <span class="tree-id">A1.3.k1</span>
+                  <span>DSA head-gate projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=2.1.9.k1#one-rank-tree">
+                  <span class="tree-id">2.1.9.k1</span>
+                  <span>Attention output projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=D1.1#one-rank-tree">
+                  <span class="tree-id">D1.1</span>
+                  <span>Dense FFN compute</span>
+                </a></div>
+                    <div class="tree-proof">282 GPU 0 launches × 8 ranks = 2,256 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">6</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
                     <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
                   <td>11.264</td><td>2.84%</td>
                   <td>1,800</td><td>6.258</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=200&amp;view=native&amp;tree=M1.1#one-rank-tree">
+                  <span class="tree-id">M1.1</span>
+                  <span>MoE routing and token alignment</span>
+                </a></div>
+                    <div class="tree-proof">225 GPU 0 launches × 8 ranks = 1,800 ✓</div></td>
                 </tr></tbody></table></div>
             </article><article class="batch-card" id="batch-500">
               <header><div><p class="eyebrow">Captured configuration</p><h3><span class="math-var">B</span> = 500</h3></div>
@@ -348,43 +569,85 @@
                 <span><b>633.155 ms</b> eight-rank residency</span>
                 <span><b>80.24%</b> covered by top six</span>
               </div>
-              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th></tr></thead>
+              <div class="table-wrap"><table class="kernel-table"><thead><tr><th>#</th><th>Kernel family / exact symbol</th><th>Σ ms</th><th>Share</th><th>Launches</th><th>Mean µs</th><th>GPU 0 execution-tree home(s)</th></tr></thead>
                 <tbody><tr>
                   <td><span class="rank-pill">1</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#0f766e"></span>Sparse MLA</div>
                     <details><summary>raw symbol</summary><code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code></details></td>
                   <td>226.900</td><td>35.84%</td>
                   <td>624</td><td>363.622</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=2.1.7.1#one-rank-tree">
+                  <span class="tree-id">2.1.7.1</span>
+                  <span>Selected sparse MLA scan</span>
+                </a></div>
+                    <div class="tree-proof">78 GPU 0 launches × 8 ranks = 624 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">2</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#7c3aed"></span>Fused MoE</div>
                     <details><summary>raw symbol</summary><code>fused_moe_kernel</code></details></td>
                   <td>109.570</td><td>17.31%</td>
                   <td>1,200</td><td>91.309</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=M2.4#one-rank-tree">
+                  <span class="tree-id">M2.4</span>
+                  <span>Shared and routed expert compute</span>
+                </a></div>
+                    <div class="tree-proof">150 GPU 0 launches × 8 ranks = 1,200 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">3</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#2563eb"></span>Fused AR + norm</div>
                     <details><summary>raw symbol</summary><code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_twoshot_sync&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;, std::array&lt;int, T3&gt;, std::array&lt;int, T3&gt;)</code></details></td>
                   <td>96.952</td><td>15.31%</td>
                   <td>1,240</td><td>78.187</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=2.1.10.1#one-rank-tree">
+                  <span class="tree-id">2.1.10.1</span>
+                  <span>TP attention output handoff</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=D2.1#one-rank-tree">
+                  <span class="tree-id">D2.1</span>
+                  <span>Dense FFN TP reduction</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=M4.1#one-rank-tree">
+                  <span class="tree-id">M4.1</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">155 GPU 0 launches × 8 ranks = 1,240 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">4</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#b45309"></span>Custom AR</div>
                     <details><summary>raw symbol</summary><code>void &lt;unnamed&gt;::all_reduce_two_shot_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(const host::distributed::AllReduceData *, &lt;unnamed&gt;::AllReduceParams, device::distributed::PullController)</code></details></td>
                   <td>32.531</td><td>5.14%</td>
                   <td>16</td><td>2033.161</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=S2.1#one-rank-tree">
+                  <span class="tree-id">S2.1</span>
+                  <span>Initial TP rendezvous</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=M4.2#one-rank-tree">
+                  <span class="tree-id">M4.2</span>
+                  <span>MoE FFN TP reduction</span>
+                </a></div>
+                    <div class="tree-proof">2 GPU 0 launches × 8 ranks = 16 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">5</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#0369a1"></span>DeepGEMM</div>
                     <details><summary>raw symbol</summary><code>void deep_gemm::sm90_fp8_gemm_1d2d_impl&lt;(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)128, (unsigned int)192, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)4, (unsigned int)128, (unsigned int)256, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity&gt;(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)</code></details></td>
                   <td>26.814</td><td>4.23%</td>
                   <td>648</td><td>41.379</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=2.1.9.k2#one-rank-tree">
+                  <span class="tree-id">2.1.9.k2</span>
+                  <span>Attention output projection</span>
+                </a><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=D1.4#one-rank-tree">
+                  <span class="tree-id">D1.4</span>
+                  <span>Dense FFN compute</span>
+                </a></div>
+                    <div class="tree-proof">81 GPU 0 launches × 8 ranks = 648 ✓</div></td>
                 </tr><tr>
                   <td><span class="rank-pill">6</span></td>
                   <td><div class="kernel-family"><span class="family-dot" style="--family:#475569"></span>PyTorch TopK</div>
                     <details><summary>raw symbol</summary><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></details></td>
                   <td>15.274</td><td>2.41%</td>
                   <td>1,800</td><td>8.486</td>
+                  <td><div class="tree-home-list"><a class="tree-home" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=500&amp;view=native&amp;tree=M1.1#one-rank-tree">
+                  <span class="tree-id">M1.1</span>
+                  <span>MoE routing and token alignment</span>
+                </a></div>
+                    <div class="tree-proof">225 GPU 0 launches × 8 ranks = 1,800 ✓</div></td>
                 </tr></tbody></table></div>
             </article></div></section>
 
@@ -470,6 +733,6 @@
       </section>
     </main>
   </div>
-  <footer>Generated from capture-normalized data · 2026-08-07T10:45:51.832225+00:00 · no external runtime dependencies</footer>
+  <footer>Generated from capture-normalized data · 2026-08-11T03:27:45.268011+00:00 · no external runtime dependencies</footer>
 </body>
 </html>

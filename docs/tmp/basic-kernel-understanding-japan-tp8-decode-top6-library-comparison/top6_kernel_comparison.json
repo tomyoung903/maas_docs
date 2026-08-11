@@ -1,6 +1,6 @@
 {
-  "schema_version": "top6-kernel-library-comparison-v1",
-  "generated_at": "2026-08-07T10:45:51.832225+00:00",
+  "schema_version": "top6-kernel-library-comparison-v2",
+  "generated_at": "2026-08-11T03:27:45.268011+00:00",
   "source_schema_version": "1.0",
   "source_generated_at": "2026-08-04T07:25:13.361060+00:00",
   "scope": {
@@ -16,7 +16,9 @@
       "pp": 1
     },
     "precision": "FP8",
-    "boundary": "One selected useful decode CUDA-graph generation, exact raw-name subtotals, all eight TP ranks summed."
+    "boundary": "One selected useful decode CUDA-graph generation, exact raw-name subtotals, all eight TP ranks summed.",
+    "repeatability": "A one-step snapshot has no step-to-step distribution; repeat steady decode generations before treating close ranks as stable.",
+    "tree_mapping": "Exact raw-name matches against the batch-specific GPU 0 tree; mapped GPU 0 launch counts must reconcile after multiplication by the eight observed graph ranks."
   },
   "batches": [
     {
@@ -40,7 +42,18 @@
           "launches": 1200,
           "residency_ms": 14.22756,
           "share_pct": 11.535758,
-          "mean_us": 11.8563
+          "mean_us": 11.8563,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 2,
@@ -54,7 +67,24 @@
           "launches": 16,
           "residency_ms": 13.007169,
           "share_pct": 10.546261,
-          "mean_us": 812.948062
+          "mean_us": 812.948062,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 3,
@@ -68,7 +98,30 @@
           "launches": 1240,
           "residency_ms": 10.580027,
           "share_pct": 8.578325,
-          "mean_us": 8.53228
+          "mean_us": 8.53228,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 4,
@@ -82,7 +135,18 @@
           "launches": 1800,
           "residency_ms": 9.172028,
           "share_pct": 7.436714,
-          "mean_us": 5.095571
+          "mean_us": 5.095571,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 5,
@@ -96,7 +160,48 @@
           "launches": 2256,
           "residency_ms": 7.648474,
           "share_pct": 6.201411,
-          "mean_us": 3.390281
+          "mean_us": 3.390281,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k1",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "2.1.4.k1",
+              "operation_id": "2.1.4",
+              "operation": "q_b_proj · expand all MLA queries",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "A1.2.k1",
+              "operation_id": "A1.2",
+              "operation": "DSA index-key projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "A1.3.k1",
+              "operation_id": "A1.3",
+              "operation": "DSA head-gate projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "2.1.9.k1",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.1",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 6
+            }
+          ],
+          "tree_gpu0_launches": 282,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 6,
@@ -110,7 +215,24 @@
           "launches": 648,
           "residency_ms": 7.229174,
           "share_pct": 5.861441,
-          "mean_us": 11.156133
+          "mean_us": 11.156133,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k2",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.2",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 3
+            }
+          ],
+          "tree_gpu0_launches": 81,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -135,7 +257,18 @@
           "launches": 1200,
           "residency_ms": 33.489184,
           "share_pct": 20.626262,
-          "mean_us": 27.907653
+          "mean_us": 27.907653,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 2,
@@ -149,7 +282,24 @@
           "launches": 16,
           "residency_ms": 18.188736,
           "share_pct": 11.202591,
-          "mean_us": 1136.796
+          "mean_us": 1136.796,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 3,
@@ -163,7 +313,30 @@
           "launches": 1240,
           "residency_ms": 13.482358,
           "share_pct": 8.303895,
-          "mean_us": 10.872869
+          "mean_us": 10.872869,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 4,
@@ -177,7 +350,18 @@
           "launches": 624,
           "residency_ms": 11.365644,
           "share_pct": 7.000193,
-          "mean_us": 18.214173
+          "mean_us": 18.214173,
+          "tree_matches": [
+            {
+              "node_id": "2.1.7.1",
+              "operation_id": "2.1.7",
+              "operation": "Selected sparse MLA scan",
+              "gpu0_launches": 78
+            }
+          ],
+          "tree_gpu0_launches": 78,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 5,
@@ -191,7 +375,18 @@
           "launches": 1800,
           "residency_ms": 10.314683,
           "share_pct": 6.352898,
-          "mean_us": 5.730379
+          "mean_us": 5.730379,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 6,
@@ -205,7 +400,48 @@
           "launches": 2256,
           "residency_ms": 9.293468,
           "share_pct": 5.723923,
-          "mean_us": 4.119445
+          "mean_us": 4.119445,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k1",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "2.1.4.k1",
+              "operation_id": "2.1.4",
+              "operation": "q_b_proj · expand all MLA queries",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "A1.2.k1",
+              "operation_id": "A1.2",
+              "operation": "DSA index-key projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "A1.3.k1",
+              "operation_id": "A1.3",
+              "operation": "DSA head-gate projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "2.1.9.k1",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.1",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 6
+            }
+          ],
+          "tree_gpu0_launches": 282,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -230,7 +466,30 @@
           "launches": 1240,
           "residency_ms": 87.461062,
           "share_pct": 21.584612,
-          "mean_us": 70.533115
+          "mean_us": 70.533115,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 2,
@@ -244,7 +503,18 @@
           "launches": 1200,
           "residency_ms": 66.951954,
           "share_pct": 16.523147,
-          "mean_us": 55.793295
+          "mean_us": 55.793295,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 3,
@@ -258,7 +528,48 @@
           "launches": 2256,
           "residency_ms": 66.88888,
           "share_pct": 16.507581,
-          "mean_us": 29.649326
+          "mean_us": 29.649326,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k1",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "2.1.4.k1",
+              "operation_id": "2.1.4",
+              "operation": "q_b_proj · expand all MLA queries",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "A1.2.k1",
+              "operation_id": "A1.2",
+              "operation": "DSA index-key projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "A1.3.k1",
+              "operation_id": "A1.3",
+              "operation": "DSA head-gate projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "2.1.9.k1",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.1",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 6
+            }
+          ],
+          "tree_gpu0_launches": 282,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 4,
@@ -272,7 +583,18 @@
           "launches": 624,
           "residency_ms": 64.651749,
           "share_pct": 15.955477,
-          "mean_us": 103.608572
+          "mean_us": 103.608572,
+          "tree_matches": [
+            {
+              "node_id": "2.1.7.1",
+              "operation_id": "2.1.7",
+              "operation": "Selected sparse MLA scan",
+              "gpu0_launches": 78
+            }
+          ],
+          "tree_gpu0_launches": 78,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 5,
@@ -286,7 +608,24 @@
           "launches": 16,
           "residency_ms": 28.021265,
           "share_pct": 6.915399,
-          "mean_us": 1751.329062
+          "mean_us": 1751.329062,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 6,
@@ -300,7 +639,18 @@
           "launches": 1800,
           "residency_ms": 11.05439,
           "share_pct": 2.728125,
-          "mean_us": 6.141328
+          "mean_us": 6.141328,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -325,7 +675,18 @@
           "launches": 624,
           "residency_ms": 98.272273,
           "share_pct": 24.765182,
-          "mean_us": 157.487617
+          "mean_us": 157.487617,
+          "tree_matches": [
+            {
+              "node_id": "2.1.7.1",
+              "operation_id": "2.1.7",
+              "operation": "Selected sparse MLA scan",
+              "gpu0_launches": 78
+            }
+          ],
+          "tree_gpu0_launches": 78,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 2,
@@ -339,7 +700,30 @@
           "launches": 1240,
           "residency_ms": 88.281648,
           "share_pct": 22.247486,
-          "mean_us": 71.194877
+          "mean_us": 71.194877,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 3,
@@ -353,7 +737,18 @@
           "launches": 1200,
           "residency_ms": 57.091322,
           "share_pct": 14.387344,
-          "mean_us": 47.576102
+          "mean_us": 47.576102,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 4,
@@ -367,7 +762,24 @@
           "launches": 16,
           "residency_ms": 29.198297,
           "share_pct": 7.35814,
-          "mean_us": 1824.893562
+          "mean_us": 1824.893562,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 5,
@@ -381,7 +793,48 @@
           "launches": 2256,
           "residency_ms": 23.713722,
           "share_pct": 5.975995,
-          "mean_us": 10.511402
+          "mean_us": 10.511402,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k1",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "2.1.4.k1",
+              "operation_id": "2.1.4",
+              "operation": "q_b_proj · expand all MLA queries",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "A1.2.k1",
+              "operation_id": "A1.2",
+              "operation": "DSA index-key projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "A1.3.k1",
+              "operation_id": "A1.3",
+              "operation": "DSA head-gate projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "2.1.9.k1",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.1",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 6
+            }
+          ],
+          "tree_gpu0_launches": 282,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 6,
@@ -395,7 +848,18 @@
           "launches": 1800,
           "residency_ms": 11.263965,
           "share_pct": 2.838584,
-          "mean_us": 6.257758
+          "mean_us": 6.257758,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -420,7 +884,18 @@
           "launches": 624,
           "residency_ms": 226.9,
           "share_pct": 35.836424,
-          "mean_us": 363.621795
+          "mean_us": 363.621795,
+          "tree_matches": [
+            {
+              "node_id": "2.1.7.1",
+              "operation_id": "2.1.7",
+              "operation": "Selected sparse MLA scan",
+              "gpu0_launches": 78
+            }
+          ],
+          "tree_gpu0_launches": 78,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 2,
@@ -434,7 +909,18 @@
           "launches": 1200,
           "residency_ms": 109.570301,
           "share_pct": 17.305455,
-          "mean_us": 91.308584
+          "mean_us": 91.308584,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 3,
@@ -448,7 +934,30 @@
           "launches": 1240,
           "residency_ms": 96.952268,
           "share_pct": 15.312572,
-          "mean_us": 78.187313
+          "mean_us": 78.187313,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 4,
@@ -462,7 +971,24 @@
           "launches": 16,
           "residency_ms": 32.530582,
           "share_pct": 5.137857,
-          "mean_us": 2033.161375
+          "mean_us": 2033.161375,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 5,
@@ -476,7 +1002,24 @@
           "launches": 648,
           "residency_ms": 26.813545,
           "share_pct": 4.234912,
-          "mean_us": 41.378927
+          "mean_us": 41.378927,
+          "tree_matches": [
+            {
+              "node_id": "2.1.9.k2",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.4",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 3
+            }
+          ],
+          "tree_gpu0_launches": 81,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "rank": 6,
@@ -490,7 +1033,18 @@
           "launches": 1800,
           "residency_ms": 15.274099,
           "share_pct": 2.41238,
-          "mean_us": 8.485611
+          "mean_us": 8.485611,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     }
@@ -532,7 +1086,18 @@
           "launches": 624,
           "residency_ms": 11.365644,
           "share_pct": 7.000193,
-          "mean_us": 18.214173
+          "mean_us": 18.214173,
+          "tree_matches": [
+            {
+              "node_id": "2.1.7.1",
+              "operation_id": "2.1.7",
+              "operation": "Selected sparse MLA scan",
+              "gpu0_launches": 78
+            }
+          ],
+          "tree_gpu0_launches": 78,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 100,
@@ -547,7 +1112,18 @@
           "launches": 624,
           "residency_ms": 64.651749,
           "share_pct": 15.955477,
-          "mean_us": 103.608572
+          "mean_us": 103.608572,
+          "tree_matches": [
+            {
+              "node_id": "2.1.7.1",
+              "operation_id": "2.1.7",
+              "operation": "Selected sparse MLA scan",
+              "gpu0_launches": 78
+            }
+          ],
+          "tree_gpu0_launches": 78,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 200,
@@ -562,7 +1138,18 @@
           "launches": 624,
           "residency_ms": 98.272273,
           "share_pct": 24.765182,
-          "mean_us": 157.487617
+          "mean_us": 157.487617,
+          "tree_matches": [
+            {
+              "node_id": "2.1.7.1",
+              "operation_id": "2.1.7",
+              "operation": "Selected sparse MLA scan",
+              "gpu0_launches": 78
+            }
+          ],
+          "tree_gpu0_launches": 78,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 500,
@@ -577,7 +1164,18 @@
           "launches": 624,
           "residency_ms": 226.9,
           "share_pct": 35.836424,
-          "mean_us": 363.621795
+          "mean_us": 363.621795,
+          "tree_matches": [
+            {
+              "node_id": "2.1.7.1",
+              "operation_id": "2.1.7",
+              "operation": "Selected sparse MLA scan",
+              "gpu0_launches": 78
+            }
+          ],
+          "tree_gpu0_launches": 78,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -617,7 +1215,30 @@
           "launches": 1240,
           "residency_ms": 10.580027,
           "share_pct": 8.578325,
-          "mean_us": 8.53228
+          "mean_us": 8.53228,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 10,
@@ -632,7 +1253,30 @@
           "launches": 1240,
           "residency_ms": 13.482358,
           "share_pct": 8.303895,
-          "mean_us": 10.872869
+          "mean_us": 10.872869,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 100,
@@ -647,7 +1291,30 @@
           "launches": 1240,
           "residency_ms": 87.461062,
           "share_pct": 21.584612,
-          "mean_us": 70.533115
+          "mean_us": 70.533115,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 200,
@@ -662,7 +1329,30 @@
           "launches": 1240,
           "residency_ms": 88.281648,
           "share_pct": 22.247486,
-          "mean_us": 71.194877
+          "mean_us": 71.194877,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 500,
@@ -677,7 +1367,30 @@
           "launches": 1240,
           "residency_ms": 96.952268,
           "share_pct": 15.312572,
-          "mean_us": 78.187313
+          "mean_us": 78.187313,
+          "tree_matches": [
+            {
+              "node_id": "2.1.10.1",
+              "operation_id": "2.1.10",
+              "operation": "TP attention output handoff",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D2.1",
+              "operation_id": "D2",
+              "operation": "Dense FFN TP reduction",
+              "gpu0_launches": 3
+            },
+            {
+              "node_id": "M4.1",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 74
+            }
+          ],
+          "tree_gpu0_launches": 155,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -717,7 +1430,18 @@
           "launches": 1200,
           "residency_ms": 14.22756,
           "share_pct": 11.535758,
-          "mean_us": 11.8563
+          "mean_us": 11.8563,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 10,
@@ -732,7 +1456,18 @@
           "launches": 1200,
           "residency_ms": 33.489184,
           "share_pct": 20.626262,
-          "mean_us": 27.907653
+          "mean_us": 27.907653,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 100,
@@ -747,7 +1482,18 @@
           "launches": 1200,
           "residency_ms": 66.951954,
           "share_pct": 16.523147,
-          "mean_us": 55.793295
+          "mean_us": 55.793295,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 200,
@@ -762,7 +1508,18 @@
           "launches": 1200,
           "residency_ms": 57.091322,
           "share_pct": 14.387344,
-          "mean_us": 47.576102
+          "mean_us": 47.576102,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 500,
@@ -777,7 +1534,18 @@
           "launches": 1200,
           "residency_ms": 109.570301,
           "share_pct": 17.305455,
-          "mean_us": 91.308584
+          "mean_us": 91.308584,
+          "tree_matches": [
+            {
+              "node_id": "M2.4",
+              "operation_id": "M2",
+              "operation": "Shared and routed expert compute",
+              "gpu0_launches": 150
+            }
+          ],
+          "tree_gpu0_launches": 150,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -817,7 +1585,24 @@
           "launches": 16,
           "residency_ms": 13.007169,
           "share_pct": 10.546261,
-          "mean_us": 812.948062
+          "mean_us": 812.948062,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 10,
@@ -832,7 +1617,24 @@
           "launches": 16,
           "residency_ms": 18.188736,
           "share_pct": 11.202591,
-          "mean_us": 1136.796
+          "mean_us": 1136.796,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 100,
@@ -847,7 +1649,24 @@
           "launches": 16,
           "residency_ms": 28.021265,
           "share_pct": 6.915399,
-          "mean_us": 1751.329062
+          "mean_us": 1751.329062,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 200,
@@ -862,7 +1681,24 @@
           "launches": 16,
           "residency_ms": 29.198297,
           "share_pct": 7.35814,
-          "mean_us": 1824.893562
+          "mean_us": 1824.893562,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 500,
@@ -877,7 +1713,24 @@
           "launches": 16,
           "residency_ms": 32.530582,
           "share_pct": 5.137857,
-          "mean_us": 2033.161375
+          "mean_us": 2033.161375,
+          "tree_matches": [
+            {
+              "node_id": "S2.1",
+              "operation_id": "S2",
+              "operation": "Initial TP rendezvous",
+              "gpu0_launches": 1
+            },
+            {
+              "node_id": "M4.2",
+              "operation_id": "M4",
+              "operation": "MoE FFN TP reduction",
+              "gpu0_launches": 1
+            }
+          ],
+          "tree_gpu0_launches": 2,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -913,7 +1766,48 @@
           "launches": 2256,
           "residency_ms": 7.648474,
           "share_pct": 6.201411,
-          "mean_us": 3.390281
+          "mean_us": 3.390281,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k1",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "2.1.4.k1",
+              "operation_id": "2.1.4",
+              "operation": "q_b_proj · expand all MLA queries",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "A1.2.k1",
+              "operation_id": "A1.2",
+              "operation": "DSA index-key projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "A1.3.k1",
+              "operation_id": "A1.3",
+              "operation": "DSA head-gate projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "2.1.9.k1",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.1",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 6
+            }
+          ],
+          "tree_gpu0_launches": 282,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 10,
@@ -928,7 +1822,48 @@
           "launches": 2256,
           "residency_ms": 9.293468,
           "share_pct": 5.723923,
-          "mean_us": 4.119445
+          "mean_us": 4.119445,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k1",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "2.1.4.k1",
+              "operation_id": "2.1.4",
+              "operation": "q_b_proj · expand all MLA queries",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "A1.2.k1",
+              "operation_id": "A1.2",
+              "operation": "DSA index-key projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "A1.3.k1",
+              "operation_id": "A1.3",
+              "operation": "DSA head-gate projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "2.1.9.k1",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.1",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 6
+            }
+          ],
+          "tree_gpu0_launches": 282,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 100,
@@ -943,7 +1878,48 @@
           "launches": 2256,
           "residency_ms": 66.88888,
           "share_pct": 16.507581,
-          "mean_us": 29.649326
+          "mean_us": 29.649326,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k1",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "2.1.4.k1",
+              "operation_id": "2.1.4",
+              "operation": "q_b_proj · expand all MLA queries",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "A1.2.k1",
+              "operation_id": "A1.2",
+              "operation": "DSA index-key projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "A1.3.k1",
+              "operation_id": "A1.3",
+              "operation": "DSA head-gate projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "2.1.9.k1",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.1",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 6
+            }
+          ],
+          "tree_gpu0_launches": 282,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 200,
@@ -958,7 +1934,48 @@
           "launches": 2256,
           "residency_ms": 23.713722,
           "share_pct": 5.975995,
-          "mean_us": 10.511402
+          "mean_us": 10.511402,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k1",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "2.1.4.k1",
+              "operation_id": "2.1.4",
+              "operation": "q_b_proj · expand all MLA queries",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "A1.2.k1",
+              "operation_id": "A1.2",
+              "operation": "DSA index-key projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "A1.3.k1",
+              "operation_id": "A1.3",
+              "operation": "DSA head-gate projection",
+              "gpu0_launches": 21
+            },
+            {
+              "node_id": "2.1.9.k1",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.1",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 6
+            }
+          ],
+          "tree_gpu0_launches": 282,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -994,7 +2011,24 @@
           "launches": 648,
           "residency_ms": 7.229174,
           "share_pct": 5.861441,
-          "mean_us": 11.156133
+          "mean_us": 11.156133,
+          "tree_matches": [
+            {
+              "node_id": "2.1.2.k2",
+              "operation_id": "2.1.2",
+              "operation": "fused_qkv_a_proj_with_mqa",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.2",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 3
+            }
+          ],
+          "tree_gpu0_launches": 81,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 500,
@@ -1009,7 +2043,24 @@
           "launches": 648,
           "residency_ms": 26.813545,
           "share_pct": 4.234912,
-          "mean_us": 41.378927
+          "mean_us": 41.378927,
+          "tree_matches": [
+            {
+              "node_id": "2.1.9.k2",
+              "operation_id": "2.1.9",
+              "operation": "Attention output projection",
+              "gpu0_launches": 78
+            },
+            {
+              "node_id": "D1.4",
+              "operation_id": "D1",
+              "operation": "Dense FFN compute",
+              "gpu0_launches": 3
+            }
+          ],
+          "tree_gpu0_launches": 81,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     },
@@ -1041,7 +2092,18 @@
           "launches": 1800,
           "residency_ms": 9.172028,
           "share_pct": 7.436714,
-          "mean_us": 5.095571
+          "mean_us": 5.095571,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 10,
@@ -1056,7 +2118,18 @@
           "launches": 1800,
           "residency_ms": 10.314683,
           "share_pct": 6.352898,
-          "mean_us": 5.730379
+          "mean_us": 5.730379,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 100,
@@ -1071,7 +2144,18 @@
           "launches": 1800,
           "residency_ms": 11.05439,
           "share_pct": 2.728125,
-          "mean_us": 6.141328
+          "mean_us": 6.141328,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 200,
@@ -1086,7 +2170,18 @@
           "launches": 1800,
           "residency_ms": 11.263965,
           "share_pct": 2.838584,
-          "mean_us": 6.257758
+          "mean_us": 6.257758,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         },
         {
           "batch": 500,
@@ -1101,7 +2196,18 @@
           "launches": 1800,
           "residency_ms": 15.274099,
           "share_pct": 2.41238,
-          "mean_us": 8.485611
+          "mean_us": 8.485611,
+          "tree_matches": [
+            {
+              "node_id": "M1.1",
+              "operation_id": "M1",
+              "operation": "MoE routing and token alignment",
+              "gpu0_launches": 225
+            }
+          ],
+          "tree_gpu0_launches": 225,
+          "tree_rank_count": 8,
+          "tree_launches_reconciled": true
         }
       ]
     }
