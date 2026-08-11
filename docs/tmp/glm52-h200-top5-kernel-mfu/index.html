@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Evidence-backed H200 kernel-family MFU audit for one uncached GLM-5.2 PP8 prefill request.">
+  <title>GLM-5.2 H200 Top-Five Kernel MFU Audit</title>
+  <style>
+    :root {
+      --ink: #17202a; --muted: #59636e; --line: #d9dee3; --soft: #f5f7f8;
+      --paper: #ffffff; --nav: #111820; --teal: #007c78; --green: #2f7d4c;
+      --amber: #a45f00; --red: #a13a34; --blue: #2465a8; --violet: #6f4aa8;
+      --rail: 216px; --content: 1120px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font: 15px/1.58 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; }
+    a { color: #075fa7; text-underline-offset: 3px; }
+    code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .88em; overflow-wrap: anywhere; }
+    .topbar { position: sticky; top: 0; z-index: 20; height: 54px; background: var(--nav); color: white; border-bottom: 1px solid #273341; }
+    .topbar-inner { max-width: 1420px; height: 100%; margin: auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { font-weight: 700; font-size: 14px; }
+    .top-meta { color: #b9c4ce; font-size: 12px; text-align: right; }
+    header { border-bottom: 1px solid var(--line); background: #f8fafb; }
+    .header-inner { max-width: 1420px; margin: auto; padding: 42px 24px 34px; }
+    .eyebrow { color: var(--teal); font-weight: 750; text-transform: uppercase; font-size: 12px; letter-spacing: .08em; }
+    h1 { max-width: 980px; margin: 7px 0 10px; font-size: clamp(30px, 4vw, 48px); line-height: 1.08; letter-spacing: 0; }
+    .lede { max-width: 960px; margin: 0; color: var(--muted); font-size: 18px; }
+    .layout { max-width: 1420px; margin: auto; padding: 28px 24px 72px; display: grid; grid-template-columns: var(--rail) minmax(0, var(--content)); gap: 38px; align-items: start; }
+    aside { position: sticky; top: 78px; border-left: 3px solid #c9d2d9; padding: 3px 0 3px 16px; }
+    aside strong { display: block; margin-bottom: 9px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    aside a { display: block; padding: 5px 0; color: #3e4954; text-decoration: none; font-size: 13px; }
+    aside a:hover { color: var(--teal); }
+    main { min-width: 0; }
+    section { padding: 10px 0 34px; border-bottom: 1px solid var(--line); }
+    section + section { padding-top: 34px; }
+    h2 { margin: 0 0 10px; font-size: 26px; line-height: 1.2; letter-spacing: 0; }
+    h3 { margin: 28px 0 8px; font-size: 18px; line-height: 1.3; letter-spacing: 0; }
+    p { margin: 8px 0 14px; }
+    .section-lede { color: var(--muted); max-width: 920px; font-size: 16px; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+    .stat { border: 1px solid var(--line); border-top: 4px solid var(--blue); border-radius: 6px; padding: 16px; min-height: 126px; }
+    .stat.good { border-top-color: var(--green); } .stat.warn { border-top-color: var(--amber); } .stat.bad { border-top-color: var(--red); }
+    .stat-label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .stat-value { margin: 4px 0; font-size: 30px; font-weight: 760; font-variant-numeric: tabular-nums; }
+    .stat-note { color: var(--muted); font-size: 13px; }
+    .verdict { border-left: 5px solid var(--amber); background: #fff8ed; padding: 17px 20px; margin: 18px 0; }
+    .verdict strong { display: block; margin-bottom: 4px; font-size: 17px; }
+    .note { border-left: 4px solid var(--blue); background: #f3f7fb; padding: 14px 17px; margin: 16px 0; }
+    .note.warning { border-color: var(--amber); background: #fff8ed; }
+    .note.ok { border-color: var(--green); background: #f1f8f3; }
+    .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 10px 11px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+    th { background: var(--soft); color: #3b4651; font-size: 12px; text-transform: uppercase; }
+    tbody tr:last-child td { border-bottom: 0; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    td.rank { width: 38px; color: var(--muted); font-weight: 700; text-align: center; }
+    td.mfu { color: var(--red); font-weight: 780; font-size: 17px; } td.mfu.na { color: var(--muted); font-size: 14px; }
+    .hash, .small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .bar-track { width: 160px; max-width: 100%; height: 8px; margin: 5px 0; background: #e8ecef; border-radius: 2px; overflow: hidden; }
+    .bar-track span { display: block; height: 100%; background: var(--teal); }
+    .equations { display: grid; gap: 10px; margin: 17px 0; }
+    .equation { border: 1px solid var(--line); background: #fbfcfc; border-radius: 5px; padding: 14px 16px; overflow-x: auto; }
+    .equation-main { display: grid; grid-template-columns: minmax(110px, auto) 22px minmax(300px, 1fr) auto; gap: 10px; align-items: baseline; white-space: nowrap; }
+    .equation-lhs { font-family: Georgia, serif; font-style: italic; font-weight: 700; }
+    .equation-equals { color: var(--muted); }
+    .equation-expression { font-family: Georgia, serif; }
+    .equation-result { color: var(--teal); font-size: 18px; font-weight: 780; }
+    .equation-note { margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin: 20px 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+    .flow-step { position: relative; min-height: 130px; padding: 14px; border-right: 1px solid var(--line); background: #fff; }
+    .flow-step:last-child { border-right: 0; }
+    .flow-step .n { color: var(--teal); font-size: 21px; font-weight: 780; }
+    .flow-step strong { display: block; margin: 4px 0; }
+    .flow-step p { color: var(--muted); font-size: 12px; margin: 0; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 18px 0; }
+    .panel { border: 1px solid var(--line); border-radius: 6px; padding: 17px; }
+    .panel h3 { margin-top: 0; }
+    .resource-row { margin: 13px 0; }
+    .resource-label { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; }
+    .meter { height: 14px; background: #e8ecef; margin-top: 5px; overflow: hidden; border-radius: 2px; }
+    .meter span { height: 100%; display: block; background: var(--blue); }
+    .meter.amber span { background: var(--amber); } .meter.green span { background: var(--green); } .meter.violet span { background: var(--violet); }
+    .work-strip { display: grid; grid-template-columns: 43.636fr 56.364fr; height: 52px; border-radius: 5px; overflow: hidden; margin: 16px 0 7px; color: white; font-weight: 750; }
+    .work-strip div { display: flex; align-items: center; justify-content: center; padding: 6px; text-align: center; }
+    .work-useful { background: var(--green); } .work-padding { background: var(--red); }
+    .roofline { margin: 18px 0; padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: #fbfcfc; }
+    .roof-axis { position: relative; height: 72px; border-bottom: 2px solid #9ba6af; margin: 34px 10px 8px; }
+    .roof-axis::before { content: "0"; position: absolute; left: 0; bottom: -25px; color: var(--muted); font-size: 11px; }
+    .roof-axis::after { content: "100% H200 dense FP8 peak"; position: absolute; right: 0; bottom: -25px; color: var(--muted); font-size: 11px; }
+    .roof-marker { position: absolute; bottom: 0; width: 2px; height: var(--h); background: var(--c); left: var(--x); }
+    .roof-marker span { position: absolute; bottom: calc(var(--h) + 5px); left: 50%; transform: translateX(-50%); width: 116px; text-align: center; color: var(--c); font-size: 12px; font-weight: 750; }
+    .status { display: inline-block; padding: 2px 7px; border-radius: 3px; background: #eaf5ed; color: var(--green); font-size: 11px; font-weight: 750; text-transform: uppercase; white-space: nowrap; }
+    .status.lower-bound, .status.accepted-representative { background: #fff1db; color: var(--amber); } .status.rejected-for-timing { background: #fbe9e8; color: var(--red); }
+    details { margin: 12px 0; border: 1px solid var(--line); border-radius: 5px; }
+    summary { cursor: pointer; padding: 12px 14px; font-weight: 700; background: var(--soft); }
+    details > div { padding: 14px; }
+    pre { margin: 0; padding: 14px; background: #111820; color: #e8eef3; overflow-x: auto; border-radius: 4px; line-height: 1.5; }
+    .sources table { min-width: 920px; } .sources td:last-child { font-size: 11px; }
+    footer { border-top: 1px solid var(--line); color: var(--muted); background: var(--soft); }
+    footer div { max-width: 1420px; margin: auto; padding: 22px 24px; font-size: 12px; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; gap: 18px; } aside { position: static; display: grid; grid-template-columns: repeat(2, 1fr); border: 1px solid var(--line); padding: 12px 14px; } aside strong { grid-column: 1 / -1; }
+      .stats, .split { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr; } .flow-step { border-right: 0; border-bottom: 1px solid var(--line); } .flow-step:last-child { border-bottom: 0; }
+      .equation-main { grid-template-columns: auto 20px minmax(260px, 1fr); } .equation-result { grid-column: 3; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="topbar"><div class="topbar-inner"><div class="brand">MaaS GPU Performance Lab</div><div class="top-meta">H200 / GLM-5.2 / PP2 / one uncached 16K prefill</div></div></nav>
+  <header>
+    <div class="header-inner">
+      <div class="eyebrow">Kernel efficiency audit</div>
+      <h1>GLM-5.2 H200 Top-Five Kernel MFU</h1>
+      <p class="lede">A trace-ranked, counter-validated answer to two questions: which high-residency prefill family has the lowest defensible MFU, and is that value a hardware inevitability?</p>
+    </div>
+  </header>
+  <div class="layout">
+    <aside aria-label="Page overview">
+      <strong>On this page</strong>
+      <a href="#verdict">Verdict</a>
+      <a href="#scope">Scope</a>
+      <a href="#ranking">Top five</a>
+      <a href="#accounting">MFU accounting</a>
+      <a href="#mapping">Semantic mapping</a>
+      <a href="#instructions">Issued work</a>
+      <a href="#residency">SM residency</a>
+      <a href="#roofline">Roofline</a>
+      <a href="#limits">Structural vs recoverable</a>
+      <a href="#audit">Audit trail</a>
+      <a href="#reproduce">Reproduce</a>
+    </aside>
+    <main>
+      <section id="verdict">
+        <h2>Verdict</h2>
+        <p class="section-lede">Grouped MoE is both the largest residency target and the lowest defensible Tensor-Core MFU among the top five exact kernel names.</p>
+        <div class="stats">
+
+      <div class="stat bad">
+        <div class="stat-label">Lowest family MFU</div>
+        <div class="stat-value">22.66%</div>
+        <div class="stat-note">111.326 TFLOP of useful model work over 248.225 ms of Nsys residency.</div>
+      </div>
+
+
+      <div class="stat warn">
+        <div class="stat-label">Same-traffic hard roof</div>
+        <div class="stat-value">34.14%</div>
+        <div class="stat-note">The representative gate/up launch has only 140.34 useful FLOP/B versus a 411.07 FLOP/B ridge.</div>
+      </div>
+
+
+      <div class="stat good">
+        <div class="stat-label">Recoverable gap</div>
+        <div class="stat-value">10.89 points</div>
+        <div class="stat-note">46.86% relative throughput remains below that roof.</div>
+      </div>
+
+        </div>
+        <div class="verdict">
+          <strong>Not inevitable, but 100% is impossible for this shape.</strong>
+          The observed 22.66% family MFU is not a physical floor. The matched gate/up counter sample reaches 23.25% useful MFU while using 68.12% of peak DRAM throughput, leaving measurable headroom. However, the 2,048-token expert shape streams about 6.61 GB from HBM and cannot exceed 34.14% useful MFU without reducing traffic or increasing weight reuse.
+        </div>
+        <p>Instruction accounting exposes a second loss hidden by ordinary MFU: the sampled launch issues 2.126 TFLOP of Tensor-Core arithmetic for only 0.928 TFLOP of useful model work. Physical issued throughput is 53.27% of peak; useful MFU is 23.25% because grouped expert tiling amplifies work by 2.29 times.</p>
+      </section>
+
+      <section id="scope">
+        <h2>Measurement Scope</h2>
+        <p class="section-lede">Nsys supplies the production-order family residency. NCU supplies counters for a matched replay. The report never uses the 884-second NCU replay request as latency.</p>
+        <div class="table-wrap"><table><tbody>
+          <tr><th>Request</th><td>16,384 fixed token IDs, one output token, temperature 0, <code>ignore_eos=true</code>, cache flushed, observed <code>cached_tokens=0</code></td></tr>
+          <tr><th>Runtime</th><td>TP=1, DP=1, EP=1, PP=8; PP2, layers 18-27, CUDA device 2; 8 chunks of 2,048; <code>flashmla_sparse</code> attention; <code>cutlass</code> MoE</td></tr>
+          <tr><th>Nsys timing</th><td>gpu-h200-1; 1.177937 s request window; 35,076 all-rank rows; SQLite integrity <code>ok</code></td></tr>
+          <tr><th>PP2 scope</th><td>4,535 non-NCCL launches; 431.362 ms summed residency; 431.312 ms interval union</td></tr>
+          <tr><th>NCU counters</th><td>gpu-h200-0; same model, image, request IDs, cache gate, PP layout, chunking, and backends; one launch per launch configuration</td></tr>
+          <tr><th>GPU</th><td>NVIDIA H200 / GH100 / CC 9.0; 132 SMs; 4.814304 TB/s trace attribute; 1,979 dense FP8 TFLOP/s</td></tr>
+        </tbody></table></div>
+        <div class="note"><strong>Timing vocabulary.</strong> Every family time below is summed CUPTI kernel residency for one exact demangled name on one GPU. All top-five launches are on stream 124 and do not overlap one another, so their 367.007 ms sum equals their interval union. Request wall time is a different quantity.</div>
+      </section>
+
+      <section id="ranking">
+        <h2>Five Highest-Residency Exact Names</h2>
+        <p class="section-lede">The ranking is recomputed directly from the immutable PP2 request window, after excluding NCCL names. These five account for 85.08% of PP2 non-NCCL summed residency.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Family</th><th class="num">Launches</th><th class="num">Residency ms</th><th>Residency share</th><th class="num">MFU</th><th>MFU scope</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="rank">1</td>
+              <td><strong>CUTLASS grouped MoE</strong><div class="hash">name SHA-256 1f086efdc858fd47...</div></td>
+              <td class="num">160</td>
+              <td class="num">248.225</td>
+              <td><div class="bar-track"><span style="width:100.000%"></span></div><span class="small">57.54% of PP2 non-NCCL residency</span></td>
+              <td class="num mfu ">22.66%</td>
+              <td>exact useful gate/up + down model FLOPs</td>
+            </tr>
+
+            <tr>
+              <td class="rank">2</td>
+              <td><strong>Sparse MLA attention</strong><div class="hash">name SHA-256 70a8b91382b1eaa1...</div></td>
+              <td class="num">70</td>
+              <td class="num">72.200</td>
+              <td><div class="bar-track"><span style="width:29.087%"></span></div><span class="small">16.74% of PP2 non-NCCL residency</span></td>
+              <td class="num mfu ">57.23%</td>
+              <td>seven BF16 sparse chunks, converted x2 to FP8-equivalent</td>
+            </tr>
+
+            <tr>
+              <td class="rank">3</td>
+              <td><strong>Dominant exact DeepGEMM name</strong><div class="hash">name SHA-256 7f38bef76167800f...</div></td>
+              <td class="num">191</td>
+              <td class="num">34.212</td>
+              <td><div class="bar-track"><span style="width:13.783%"></span></div><span class="small">7.93% of PP2 non-NCCL residency</span></td>
+              <td class="num mfu ">&ge;64.96%</td>
+              <td>conservative q_b + o_proj numerator; all same-name time retained</td>
+            </tr>
+
+            <tr>
+              <td class="rank">4</td>
+              <td><strong>gatherTopK</strong><div class="hash">name SHA-256 9181cabc85fd86de...</div></td>
+              <td class="num">240</td>
+              <td class="num">6.826</td>
+              <td><div class="bar-track"><span style="width:2.750%"></span></div><span class="small">1.58% of PP2 non-NCCL residency</span></td>
+              <td class="num mfu na">N/A</td>
+              <td>non-Tensor-Core indexing or elementwise data movement</td>
+            </tr>
+
+            <tr>
+              <td class="rank">5</td>
+              <td><strong>MoE shuffle/combine</strong><div class="hash">name SHA-256 c2d41d70fd6309b9...</div></td>
+              <td class="num">80</td>
+              <td class="num">5.544</td>
+              <td><div class="bar-track"><span style="width:2.233%"></span></div><span class="small">1.29% of PP2 non-NCCL residency</span></td>
+              <td class="num mfu na">N/A</td>
+              <td>non-Tensor-Core indexing or elementwise data movement</td>
+            </tr>
+            </tbody>
+        </table></div>
+        <div class="note warning"><strong>N/A is deliberate.</strong> <code>gatherTopK</code> and <code>apply_shuffle_mul_sum_kernel</code> are indexing or elementwise data-movement kernels. Calling them 0% Tensor-Core MFU would be numerically trivial and diagnostically wrong; bandwidth, issue efficiency, and algorithmic work are the appropriate lenses.</div>
+      </section>
+
+      <section id="accounting">
+        <h2>MFU Accounting</h2>
+        <p class="section-lede">All reported Tensor-Core families use one comparable denominator: 1,979 TFLOP/s dense-FP8-equivalent peak. BF16 MMA work is multiplied by two because H200 dense BF16 peak is half the dense FP8 peak.</p>
+        <div class="equations">
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">MFU</span></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression"><span>useful FP8-equivalent model FLOPs</span> / <span>(family residency &times; 1,979 TFLOP/s)</span></span>
+          <span class="equation-result"></span>
+        </div>
+        <div class="equation-note">Useful model work is the numerator. Padded or otherwise wasted issued Tensor-Core work is not credited.</div>
+      </div>
+
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">MFU</span><sub>MoE</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">111.325552 TFLOP / (0.248225078 s &times; 1,979 TFLOP/s)</span>
+          <span class="equation-result">22.66%</span>
+        </div>
+        <div class="equation-note">Gate/up and down cover the same 16,384 tokens across ten PP2 layers.</div>
+      </div>
+
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">MFU</span><sub>sparse MLA</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">81.776177 FP8-eq TFLOP / (0.072200344 s &times; 1,979 TFLOP/s)</span>
+          <span class="equation-result">57.23%</span>
+        </div>
+        <div class="equation-note">The 40.888089 TFLOP BF16 HGMMA numerator is doubled. The separate first dense chunk is excluded.</div>
+      </div>
+
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">MFU</span><sub>DeepGEMM</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">at least 43.980465 TFLOP / (0.034211635 s &times; 1,979 TFLOP/s)</span>
+          <span class="equation-result">&ge; 64.96%</span>
+        </div>
+        <div class="equation-note">All 191 same-name launches remain in the denominator; only the independently anchored q_b and o_proj work enters the numerator.</div>
+      </div>
+
+        </div>
+        <h3>Sparse scope correction</h3>
+        <p>The ranked sparse family contains exactly 70 launches: seven later chunks times ten PP2 layers. Each later 2,048-token chunk contributes 2,048 &times; 2,048 selected query-key pairs. NCU SASS contains BF16 <code>HGMMA.64x64x16</code> and <code>HGMMA.64x256x16</code>. The first 2,048-token chunk instead uses ten dense FlashAttention launches totaling 2.551 ms, so its work is not assigned to the sparse exact name.</p>
+      </section>
+
+      <section id="mapping">
+        <h2>What the 160 Grouped Launches Implement</h2>
+        <p class="section-lede">The same CUTLASS symbol implements two logical expert projections per layer and chunk. Neighboring operations provide independent semantic anchors.</p>
+        <div class="flow">
+          <div class="flow-step"><div class="n">1</div><strong>Dispatch + quantize</strong><p>Token rows are grouped by routed and shared expert, then quantized to FP8.</p></div>
+          <div class="flow-step"><div class="n">2</div><strong>Gate/up grouped GEMM</strong><p>80 launches, 160.476 ms. The next kernel is activation.</p></div>
+          <div class="flow-step"><div class="n">3</div><strong>SiLU and multiply</strong><p><code>act_and_mul</code> consumes the two 2,048-wide gate/up outputs.</p></div>
+          <div class="flow-step"><div class="n">4</div><strong>Down grouped GEMM</strong><p>80 launches, 87.749 ms. It follows activation.</p></div>
+          <div class="flow-step"><div class="n">5</div><strong>Shuffle + combine</strong><p>The fifth-ranked elementwise family restores token order and sums expert outputs.</p></div>
+        </div>
+        <div class="split">
+          <div class="panel"><h3>Gate/up</h3><p><strong>23.37% MFU</strong></p><p>Useful work: 74.217035 TFLOP. Each 2,048-token launch maps 18,432 token-expert rows through a 6,144 by 4,096 matrix.</p></div>
+          <div class="panel"><h3>Down</h3><p><strong>21.37% MFU</strong></p><p>Useful work: 37.108517 TFLOP. Each launch maps 18,432 rows through a 2,048 by 6,144 matrix.</p></div>
+        </div>
+      </section>
+
+      <section id="instructions">
+        <h2>Why Useful MFU Is Only 23% in One Gate/Up Launch</h2>
+        <p class="section-lede">NCU counts 16,220,160 executed warp-level QGMMA instructions. Nsight defines this metric per individual warp; CUTLASS defines one warpgroup as four warps issuing one collective MMA.</p>
+        <div class="equations">
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">N</span><sub>QGMMA collective</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">16,220,160 warp instructions / 4 warps</span>
+          <span class="equation-result">4,055,040</span>
+        </div>
+        <div class="equation-note">One collective QGMMA has a 64 by 128 by 32 atom.</div>
+      </div>
+
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">F</span><sub>issued</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">4,055,040 &times; (2 &times; 64 &times; 128 &times; 32)</span>
+          <span class="equation-result">2.126009 TFLOP</span>
+        </div>
+        <div class="equation-note">This is physical Tensor-Core work, including padded expert rows.</div>
+      </div>
+
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">M</span><sub>physical</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">2,126,008,811,520 / (2 &times; 6,144 &times; 4,096)</span>
+          <span class="equation-result">42,240 rows</span>
+        </div>
+        <div class="equation-note">Exactly 330 M-tiles of 128 rows.</div>
+      </div>
+
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">F</span><sub>useful</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">2 &times; 18,432 &times; 6,144 &times; 4,096</span>
+          <span class="equation-result">0.927713 TFLOP</span>
+        </div>
+        <div class="equation-note">2,048 tokens times nine active experts yields 18,432 useful rows.</div>
+      </div>
+
+        </div>
+        <div class="work-strip" aria-label="Useful versus padded issued work"><div class="work-useful">43.64% useful</div><div class="work-padding">56.36% padded / extra</div></div>
+        <p class="small">The hardware issues 2.2917 times the useful gate/up arithmetic. This ratio is measured for one representative launch, not extrapolated as an exact average over all 80 gate/up launches.</p>
+        <div class="note"><strong>Two different efficiencies.</strong> The sampled launch sustains 1,054.3 physical TFLOP/s, or 53.27% of dense FP8 peak. It sustains 460.1 useful TFLOP/s, or 23.25% MFU. Both are correct; they answer different questions.</div>
+      </section>
+
+      <section id="residency">
+        <h2>Blocks, Warps, Registers, and Shared Memory</h2>
+        <p class="section-lede">The launch has exactly 132 CTAs for 132 SMs, so it forms one wave with one CTA per SM. Both registers and shared memory independently prohibit a second CTA.</p>
+        <div class="split">
+          <div class="panel">
+            <h3>Static residency limits</h3>
+            <div class="resource-row"><div class="resource-label"><span>Registers per CTA</span><strong>64,512 / 65,536</strong></div><div class="meter amber"><span style="width:98.438%"></span></div></div>
+            <div class="resource-row"><div class="resource-label"><span>Allocated shared memory</span><strong>219,648 / 233,472 B</strong></div><div class="meter amber"><span style="width:94.079%"></span></div></div>
+            <div class="resource-row"><div class="resource-label"><span>Resident warps</span><strong>12 / 64</strong></div><div class="meter"><span style="width:18.750%"></span></div></div>
+            <p>CTA limits: registers 1, shared memory 1, warps 5. The minimum is one resident CTA, giving 18.75% theoretical occupancy.</p>
+          </div>
+          <div class="panel">
+            <h3>Measured behavior</h3>
+            <div class="resource-row"><div class="resource-label"><span>Achieved active warps</span><strong>17.19%</strong></div><div class="meter"><span style="width:17.190%"></span></div></div>
+            <div class="resource-row"><div class="resource-label"><span>Tensor pipe active, elapsed</span><strong>62.12%</strong></div><div class="meter green"><span style="width:62.120%"></span></div></div>
+            <div class="resource-row"><div class="resource-label"><span>DRAM throughput</span><strong>68.12%</strong></div><div class="meter violet"><span style="width:68.120%"></span></div></div>
+            <p>11.00 warps are active per SM on average. There are no register-spill instructions. Low occupancy is structural to this tile and pipeline, but it is not itself proof of low utilization: the tensor pipe remains active for 62.12% of elapsed cycles.</p>
+          </div>
+        </div>
+        <h3>Scheduler evidence</h3>
+        <p>Issue active is 35.84% and only 0.46 warps are eligible per scheduler cycle. The following NCU values are average stalled warps per issued instruction, not percentages and not mutually exclusive shares.</p>
+        <div class="table-wrap"><table><thead><tr><th>Stall reason</th><th class="num">Warp / issued instruction ratio</th></tr></thead><tbody><tr><td>Barrier</td><td class="num">2.17</td></tr><tr><td>Long Scoreboard</td><td class="num">2.06</td></tr><tr><td>Wait</td><td class="num">0.58</td></tr><tr><td>Dispatch</td><td class="num">0.47</td></tr><tr><td>Not Selected</td><td class="num">0.28</td></tr><tr><td>Gmma</td><td class="num">0.26</td></tr></tbody></table></div>
+      </section>
+
+      <section id="roofline">
+        <h2>First-Principles HBM Roof</h2>
+        <p class="section-lede">The gate/up launch reads 6.460 GB and writes 0.151 GB. Its useful arithmetic intensity is far below the H200 dense-FP8 ridge.</p>
+        <div class="equations">
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">I</span><sub>ridge</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">1,979 TFLOP/s / 4.814304 TB/s</span>
+          <span class="equation-result">411.07 FLOP/B</span>
+        </div>
+        <div class="equation-note">A kernel below this intensity cannot reach dense FP8 peak from HBM.</div>
+      </div>
+
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">I</span><sub>useful</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">0.927713 TFLOP / 6.610424 GB</span>
+          <span class="equation-result">140.34 FLOP/B</span>
+        </div>
+        <div class="equation-note">Only useful model arithmetic is credited.</div>
+      </div>
+
+
+      <div class="equation">
+        <div class="equation-main">
+          <span class="equation-lhs"><span class="math-var">P</span><sub>HBM roof</sub></span>
+          <span class="equation-equals">=</span>
+          <span class="equation-expression">140.34 FLOP/B &times; 4.814304 TB/s</span>
+          <span class="equation-result">675.6 TFLOP/s</span>
+        </div>
+        <div class="equation-note">Equivalent to 34.14% useful MFU and 1.373 ms minimum HBM time.</div>
+      </div>
+
+        </div>
+        <div class="roofline" aria-label="Observed and roof MFU markers">
+          <strong>Useful MFU position on a 0-100% dense-FP8 scale</strong>
+          <div class="roof-axis">
+            <div class="roof-marker" style="--x:23.247%;--h:36px;--c:var(--red)"><span>observed<br>23.25%</span></div>
+            <div class="roof-marker" style="--x:34.141%;--h:58px;--c:var(--amber)"><span>HBM roof<br>34.14%</span></div>
+          </div>
+        </div>
+        <h3>Why the traffic is structural at 2K</h3>
+        <p>One FP8 gate/up weight matrix has 6,144 &times; 4,096 bytes. Across 256 routed experts plus one shared expert, the payload is 6.468 GB before scales. NCU measures 6.460 GB of DRAM reads, 99.88% of that simple full-weight payload. This close match is direct evidence that expert-weight streaming dominates the launch.</p>
+        <p>Ignoring writes and scale metadata, useful intensity scales approximately as 2 &times; tokens &times; 9 / 257. It reaches the 411.07 FLOP/B ridge only near 5,869 tokens. The current 2,048-token chunk is therefore structurally memory-bound even with perfect instruction scheduling.</p>
+      </section>
+
+      <section id="limits">
+        <h2>Structural Limits Versus Recoverable Loss</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Observation</th><th>Classification</th><th>Reasoning</th></tr></thead>
+          <tbody>
+            <tr><td>140.34 useful FLOP/B versus 411.07 ridge</td><td><span class="status lower-bound">structural at 2K</span></td><td>Expert weights must be streamed with too little token reuse. Same-traffic useful MFU cannot exceed 34.14%.</td></tr>
+            <tr><td>One CTA/SM, 18.75% theoretical occupancy</td><td><span class="status lower-bound">structural to kernel</span></td><td>Either 64,512 registers or 219,648 B shared memory independently blocks a second CTA.</td></tr>
+            <tr><td>2.292&times; issued/useful work</td><td><span class="status accepted-representative">partly structural</span></td><td>Per-expert M tiling creates unavoidable tails; routing distribution and a different grouped-GEMM strategy can change the excess.</td></tr>
+            <tr><td>68.12% DRAM throughput</td><td><span class="status accepted">recoverable gap</span></td><td>The launch realizes 68.09% of its own useful HBM roof, not 100%.</td></tr>
+            <tr><td>35.84% issue active, 0.46 eligible warps/cycle</td><td><span class="status accepted">recoverable gap</span></td><td>Barrier and long-scoreboard ratios show that the warp-specialized pipeline is not continuously ready to issue.</td></tr>
+            <tr><td>22.66% family MFU</td><td><span class="status accepted-representative">not inevitable</span></td><td>The matched launch is 10.89 points below the same-traffic hard roof. Optimization cannot reach 100%, but it can exceed the observed value.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note ok"><strong>Engineering implication.</strong> The strongest directions are to increase rows per expert weight load, reduce per-expert M-tail work, overlap or pipeline weight movement more completely, or reduce the bytes fetched. Raising nominal occupancy without changing those constraints is not a sufficient objective.</div>
+        <div class="note warning"><strong>What the report does not claim.</strong> The 34.14% roof holds measured traffic constant; it is not a universal kernel ceiling. The QGMMA padding ratio comes from one representative gate/up launch. Routing changes across layers and chunks, so a full-family physical-work average would require countering all 80 gate/up launches.</div>
+      </section>
+
+      <section id="audit">
+        <h2>Audit Trail</h2>
+        <p class="section-lede">Direct observations, source-derived semantics, and analytical inferences remain separated. Every percentage names its numerator and denominator.</p>
+        <div class="table-wrap"><table><thead><tr><th>Claim</th><th>Status</th><th>Evidence or limit</th></tr></thead><tbody><tr><td>Request identity</td><td><span class="status accepted">accepted</span></td><td>HTTP 200; 16,384 prompt; one output; cached_tokens=0; matching input/output hashes</td></tr><tr><td>Top-five timing</td><td><span class="status accepted">accepted</span></td><td>immutable Nsys SQLite; request epoch mapped to session time; exact demangled-name aggregation</td></tr><tr><td>Grouped gate/up versus down split</td><td><span class="status accepted">accepted</span></td><td>80 + 80 launches, anchored by activation and shuffle/combine neighbors; exact family reconciliation</td></tr><tr><td>Sparse precision and scope</td><td><span class="status accepted">accepted</span></td><td>70 sparse launches; BF16 HGMMA SASS; first dense chunk retained as a separate exact name</td></tr><tr><td>DeepGEMM family MFU</td><td><span class="status lower-bound">lower bound</span></td><td>q_b and o_proj identified independently; 31 same-name launches retain time but contribute no numerator</td></tr><tr><td>Grouped hardware counters</td><td><span class="status accepted-representative">accepted representative</span></td><td>NCU 2.016544 ms versus Nsys gate/up mean 2.005954 ms (+0.53%)</td></tr><tr><td>Whole NCU request latency</td><td><span class="status rejected-for-timing">rejected for timing</span></td><td>884-second request includes 33-pass kernel replay; only per-launch counters are used</td></tr></tbody></table></div>
+        <h3>NCU action set</h3>
+        <div class="table-wrap"><table><thead><tr><th class="num">Action</th><th>Matched kernel</th><th class="num">Duration us</th><th class="num">Grid</th><th class="num">Block</th></tr></thead><tbody><tr><td class="num">0</td><td>DeepGEMM FP8</td><td class="num">55.136</td><td class="num">132</td><td class="num">384</td></tr><tr><td class="num">1</td><td>DeepGEMM FP8</td><td class="num">110.176</td><td class="num">132</td><td class="num">384</td></tr><tr><td class="num">2</td><td>DeepGEMM FP8</td><td class="num">11.168</td><td class="num">132</td><td class="num">256</td></tr><tr><td class="num">3</td><td>DeepGEMM FP8</td><td class="num">64.320</td><td class="num">132</td><td class="num">384</td></tr><tr><td class="num">4</td><td>DeepGEMM FP8</td><td class="num">283.488</td><td class="num">132</td><td class="num">384</td></tr><tr><td class="num">5</td><td>gatherTopK</td><td class="num">34.336</td><td class="num">2,048</td><td class="num">256</td></tr><tr><td class="num">6</td><td>gatherTopK</td><td class="num">6.080</td><td class="num">2,048</td><td class="num">32</td></tr><tr><td class="num">7</td><td>CUTLASS grouped MoE</td><td class="num">2,016.544</td><td class="num">132</td><td class="num">384</td></tr><tr><td class="num">8</td><td>MoE shuffle/combine</td><td class="num">65.888</td><td class="num">2,048</td><td class="num">384</td></tr><tr><td class="num">9</td><td>Sparse MLA attention</td><td class="num">905.760</td><td class="num">2,048</td><td class="num">384</td></tr></tbody></table></div>
+        <p>Action 7 is the representative gate/up launch. Its 2.016544 ms replay duration is +0.53% from the Nsys gate/up mean of 2.005954 ms. Action 9 proves the sparse family uses BF16 HGMMA. The DeepGEMM actions show multiple launch configurations under related compiled names, which is why the third-ranked exact name is reported conservatively.</p>
+        <details><summary>Exact top-five demangled names</summary><div><p><strong>1. CUTLASS grouped MoE</strong><br><code>void cutlass::device_kernel&lt;cutlass::gemm::kernel::GemmUniversal&lt;cutlass::gemm::GroupProblemShape&lt;cute::tuple&lt;int, int, int&gt;&gt;, cutlass::gemm::collective::CollectiveMma&lt;cutlass::gemm::MainloopSm90ArrayTmaGmmaWarpSpecializedBlockwise&lt;(int)6, cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::C&lt;(int)2&gt;, cute::C&lt;(int)1&gt;&gt;, cutlass::gemm::KernelPtrArrayTmaWarpSpecializedCooperativeFP8Blockwise&gt;, cute::tuple&lt;cute::C&lt;(int)128&gt;, cute::C&lt;(int)128&gt;, cute::C&lt;(int)128&gt;&gt;, cutlass::float_e4m3_t, cute::tuple&lt;cute::tuple&lt;long, cute::C&lt;(int)1&gt;, cute::C&lt;(int)0&gt;&gt; *, cute::Layout&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, int&gt;, cute::tuple&lt;cute::C&lt;(int)128&gt;, int&gt;, int&gt;, cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)0&gt;, int&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::C&lt;(int)1&gt;&gt;, int&gt;&gt; *&gt;, cutlass::float_e4m3_t, cute::tuple&lt;cute::tuple&lt;long, cute::C&lt;(int)1&gt;, cute::C&lt;(int)0&gt;&gt; *, cute::Layout&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)128&gt;, int&gt;, cute::tuple&lt;cute::C&lt;(int)128&gt;, int&gt;, int&gt;, cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)0&gt;, int&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::C&lt;(int)1&gt;&gt;, int&gt;&gt; *&gt;, cute::TiledMMA&lt;cute::MMA_Atom&lt;cute::SM90::GMMA::MMA_64x128x32_F32E4M3E4M3_SS_TN&lt;(cute::SM90::GMMA::ScaleIn)1, (cute::SM90::GMMA::ScaleIn)1&gt;&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)2&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::C&lt;(int)0&gt;, cute::C&lt;(int)0&gt;&gt;&gt;, cute::tuple&lt;cute::Underscore, cute::Underscore, cute::Underscore&gt;&gt;, cute::SM90_TMA_LOAD_MULTICAST, cute::ComposedLayout&lt;cute::Swizzle&lt;(int)3, (int)4, (int)3&gt;, cute::smem_ptr_flag_bits&lt;(int)8&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)8&gt;, cute::C&lt;(int)128&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)128&gt;, cute::C&lt;(int)1&gt;&gt;&gt;&gt;, void, cute::identity, cute::SM90_TMA_LOAD, cute::ComposedLayout&lt;cute::Swizzle&lt;(int)3, (int)4, (int)3&gt;, cute::smem_ptr_flag_bits&lt;(int)8&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)8&gt;, cute::C&lt;(int)128&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)128&gt;, cute::C&lt;(int)1&gt;&gt;&gt;&gt;, void, cute::identity&gt;, cutlass::epilogue::collective::CollectiveEpilogue&lt;cutlass::epilogue::Sm90PtrArrayTmaWarpSpecialized&lt;(int)4, (int)2, (int)16, (bool)0, (bool)0, (int)2&gt;, cute::tuple&lt;cute::C&lt;(int)128&gt;, cute::C&lt;(int)128&gt;, cute::C&lt;(int)128&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)128&gt;, cute::C&lt;(int)32&gt;&gt;, void, cute::tuple&lt;long, cute::C&lt;(int)1&gt;, cute::C&lt;(int)0&gt;&gt; *, cutlass::bfloat16_t, cute::tuple&lt;long, cute::C&lt;(int)1&gt;, cute::C&lt;(int)0&gt;&gt; *, cutlass::epilogue::fusion::Sm90TreeVisitor&lt;cutlass::epilogue::fusion::Sm90Compute&lt;cutlass::epilogue::thread::Identity, cutlass::bfloat16_t, float, (cutlass::FloatRoundStyle)2, void&gt;, cutlass::epilogue::fusion::Sm90AccFetch&gt;, cute::SM90_TMA_LOAD, cute::ComposedLayout&lt;cute::Swizzle&lt;(int)2, (int)4, (int)3&gt;, cute::smem_ptr_flag_bits&lt;(int)16&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)8&gt;, cute::C&lt;(int)32&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)32&gt;, cute::C&lt;(int)1&gt;&gt;&gt;&gt;, cute::SM75_U32x4_LDSM_N, cute::SM90_TMA_STORE, cute::ComposedLayout&lt;cute::Swizzle&lt;(int)2, (int)4, (int)3&gt;, cute::smem_ptr_flag_bits&lt;(int)16&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)8&gt;, cute::C&lt;(int)32&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)32&gt;, cute::C&lt;(int)1&gt;&gt;&gt;&gt;, cute::SM90_U32x4_STSM_N, cute::Copy_Atom&lt;cute::SM90_U32x4_STSM_N, cutlass::half_t&gt;, void&gt;, void, void&gt;&gt;(T1::Params)</code></p><p><strong>2. Sparse MLA attention</strong><br><code>void sm90::fwd::sparse_attn_fwd_kernel&lt;sm90::fwd::KernelTemplate&lt;(int)576, (bool)0&gt;, sm90::fwd::KernelTemplate&lt;(int)576, (bool)0&gt;::TmaParams&lt;cute::tuple&lt;int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnFwdParams, T2)</code></p><p><strong>3. Dominant exact DeepGEMM name</strong><br><code>void deep_gemm::sm90_fp8_gemm_1d2d_impl&lt;(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)256, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)3, (unsigned int)128, (unsigned int)256, (unsigned int)2, (bool)1, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity&gt;(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)</code></p><p><strong>4. gatherTopK</strong><br><code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code></p><p><strong>5. MoE shuffle/combine</strong><br><code>void apply_shuffle_mul_sum_kernel&lt;__nv_bfloat16&gt;(const T1 *, T1 *, const int *, int, int, int, const T1 *)</code></p></div></details>
+      </section>
+
+      <section id="reproduce">
+        <h2>Reproducibility and Sources</h2>
+        <div class="table-wrap"><table><tbody>
+          <tr><th>Runtime image</th><td><code>image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447</code><br><code>sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b</code></td></tr>
+          <tr><th>Model mount</th><td><code>/home/models/zai-org/GLM-5.2-FP8</code>; no checkpoint revision or weight checksum was recorded</td></tr>
+          <tr><th>Input identity</th><td><code>8cbff7c802f11954db30888442ddf2b4636ffd876bcb3640d8ef0970aee7d25f</code></td></tr>
+          <tr><th>Output identity</th><td><code>e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629</code></td></tr>
+          <tr><th>Profiler versions</th><td>Nsys 2025.3.2.474; NCU 2025.3.1.0</td></tr>
+          <tr><th>Machine-readable sidecar</th><td><a href="analysis.json">analysis.json</a></td></tr>
+        </tbody></table></div>
+        <details><summary>Rebuild from retained artifacts</summary><div><pre><code>cd /home/tom/sglang2/z_local/kernel_mfu_top5_h200/glm52_top5_kernel_mfu_20260723_102936
+python3 -m py_compile build_report.py
+python3 build_report.py
+rsync -a publish/glm52-h200-top5-kernel-mfu/   /home/tom/maas_docs/docs/tmp/glm52-h200-top5-kernel-mfu/</code></pre></div></details>
+        <h3>Primary references</h3>
+        <ul>
+          <li><a href="https://www.nvidia.com/en-au/data-center/h200/">NVIDIA H200 product specifications</a>: FP8/BF16 sparse throughput and HBM bandwidth; dense throughput is half the marked sparse value.</li>
+          <li><a href="https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html">NVIDIA Nsight Compute Profiling Guide</a>: warp-level instruction-count, occupancy, scheduler, and stall metric semantics.</li>
+          <li><a href="https://docs.nvidia.com/cutlass/4.5.2/media/docs/pythonDSL/mma_docs/wgmma_programming.html">NVIDIA CUTLASS WGMMA programming guide</a>: four-warps-per-warpgroup collective MMA model.</li>
+          <li><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree">GLM-5.2 prefill execution tree</a>: architecture and operation context for the PP2 model work.</li>
+        </ul>
+        <h3>Artifact hashes</h3>
+        <div class="table-wrap sources"><table><thead><tr><th>Generator input</th><th>SHA-256</th></tr></thead><tbody><tr><td><code>phase_u/experiment_manifest.md</code></td><td><code>0280fbb831fe5ce78e2ad01a1ee8e1edac05a87c6d3f53a7c47ff95400b934ae</code></td></tr><tr><td><code>phase_u/artifacts/manifests/pod-node1-phase-u-cutlass-final-profile.yaml</code></td><td><code>6807ecd628ea7941c69d3ac149fbc61195bdd69149e892ab71a9f395e9683631</code></td></tr><tr><td><code>phase_u/artifacts/node1/phase_u_moe_cutlass_final_profile/trace.sqlite</code></td><td><code>b6c45cfe228cd9b7184a91385835edcb375cb2e8e175db9a0954ce17345d2d2f</code></td></tr><tr><td><code>phase_u/artifacts/node1/phase_u_moe_cutlass_final_profile/request_contract.json</code></td><td><code>17221a6966a3513a2f308f4ee2599db0fe0be42ab579590ffea40b76b1757d84</code></td></tr><tr><td><code>phase_u/artifacts/node1/phase_u_moe_cutlass_final_profile/result_profiled_00.json</code></td><td><code>fab3cd907034c53e0226ab31a26c8678a048e8694ed80d0757eb1ccda07ae171</code></td></tr><tr><td><code>phase_u/artifacts/node1/phase_u_moe_cutlass_final_profile/gpu_inventory.csv</code></td><td><code>0f3e3d61d3c43561e7133978ca47bf9f93de0fff8bac0f722ff59fb7a640afcb</code></td></tr><tr><td><code>experiment_manifest.md</code></td><td><code>5bf0920022749472875afdb1903e00d9bcadf325530c399af097160f38d4abc1</code></td></tr><tr><td><code>pod-gpu-h200-0.yaml</code></td><td><code>0a7d6337a4e0c406dfd3d28529d7362c455f2e69df450bfa6dacffe93a29cda8</code></td></tr><tr><td><code>entrypoint_ncu.sh</code></td><td><code>0d6f147e205f4065e886a9fbca6bc3e65074ab73f9cf09d3a19f18307e926737</code></td></tr><tr><td><code>artifacts/node0/ncu_full4/top5_full.ncu-rep</code></td><td><code>038c49794cc33409f0d8cc90c9c1884e5ee7d2f078acbdbce7a1d11bfc8c918b</code></td></tr><tr><td><code>artifacts/node0/ncu_full4/raw.csv</code></td><td><code>de919ade51352caa972abc5dec4d4fa273a8154bbaefa5470821291dc603f100</code></td></tr><tr><td><code>artifacts/node0/ncu_full4/details.csv</code></td><td><code>854b0628f583039ef05049243f992f61bbb1ff1f32bdb29f486fa10d65217848</code></td></tr><tr><td><code>artifacts/node0/ncu_full4/grouped_raw_instances.csv</code></td><td><code>8da39271b11343b01a46bae846364af7a3b65e792b39cb3b8046771d1281ea95</code></td></tr><tr><td><code>artifacts/node0/ncu_full4/sparse_raw_instances.csv</code></td><td><code>f55d191b8c2bd6f8cb62fecc29ee080181f38aaf2aa7ad415c8c946d13b1feaf</code></td></tr><tr><td><code>artifacts/node0/ncu_full4/requests/request_contract.json</code></td><td><code>18962f6af9b64c585a34158ca420ff678435743bf39d480688476b34340fe154</code></td></tr><tr><td><code>artifacts/node0/ncu_full4/requests/result_profiled_00.json</code></td><td><code>290f017a53a50bb049886ee487c858f0737365d612a9f4487913aaac89af7ce2</code></td></tr><tr><td><code>build_report.py</code></td><td><code>ae96f90360c30d1f7a0109920b145cfa336292d912bfc72f968c82030dc10695</code></td></tr></tbody></table></div>
+      </section>
+    </main>
+  </div>
+  <footer><div>Generated from retained Nsys and NCU artifacts. Both temporary profiler pods were deleted before report construction; no new GPU workload was launched to build this page.</div></footer>
+</body>
+</html>

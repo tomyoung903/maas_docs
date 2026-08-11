@@ -1,0 +1,455 @@
+{
+  "artifact": {
+    "title": "GLM-5.2 H200 Top-Five Kernel MFU Audit",
+    "generated_at": "2026-08-11T19:20:45.530268+08:00",
+    "cluster": "prod-maas H200 Europe",
+    "timing_node": "gpu-h200-1",
+    "counter_node": "gpu-h200-0",
+    "model_path": "/home/models/zai-org/GLM-5.2-FP8",
+    "model_revision": null,
+    "model_checksum": null,
+    "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime:57408ea1-joint-v0.5.14-v1.2.1-20260714184447",
+    "runtime_digest": "sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b",
+    "source_bundle": "/home/tom/sglang2/z_local/kernel_mfu_top5_h200/glm52_top5_kernel_mfu_20260723_102936",
+    "generator": "/home/tom/sglang2/z_local/kernel_mfu_top5_h200/glm52_top5_kernel_mfu_20260723_102936/build_report.py",
+    "source_hashes": {
+      "phase_u/experiment_manifest.md": "0280fbb831fe5ce78e2ad01a1ee8e1edac05a87c6d3f53a7c47ff95400b934ae",
+      "phase_u/artifacts/manifests/pod-node1-phase-u-cutlass-final-profile.yaml": "6807ecd628ea7941c69d3ac149fbc61195bdd69149e892ab71a9f395e9683631",
+      "phase_u/artifacts/node1/phase_u_moe_cutlass_final_profile/trace.sqlite": "b6c45cfe228cd9b7184a91385835edcb375cb2e8e175db9a0954ce17345d2d2f",
+      "phase_u/artifacts/node1/phase_u_moe_cutlass_final_profile/request_contract.json": "17221a6966a3513a2f308f4ee2599db0fe0be42ab579590ffea40b76b1757d84",
+      "phase_u/artifacts/node1/phase_u_moe_cutlass_final_profile/result_profiled_00.json": "fab3cd907034c53e0226ab31a26c8678a048e8694ed80d0757eb1ccda07ae171",
+      "phase_u/artifacts/node1/phase_u_moe_cutlass_final_profile/gpu_inventory.csv": "0f3e3d61d3c43561e7133978ca47bf9f93de0fff8bac0f722ff59fb7a640afcb",
+      "experiment_manifest.md": "5bf0920022749472875afdb1903e00d9bcadf325530c399af097160f38d4abc1",
+      "pod-gpu-h200-0.yaml": "0a7d6337a4e0c406dfd3d28529d7362c455f2e69df450bfa6dacffe93a29cda8",
+      "entrypoint_ncu.sh": "0d6f147e205f4065e886a9fbca6bc3e65074ab73f9cf09d3a19f18307e926737",
+      "artifacts/node0/ncu_full4/top5_full.ncu-rep": "038c49794cc33409f0d8cc90c9c1884e5ee7d2f078acbdbce7a1d11bfc8c918b",
+      "artifacts/node0/ncu_full4/raw.csv": "de919ade51352caa972abc5dec4d4fa273a8154bbaefa5470821291dc603f100",
+      "artifacts/node0/ncu_full4/details.csv": "854b0628f583039ef05049243f992f61bbb1ff1f32bdb29f486fa10d65217848",
+      "artifacts/node0/ncu_full4/grouped_raw_instances.csv": "8da39271b11343b01a46bae846364af7a3b65e792b39cb3b8046771d1281ea95",
+      "artifacts/node0/ncu_full4/sparse_raw_instances.csv": "f55d191b8c2bd6f8cb62fecc29ee080181f38aaf2aa7ad415c8c946d13b1feaf",
+      "artifacts/node0/ncu_full4/requests/request_contract.json": "18962f6af9b64c585a34158ca420ff678435743bf39d480688476b34340fe154",
+      "artifacts/node0/ncu_full4/requests/result_profiled_00.json": "290f017a53a50bb049886ee487c858f0737365d612a9f4487913aaac89af7ce2",
+      "build_report.py": "ae96f90360c30d1f7a0109920b145cfa336292d912bfc72f968c82030dc10695"
+    }
+  },
+  "request_contract": {
+    "input_ids_construction": "1000 + (index % 1024), index 0 through 16,383",
+    "input_ids_sha256": "8cbff7c802f11954db30888442ddf2b4636ffd876bcb3640d8ef0970aee7d25f",
+    "prompt_tokens": 16384,
+    "completion_tokens": 1,
+    "temperature": 0,
+    "ignore_eos": true,
+    "cache_policy": "flush before every sample",
+    "observed_cached_tokens": 0,
+    "response_text_sha256": "e1e40babdf2d6097bc74be191e28d0c834008f3924774e401231faac7519b629"
+  },
+  "runtime_contract": {
+    "parallelism": "TP=1, DP=1, EP=1, PP=8",
+    "profiled_stage": "PP2, layers 18-27, CUDA device 2",
+    "chunk_tokens": 2048,
+    "chunks": 8,
+    "attention_backend": "flashmla_sparse",
+    "moe_backend": "cutlass",
+    "kv_cache": "FP8 E4M3, page size 64",
+    "context_length": 1048576,
+    "max_running_requests": 48,
+    "mem_fraction_static": 0.85,
+    "cuda_graphs": "decode and piecewise/prefill graphs disabled"
+  },
+  "device": {
+    "name": "NVIDIA H200",
+    "architecture": "GH100",
+    "compute_capability": "9.0",
+    "sm_count": 132,
+    "l2_bytes": 62914560,
+    "memory_bytes": 150109880320,
+    "memory_bandwidth_bytes_per_second": 4814304000000,
+    "max_clock_hz": 1980000000,
+    "max_optin_shared_bytes_per_block": 232448,
+    "shared_bytes_per_sm": 233472,
+    "registers_per_sm": 65536,
+    "max_warps_per_sm": 64,
+    "fp8_sparse_peak_tflops": 3958.0,
+    "fp8_dense_peak_tflops": 1979.0
+  },
+  "profiler_contract": {
+    "nsys_version": "2025.3.2.474",
+    "ncu_version": "2025.3.1.0",
+    "nsys_scope": "one profiled request; PP2 exact-name summed residency",
+    "ncu_scope": "matched replay, CUDA device 2, one launch per launch configuration, kernel replay, cache-control all, clock-control none",
+    "ncu_request_e2e_seconds": 884.3652905263007,
+    "ncu_replay_note": "request wall time is invalid for performance because each launch was replayed across 33 passes"
+  },
+  "trace": {
+    "integrity": "ok",
+    "total_kernel_rows": 35137,
+    "request_window_kernel_rows_all_ranks": 35076,
+    "request_window_seconds": 1.17793712,
+    "pp2_kernel_rows": 4588,
+    "pp2_non_nccl_rows": 4535,
+    "pp2_nccl_rows": 53,
+    "pp2_all_residency_ms": 459.332786,
+    "pp2_all_union_ms": 458.478127,
+    "pp2_non_nccl_residency_ms": 431.361813,
+    "pp2_non_nccl_union_ms": 431.311893,
+    "pp2_nccl_residency_ms": 27.970973,
+    "pp2_nccl_union_ms": 27.414235,
+    "pp2_kernel_span_ms": 1110.995589,
+    "top_five_residency_ms": 367.007276,
+    "top_five_union_ms": 367.007276,
+    "top_five_share_percent": 85.08107693807379,
+    "top_five_stream_ids": [
+      124
+    ]
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "label": "CUTLASS grouped MoE",
+      "kernel_name": "void cutlass::device_kernel<cutlass::gemm::kernel::GemmUniversal<cutlass::gemm::GroupProblemShape<cute::tuple<int, int, int>>, cutlass::gemm::collective::CollectiveMma<cutlass::gemm::MainloopSm90ArrayTmaGmmaWarpSpecializedBlockwise<(int)6, cute::tuple<cute::C<(int)1>, cute::C<(int)2>, cute::C<(int)1>>, cutlass::gemm::KernelPtrArrayTmaWarpSpecializedCooperativeFP8Blockwise>, cute::tuple<cute::C<(int)128>, cute::C<(int)128>, cute::C<(int)128>>, cutlass::float_e4m3_t, cute::tuple<cute::tuple<long, cute::C<(int)1>, cute::C<(int)0>> *, cute::Layout<cute::tuple<cute::tuple<cute::C<(int)1>, int>, cute::tuple<cute::C<(int)128>, int>, int>, cute::tuple<cute::tuple<cute::C<(int)0>, int>, cute::tuple<cute::C<(int)0>, cute::C<(int)1>>, int>> *>, cutlass::float_e4m3_t, cute::tuple<cute::tuple<long, cute::C<(int)1>, cute::C<(int)0>> *, cute::Layout<cute::tuple<cute::tuple<cute::C<(int)128>, int>, cute::tuple<cute::C<(int)128>, int>, int>, cute::tuple<cute::tuple<cute::C<(int)0>, int>, cute::tuple<cute::C<(int)0>, cute::C<(int)1>>, int>> *>, cute::TiledMMA<cute::MMA_Atom<cute::SM90::GMMA::MMA_64x128x32_F32E4M3E4M3_SS_TN<(cute::SM90::GMMA::ScaleIn)1, (cute::SM90::GMMA::ScaleIn)1>>, cute::Layout<cute::tuple<cute::C<(int)2>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::C<(int)1>, cute::C<(int)0>, cute::C<(int)0>>>, cute::tuple<cute::Underscore, cute::Underscore, cute::Underscore>>, cute::SM90_TMA_LOAD_MULTICAST, cute::ComposedLayout<cute::Swizzle<(int)3, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)8>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)1>>>>, void, cute::identity, cute::SM90_TMA_LOAD, cute::ComposedLayout<cute::Swizzle<(int)3, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)8>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)1>>>>, void, cute::identity>, cutlass::epilogue::collective::CollectiveEpilogue<cutlass::epilogue::Sm90PtrArrayTmaWarpSpecialized<(int)4, (int)2, (int)16, (bool)0, (bool)0, (int)2>, cute::tuple<cute::C<(int)128>, cute::C<(int)128>, cute::C<(int)128>>, cute::tuple<cute::C<(int)128>, cute::C<(int)32>>, void, cute::tuple<long, cute::C<(int)1>, cute::C<(int)0>> *, cutlass::bfloat16_t, cute::tuple<long, cute::C<(int)1>, cute::C<(int)0>> *, cutlass::epilogue::fusion::Sm90TreeVisitor<cutlass::epilogue::fusion::Sm90Compute<cutlass::epilogue::thread::Identity, cutlass::bfloat16_t, float, (cutlass::FloatRoundStyle)2, void>, cutlass::epilogue::fusion::Sm90AccFetch>, cute::SM90_TMA_LOAD, cute::ComposedLayout<cute::Swizzle<(int)2, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)16>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)32>>, cute::tuple<cute::C<(int)32>, cute::C<(int)1>>>>, cute::SM75_U32x4_LDSM_N, cute::SM90_TMA_STORE, cute::ComposedLayout<cute::Swizzle<(int)2, (int)4, (int)3>, cute::smem_ptr_flag_bits<(int)16>, cute::Layout<cute::tuple<cute::C<(int)8>, cute::C<(int)32>>, cute::tuple<cute::C<(int)32>, cute::C<(int)1>>>>, cute::SM90_U32x4_STSM_N, cute::Copy_Atom<cute::SM90_U32x4_STSM_N, cutlass::half_t>, void>, void, void>>(T1::Params)",
+      "kernel_name_sha256": "1f086efdc858fd47665d920c1d18ed105594c43a7c9f5f4ef526ca077f451f04",
+      "launches": 160,
+      "duration_ns": 248225078,
+      "duration_ms": 248.225078,
+      "stream_ids": [
+        124
+      ],
+      "share_of_non_nccl_residency_percent": 57.54451843422681,
+      "mfu_percent": 22.662269944882922,
+      "mfu_display": "22.66%",
+      "mfu_scope": "exact useful gate/up + down model FLOPs"
+    },
+    {
+      "rank": 2,
+      "label": "Sparse MLA attention",
+      "kernel_name": "void sm90::fwd::sparse_attn_fwd_kernel<sm90::fwd::KernelTemplate<(int)576, (bool)0>, sm90::fwd::KernelTemplate<(int)576, (bool)0>::TmaParams<cute::tuple<int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnFwdParams, T2)",
+      "kernel_name_sha256": "70a8b91382b1eaa147412757b1c8c5b82e76b13e6c5e8a2b3dfa3094670169e5",
+      "launches": 70,
+      "duration_ns": 72200344,
+      "duration_ms": 72.200344,
+      "stream_ids": [
+        124
+      ],
+      "share_of_non_nccl_residency_percent": 16.737769043084025,
+      "mfu_percent": 57.232371823529604,
+      "mfu_display": "57.23%",
+      "mfu_scope": "seven BF16 sparse chunks, converted x2 to FP8-equivalent"
+    },
+    {
+      "rank": 3,
+      "label": "Dominant exact DeepGEMM name",
+      "kernel_name": "void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)256, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)3, (unsigned int)128, (unsigned int)256, (unsigned int)2, (bool)1, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+      "kernel_name_sha256": "7f38bef76167800f24a9f571c39345369949d661cda165e9f5ee39f69aa508e2",
+      "launches": 191,
+      "duration_ns": 34211635,
+      "duration_ms": 34.211635,
+      "stream_ids": [
+        124
+      ],
+      "share_of_non_nccl_residency_percent": 7.931076411717511,
+      "mfu_percent_lower_bound": 64.95912910056528,
+      "mfu_display": ">=64.96%",
+      "mfu_scope": "conservative q_b + o_proj numerator; all same-name time retained"
+    },
+    {
+      "rank": 4,
+      "label": "gatherTopK",
+      "kernel_name": "void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)",
+      "kernel_name_sha256": "9181cabc85fd86ded4a4dc0d73f5a8482f8b4bc4251576e10e9dad7602192716",
+      "launches": 240,
+      "duration_ns": 6826394,
+      "duration_ms": 6.826394,
+      "stream_ids": [
+        124
+      ],
+      "share_of_non_nccl_residency_percent": 1.5825216313248385,
+      "mfu_percent": null,
+      "mfu_display": "N/A",
+      "mfu_scope": "non-Tensor-Core indexing or elementwise data movement"
+    },
+    {
+      "rank": 5,
+      "label": "MoE shuffle/combine",
+      "kernel_name": "void apply_shuffle_mul_sum_kernel<__nv_bfloat16>(const T1 *, T1 *, const int *, int, int, int, const T1 *)",
+      "kernel_name_sha256": "c2d41d70fd6309b9af27b289799abbf134a2eb9431325eee0cc69e11051adfc9",
+      "launches": 80,
+      "duration_ns": 5543825,
+      "duration_ms": 5.543825,
+      "stream_ids": [
+        124
+      ],
+      "share_of_non_nccl_residency_percent": 1.2851914177206039,
+      "mfu_percent": null,
+      "mfu_display": "N/A",
+      "mfu_scope": "non-Tensor-Core indexing or elementwise data movement"
+    }
+  ],
+  "mfu_accounting": {
+    "normalization": "useful model FLOPs divided by family Nsys residency and 1,979 TFLOP/s dense FP8-equivalent H200 peak",
+    "grouped_moe": {
+      "gate_up_work_tflop": 74.21703487488,
+      "gate_up_duration_ms": 160.476329,
+      "gate_up_mfu_percent": 23.36936028625804,
+      "down_work_tflop": 37.10851743744,
+      "down_duration_ms": 87.748749,
+      "down_mfu_percent": 21.369131711593283,
+      "family_work_tflop": 111.32555231232,
+      "family_duration_ms": 248.225078,
+      "family_mfu_percent": 22.662269944882922
+    },
+    "sparse_attention": {
+      "sparse_chunks": 7,
+      "selected_pairs_per_layer": 29360128,
+      "flops_per_pair": 2176,
+      "raw_bf16_work_tflop": 40.88808865792,
+      "fp8_equivalent_work_tflop": 81.77617731584,
+      "family_duration_ms": 72.200344,
+      "family_mfu_percent": 57.232371823529604,
+      "first_dense_chunk_duration_ms": 2.550631,
+      "scope_note": "the first dense 2,048-token chunk is a separate FlashAttention exact name"
+    },
+    "deepgemm_exact_name": {
+      "q_b_work_tflop": 10.99511627776,
+      "o_proj_work_tflop": 32.98534883328,
+      "known_work_lower_bound_tflop": 43.98046511104,
+      "family_duration_ms": 34.211635,
+      "family_mfu_lower_bound_percent": 64.95912910056528,
+      "q_b_launches": 80,
+      "q_b_duration_ms": 9.138625,
+      "o_proj_launches": 80,
+      "o_proj_duration_ms": 23.763822,
+      "other_same_name_launches": 31,
+      "other_same_name_duration_ms": 1.309188
+    }
+  },
+  "grouped_moe_counter_sample": {
+    "scope": "one representative 2,048-token gate/up launch on PP2",
+    "nsys_gate_up_mean_ms": 2.0059541125,
+    "ncu_sample_ms": 2.016544,
+    "ncu_vs_nsys_mean_percent": 0.5279227193687897,
+    "launch": {
+      "grid_blocks": 132,
+      "threads_per_cta": 384,
+      "warps_per_cta": 12,
+      "cluster_shape": [
+        1,
+        2,
+        1
+      ],
+      "waves_per_sm": 1.0,
+      "tile_shape": [
+        128,
+        128,
+        128
+      ],
+      "qgmma_atom": [
+        64,
+        128,
+        32
+      ]
+    },
+    "residency": {
+      "registers_per_thread": 168,
+      "registers_per_cta": 64512,
+      "register_cta_limit": 1,
+      "dynamic_shared_bytes": 218624,
+      "driver_shared_bytes": 1024,
+      "allocated_shared_bytes": 219648,
+      "shared_cta_limit": 1,
+      "warp_cta_limit": 5,
+      "resident_ctas_per_sm": 1,
+      "theoretical_occupancy_percent": 18.75,
+      "achieved_active_warps_percent": 17.19,
+      "achieved_active_warps_per_sm": 11.001600000000002,
+      "register_spill_instructions": 0
+    },
+    "instruction_accounting": {
+      "qgmma_opcode": "QGMMA.64x128x32.F32.E4M3.E4M3",
+      "warp_level_instruction_count": 16220160,
+      "warps_per_warpgroup": 4,
+      "collective_qgmma_count": 4055040,
+      "flops_per_collective": 524288,
+      "issued_tensor_flops": 2126008811520,
+      "issued_tensor_tflop": 2.12600881152,
+      "inferred_padded_rows": 42240,
+      "inferred_padded_m_tiles": 330,
+      "useful_rows": 18432,
+      "useful_tensor_flops": 927712935936,
+      "useful_tensor_tflop": 0.927712935936,
+      "useful_to_issued_percent": 43.63636363636363,
+      "issued_work_amplification": 2.2916666666666665,
+      "padding_rows": 23808
+    },
+    "counters": {
+      "sm_frequency_ghz": 1.5584338849000001,
+      "sm_throughput_percent": 62.12,
+      "tensor_pipe_elapsed_percent": 62.12,
+      "tensor_pipe_active_percent": 63.28,
+      "dram_throughput_percent": 68.12,
+      "dram_tb_per_second": 3.2780957519399503,
+      "dram_read_bytes": 6459549696,
+      "dram_write_bytes": 150874624,
+      "dram_total_bytes": 6610424320,
+      "l2_hit_percent": 38.29,
+      "l1_hit_percent": 86.6,
+      "issue_active_percent": 35.84,
+      "eligible_warps_per_cycle": 0.46,
+      "stalls_per_issue_active": {
+        "barrier": 2.17,
+        "long_scoreboard": 2.06,
+        "wait": 0.58,
+        "dispatch": 0.47,
+        "not_selected": 0.28,
+        "gmma": 0.26
+      }
+    },
+    "roofline": {
+      "dense_fp8_peak_tflops": 1979.0,
+      "trace_memory_bandwidth_tb_per_second": 4.814304,
+      "ridge_flops_per_byte": 411.06668793661555,
+      "useful_arithmetic_intensity_flops_per_byte": 140.3409056706363,
+      "issued_arithmetic_intensity_flops_per_byte": 321.61457549520816,
+      "useful_measured_tflops": 460.05092670231835,
+      "issued_measured_tflops": 1054.283373692813,
+      "useful_observed_mfu_percent": 23.246636013255095,
+      "issued_observed_percent_of_peak": 53.2735408637096,
+      "useful_same_traffic_hbm_roof_tflops": 675.643783533767,
+      "useful_same_traffic_hbm_roof_mfu_percent": 34.14066617148898,
+      "minimum_same_traffic_hbm_ms": 1.373079955067233,
+      "roof_realization_percent": 68.09075106058845,
+      "same_traffic_headroom_percentage_points": 10.894030158233885,
+      "same_traffic_relative_throughput_headroom_percent": 46.86282416097613,
+      "weight_payload_bytes_257_fp8_matrices": 6467616768,
+      "weight_only_arithmetic_intensity_flops_per_byte": 143.4396887159533,
+      "measured_read_vs_weight_payload_percent": 99.87526978964007,
+      "idealized_chunk_tokens_to_cross_ridge": 5869.118822206122,
+      "bytes_required_for_100_percent_mfu": 2256842899.610121,
+      "required_byte_reduction_percent": 65.85933382851101
+    }
+  },
+  "ncu_sparse_precision_evidence": {
+    "action_id": 9,
+    "duration_ms": 0.90576,
+    "hgmma_64x64x16_warp_instructions": 9437184,
+    "hgmma_64x256x16_warp_instructions": 2097152,
+    "precision": "BF16 inputs with FP32 accumulation"
+  },
+  "ncu_actions": [
+    {
+      "id": 0,
+      "kernel": "DeepGEMM FP8",
+      "duration_us": 55.136,
+      "block_size": 384,
+      "grid_size": 132
+    },
+    {
+      "id": 1,
+      "kernel": "DeepGEMM FP8",
+      "duration_us": 110.176,
+      "block_size": 384,
+      "grid_size": 132
+    },
+    {
+      "id": 2,
+      "kernel": "DeepGEMM FP8",
+      "duration_us": 11.168,
+      "block_size": 256,
+      "grid_size": 132
+    },
+    {
+      "id": 3,
+      "kernel": "DeepGEMM FP8",
+      "duration_us": 64.32,
+      "block_size": 384,
+      "grid_size": 132
+    },
+    {
+      "id": 4,
+      "kernel": "DeepGEMM FP8",
+      "duration_us": 283.488,
+      "block_size": 384,
+      "grid_size": 132
+    },
+    {
+      "id": 5,
+      "kernel": "gatherTopK",
+      "duration_us": 34.336,
+      "block_size": 256,
+      "grid_size": 2048
+    },
+    {
+      "id": 6,
+      "kernel": "gatherTopK",
+      "duration_us": 6.08,
+      "block_size": 32,
+      "grid_size": 2048
+    },
+    {
+      "id": 7,
+      "kernel": "CUTLASS grouped MoE",
+      "duration_us": 2016.544,
+      "block_size": 384,
+      "grid_size": 132
+    },
+    {
+      "id": 8,
+      "kernel": "MoE shuffle/combine",
+      "duration_us": 65.888,
+      "block_size": 384,
+      "grid_size": 2048
+    },
+    {
+      "id": 9,
+      "kernel": "Sparse MLA attention",
+      "duration_us": 905.76,
+      "block_size": 384,
+      "grid_size": 2048
+    }
+  ],
+  "verdict": {
+    "lowest_defensible_family": "CUTLASS grouped MoE",
+    "family_mfu_percent": 22.662269944882922,
+    "one_launch_useful_mfu_percent": 23.246636013255095,
+    "one_launch_physical_issued_percent_of_peak": 53.2735408637096,
+    "structurally_inevitable": false,
+    "structural_ceiling_note": "100% useful MFU is impossible for this 2,048-token gate/up shape at measured traffic; the same-traffic HBM roof is about 34.14%.",
+    "recoverable_gap_note": "22.66% family MFU is not a hard floor: the representative gate/up launch is 10.89 percentage points below its same-traffic HBM roof, with only 68.12% DRAM throughput and 35.84% issue active."
+  },
+  "audit": [
+    {
+      "claim": "Request identity",
+      "status": "accepted",
+      "evidence": "HTTP 200; 16,384 prompt; one output; cached_tokens=0; matching input/output hashes"
+    },
+    {
+      "claim": "Top-five timing",
+      "status": "accepted",
+      "evidence": "immutable Nsys SQLite; request epoch mapped to session time; exact demangled-name aggregation"
+    },
+    {
+      "claim": "Grouped gate/up versus down split",
+      "status": "accepted",
+      "evidence": "80 + 80 launches, anchored by activation and shuffle/combine neighbors; exact family reconciliation"
+    },
+    {
+      "claim": "Sparse precision and scope",
+      "status": "accepted",
+      "evidence": "70 sparse launches; BF16 HGMMA SASS; first dense chunk retained as a separate exact name"
+    },
+    {
+      "claim": "DeepGEMM family MFU",
+      "status": "lower bound",
+      "evidence": "q_b and o_proj identified independently; 31 same-name launches retain time but contribute no numerator"
+    },
+    {
+      "claim": "Grouped hardware counters",
+      "status": "accepted representative",
+      "evidence": "NCU 2.016544 ms versus Nsys gate/up mean 2.005954 ms (+0.53%)"
+    },
+    {
+      "claim": "Whole NCU request latency",
+      "status": "rejected for timing",
+      "evidence": "884-second request includes 33-pass kernel replay; only per-launch counters are used"
+    }
+  ]
+}
