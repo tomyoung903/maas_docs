@@ -2846,6 +2846,8 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="./flashmla-walkthrough.css">
+  <script src="./flashmla-walkthrough.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -2873,6 +2875,7 @@
       <a href="#flashmla-cycle-derivation">Cycle derivation</a>
       <a href="#flashmla-gap-primer">Read the residual</a>
       <a href="#flashmla-gap-audit">51.5 &micro;s audit</a>
+      <a href="#flashmla-animated-walkthrough">Animated synthesis</a>
       <a href="#checklist">Analysis checklist</a>
       <a href="#sources">Sources</a>
     </nav>
@@ -4144,6 +4147,334 @@ with torch.cuda.stream(forward_stream):
           <a class="doc-link" href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/#one-rank-tree">Open the measured B=100 tree</a>
           <a class="doc-link" href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/gpu0_kernel_tree.json">Inspect the normalized GPU0 tree JSON</a>
           <a class="doc-link" href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/downloads/kernel_events.csv.gz">Download the normalized kernel events</a>
+        </div>
+      </section>
+
+      <section id="flashmla-animated-walkthrough">
+        <h2>FlashMLA in Motion: From One Sparse Address to 105.952 &micro;s</h2>
+        <p>This animated synthesis keeps one mental model on screen while changing scale: the indexer handoff, one physical KV record, one H64 CTA, the A/B relay, ideal roofs, the 132-SM launch, the profiler trace, address-locality controls, and the final same-clock ledger. Use the chapter buttons for deliberate reading or play the complete tour.</p>
+
+        <div class="fma-story" data-fma-story data-scene="0">
+          <div class="fma-story-top">
+            <div class="fma-story-id">
+              <strong>FlashMLA flight recorder</strong>
+              <span>10 scenes &middot; starts paused &middot; exact B=100 controlled experiment</span>
+            </div>
+            <div class="fma-controls" data-fma-controls aria-label="Animation controls" hidden>
+              <button class="fma-control" type="button" data-fma-previous aria-label="Previous walkthrough step">Previous</button>
+              <button class="fma-control play" type="button" data-fma-play aria-pressed="false">Play tour</button>
+              <button class="fma-control" type="button" data-fma-next aria-label="Next walkthrough step">Next</button>
+              <button class="fma-control" type="button" data-fma-replay aria-label="Replay the current walkthrough step">Replay</button>
+            </div>
+          </div>
+
+          <div class="fma-experiment-ribbon" aria-label="Fixed experiment shape">
+            <span>H200 &middot; TP=8</span>
+            <span>B=100</span>
+            <span>TopK=2,048</span>
+            <span>H64 scheduled</span>
+            <span>FP8-E4M3 KV</span>
+            <span>132 CTAs</span>
+            <span>one main + one combine / layer</span>
+          </div>
+
+          <nav class="fma-chapters" data-fma-chapters aria-label="Animated walkthrough chapters" hidden>
+            <button class="fma-chapter" type="button" data-fma-step data-title="The boundary" data-evidence="Contract · source path" data-scale="context → physical address" aria-current="step"><span class="fma-chapter-number">01</span><span class="fma-chapter-title">Boundary</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="Kernel inputs" data-evidence="Source geometry" data-scale="heads + one KV record"><span class="fma-chapter-number">02</span><span class="fma-chapter-title">Inputs</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="One H64 CTA" data-evidence="Source + NCU" data-scale="one CTA / one SM"><span class="fma-chapter-number">03</span><span class="fma-chapter-title">CTA</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="The A/B relay" data-evidence="Source pipeline" data-scale="one 64-record tile"><span class="fma-chapter-number">04</span><span class="fma-chapter-title">Relay</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="Two ideal roofs" data-evidence="Theoretical roof" data-scale="record → tile cadence"><span class="fma-chapter-number">05</span><span class="fma-chapter-title">50 vs 34</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="Scheduler and tail" data-evidence="Derived scheduler" data-scale="132-CTA launch"><span class="fma-chapter-number">06</span><span class="fma-chapter-title">Launch</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="What the trace timed" data-evidence="Nsight Systems" data-scale="one layer → 78 layers"><span class="fma-chapter-number">07</span><span class="fma-chapter-title">Trace</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="Locality and waiting" data-evidence="Controlled counters" data-scale="same math · new addresses"><span class="fma-chapter-number">08</span><span class="fma-chapter-title">Locality</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="Hot data still has work" data-evidence="TopK fit + SASS" data-scale="recurring tile body"><span class="fma-chapter-number">09</span><span class="fma-chapter-title">Hot tile</span></button>
+            <button class="fma-chapter" type="button" data-fma-step data-title="Close the residual" data-evidence="Same-clock audit" data-scale="critical-path ledger"><span class="fma-chapter-number">10</span><span class="fma-chapter-title">Ledger</span></button>
+          </nav>
+
+          <div class="fma-progress-row">
+            <span data-fma-count>Step 1 of 10</span>
+            <div class="fma-progress-track" data-fma-progress role="progressbar" aria-label="Progress through current walkthrough scene" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fma-progress-fill" data-fma-progress-fill></div></div>
+            <span>8 s / scene</span>
+          </div>
+
+          <div class="fma-stage">
+            <div class="fma-canvas" aria-hidden="true">
+              <div class="fma-canvas-head">
+                <span class="fma-evidence-badge" data-fma-evidence>Contract &middot; source path</span>
+                <span class="fma-scale-badge" data-fma-scale>context &rarr; physical address</span>
+              </div>
+
+              <div class="fma-scene is-active" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 1 &middot; Follow the guest list across the kernel boundary</div>
+                  <div class="fma-flow">
+                    <div class="fma-card index">
+                      <strong>DSA indexer</strong>
+                      <small>Scores the context and chooses logical positions.</small>
+                      <div class="fma-context-tokens"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                    </div>
+                    <div class="fma-card index">
+                      <strong>SGLang address manifest</strong>
+                      <small>Resolves selected positions into physical page / slot locations.</small>
+                      <div class="fma-ticket-row"><span class="fma-ticket">P17:S09</span><span class="fma-ticket">P44:S02</span><span class="fma-ticket">P08:S51</span><span class="fma-ticket">&times;2,048</span></div>
+                    </div>
+                    <div class="fma-card memory">
+                      <strong>FlashMLA starts here</strong>
+                      <small>Follows the manifest, gathers K/V, and computes sparse attention.</small>
+                      <div class="fma-ticket-row"><span class="fma-ticket">gather</span><span class="fma-ticket">QK</span><span class="fma-ticket">softmax</span><span class="fma-ticket">PV</span></div>
+                    </div>
+                  </div>
+                  <div class="fma-boundary-note">Candidate scoring is outside FlashMLA. The selected physical-address list is its input, not work that it repeats.</div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 2 &middot; Open the exact inputs</div>
+                  <div class="fma-input-grid">
+                    <div class="fma-card softmax">
+                      <strong>Query-head rack</strong>
+                      <small>Eight useful TP-local heads enter a kernel specialization that schedules 64.</small>
+                      <div class="fma-head-meter"><div class="fma-head-real"></div></div>
+                    </div>
+                    <div class="fma-card index">
+                      <strong>Selected-record rack</strong>
+                      <small>TopK=2,048 becomes 32 work tiles of 64 selected records for each request.</small>
+                      <div class="fma-tail-formula"><div class="fma-tail-part steady">32 tiles &times; 64 records</div></div>
+                    </div>
+                  </div>
+                  <div class="fma-card memory" style="margin-top:12px">
+                    <strong>One 656-byte logical KV record</strong>
+                    <div class="fma-record-bar"><span class="fma-record-latent">512 B<br>FP8 latent</span><span class="fma-record-scale" title="16 bytes of FP32 scales"></span><span class="fma-record-rope">128 B<br>BF16 RoPE</span></div>
+                    <div class="fma-record-foot"><div class="fma-mini-fact">16 B scales sit between the two visible regions.</div><div class="fma-mini-fact">724 B source-requested reads / record.</div><div class="fma-mini-fact">1,152 B K/V + 1 B validity published to shared memory.</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 3 &middot; Cut open one H64 CTA</div>
+                  <div class="fma-cta-grid">
+                    <div class="fma-sm-shell">
+                      <div class="fma-sm-title"><span>One H200 SM</span><span>one resident CTA</span></div>
+                      <div class="fma-warp-grid">
+                        <div class="fma-warp wg0">WG0 / W0</div><div class="fma-warp wg0">WG0 / W1</div><div class="fma-warp wg0">WG0 / W2</div><div class="fma-warp wg0">WG0 / W3</div>
+                        <div class="fma-warp wg1">WG1 / W4</div><div class="fma-warp wg1">WG1 / W5</div><div class="fma-warp wg1">WG1 / W6</div><div class="fma-warp wg1">WG1 / W7</div>
+                        <div class="fma-warp wg2">WG2 / W8</div><div class="fma-warp wg2">WG2 / W9</div><div class="fma-warp wg2">WG2 / W10</div><div class="fma-warp wg2">WG2 / W11</div>
+                      </div>
+                    </div>
+                    <div class="fma-cta-facts">
+                      <div class="fma-cta-fact"><strong>384</strong><small>threads = 12 warps</small></div>
+                      <div class="fma-cta-fact"><strong>3</strong><small>128-thread warpgroups</small></div>
+                      <div class="fma-cta-fact"><strong>231.424 KB</strong><small>dynamic shared memory</small></div>
+                      <div class="fma-cta-fact"><strong>18.75%</strong><small>measured occupancy</small></div>
+                      <div class="fma-cta-fact"><strong>168</strong><small>registers / thread</small></div>
+                      <div class="fma-cta-fact"><strong>cluster 1</strong><small>H64: no DSM peer</small></div>
+                    </div>
+                  </div>
+                  <div class="fma-boundary-note">The <span class="math-dim">64 &times; 576</span> BF16 query tile enters once by TMA. WG2 owns preparation; WG0 and WG1 own the two consumer halves.</div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 4 &middot; Watch two buffers make one relay</div>
+                  <div class="fma-pipeline">
+                    <div class="fma-pipeline-lane"><div class="fma-pipeline-label">WG2 producer<span>tile N+1</span></div><div class="fma-lane-track"><div class="fma-moving-tile producer">gather &rarr; dequant &rarr; publish</div></div></div>
+                    <div class="fma-pipeline-lane"><div class="fma-pipeline-label">WG0 consumer<span>tile N</span></div><div class="fma-lane-track"><div class="fma-moving-tile qk">QK &rarr; online softmax &rarr; PV[0:256]</div></div></div>
+                    <div class="fma-pipeline-lane"><div class="fma-pipeline-label">WG1 consumer<span>tile N</span></div><div class="fma-lane-track"><div class="fma-moving-tile pv">wait scores &rarr; PV[256:512]</div></div></div>
+                  </div>
+                  <div class="fma-buffer-row"><div class="fma-buffer"><strong>Buffer A</strong><br>consumers read tile N</div><div class="fma-buffer-swap">&rlarr;</div><div class="fma-buffer"><strong>Buffer B</strong><br>producer fills tile N+1</div></div>
+                  <div class="fma-boundary-note">Per tile: 64 records &times; 64 scheduled heads &middot; 44 warpgroup MMA operations &middot; 8,912,896 BF16 Tensor FLOPs.</div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 5 &middot; Race the two ideal stations on one ruler</div>
+                  <div class="fma-roof-grid">
+                    <div class="fma-roof-card"><strong>50 cycles / record</strong><span>producer conversion-throughput roof</span><div class="fma-roof-track"><div class="fma-roof-fill producer">3,200 cycles / 64-record tile</div></div></div>
+                    <div class="fma-roof-card"><strong>34 cycles / record</strong><span>all H64 QK + PV Tensor FLOPs</span><div class="fma-roof-track"><div class="fma-roof-fill tensor">2,176 cycles / tile</div></div></div>
+                  </div>
+                  <div class="fma-max-banner">Double buffering overlaps the stations: cadence = max(3,200, 2,176) = 3,200 ideal cycles / tile, not their sum.</div>
+                  <div class="fma-record-foot"><div class="fma-mini-fact">50 = 8 + 8 + 32 + 2 throughput-equivalent cycles.</div><div class="fma-mini-fact">34 = 18 QK + 16 PV Tensor service cycles.</div><div class="fma-mini-fact">Both are roofs, not measured instruction latency.</div></div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 6 &middot; Zoom out to all 132 scheduler partitions</div>
+                  <div class="fma-card">
+                    <strong>3,200 physical tiles distributed across 132 CTAs</strong>
+                    <small>Gold cells are the 29-tile partitions that set the ideal tail.</small>
+                    <div class="fma-sm-grid" data-fma-sm-grid></div>
+                    <div class="fma-scheduler-legend"><span>25 CTAs &times; 29 tiles</span><span>25 &times; 27</span><span>75 &times; 24</span><span>7 &times; 0</span><span>3,700 weighted units</span></div>
+                  </div>
+                  <div class="fma-tail-formula"><div class="fma-tail-part fill">3,200 cycles<br>fill</div><div class="fma-tail-part steady">28 &times; 3,200 recurring relay cycles</div><div class="fma-tail-part drain">2,176 cycles<br>drain</div></div>
+                  <div class="fma-boundary-note">Ideal busiest-CTA tail: 94,976 cycles = 51.90 &micro;s only when converted with the 1.830 GHz H800 reference clock.</div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 7 &middot; Reconcile one layer and all 78 launches</div>
+                  <div class="fma-trace-card">
+                    <div class="fma-trace-lane"><span class="fma-trace-label">Main splitKV</span><div class="fma-trace-track"><span class="fma-trace-segment main"></span></div><span class="fma-trace-value">103.424 &micro;s</span></div>
+                    <div class="fma-trace-lane"><span class="fma-trace-label">Combine</span><div class="fma-trace-track"><span class="fma-trace-segment combine"></span><span class="fma-trace-segment fma-trace-overlap"></span></div><span class="fma-trace-value">9.567 &micro;s</span></div>
+                    <div class="fma-trace-totals"><div class="fma-trace-total"><strong>2.949 &micro;s</strong><span>PDL overlap / layer</span></div><div class="fma-trace-total"><strong>110.042 &micro;s</strong><span>one-layer union</span></div><div class="fma-trace-total"><strong>8.583279 ms</strong><span>78-layer union</span></div></div>
+                  </div>
+                  <div class="fma-record-foot"><div class="fma-mini-fact">156 physical launches = 78 main + 78 combine.</div><div class="fma-mini-fact">8.813296 ms summed residency.</div><div class="fma-mini-fact">Minus 0.230017 ms overlap = 8.583279 ms union.</div></div>
+                  <div class="fma-boundary-note"><code>splitkv_mla</code> + <code>combine</code> produces one attention result. The combine is not a second sparse scan.</div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 8 &middot; Change physical addresses while locking the arithmetic</div>
+                  <div class="fma-locality-grid">
+                    <div class="fma-locality-card"><strong>Ordered unique</strong><div class="fma-ticket-row"><span class="fma-ticket">P08:S00</span><span class="fma-ticket">P08:S01</span><span class="fma-ticket">P08:S02</span></div><span>104.560 &micro;s main &middot; 144.908 MB DRAM &middot; 18.89% L1 hit</span><div class="fma-cache-gauge"><i style="--hit:18.89%"></i></div></div>
+                    <div class="fma-locality-card"><strong>Random unique</strong><div class="fma-ticket-row"><span class="fma-ticket">P91:S12</span><span class="fma-ticket">P03:S47</span><span class="fma-ticket">P72:S05</span></div><span>108.656 &micro;s main &middot; 157.309 MB DRAM &middot; 17.80% L1 hit</span><div class="fma-cache-gauge"><i style="--hit:17.8%"></i></div></div>
+                    <div class="fma-locality-card"><strong>One hot record</strong><div class="fma-ticket-row"><span class="fma-ticket">P17:S09</span><span class="fma-ticket">P17:S09</span><span class="fma-ticket">P17:S09</span></div><span>78.112 &micro;s main &middot; 7.958 MB DRAM &middot; 95.34% L1 hit</span><div class="fma-cache-gauge"><i style="--hit:95.34%"></i></div></div>
+                  </div>
+                  <div class="fma-lock-row"><span>locked: TopK</span><span>locked: conversions</span><span>locked: H64 HGMMA</span><span>changed: physical service</span></div>
+                  <div class="fma-stall-chain"><div class="fma-stall-node">sparse load</div><div class="fma-stall-node">pending register</div><div class="fma-stall-node">long scoreboard</div><div class="fma-stall-node">late ready barrier</div><div class="fma-stall-node">later CTA tail</div></div>
+                  <div class="fma-stall-metrics"><div class="fma-stall-metric"><strong>3.553 &rarr; 1.279</strong><span>random-to-hot long-scoreboard warps</span></div><div class="fma-stall-metric"><strong>28.92% &rarr; 40.30%</strong><span>random-to-hot issue active</span></div><div class="fma-stall-metric"><strong>24.958 &micro;s</strong><span>separate ordered-to-hot ledger contrast</span></div></div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 9 &middot; Make memory hot; the tile program remains</div>
+                  <div class="fma-fit-grid">
+                    <div class="fma-fit-chart"><div class="fma-fit-line ideal"></div><div class="fma-fit-line measured"></div><span class="fma-fit-label measured">hot fit: 4,696.46 cycles / tile</span><span class="fma-fit-label ideal">ideal: 3,200 cycles / tile</span></div>
+                    <div class="fma-instruction-list">
+                      <div class="fma-instruction-item producer"><strong>WG2 producer warp &middot; 1,080 SASS</strong><span>644 in the modeled conversion sequence; 436 other static instructions.</span></div>
+                      <div class="fma-instruction-item"><strong>WG0 &middot; 649 SASS</strong><span>40 HGMMA plus softmax, reductions, rescaling, stores, and synchronization.</span></div>
+                      <div class="fma-instruction-item"><strong>WG1 &middot; 177 SASS</strong><span>4 HGMMA plus rescaling, score handoff, and buffer release.</span></div>
+                    </div>
+                  </div>
+                  <div class="fma-record-foot"><div class="fma-mini-fact">Hot fit intercept: 11,112.44 cycles.</div><div class="fma-mini-fact">73.38 measured hot cycles / record.</div><div class="fma-mini-fact">200 request chunks across 100 requests.</div></div>
+                  <div class="fma-boundary-note">Static SASS is instruction inventory, not a cycle partition. The fitted slope is a recurring critical-path cost, not one separately timed phase.</div>
+                </div>
+              </div>
+
+              <div class="fma-scene" data-fma-visual>
+                <div class="fma-visual-stack">
+                  <div class="fma-scene-label">Scene 10 &middot; Reconstruct the controlled main kernel</div>
+                  <div class="fma-ledger-stack">
+                    <div class="fma-ledger-segment roof"><strong>52.471 &micro;s</strong>94,976-cycle modeled roof</div>
+                    <div class="fma-ledger-segment locality"><strong>24.958 &micro;s</strong>address-locality response</div>
+                    <div class="fma-ledger-segment hot"><strong>23.975 &micro;s</strong>hot steady-tile excess</div>
+                    <div class="fma-ledger-segment fixed"><strong>4.937 &micro;s</strong>fixed / drain excess</div>
+                  </div>
+                  <div class="fma-ledger-correction">Signed hot-fit residual: &minus;0.390 &micro;s (&minus;705.7 cycles). Including it closes 191,780.6 cycles at 1.81007 GHz = <strong>105.952 &micro;s</strong>.</div>
+                  <div class="fma-ledger-caution">Cycle ledger, not a serial kernel timeline. The terms are controlled differences and fitted costs on an overlapping critical path.</div>
+                  <div class="fma-boundary-note">Historical name: 103.424 &minus; 51.90 &asymp; 51.5 &micro;s used different clock evidence. Controlled residual: 105.952 &minus; 52.471 = 53.481 &micro;s on one measured H200 clock.</div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="fma-narration" aria-label="Current walkthrough explanation">
+              <article class="fma-caption-panel" data-fma-caption>
+                <span class="fma-caption-kicker">Scene 1 &middot; Contract</span><h3>The indexer writes the guest list; FlashMLA serves it.</h3>
+                <p>DSA scores the context and selects 2,048 logical positions. SGLang resolves those positions into physical page-and-slot addresses. FlashMLA begins at that manifest: it gathers only the selected K/V records and does not rescore the full context.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip index"><strong>TopK=2,048</strong><span>selected logical positions</span></div><div class="fma-number-chip memory"><strong>page / slot</strong><span>physical gather addresses</span></div></div>
+                <div class="fma-takeaway"><strong>Keep distinct:</strong> candidate scoring determines <em>which</em> records; sparse MLA computes attention over those records.</div>
+                <a class="fma-caption-link" href="#flashmla-internals">Return to the detailed boundary</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 2 &middot; Shape contract</span><h3>Padding multiplies head arithmetic, not KV preparation.</h3>
+                <p>The TP rank has eight useful query heads, while this wrapper schedules 64. Each request contributes 2,048 selected records, arranged as 32 tiles. A record has a 656-byte logical payload, but source-level requested reads and shared-memory publication are larger and are not claims about physical DRAM transactions.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip softmax"><strong>8 &rarr; 64 heads</strong><span>useful to scheduled</span></div><div class="fma-number-chip index"><strong>32 &times; 64</strong><span>tiles &times; records</span></div><div class="fma-number-chip memory"><strong>656 B</strong><span>logical KV payload</span></div><div class="fma-number-chip delay"><strong>724 B</strong><span>source-requested reads</span></div></div>
+                <div class="fma-takeaway">The 656-byte floor describes useful record content. It cannot be divided into measured time or treated as physical HBM traffic.</div>
+                <a class="fma-caption-link" href="#flashmla-internals">Review the record cutaway</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 3 &middot; Hardware residency</span><h3>One large CTA occupies each SM.</h3>
+                <p>The 384 threads form three 128-thread warpgroups. WG2 prepares K/V; WG0 performs QK, online softmax, and the first PV half; WG1 performs the second PV half. Registers and 231.424 KB of dynamic shared memory restrict residency to one CTA per SM.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip"><strong>12 warps</strong><span>three warpgroups</span></div><div class="fma-number-chip memory"><strong>231.424 KB</strong><span>dynamic shared memory</span></div><div class="fma-number-chip delay"><strong>18.75%</strong><span>occupancy</span></div><div class="fma-number-chip softmax"><strong>cluster size 1</strong><span>no H64 DSM peer</span></div></div>
+                <div class="fma-takeaway">Low residency matters later: when WG2 waits on memory, the SM has few unrelated warps available to hide that latency.</div>
+                <a class="fma-caption-link" href="#flashmla-cycle-derivation">Review the exact warpgroup mapping</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 4 &middot; Pipeline</span><h3>A/B buffers overlap producer and consumer work.</h3>
+                <p>While WG0 and WG1 consume tile <span class="math-var">N</span> from Buffer A, WG2 gathers, dequantizes, and publishes tile <span class="math-var">N</span>+1 into Buffer B. The ready barrier gates the handoff; the buffers then exchange roles.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip memory"><strong>64 records</strong><span>one tile prepared by WG2</span></div><div class="fma-number-chip"><strong>44 WGMMA</strong><span>warpgroup operations / tile</span></div><div class="fma-number-chip softmax"><strong>2 buffers</strong><span>producer-consumer relay</span></div><div class="fma-number-chip delay"><strong>1 barrier chain</strong><span>memory delay can propagate</span></div></div>
+                <div class="fma-takeaway">Overlap is why producer and Tensor service rates compete to set cadence; their times are not automatically additive.</div>
+                <a class="fma-caption-link" href="#flashmla-cycle-derivation">Review the source-derived relay</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 5 &middot; Theoretical service</span><h3>The ideal relay is producer-throughput-bound.</h3>
+                <p>DeepSeek&rsquo;s model gives 50 throughput-equivalent SM cycles per record for conversion and scale multiplication, versus 34 for all scheduled H64 QK/PV Tensor FLOPs. Across 64 records, the producer&rsquo;s 3,200-cycle roof is longer than the Tensor roof.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip memory"><strong>3,200 cycles</strong><span>64 &times; 50 producer roof</span></div><div class="fma-number-chip"><strong>2,176 cycles</strong><span>64 &times; 34 Tensor roof</span></div></div>
+                <div class="fma-takeaway"><strong>Use max, not sum.</strong> These are ideal aggregate throughput demands, not measured instruction latency or complete-kernel duration.</div>
+                <a class="fma-caption-link" href="#flashmla-cycle-derivation">Review both roof derivations</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 6 &middot; Grid tail</span><h3>The busiest CTA sets the ideal launch tail.</h3>
+                <p>The 100 requests produce 3,200 physical tiles. The pinned scheduler spreads weighted request fragments over 132 partitions, yielding 29-, 27-, 24-, and zero-tile classes. Twenty-five 29-tile CTAs are the nominal ideal stragglers.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip index"><strong>25 &times; 29</strong><span>busiest CTA class</span></div><div class="fma-number-chip softmax"><strong>94,976 cycles</strong><span>ideal fill + steady + drain</span></div><div class="fma-number-chip delay"><strong>51.90 &micro;s</strong><span>H800-reference conversion</span></div><div class="fma-number-chip"><strong>132 CTAs</strong><span>one scheduler partition / SM</span></div></div>
+                <div class="fma-takeaway">The 51.90 &micro;s number is a source-derived arithmetic floor normalized at 1.830 GHz, not an H200 measurement.</div>
+                <a class="fma-caption-link" href="#flashmla-cycle-derivation">Review the scheduler arithmetic</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 7 &middot; Profiler accounting</span><h3>Main plus combine is one sparse-attention result.</h3>
+                <p>The main kernel scans parallel splits and produces partial output/LSE state. The combine kernel merges those partials. Programmatic Dependent Launch lets a small part of combine overlap the main tail, so active union is smaller than summed residency.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip"><strong>103.424 &micro;s</strong><span>historical main mean</span></div><div class="fma-number-chip softmax"><strong>9.567 &micro;s</strong><span>combine mean</span></div><div class="fma-number-chip delay"><strong>2.949 &micro;s</strong><span>mean PDL overlap</span></div><div class="fma-number-chip memory"><strong>8.583279 ms</strong><span>78-layer active union</span></div></div>
+                <div class="fma-takeaway">Union answers timeline coverage. Summed residency answers total launch durations. Neither is automatically exclusive TPOT improvement.</div>
+                <a class="fma-caption-link" href="#flashmla-timing">Review exact union accounting</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 8 &middot; Controlled locality</span><h3>Same arithmetic can receive very different memory service.</h3>
+                <p>Ordered, random, and one-hot controls preserve TopK, conversion counts, and padded H64 Tensor work while changing physical reuse. A pending sparse load blocks a dependent WG2 instruction; the late producer barrier then delays both consumer warpgroups.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip memory"><strong>157.309 &rarr; 7.958 MB</strong><span>random-to-hot DRAM reads</span></div><div class="fma-number-chip delay"><strong>3.553 &rarr; 1.279</strong><span>long-scoreboard warps</span></div><div class="fma-number-chip softmax"><strong>28.92% &rarr; 40.30%</strong><span>issue-active cycles</span></div><div class="fma-number-chip index"><strong>24.958 &micro;s</strong><span>ordered-to-hot ledger term</span></div></div>
+                <div class="fma-takeaway">Counter changes corroborate the wait mechanism. The 24.958 &micro;s term is a separate end-to-end critical-path contrast, not isolated DRAM time.</div>
+                <a class="fma-caption-link" href="#flashmla-locality-evidence">Review locality counters</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 9 &middot; Fitted recurring work</span><h3>A cache hit does not erase the tile program.</h3>
+                <p>The high-TopK hot-address fit costs 4,696.46 cycles for one additional busiest-CTA tile, versus the 3,200-cycle ideal producer roof. Loads, address/control instructions, dequantization lowering, shared-memory publication, softmax, fences, barriers, and WGMMA coordination still execute.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip delay"><strong>4,696.46</strong><span>fitted hot cycles / tile</span></div><div class="fma-number-chip memory"><strong>1,080 SASS</strong><span>per WG2 producer warp</span></div><div class="fma-number-chip"><strong>649 + 177</strong><span>WG0 + WG1 static inventory</span></div><div class="fma-number-chip softmax"><strong>R<sup>2</sup>=0.9993</strong><span>high-TopK hot fit</span></div></div>
+                <div class="fma-takeaway">Slope is fitted marginal critical-path cost; the intercept primarily absorbs fixed work plus scheduler-pattern and nonlinear effects. SASS counts are not cycle slices.</div>
+                <a class="fma-caption-link" href="#flashmla-hot-work">Review the hot-tile evidence</a>
+              </article>
+
+              <article class="fma-caption-panel" data-fma-caption hidden>
+                <span class="fma-caption-kicker">Scene 10 &middot; Same-clock conclusion</span><h3>The residual is locality plus omitted real work—not &ldquo;dequantization time.&rdquo;</h3>
+                <p>The controlled launch measures 191,780.6 cycles at 1.81007 GHz, or 105.952 &micro;s. Converting the modeled 94,976-cycle roof with that same measured clock gives 52.471 &micro;s and a decomposable 53.481 &micro;s residual.</p>
+                <div class="fma-number-chips"><div class="fma-number-chip"><strong>52.471 &micro;s</strong><span>same-clock modeled roof</span></div><div class="fma-number-chip memory"><strong>24.958 &micro;s</strong><span>locality response</span></div><div class="fma-number-chip softmax"><strong>23.975 &micro;s</strong><span>hot recurring excess</span></div><div class="fma-number-chip delay"><strong>4.937 &minus; 0.390 &micro;s</strong><span>fixed/drain + signed correction</span></div></div>
+                <div class="fma-takeaway"><strong>Counterfactual ledger, not sequential phases.</strong> Memory service, instruction issue, producer/consumer overlap, and barriers interact on one critical path.</div>
+                <a class="fma-caption-link" href="#flashmla-gap-audit">Review the complete gap audit</a>
+              </article>
+            </aside>
+          </div>
+
+          <p class="fma-sr-only" data-fma-live aria-live="polite" aria-atomic="true"></p>
+
+          <details class="fma-transcript">
+            <summary>Read the complete ten-scene walkthrough as text</summary>
+            <ol>
+              <li><strong>Boundary:</strong> DSA chooses 2,048 logical positions; SGLang resolves page/slot addresses; FlashMLA follows the manifest without rescoring the context.</li>
+              <li><strong>Inputs:</strong> eight useful heads are padded to 64 scheduled heads; 2,048 selected records become 32 tiles; each record has a 656-byte logical payload.</li>
+              <li><strong>CTA:</strong> one 384-thread CTA forms WG0, WG1, and WG2 and occupies one SM at 18.75% occupancy because of registers and 231.424 KB shared memory.</li>
+              <li><strong>Relay:</strong> WG2 prepares tile <span class="math-var">N</span>+1 while WG0/WG1 consume tile <span class="math-var">N</span>; two shared-memory buffers alternate behind ready barriers.</li>
+              <li><strong>Roofs:</strong> the producer&rsquo;s 50 cycles/record becomes 3,200 cycles/tile; Tensor QK/PV becomes 2,176; overlap makes the ideal cadence their maximum, not their sum.</li>
+              <li><strong>Launch:</strong> the scheduler distributes 3,200 tiles across 132 CTAs; the 29-tile class sets the 94,976-cycle ideal tail, which is 51.90 &micro;s only at the H800 reference clock.</li>
+              <li><strong>Trace:</strong> each layer has a 103.424 &micro;s main and 9.567 &micro;s combine with 2.949 &micro;s PDL overlap; 78 pairs cover an 8.583279 ms active union.</li>
+              <li><strong>Locality:</strong> changing only selected addresses changes cache/DRAM service and long-scoreboard waiting; a late WG2 ready barrier propagates the delay into both consumers.</li>
+              <li><strong>Hot tile:</strong> hot-cache slope remains 4,696.46 cycles/tile because the real loop includes much more than the two arithmetic roofs; static SASS inventory is not elapsed time.</li>
+              <li><strong>Ledger:</strong> one measured H200 clock converts the roof to 52.471 &micro;s and the main to 105.952 &micro;s; locality, recurring hot work, fixed/drain work, and a signed fit correction reconstruct the 53.481 &micro;s residual.</li>
+            </ol>
+          </details>
+          <noscript><p class="fma-noscript">JavaScript is disabled, so the moving controls are unavailable. The complete walkthrough remains readable in the transcript above.</p></noscript>
         </div>
       </section>
 
