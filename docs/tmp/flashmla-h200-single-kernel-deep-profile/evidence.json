@@ -27,6 +27,18 @@
     "kv_dtype": "FP8 E4M3",
     "layout_cases": ["random_unique", "ordered_unique", "one_hot_record_per_request"]
   },
+  "historical_original_trace": {
+    "evidence_class": "direct_original_timing_total_only",
+    "main_kernel_interval_count": 78,
+    "sum_duration_us": 8067.085,
+    "mean_duration_us": 103.4241667,
+    "median_duration_us": 103.4885,
+    "minimum_duration_us": 101.824,
+    "maximum_duration_us": 104.896,
+    "standard_deviation_us": 0.70575,
+    "not_retained": ["in-kernel SM clock", "selected-index order", "cache state", "within-kernel timestamps"],
+    "warning": "The historical total is directly measured, but its internal duration cannot be decomposed exactly from the retained trace."
+  },
   "launch": {
     "grid": [1, 1, 132],
     "block": [384, 1, 1],
@@ -179,16 +191,20 @@
   },
   "older_same_build_counterfactual_ledger": {
     "evidence_class": "analytical_model_using_older_controlled_measurements",
-    "warning": "The entries reconstruct one overlapping critical path. They are not sequential hardware phases and must not be read as a literal timeline.",
+    "difference_from_historical_mean_us": 2.528,
+    "difference_from_historical_mean_percent": 2.444,
+    "difference_from_fresh_ordered_median_us": 0.320,
+    "difference_from_fresh_ordered_median_percent": 0.303,
+    "warning": "The entries reconstruct one overlapping critical path. They are not sequential hardware phases and must not be read as a literal timeline. The exact historical 103.424 microsecond mean cannot be decomposed because its clock, index order, cache state, and within-kernel timestamps were not retained.",
     "measured_cycles": 191780.6,
     "measured_duration_us": 105.952,
     "measured_clock_ghz": 1.81007,
     "terms": [
-      {"name": "ideal_arithmetic_roof", "cycles": 94976.0, "duration_us": 52.471},
-      {"name": "address_locality_response", "cycles": 45176.6, "duration_us": 24.958},
-      {"name": "hot_cache_steady_tile_excess", "cycles": 43397.2, "duration_us": 23.975},
-      {"name": "fixed_request_drain_excess", "cycles": 8936.4, "duration_us": 4.937},
-      {"name": "signed_fit_residual", "cycles": -705.7, "duration_us": -0.390}
+      {"name": "ideal_arithmetic_roof", "cycles": 94976.0, "duration_us": 52.471, "share_of_measured_total_percent": 49.5},
+      {"name": "address_locality_response", "cycles": 45176.6, "duration_us": 24.958, "share_of_measured_total_percent": 23.6},
+      {"name": "hot_cache_steady_tile_excess", "cycles": 43397.2, "duration_us": 23.975, "share_of_measured_total_percent": 22.6},
+      {"name": "fixed_request_drain_excess", "cycles": 8936.4, "duration_us": 4.937, "share_of_measured_total_percent": 4.7},
+      {"name": "signed_fit_residual", "cycles": -705.7, "duration_us": -0.390, "share_of_measured_total_percent": -0.4}
     ]
   },
   "interpretation_guardrails": [

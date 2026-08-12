@@ -3,41 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A fresh, one-kernel NVIDIA H200 profile of FlashMLA sparse FP8 decode, explaining a roughly 100 microsecond main-kernel launch with timing, scheduler, cache, SASS, and controlled causal evidence.">
+  <meta name="description" content="A concise, evidence-labeled explanation of the historical 103.424 microsecond FlashMLA main kernel and the controlled 105.952 microsecond critical-path reconstruction on NVIDIA H200.">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/flashmla-h200-single-kernel-deep-profile/">
   <link rel="icon" href="data:,">
-  <title>FlashMLA H200: Why One Kernel Takes About 106 µs | MaaS Docs</title>
+  <title>FlashMLA 103.424 µs: The Honest Explanation | MaaS Docs</title>
   <style>
     :root {
       color-scheme: light;
-      --ink: #172433;
-      --muted: #5c6a78;
-      --quiet: #5d6d79;
-      --line: #d7e0e7;
-      --line-strong: #bac8d2;
-      --paper: #ffffff;
+      --ink: #172432;
+      --muted: #5d6c78;
+      --quiet: #7b8994;
+      --line: #d7e0e6;
+      --line-strong: #bcc9d2;
+      --paper: #fff;
       --canvas: #f3f6f8;
-      --navy: #173c58;
-      --blue: #286d96;
-      --blue-soft: #e9f3f8;
-      --green: #26704e;
+      --navy: #173d59;
+      --blue: #2d6992;
+      --blue-soft: #eaf3f8;
+      --green: #28704f;
       --green-soft: #e9f5ed;
-      --amber: #95631c;
-      --amber-soft: #fbf2dc;
       --purple: #704d84;
       --purple-soft: #f2ebf6;
-      --red: #a0474d;
+      --amber: #95631d;
+      --amber-soft: #fbf2dc;
+      --red: #99464e;
       --red-soft: #faebed;
-      --slate: #4e6473;
-      --slate-soft: #edf1f4;
-      --tensor: #315f99;
-      --producer: #765187;
-      --softmax: #268076;
-      --stall: #b66a28;
-      --fixed: #536d78;
-      --shadow: 0 10px 28px rgba(24, 42, 57, .075);
-      --radius: 9px;
-      --content: 1500px;
+      --slate: #536975;
+      --slate-soft: #edf1f3;
+      --roof: #315f99;
+      --locality: #765187;
+      --recurring: #278077;
+      --fixed: #526d78;
+      --correction: #a64d54;
+      --shadow: 0 10px 30px rgba(23, 39, 53, .075);
+      --radius: 10px;
+      --page: 1240px;
     }
 
     * { box-sizing: border-box; }
@@ -46,10 +46,10 @@
       margin: 0;
       background: var(--canvas);
       color: var(--ink);
-      font: 15px/1.64 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 15px/1.62 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     a { color: #155f91; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-    a:hover { color: #0e486e; }
+    a:hover { color: #0d486f; }
     strong { font-weight: 780; }
     code {
       border-radius: 4px;
@@ -58,656 +58,332 @@
       font: .91em/1.45 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
       overflow-wrap: anywhere;
     }
-    pre {
-      margin: 15px 0 0;
-      overflow-x: auto;
-      border: 1px solid #2a3d4d;
-      border-radius: 7px;
-      background: #172433;
-      padding: 16px 18px;
-      color: #eef5f7;
-      font: 12px/1.58 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-    }
-    pre code { background: transparent; padding: 0; color: inherit; overflow-wrap: normal; }
-    svg { display: block; width: 100%; height: auto; }
     sub, sup { line-height: 0; }
     .numeric { font-variant-numeric: tabular-nums; }
     .math-var { font-family: Georgia, "Times New Roman", serif; font-style: italic; }
-    .math-op { padding: 0 .15em; font-style: normal; }
-    .math-dim { font-variant-numeric: tabular-nums; white-space: nowrap; }
-
     .skip-link {
       position: absolute;
-      top: -56px;
+      top: -54px;
       left: 12px;
-      z-index: 100;
+      z-index: 20;
       border-radius: 6px;
       background: var(--ink);
-      padding: 9px 13px;
+      padding: 8px 12px;
       color: #fff;
       text-decoration: none;
     }
     .skip-link:focus { top: 10px; }
 
-    .topbar {
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, .97);
-    }
+    .topbar { border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .97); }
     .topbar-inner {
-      width: min(calc(100% - 40px), var(--content));
+      width: min(calc(100% - 36px), var(--page));
       margin: auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 22px;
-      padding: 12px 0;
+      gap: 18px;
+      padding: 11px 0;
     }
     .brand { color: var(--navy); font-weight: 850; text-decoration: none; }
-    .toplinks { display: flex; flex-wrap: wrap; gap: 15px; font-size: 13px; }
+    .top-links { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; }
 
     .hero {
-      overflow: hidden;
       border-bottom: 1px solid var(--line);
       background:
-        radial-gradient(circle at 86% 16%, rgba(40, 109, 150, .11), transparent 27%),
-        radial-gradient(circle at 69% 92%, rgba(112, 77, 132, .09), transparent 28%),
+        radial-gradient(circle at 88% 12%, rgba(45, 105, 146, .10), transparent 25%),
+        radial-gradient(circle at 74% 78%, rgba(112, 77, 132, .08), transparent 29%),
         var(--paper);
     }
-    .hero-inner {
-      width: min(calc(100% - 40px), var(--content));
-      margin: auto;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(330px, .52fr);
-      gap: 48px;
-      align-items: end;
-      padding: 54px 0 44px;
-    }
+    .hero-inner { width: min(calc(100% - 36px), var(--page)); margin: auto; padding: 38px 0 34px; }
     .eyebrow {
-      margin: 0 0 9px;
+      margin: 0 0 7px;
       color: var(--blue);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 850;
       letter-spacing: .065em;
       text-transform: uppercase;
     }
     h1 {
-      max-width: 970px;
-      margin: 0 0 16px;
-      font-size: clamp(38px, 5vw, 66px);
-      line-height: 1.01;
-      letter-spacing: -.036em;
-    }
-    .hero-lede {
-      max-width: 920px;
+      max-width: 1020px;
       margin: 0;
-      color: #425462;
-      font-size: 18px;
-      line-height: 1.58;
+      font-size: clamp(37px, 5.3vw, 64px);
+      line-height: 1.02;
+      letter-spacing: -.038em;
     }
-    .hero-answer {
-      border: 1px solid #a9c7d7;
-      border-top: 6px solid var(--blue);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, .93);
-      padding: 20px 21px;
+    .lede { max-width: 960px; margin: 13px 0 0; color: #425462; font-size: 17px; }
+
+    .number-contrast {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+      margin-top: 24px;
+    }
+    .number-card {
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--slate);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .96);
+      padding: 16px 18px;
       box-shadow: var(--shadow);
     }
-    .hero-answer .label {
-      display: block;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 850;
-      letter-spacing: .055em;
-      text-transform: uppercase;
-    }
-    .hero-answer .big {
-      display: block;
-      margin-top: 3px;
-      color: var(--navy);
-      font-size: clamp(43px, 5.4vw, 69px);
-      font-weight: 860;
-      line-height: 1;
-      letter-spacing: -.045em;
-      font-variant-numeric: tabular-nums;
-    }
-    .hero-answer p { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
-    .status-strip {
-      width: min(calc(100% - 40px), var(--content));
-      margin: auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      border-top: 1px solid var(--line);
-      padding: 15px 0 17px;
-    }
-    .pill, .evidence-tag {
+    .number-card.controlled { border-top-color: var(--green); }
+    .tag {
       display: inline-flex;
       align-items: center;
-      border: 1px solid var(--line-strong);
+      border: 1px solid currentColor;
       border-radius: 999px;
-      background: var(--slate-soft);
-      padding: 4px 9px;
-      color: var(--slate);
-      font-size: 10px;
-      font-weight: 820;
-      letter-spacing: .025em;
-      line-height: 1.3;
-      text-transform: uppercase;
-    }
-    .direct { border-color: #9fcab0; background: var(--green-soft); color: var(--green); }
-    .older { border-color: #b7c7d2; background: var(--slate-soft); color: var(--slate); }
-    .modeled { border-color: #cdb8d7; background: var(--purple-soft); color: var(--purple); }
-    .interpreted { border-color: #e0c186; background: var(--amber-soft); color: var(--amber); }
-
-    .layout {
-      width: min(calc(100% - 40px), var(--content));
-      margin: auto;
-      display: grid;
-      grid-template-columns: 226px minmax(0, 1fr);
-      gap: 40px;
-      padding-bottom: 82px;
-    }
-    aside { padding-top: 34px; }
-    .toc {
-      position: sticky;
-      top: 18px;
-      border-left: 2px solid var(--line);
-      padding-left: 14px;
-    }
-    .toc strong {
-      display: block;
-      margin: 0 0 7px 7px;
-      color: var(--quiet);
-      font-size: 10px;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-    }
-    .toc a {
-      display: block;
-      margin-left: -16px;
-      border-left: 3px solid transparent;
-      padding: 6px 9px 6px 21px;
-      color: #40515e;
-      font-size: 13px;
-      line-height: 1.28;
-      text-decoration: none;
-    }
-    .toc a:hover, .toc a[aria-current="location"] {
-      border-left-color: var(--blue);
-      background: var(--blue-soft);
-      color: var(--navy);
-    }
-    main { min-width: 0; }
-    section {
-      border-bottom: 1px solid var(--line);
-      padding: 44px 0;
-      scroll-margin-top: 16px;
-    }
-    section:last-of-type { border-bottom: 0; }
-    h2 {
-      max-width: 1070px;
-      margin: 0 0 12px;
-      font-size: clamp(27px, 3vw, 34px);
-      line-height: 1.17;
-      letter-spacing: -.018em;
-    }
-    h3 { margin: 0 0 8px; font-size: 19px; line-height: 1.3; }
-    h4 { margin: 24px 0 7px; font-size: 15px; }
-    p { max-width: 1100px; margin: 0 0 14px; }
-    .section-lede { max-width: 1050px; color: var(--muted); font-size: 16px; }
-    .micro-note { color: var(--quiet); font-size: 11px; line-height: 1.45; }
-
-    .answer-grid, .setting-grid, .warp-grid, .evidence-grid, .limit-grid {
-      display: grid;
-      gap: 13px;
-      margin-top: 22px;
-    }
-    .answer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .setting-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .warp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .evidence-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .limit-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .card, .setting, .warp-card, .evidence-card, .limit-card {
-      min-width: 0;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--paper);
-      padding: 17px 18px;
-      box-shadow: var(--shadow);
-    }
-    .card { border-top: 5px solid var(--line-strong); }
-    .card.clock { border-top-color: var(--blue); }
-    .card.wait { border-top-color: var(--stall); }
-    .card.overlap { border-top-color: var(--purple); }
-    .card p, .warp-card p, .evidence-card p, .limit-card p { margin-bottom: 0; color: var(--muted); font-size: 13px; }
-    .setting .key {
-      display: block;
-      color: var(--quiet);
-      font-size: 10px;
+      padding: 2px 7px;
+      font-size: 9px;
       font-weight: 850;
-      letter-spacing: .04em;
+      letter-spacing: .045em;
+      line-height: 1.35;
       text-transform: uppercase;
     }
-    .setting .value {
+    .tag.original { color: var(--slate); background: var(--slate-soft); }
+    .tag.direct { color: var(--green); background: var(--green-soft); }
+    .tag.model { color: var(--purple); background: var(--purple-soft); }
+    .tag.control { color: var(--amber); background: var(--amber-soft); }
+    .tag.unknown { color: var(--red); background: var(--red-soft); }
+    .number {
       display: block;
       margin-top: 4px;
       color: var(--navy);
-      font-size: 20px;
-      font-weight: 800;
-      line-height: 1.22;
+      font-size: clamp(36px, 4.5vw, 54px);
+      font-weight: 860;
+      line-height: 1;
+      letter-spacing: -.035em;
       font-variant-numeric: tabular-nums;
     }
-    .setting small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.35; }
-
-    .callout {
-      margin: 22px 0;
-      border-left: 5px solid var(--blue);
-      background: var(--blue-soft);
-      padding: 15px 17px;
-      color: #244f67;
-    }
-    .callout strong { color: var(--ink); }
-    .callout.warning { border-left-color: var(--amber); background: var(--amber-soft); color: #654b22; }
-    .callout.good { border-left-color: var(--green); background: var(--green-soft); color: #285b43; }
-    .callout.model { border-left-color: var(--purple); background: var(--purple-soft); color: #584065; }
-
-    .visual-card {
-      margin-top: 21px;
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--paper);
-      box-shadow: var(--shadow);
-    }
-    .visual-head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 8px 18px;
-      border-bottom: 1px solid var(--line);
-      background: #f8fafb;
-      padding: 13px 16px;
-    }
-    .visual-head strong { font-size: 15px; }
-    .visual-head span { color: var(--muted); font-size: 11px; }
-    .visual-body { padding: 17px; }
-
-    .duration-bars { display: grid; gap: 13px; }
-    .duration-row {
-      display: grid;
-      grid-template-columns: 146px minmax(0, 1fr) 92px;
-      gap: 12px;
-      align-items: center;
-    }
-    .duration-label strong, .duration-label small { display: block; }
-    .duration-label small { color: var(--muted); font-size: 10px; }
-    .duration-track {
-      position: relative;
-      height: 34px;
-      overflow: hidden;
-      border: 1px solid #c8d3db;
-      border-radius: 5px;
-      background:
-        repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(91, 111, 125, .13) calc(10% - 1px), rgba(91, 111, 125, .13) 10%),
-        #f4f7f9;
-    }
-    .duration-fill {
-      height: 100%;
-      width: var(--width);
-      background: linear-gradient(90deg, #4b7fa1, var(--blue));
-    }
-    .duration-row.ordered .duration-fill { background: linear-gradient(90deg, #498374, var(--green)); }
-    .duration-row.historical .duration-fill { background: linear-gradient(90deg, #778996, var(--slate)); }
-    .duration-row.hot .duration-fill { background: linear-gradient(90deg, #9a75aa, var(--purple)); }
-    .duration-value { color: var(--navy); font-size: 17px; font-weight: 820; text-align: right; font-variant-numeric: tabular-nums; }
-    .axis-row { margin: 4px 104px 0 158px; display: flex; justify-content: space-between; color: var(--quiet); font-size: 9px; }
-
-    .table-wrap {
-      max-width: 100%;
-      margin-top: 20px;
-      overflow-x: auto;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--paper);
-      box-shadow: var(--shadow);
-    }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border-bottom: 1px solid var(--line); padding: 12px 13px; text-align: left; vertical-align: top; }
-    th { background: #f4f7f9; color: var(--ink); font-size: 10px; font-weight: 850; letter-spacing: .035em; text-transform: uppercase; }
-    td { color: var(--muted); }
-    td strong { color: var(--ink); }
-    tr:last-child td { border-bottom: 0; }
-    .fresh-row td:first-child { border-left: 4px solid var(--green); }
-    .older-row td:first-child { border-left: 4px solid var(--slate); }
-    .model-row td:first-child { border-left: 4px solid var(--purple); }
-
-    .compare-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin: 20px 0 12px;
-    }
-    .case-button {
-      border: 1px solid var(--line-strong);
-      border-radius: 999px;
-      background: var(--paper);
-      padding: 7px 12px;
-      color: var(--slate);
-      font: inherit;
-      font-size: 12px;
-      font-weight: 750;
-      cursor: pointer;
-    }
-    .case-button:hover, .case-button[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); color: var(--navy); }
-    .case-button:focus-visible { outline: 3px solid rgba(40, 109, 150, .25); outline-offset: 2px; }
-    .case-panel {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 9px;
-      border: 1px solid #bfd0db;
-      border-radius: 8px;
-      background: #f8fbfc;
-      padding: 13px;
-    }
-    .case-stat { min-width: 0; border-right: 1px solid var(--line); padding: 4px 10px; }
-    .case-stat:last-child { border-right: 0; }
-    .case-stat span, .case-stat strong { display: block; }
-    .case-stat span { color: var(--quiet); font-size: 9px; font-weight: 800; letter-spacing: .035em; text-transform: uppercase; }
-    .case-stat strong { margin-top: 3px; color: var(--navy); font-size: 18px; font-variant-numeric: tabular-nums; }
-
-    .cta-shell {
-      display: grid;
-      grid-template-columns: minmax(260px, .72fr) minmax(0, 1.28fr);
-      gap: 18px;
-      align-items: stretch;
-    }
-    .sm-card {
-      display: flex;
-      min-height: 265px;
-      flex-direction: column;
-      justify-content: space-between;
-      border: 2px solid #7790a1;
-      border-radius: 10px;
-      background: #eef3f6;
-      padding: 14px;
-    }
-    .sm-card-head { display: flex; justify-content: space-between; gap: 12px; color: var(--slate); font-size: 11px; font-weight: 800; }
-    .cta-block { border: 2px solid var(--navy); border-radius: 8px; background: var(--paper); padding: 11px; }
-    .cta-block > strong { display: block; margin-bottom: 9px; }
-    .wg-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; }
-    .warp { height: 35px; border-radius: 3px; background: var(--tensor); }
-    .warp.wg1 { background: #5780ad; }
-    .warp.wg2 { background: var(--producer); }
-    .cta-foot { margin-top: 9px; display: flex; flex-wrap: wrap; gap: 5px; }
-    .cta-foot span { border-radius: 4px; background: var(--slate-soft); padding: 3px 6px; color: var(--slate); font-size: 9px; font-weight: 750; }
-    .warp-card { box-shadow: none; }
-    .warp-card.wg0 { border-top: 5px solid var(--tensor); }
-    .warp-card.wg1 { border-top: 5px solid #5780ad; }
-    .warp-card.wg2 { border-top: 5px solid var(--producer); }
-    .sm-grid {
-      display: grid;
-      grid-template-columns: repeat(22, 1fr);
-      gap: 3px;
-      margin-top: 16px;
-    }
-    .sm-grid span { aspect-ratio: 1; border-radius: 2px; background: #4f7797; }
-    .sm-grid span.tail { background: var(--stall); }
-    .sm-grid-label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 7px; color: var(--muted); font-size: 10px; }
-
-    .relay {
-      display: grid;
-      gap: 12px;
-    }
-    .relay-lane { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 10px; align-items: center; }
-    .relay-label strong, .relay-label small { display: block; }
-    .relay-label small { color: var(--muted); font-size: 10px; }
-    .relay-track {
-      position: relative;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 3px;
-      min-height: 52px;
-      border-radius: 6px;
-      background: #eef2f4;
-      padding: 5px;
-    }
-    .relay-step {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      background: var(--producer);
-      padding: 6px;
-      color: #fff;
-      font-size: 10px;
-      font-weight: 750;
-      text-align: center;
-    }
-    .relay-lane.consumer .relay-step { background: var(--tensor); }
-    .relay-lane.consumer2 .relay-step { background: #456f9e; }
-    .relay-step.wait { background: repeating-linear-gradient(135deg, #c8884c 0, #c8884c 7px, #b66a28 7px, #b66a28 14px); }
-    .relay-legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 13px 0 0 128px; }
-    .legend-item { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; }
-    .legend-swatch { width: 11px; height: 11px; border-radius: 2px; background: var(--producer); }
-    .legend-swatch.tensor { background: var(--tensor); }
-    .legend-swatch.wait { background: var(--stall); }
-
-    .pm-figure { margin-top: 21px; }
-    .pm-svg {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfcfd;
-    }
-    .pm-grid-line { stroke: #dce4e9; stroke-width: 1; }
-    .pm-axis-line { stroke: #aebdc7; stroke-width: 1.2; }
-    .pm-region { fill: rgba(83, 109, 120, .055); }
-    .pm-label { fill: #435562; font: 700 12px Inter, ui-sans-serif, system-ui, sans-serif; }
-    .pm-tick { fill: #778693; font: 10px Inter, ui-sans-serif, system-ui, sans-serif; }
-    .pm-annotation { fill: #5d6b78; font: 10px Inter, ui-sans-serif, system-ui, sans-serif; }
-    .pm-tensor-line { fill: none; stroke: var(--tensor); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-    .pm-dram-line { fill: none; stroke: var(--stall); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-    .pm-window-end { stroke: var(--purple); stroke-width: 1.4; stroke-dasharray: 5 4; }
-    .pm-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 11px; }
-    .pm-legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; }
-    .pm-legend i { display: inline-block; width: 24px; height: 3px; border-radius: 999px; background: var(--tensor); }
-    .pm-legend i.dram { background: var(--stall); }
-    .pm-summary {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 11px;
-      margin-top: 16px;
-    }
-    .pm-summary-card { border: 1px solid var(--line); border-radius: 7px; background: var(--paper); padding: 13px; }
-    .pm-summary-card span, .pm-summary-card strong, .pm-summary-card small { display: block; }
-    .pm-summary-card span { color: var(--quiet); font-size: 9px; font-weight: 820; text-transform: uppercase; }
-    .pm-summary-card strong { margin-top: 3px; color: var(--navy); font-size: 19px; font-variant-numeric: tabular-nums; }
-    .pm-summary-card small { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
-
-    .pc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-top: 18px; }
-    .pc-card { border: 1px solid var(--line); border-top: 5px solid var(--stall); border-radius: 8px; background: var(--paper); padding: 14px; box-shadow: var(--shadow); }
-    .pc-card.barrier { border-top-color: var(--purple); }
-    .pc-card span, .pc-card strong, .pc-card small { display: block; }
-    .pc-card span { color: var(--quiet); font-size: 9px; font-weight: 820; text-transform: uppercase; }
-    .pc-card strong { margin-top: 4px; color: var(--navy); font-size: 23px; font-variant-numeric: tabular-nums; }
-    .pc-card small { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.42; }
-
-    .issue-meter { margin-top: 20px; }
-    .issue-track { display: flex; min-height: 88px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; }
-    .issue-part { display: flex; flex-direction: column; justify-content: center; min-width: 110px; padding: 12px; color: #fff; }
-    .issue-part strong { font-size: 22px; font-variant-numeric: tabular-nums; }
-    .issue-part span { font-size: 10px; font-weight: 700; }
-    .issue-part.active { width: 29.018746%; background: var(--green); }
-    .issue-part.empty { width: 70.981254%; background: var(--slate); }
-    .issue-note { margin-top: 8px; color: var(--muted); font-size: 11px; }
-
-    .stall-bars { display: grid; gap: 12px; margin-top: 20px; }
-    .stall-row {
-      display: grid;
-      grid-template-columns: 170px minmax(0, 1fr) 84px;
-      gap: 10px;
-      align-items: center;
-    }
-    .stall-row > strong { font-size: 12px; }
-    .stall-track { height: 17px; overflow: hidden; border-radius: 999px; background: #e8edef; }
-    .stall-fill { height: 100%; width: var(--width); border-radius: inherit; background: var(--stall); }
-    .stall-row.barrier .stall-fill { background: var(--purple); }
-    .stall-row.issue .stall-fill { background: var(--green); }
-    .stall-value { color: var(--navy); font-size: 12px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
-    .comparison-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
-    .comparison-panel { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 15px; box-shadow: var(--shadow); }
-    .comparison-panel .panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
-    .comparison-panel .panel-head span { color: var(--muted); font-size: 10px; }
-
-    .cache-funnel {
-      display: grid;
-      grid-template-columns: 1fr 48px 1fr 48px 1fr;
-      align-items: stretch;
-      margin-top: 22px;
-    }
-    .cache-stage { border: 1px solid var(--line); border-top: 5px solid var(--blue); border-radius: 8px; background: var(--paper); padding: 16px; box-shadow: var(--shadow); }
-    .cache-stage.l2 { border-top-color: var(--purple); }
-    .cache-stage.hbm { border-top-color: var(--stall); }
-    .cache-stage span { color: var(--quiet); font-size: 9px; font-weight: 850; text-transform: uppercase; }
-    .cache-stage strong { display: block; margin-top: 3px; font-size: 20px; font-variant-numeric: tabular-nums; }
-    .cache-stage p { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
-    .cache-arrow { display: grid; place-items: center; color: var(--quiet); font-size: 26px; }
-
-    .source-map { display: grid; gap: 8px; margin-top: 20px; }
-    .source-row {
-      display: grid;
-      grid-template-columns: 160px minmax(180px, .8fr) minmax(0, 1.35fr) 112px;
-      gap: 10px;
-      align-items: center;
-      border: 1px solid var(--line);
-      border-left: 5px solid var(--producer);
-      border-radius: 7px;
-      background: var(--paper);
-      padding: 11px 12px;
-    }
-    .source-row.consumer { border-left-color: var(--tensor); }
-    .source-row.softmax { border-left-color: var(--softmax); }
-    .source-row.fixed { border-left-color: var(--fixed); }
-    .source-row strong { font-size: 12px; }
-    .source-row span { color: var(--muted); font-size: 11px; }
-    .source-row .inventory { color: var(--navy); font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
-
-    .math-block {
-      display: grid;
-      grid-template-columns: minmax(155px, auto) 28px minmax(0, 1fr);
-      gap: 8px;
-      align-items: baseline;
-      margin-top: 18px;
-      overflow-x: auto;
-      border: 1px solid #cbbad3;
-      border-left: 5px solid var(--purple);
-      border-radius: 8px;
-      background: #fbf8fc;
-      padding: 17px;
-      color: var(--ink);
-    }
-    .math-block > span { white-space: nowrap; }
-
-    .fresh-delta {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr auto 1fr;
-      gap: 9px;
-      align-items: stretch;
-      margin-top: 21px;
-    }
-    .delta-card { display: grid; place-items: center; min-height: 105px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 12px; text-align: center; box-shadow: var(--shadow); }
-    .delta-card strong, .delta-card span { display: block; }
-    .delta-card strong { color: var(--navy); font-size: 25px; font-variant-numeric: tabular-nums; }
-    .delta-card span { color: var(--muted); font-size: 10px; }
-    .delta-arrow { display: grid; place-items: center; color: var(--quiet); font-size: 23px; }
+    .number-card h2 { margin: 7px 0 4px; font-size: 17px; line-height: 1.25; }
+    .number-card p { margin: 0; color: var(--muted); font-size: 12px; }
+    .unknown-line { margin-top: 9px !important; border-left: 3px solid var(--red); padding-left: 9px; color: #7d4046 !important; }
 
     .ledger {
-      margin-top: 20px;
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      background: var(--paper);
+      margin-top: 16px;
+      border: 1px solid #c7b9ce;
+      border-radius: 11px;
+      background: #fbf9fc;
       padding: 16px;
       box-shadow: var(--shadow);
     }
-    .ledger-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 18px; }
-    .ledger-head span { color: var(--muted); font-size: 10px; }
-    .ledger-stack { display: flex; min-height: 92px; margin-top: 13px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 7px; }
-    .ledger-segment { display: flex; min-width: 74px; flex-direction: column; justify-content: center; padding: 9px; color: #fff; font-size: 9px; line-height: 1.3; }
-    .ledger-segment strong { font-size: 13px; font-variant-numeric: tabular-nums; }
-    .ledger-segment.roof { flex: 94976; background: var(--tensor); }
-    .ledger-segment.locality { flex: 45176.6; background: var(--producer); }
-    .ledger-segment.steady { flex: 43397.2; background: var(--softmax); }
-    .ledger-segment.fixed { flex: 8936.4; background: var(--fixed); }
-    .ledger-correction { margin-top: 9px; border-left: 4px solid var(--amber); background: var(--amber-soft); padding: 9px 11px; color: #684c1e; font-size: 11px; }
-
-    .provenance-name { display: inline-flex; min-width: 88px; justify-content: center; }
-    .download-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-top: 18px; }
-    .download-card { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 15px; text-decoration: none; box-shadow: var(--shadow); }
-    .download-card strong, .download-card span { display: block; }
-    .download-card strong { color: var(--navy); }
-    .download-card span { margin-top: 4px; color: var(--muted); font-size: 11px; }
-    footer { padding: 30px 0 8px; color: var(--quiet); font-size: 11px; }
-
-    @media (max-width: 1120px) {
-      .hero-inner { grid-template-columns: 1fr; gap: 26px; }
-      .hero-answer { max-width: 620px; }
-      .answer-grid, .evidence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .setting-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .case-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .case-stat:nth-child(3) { border-right: 0; }
-      .source-row { grid-template-columns: 140px 1fr; }
-      .source-row .inventory { text-align: left; }
+    .ledger-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 7px 18px;
+      margin-bottom: 11px;
     }
-    @media (max-width: 860px) {
-      .layout { grid-template-columns: 1fr; gap: 0; }
-      aside { padding-top: 22px; }
-      .toc { position: static; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 12px; }
-      .toc strong { margin-left: 0; }
-      .toc nav { display: flex; flex-wrap: wrap; gap: 5px; }
-      .toc a { margin: 0; border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; font-size: 11px; }
-      .toc a:hover, .toc a[aria-current="location"] { border-left-color: var(--blue); }
-      .cta-shell, .comparison-pair { grid-template-columns: 1fr; }
-      .cache-funnel { grid-template-columns: 1fr; gap: 8px; }
-      .cache-arrow { transform: rotate(90deg); }
-      .fresh-delta { grid-template-columns: 1fr; }
-      .delta-arrow { transform: rotate(90deg); }
-      .limit-grid, .download-grid, .pm-summary, .pc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ledger-head strong { font-size: 17px; }
+    .ledger-head span { color: var(--purple); font-size: 10px; font-weight: 820; text-transform: uppercase; }
+    .ledger-equation {
+      display: grid;
+      grid-template-columns: minmax(125px, 1.5fr) 18px minmax(112px, .95fr) 18px minmax(125px, 1.2fr) 18px minmax(105px, .8fr) 18px minmax(95px, .68fr) 22px minmax(130px, 1fr);
+      gap: 5px;
+      align-items: stretch;
     }
-    @media (max-width: 620px) {
-      .topbar-inner { align-items: flex-start; flex-direction: column; gap: 7px; }
-      .hero-inner { padding-top: 38px; }
+    .ledger-term, .ledger-total {
+      display: flex;
+      min-width: 0;
+      min-height: 98px;
+      flex-direction: column;
+      justify-content: center;
+      border-radius: 7px;
+      padding: 9px 10px;
+      color: #fff;
+    }
+    .ledger-term .term-class, .ledger-term small, .ledger-total small { display: block; }
+    .ledger-term .term-class { opacity: .78; font-size: 8px; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+    .ledger-term strong, .ledger-total strong { margin-top: 2px; font-size: 19px; font-variant-numeric: tabular-nums; }
+    .ledger-term small, .ledger-total small { margin-top: 4px; font-size: 9px; font-weight: 700; line-height: 1.25; }
+    .ledger-term.roof { background: var(--roof); }
+    .ledger-term.locality { background: var(--locality); }
+    .ledger-term.recurring { background: var(--recurring); }
+    .ledger-term.fixed { background: var(--fixed); }
+    .ledger-term.correction { background: var(--correction); }
+    .ledger-total { border: 2px solid var(--green); background: var(--paper); color: var(--ink); }
+    .ledger-total strong { color: var(--green); font-size: 22px; }
+    .ledger-op { display: grid; place-items: center; color: var(--purple); font-size: 21px; font-weight: 800; }
+    .ledger-warning {
+      margin: 11px 0 0;
+      border-left: 5px solid var(--amber);
+      background: var(--amber-soft);
+      padding: 10px 12px;
+      color: #64491e;
+      font-size: 11px;
+      line-height: 1.48;
+    }
+    .ledger-warning strong { color: var(--ink); }
+    .answer-line {
+      margin: 10px 0 0;
+      border-left: 5px solid var(--green);
+      background: var(--green-soft);
+      padding: 10px 12px;
+      color: #285a43;
+      font-size: 12px;
+      line-height: 1.48;
+    }
+    .answer-line strong { color: var(--ink); }
+
+    .page { width: min(calc(100% - 36px), var(--page)); margin: auto; padding-bottom: 68px; }
+    section { border-bottom: 1px solid var(--line); padding: 38px 0; scroll-margin-top: 15px; }
+    section:last-of-type { border-bottom: 0; }
+    h2 { margin: 0 0 10px; font-size: clamp(27px, 3.1vw, 35px); line-height: 1.16; letter-spacing: -.02em; }
+    h3 { margin: 0 0 7px; font-size: 17px; line-height: 1.28; }
+    p { max-width: 1030px; margin: 0 0 13px; }
+    .section-lede { color: var(--muted); font-size: 16px; }
+
+    .term-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-top: 20px; }
+    .term-card {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr);
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--roof);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+    .term-card.locality { border-left-color: var(--locality); }
+    .term-card.recurring { border-left-color: var(--recurring); }
+    .term-card.fixed { border-left-color: var(--fixed); }
+    .term-card.correction { border-left-color: var(--correction); }
+    .term-value strong, .term-value span { display: block; }
+    .term-value strong { color: var(--navy); font-size: 22px; font-variant-numeric: tabular-nums; }
+    .term-value span { margin-top: 3px; color: var(--quiet); font-size: 9px; font-weight: 820; text-transform: uppercase; }
+    .term-copy p { margin: 0; color: var(--muted); font-size: 12px; }
+    .term-copy .not { margin-top: 6px; color: #805047; }
+    .term-copy .not strong { color: var(--red); }
+    .term-card.wide { grid-column: 1 / -1; }
+
+    .mechanism {
+      margin-top: 20px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .mechanism-head { border-bottom: 1px solid var(--line); background: #f8fafb; padding: 11px 14px; }
+    .mechanism-head strong { font-size: 14px; }
+    .mechanism-head span { margin-left: 9px; color: var(--muted); font-size: 10px; }
+    .lanes { display: grid; gap: 10px; padding: 15px; }
+    .lane { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; align-items: center; }
+    .lane-label strong, .lane-label span { display: block; }
+    .lane-label strong { font-size: 12px; }
+    .lane-label span { color: var(--muted); font-size: 9px; }
+    .lane-track { display: grid; grid-template-columns: 1.05fr .9fr 1fr .85fr; gap: 3px; min-height: 53px; border-radius: 6px; background: #eef2f4; padding: 4px; }
+    .lane-step { display: grid; place-items: center; border-radius: 4px; background: var(--locality); padding: 6px; color: #fff; font-size: 9px; font-weight: 750; text-align: center; }
+    .lane.consumer .lane-step { background: var(--roof); }
+    .lane.consumer2 .lane-step { background: #537faa; }
+    .lane-step.wait { background: repeating-linear-gradient(135deg, #bd7a3b 0, #bd7a3b 7px, #a96028 7px, #a96028 14px); }
+    .mechanism-note { margin: 0; border-top: 1px solid var(--line); background: var(--amber-soft); padding: 10px 14px; color: #664b21; font-size: 11px; }
+
+    .evidence-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+    .evidence-card { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 13px; box-shadow: var(--shadow); }
+    .evidence-card strong, .evidence-card span { display: block; }
+    .evidence-card strong { color: var(--navy); font-size: 20px; font-variant-numeric: tabular-nums; }
+    .evidence-card span { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+
+    .crosscheck {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 13px;
+      margin-top: 20px;
+    }
+    .cross-card { border: 1px solid var(--line); border-radius: 9px; background: var(--paper); padding: 15px; box-shadow: var(--shadow); }
+    .cross-card h3 { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 7px; }
+    .cross-card p { color: var(--muted); font-size: 12px; }
+    .mini-bars { display: grid; gap: 8px; margin-top: 12px; }
+    .mini-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 76px; gap: 8px; align-items: center; }
+    .mini-label { color: var(--muted); font-size: 10px; }
+    .mini-track { height: 18px; overflow: hidden; border-radius: 999px; background: #e8edef; }
+    .mini-fill { width: var(--w); height: 100%; border-radius: inherit; background: var(--blue); }
+    .mini-row.hot .mini-fill { background: var(--purple); }
+    .mini-value { color: var(--navy); font-size: 11px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+    .pm-proof { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+    .pm-proof div { border-radius: 6px; background: var(--slate-soft); padding: 10px; }
+    .pm-proof strong, .pm-proof span { display: block; }
+    .pm-proof strong { color: var(--navy); font-size: 17px; font-variant-numeric: tabular-nums; }
+    .pm-proof span { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+
+    .callout { margin-top: 17px; border-left: 5px solid var(--green); background: var(--green-soft); padding: 12px 14px; color: #285a43; font-size: 12px; }
+    .callout strong { color: var(--ink); }
+
+    .details-stack { display: grid; gap: 9px; margin-top: 19px; }
+    details { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); box-shadow: var(--shadow); }
+    summary { cursor: pointer; padding: 13px 15px; color: var(--navy); font-weight: 780; list-style-position: inside; }
+    summary:hover { background: #f8fafb; }
+    summary:focus-visible { outline: 3px solid rgba(45, 105, 146, .22); outline-offset: 2px; }
+    .detail-body { border-top: 1px solid var(--line); padding: 14px 16px 16px; }
+    .detail-body p, .detail-body li { color: var(--muted); font-size: 12px; }
+    .detail-body ul { margin: 8px 0 0; padding-left: 21px; }
+    .detail-body li + li { margin-top: 5px; }
+    .math-block {
+      display: grid;
+      grid-template-columns: minmax(155px, auto) 26px minmax(0, 1fr);
+      gap: 7px;
+      align-items: baseline;
+      margin-top: 13px;
+      overflow-x: auto;
+      border-left: 5px solid var(--purple);
+      background: var(--purple-soft);
+      padding: 13px;
+      font-size: 12px;
+    }
+    .math-block span { white-space: nowrap; }
+    .table-wrap { margin-top: 13px; overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: #f4f7f9; color: var(--ink); font-size: 9px; font-weight: 850; letter-spacing: .035em; text-transform: uppercase; }
+    td { color: var(--muted); }
+    td strong { color: var(--ink); }
+    tr:last-child td { border-bottom: 0; }
+
+    .downloads { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-top: 18px; }
+    .download { border: 1px solid var(--line); border-radius: 7px; background: var(--paper); padding: 12px; text-decoration: none; box-shadow: var(--shadow); }
+    .download strong, .download span { display: block; }
+    .download strong { color: var(--navy); }
+    .download span { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+    footer { padding-top: 25px; color: var(--quiet); font-size: 10px; }
+
+    @media (max-width: 1060px) {
+      .evidence-strip, .downloads { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 790px) {
+      .number-contrast, .term-grid, .crosscheck { grid-template-columns: 1fr; }
+      .term-card.wide { grid-column: auto; }
+      .ledger-equation { grid-template-columns: 1fr; }
+      .ledger-term, .ledger-total { min-height: 86px; }
+      .ledger-total { grid-column: 1 / -1; }
+      .ledger-op { min-height: 22px; }
+      .lane { grid-template-columns: 112px minmax(0, 1fr); }
+      .evidence-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .topbar-inner { align-items: flex-start; flex-direction: column; gap: 5px; }
+      .hero-inner { padding-top: 29px; }
       h1 { font-size: 40px; }
-      .answer-grid, .setting-grid, .warp-grid, .evidence-grid, .limit-grid, .download-grid, .pm-summary, .pc-grid { grid-template-columns: 1fr; }
-      .duration-row { grid-template-columns: 1fr 74px; gap: 7px; }
-      .duration-track { grid-column: 1 / -1; grid-row: 2; }
-      .duration-value { grid-column: 2; grid-row: 1; }
-      .axis-row { margin: 4px 0 0; }
-      .case-panel { grid-template-columns: 1fr 1fr; }
-      .case-stat, .case-stat:nth-child(3) { border-right: 0; }
-      .relay-lane { grid-template-columns: 1fr; }
-      .relay-legend { margin-left: 0; }
-      .stall-row { grid-template-columns: 1fr 74px; }
-      .stall-track { grid-column: 1 / -1; grid-row: 2; }
-      .source-row { grid-template-columns: 1fr; }
+      .ledger-term, .ledger-total { min-height: 76px; }
+      .term-card { grid-template-columns: 1fr; gap: 7px; }
+      .lane { grid-template-columns: 1fr; }
+      .lane-track { grid-template-columns: repeat(2, 1fr); }
+      .evidence-strip, .pm-proof, .downloads { grid-template-columns: 1fr; }
+      .mini-row { grid-template-columns: 78px minmax(0, 1fr) 68px; }
       .math-block { grid-template-columns: minmax(130px, auto) 22px minmax(310px, 1fr); }
-      .ledger-stack { flex-direction: column; }
-      .ledger-segment { min-height: 64px; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   </style>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to the report</a>
+  <a class="skip-link" href="#main">Skip to the explanation</a>
 
   <div class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="../../">MaaS Docs</a>
-      <nav class="toplinks" aria-label="Report links">
-        <a href="../">Temporary experiments</a>
-        <a href="../../cuda-kernel-basics-h200/#flashmla-animated-walkthrough">Original FlashMLA walkthrough</a>
+      <nav class="top-links" aria-label="Related pages">
+        <a href="../../cuda-kernel-basics-h200/#flashmla-animated-walkthrough">Original walkthrough</a>
         <a href="../flashmla-cache-locality-experiment/">Cache-locality experiment</a>
         <a href="evidence.json">Evidence JSON</a>
       </nav>
@@ -716,571 +392,240 @@
 
   <header class="hero">
     <div class="hero-inner">
-      <div>
-        <p class="eyebrow">Fresh Japan H200 experiment · one main kernel · 12 August 2026</p>
-        <h1>Why One FlashMLA Kernel Takes ~106&nbsp;µs</h1>
-        <p class="hero-lede">A fresh, isolated rerun follows one sparse FP8 decode kernel from its 132-CTA launch shape through warp eligibility, memory service, barriers, Tensor activity, and source/SASS work. The aim is not just to name a bottleneck, but to show which evidence supports each part of the explanation.</p>
+      <p class="eyebrow">FlashMLA H200 · one main kernel · answer first</p>
+      <h1>What Actually Explains the 103.424&nbsp;µs?</h1>
+      <p class="lede">The original trace gives one trustworthy total, not an internal stopwatch. A faithful controlled reproduction measured 105.952&nbsp;µs and preserved enough clock, address-control, and fit evidence to build an honest critical-path accounting.</p>
+
+      <div class="number-contrast">
+        <article class="number-card">
+          <span class="tag original">Historical observation</span>
+          <span class="number">103.424&nbsp;µs</span>
+          <h2>Mean of 78 original main-kernel intervals</h2>
+          <p>Exact mean <strong class="numeric">103.4241667&nbsp;µs</strong>; total <strong class="numeric">8,067.085&nbsp;µs</strong>. Median 103.4885; range 101.824–104.896; standard deviation 0.70575&nbsp;µs.</p>
+          <p class="unknown-line"><strong>Cannot be decomposed exactly:</strong> the SM clock, selected-index order, cache state, and within-kernel timestamps were not retained.</p>
+        </article>
+        <article class="number-card controlled">
+          <span class="tag direct">Controlled reproduction</span>
+          <span class="number">105.952&nbsp;µs</span>
+          <h2>One ordered-unique launch: 191,780.6 cycles at 1.81007&nbsp;GHz</h2>
+          <p>Same pinned binary and launch shape; ordered unique addresses plus hot-address and TopK controls make the residual identifiable. It is <strong>2.528&nbsp;µs (+2.444%)</strong> above the historical mean.</p>
+        </article>
       </div>
-      <div class="hero-answer" aria-label="Headline measured result">
-        <span class="label">Fresh ordered-unique reproduction · five one-replay captures</span>
-        <span class="big">105.632&nbsp;µs</span>
-        <p>The historical walkthrough measured <strong>103.424&nbsp;µs</strong>. This fresh reproduction is only <strong>2.208&nbsp;µs</strong>, or <strong>2.135%</strong>, longer. Random order measures 110.112&nbsp;µs; one-hot reuse measures 80.352&nbsp;µs.</p>
-      </div>
-    </div>
-    <div class="status-strip" aria-label="Scope and evidence status">
-      <span class="pill direct">Fresh hardware run</span>
-      <span class="pill direct">5× one-replay NCU</span>
-      <span class="pill">NVIDIA H200</span>
-      <span class="pill">Batch 100</span>
-      <span class="pill">TopK 2,048</span>
-      <span class="pill">Main kernel only</span>
-      <span class="pill">Combine excluded</span>
+
+      <figure class="ledger" aria-labelledby="ledger-title">
+        <figcaption class="ledger-head">
+          <strong id="ledger-title">The honest accounting of the 105.952 µs reproduction</strong>
+          <span>Accounting order · not execution order</span>
+        </figcaption>
+        <div class="ledger-equation" role="img" aria-label="52.471 microseconds ideal arithmetic roof plus 24.958 microseconds address-locality sensitivity plus 23.975 microseconds hot recurring overhead plus 4.937 microseconds fixed and drain overhead minus 0.390 microseconds fit correction equals 105.952 microseconds">
+          <div class="ledger-term roof"><span class="term-class">Modeled floor</span><strong>52.471 µs</strong><small>ideal arithmetic roof · 49.5%</small></div>
+          <div class="ledger-op" aria-hidden="true">+</div>
+          <div class="ledger-term locality"><span class="term-class">Controlled delta</span><strong>24.958 µs</strong><small>locality sensitivity · 23.6%</small></div>
+          <div class="ledger-op" aria-hidden="true">+</div>
+          <div class="ledger-term recurring"><span class="term-class">Fitted slope</span><strong>23.975 µs</strong><small>hot recurring overhead · 22.6%</small></div>
+          <div class="ledger-op" aria-hidden="true">+</div>
+          <div class="ledger-term fixed"><span class="term-class">Fitted intercept</span><strong>4.937 µs</strong><small>fixed / drain overhead · 4.7%</small></div>
+          <div class="ledger-op" aria-hidden="true">−</div>
+          <div class="ledger-term correction"><span class="term-class">Fit residual</span><strong>0.390 µs</strong><small>signed correction · −0.4%</small></div>
+          <div class="ledger-op" aria-hidden="true">=</div>
+          <div class="ledger-total"><small>Reconstructed main</small><strong>105.952 µs</strong><small>rounding shown to 0.001 µs</small></div>
+        </div>
+        <p class="ledger-warning"><strong>These are counterfactual critical-path accounting terms—not five sequential kernel phases.</strong> WG2 memory work overlaps WG0/WG1 compute; a late load moves downstream barriers; fitted terms bundle concurrent work. Drawing these boxes back-to-back on a time axis would be false.</p>
+        <p class="answer-line"><strong>One-sentence interpretation:</strong> about half of the reproducible launch is the ideal arithmetic floor; the other half is explained by locality-sensitive dependency delay plus real recurring and fixed work omitted by that roof. <strong>Available:</strong> causal critical-path accounting. <strong>Unavailable:</strong> exclusive stopwatch phases—or an exact decomposition of the original 103.424&nbsp;µs.</p>
+      </figure>
     </div>
   </header>
 
-  <div class="layout">
-    <aside>
-      <div class="toc">
-        <strong>On this page</strong>
-        <nav aria-label="Page overview">
-          <a href="#answer">Answer first</a>
-          <a href="#boundary">Measured boundary</a>
-          <a href="#launch">CTA and SM shape</a>
-          <a href="#relay">Overlapping relay</a>
-          <a href="#temporal">PM timeline</a>
-          <a href="#scheduler">Scheduler evidence</a>
-          <a href="#memory">Memory service</a>
-          <a href="#instructions">Source and SASS</a>
-          <a href="#attribution">100 µs attribution</a>
-          <a href="#provenance">Evidence contract</a>
-          <a href="#limits">Limits and downloads</a>
-        </nav>
+  <main class="page" id="main">
+    <section id="terms">
+      <h2>Read Each Number Precisely</h2>
+      <p class="section-lede">Every term answers a different counterfactual question. That is what makes the sum useful—and why none should be renamed as an exclusive hardware phase.</p>
+
+      <div class="term-grid">
+        <article class="term-card">
+          <div class="term-value"><strong>52.471 µs</strong><span>Modeled floor</span></div>
+          <div class="term-copy"><h3>Ideal arithmetic roof</h3><p>94,976 modeled cycles converted with the reproduction’s measured 1.81007&nbsp;GHz clock. It covers the ideal producer/Tensor cadence and final Tensor drain.</p><p class="not"><strong>Not:</strong> measured dequantization time or half of the kernel observed by a timer.</p></div>
+        </article>
+        <article class="term-card locality">
+          <div class="term-value"><strong>+24.958 µs</strong><span>Controlled delta</span></div>
+          <div class="term-copy"><h3>Address-locality sensitivity</h3><p>The complete ordered-unique critical path minus the one-hot-record critical path, with TopK, conversions, padded-head Tensor work, and specialization held fixed.</p><p class="not"><strong>Not:</strong> a standalone HBM phase; improved service also releases downstream barriers earlier.</p></div>
+        </article>
+        <article class="term-card recurring">
+          <div class="term-value"><strong>+23.975 µs</strong><span>Fitted slope</span></div>
+          <div class="term-copy"><h3>Hot recurring overhead</h3><p>The high-TopK hot-cache slope above the ideal 3,200-cycle producer roof, multiplied by the nominal 29-tile arithmetic class.</p><p class="not"><strong>Not:</strong> one separable operation; it bundles address/control, conversion lowering, publication, softmax, HGMMA coordination, and barriers that repeat per tile.</p></div>
+        </article>
+        <article class="term-card fixed">
+          <div class="term-value"><strong>+4.937 µs</strong><span>Fitted intercept</span></div>
+          <div class="term-copy"><h3>Fixed / request / drain overhead</h3><p>The hot-cache regression intercept above the ideal 2,176-cycle final drain. It primarily reflects setup, request boundaries, and drain work.</p><p class="not"><strong>Not:</strong> a perfectly isolated prologue; the intercept also absorbs scheduler-pattern and nonlinear effects.</p></div>
+        </article>
+        <article class="term-card correction wide">
+          <div class="term-value"><strong>−0.390 µs</strong><span>Signed residual</span></div>
+          <div class="term-copy"><h3>Hot-fit correction</h3><p>The actual hot TopK=2,048 point lies 705.7 cycles below its fitted line. Applying that signed correction closes the measured 191,780.6-cycle launch. Rounded microsecond labels sum to 105.951; the underlying cycle values round to 105.952.</p></div>
+        </article>
       </div>
-    </aside>
+    </section>
 
-    <main id="main">
-      <section id="answer">
-        <h2>Answer First: the Kernel Is Dependency-Limited, Not One Cleanly Isolated “HBM Phase”</h2>
-        <p class="section-lede">The fresh profiles support one cohesive story. Sparse loads make the producer late; the producer’s ready barrier then makes both consumer warpgroups late. One large CTA occupies each SM, so the scheduler has little unrelated work with which to hide those waits. At the same time, cache-hot data does not erase the substantial address, conversion, shared-memory, softmax, Tensor, and synchronization program that every tile still executes.</p>
+    <section id="overlap">
+      <h2>Why There Is No Honest “WG0 Time + WG1 Time + WG2 Time” Breakdown</h2>
+      <p class="section-lede">The kernel is a double-buffered relay. WG2 prepares the next 64-record K/V tile while WG0 and WG1 consume the current tile. The same microseconds therefore belong to several kinds of useful work—or to a dependency that propagates across them.</p>
 
-        <div class="answer-grid">
-          <article class="card clock">
-            <span class="evidence-tag direct">Fresh direct</span>
-            <h3>The ~103 µs trace reproduces at 105.632 µs</h3>
-            <p>Five ordered-unique, one-replay NCU captures span only <strong class="numeric">105.280–105.664&nbsp;µs</strong>. Their median is within <strong>2.135%</strong> of the historical main-kernel mean.</p>
-          </article>
-          <article class="card wait">
-            <span class="evidence-tag direct">Fresh counters</span>
-            <h3>Most scheduler cycles issue nothing</h3>
-            <p>The deep random report records <strong class="numeric">29.019%</strong> issue-active and <strong class="numeric">70.981%</strong> no-issue cycles, with only <strong class="numeric">0.353</strong> eligible warps per scheduler cycle.</p>
-          </article>
-          <article class="card overlap">
-            <span class="evidence-tag interpreted">Interpretation</span>
-            <h3>Waiting propagates across the relay</h3>
-            <p>Long-scoreboard and barrier pressure move together when address reuse changes. This is consistent with WG2 load service delaying the ready barrier consumed by WG0 and WG1.</p>
-          </article>
-        </div>
-
-        <div class="callout warning">
-          <strong>The essential reading rule:</strong> memory service, conversion, shared-memory publication, online softmax, HGMMA, and barriers overlap inside one double-buffered critical path. No profiler counter turns the ~106&nbsp;µs rectangle into clean, additive stopwatch phases.
-        </div>
-
-        <div class="evidence-grid" aria-label="Evidence classes used in this report">
-          <article class="evidence-card"><span class="evidence-tag direct">Fresh direct</span><h3>Measured now</h3><p>Five independent one-replay main-only captures, fresh PM timelines, core counters, and deep scheduler/SASS reports from the Japan H200 rerun.</p></article>
-          <article class="evidence-card"><span class="evidence-tag older">Older same build</span><h3>Controlled earlier</h3><p>Exact same binary and launch shape, used where the prior cache-control matrix is more complete than the new run.</p></article>
-          <article class="evidence-card"><span class="evidence-tag modeled">Analytical model</span><h3>Reconstructed</h3><p>The ideal arithmetic roof and counterfactual residual ledger explain a previous faithful reproduction; they are not direct phase timers.</p></article>
-          <article class="evidence-card"><span class="evidence-tag interpreted">Source / SASS</span><h3>Mechanism</h3><p>Source roles and compiled instruction inventories explain what must execute and how a producer delay reaches its consumers.</p></article>
-        </div>
-      </section>
-
-      <section id="boundary">
-        <h2>The Measured Boundary: Exactly One Main-Kernel Launch</h2>
-        <p class="section-lede">The headline timing excludes the dependent combine kernel. The five values per fresh address case are independent, one-replay Nsight Compute captures—the lowest-replay method used to isolate this main kernel. Every fresh case uses the same B=100, TopK=2,048, H64 sparse FP8 specialization; only the selected physical-record pattern changes.</p>
-
-        <div class="visual-card">
-          <div class="visual-head">
-            <strong>Historical target and fresh one-replay captures</strong>
-            <span>Bar length normalized to a 120 µs scale</span>
+      <div class="mechanism">
+        <div class="mechanism-head"><strong>Steady-state dependency map</strong><span>Illustrative overlap; widths are not measured durations</span></div>
+        <div class="lanes" role="img" aria-label="WG2 prepares the next sparse tile while WG0 performs QK softmax and first-half PV and WG1 performs second-half PV; late sparse loads delay the ready barrier for both consumers">
+          <div class="lane">
+            <div class="lane-label"><strong>WG2 · producer</strong><span>next tile</span></div>
+            <div class="lane-track"><div class="lane-step">sparse gather</div><div class="lane-step wait">load wait</div><div class="lane-step">dequantize + publish</div><div class="lane-step">ready signal</div></div>
           </div>
-          <div class="visual-body">
-            <div class="duration-bars" role="img" aria-label="Historical original mean 103.424 microseconds, fresh ordered unique median 105.632 microseconds, random unique median 110.112 microseconds, and one hot record median 80.352 microseconds">
-              <div class="duration-row historical">
-                <div class="duration-label"><strong>Historical original</strong><small>published walkthrough mean</small></div>
-                <div class="duration-track"><div class="duration-fill" style="--width:86.19%"></div></div>
-                <div class="duration-value">103.424 µs</div>
-              </div>
-              <div class="duration-row ordered">
-                <div class="duration-label"><strong>Fresh reproduction</strong><small>ordered unique · +2.135%</small></div>
-                <div class="duration-track"><div class="duration-fill" style="--width:88.03%"></div></div>
-                <div class="duration-value">105.632 µs</div>
-              </div>
-              <div class="duration-row random">
-                <div class="duration-label"><strong>Random unique</strong><small>same records, scattered order</small></div>
-                <div class="duration-track"><div class="duration-fill" style="--width:91.76%"></div></div>
-                <div class="duration-value">110.112 µs</div>
-              </div>
-              <div class="duration-row hot">
-                <div class="duration-label"><strong>One hot record</strong><small>counterfactual reuse</small></div>
-                <div class="duration-track"><div class="duration-fill" style="--width:66.96%"></div></div>
-                <div class="duration-value">80.352 µs</div>
-              </div>
+          <div class="lane consumer">
+            <div class="lane-label"><strong>WG0 · consumer</strong><span>current tile</span></div>
+            <div class="lane-track"><div class="lane-step">consume prior tile</div><div class="lane-step wait">wait ready</div><div class="lane-step">QK + softmax</div><div class="lane-step">PV 0–255</div></div>
+          </div>
+          <div class="lane consumer2">
+            <div class="lane-label"><strong>WG1 · consumer</strong><span>current tile</span></div>
+            <div class="lane-track"><div class="lane-step">consume prior tile</div><div class="lane-step wait">wait scores</div><div class="lane-step">rescale</div><div class="lane-step">PV 256–511</div></div>
+          </div>
+        </div>
+        <p class="mechanism-note"><strong>Propagation:</strong> sparse load → pending WG2 register → long scoreboard → late K/V-ready signal → WG0/WG1 barrier wait → later CTA completion.</p>
+      </div>
+
+      <div class="evidence-strip">
+        <article class="evidence-card"><strong>1 CTA / SM</strong><span>Registers and 227 KiB allocated shared memory each independently block a second CTA, limiting latency hiding.</span></article>
+        <article class="evidence-card"><strong>0.353 warps</strong><span>Fresh random profile: eligible warps per scheduler cycle, despite about three active warps per scheduler.</span></article>
+        <article class="evidence-card"><strong>70.981%</strong><span>Fresh random deep report: scheduler cycles with no issued instruction.</span></article>
+        <article class="evidence-card"><strong>71.05%</strong><span>Fresh PC samples classified as barrier or long scoreboard together; next-PC attribution localizes dependencies, not instruction time.</span></article>
+      </div>
+
+      <div class="callout"><strong>The absence of a serial phase chart is an evidence-quality feature.</strong> Instrumenting per-warpgroup timestamps would perturb an already register- and shared-memory-limited kernel, while aggregate counters still could not make overlapping work exclusive.</div>
+    </section>
+
+    <section id="fresh-check">
+      <h2>What the Fresh 12 August Rerun Adds</h2>
+      <p class="section-lede">The fresh run validates the scale and the memory-to-barrier mechanism. Its ordered median, 105.632&nbsp;µs, is only 0.320&nbsp;µs (0.303%) below the 105.952&nbsp;µs controlled ledger target. It does not replace that ledger’s evidence basis or retroactively decompose the original 103.424&nbsp;µs.</p>
+
+      <div class="crosscheck">
+        <article class="cross-card">
+          <h3>Five independent one-replay NCU captures <span class="tag direct">Fresh direct</span></h3>
+          <p>The ordered median reproduces the historical mean within 2.135%. Changing only selected-address layout then exposes the critical-path sensitivity.</p>
+          <div class="mini-bars" role="img" aria-label="Historical mean 103.424 microseconds, fresh ordered median 105.632, fresh random median 110.112, and fresh one-hot median 80.352">
+            <div class="mini-row"><span class="mini-label">Historical</span><div class="mini-track"><div class="mini-fill" style="--w:86.19%;background:var(--slate)"></div></div><span class="mini-value">103.424</span></div>
+            <div class="mini-row"><span class="mini-label">Ordered</span><div class="mini-track"><div class="mini-fill" style="--w:88.03%;background:var(--green)"></div></div><span class="mini-value">105.632</span></div>
+            <div class="mini-row"><span class="mini-label">Random</span><div class="mini-track"><div class="mini-fill" style="--w:91.76%"></div></div><span class="mini-value">110.112</span></div>
+            <div class="mini-row hot"><span class="mini-label">One hot</span><div class="mini-track"><div class="mini-fill" style="--w:66.96%"></div></div><span class="mini-value">80.352 µs</span></div>
+          </div>
+        </article>
+        <article class="cross-card">
+          <h3>Same-pass 1.5 µs PM sampling <span class="tag direct">Fresh temporal</span></h3>
+          <p>Ordered unique sustains DRAM and Tensor activity through a 105.024&nbsp;µs window. One-hot reuse compresses the window to 80.352&nbsp;µs, while nearly preserving sampled compute activity and removing most sampled DRAM activity.</p>
+          <div class="pm-proof">
+            <div><strong>99.78–99.90%</strong><span>hot / ordered Tensor, SM-instruction, ALU, and FMA activity area</span></div>
+            <div><strong>6.85%</strong><span>hot / ordered DRAM-read activity area</span></div>
+            <div><strong>−24.672 µs</strong><span>same-pass PM workload-window compression</span></div>
+          </div>
+          <p>“Activity area” is percent-of-peak × window time—not a duration component. It shows conserved compute work becoming denser as external-memory service collapses.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="details">
+      <h2>Methodology and Raw Evidence</h2>
+      <p class="section-lede">The explanation above is complete. Open these disclosures when you need the derivation, launch mechanics, profiler caveats, or source anchors.</p>
+
+      <div class="details-stack">
+        <details>
+          <summary>Cycle-domain derivation of the five ledger terms</summary>
+          <div class="detail-body">
+            <div class="math-block" aria-label="Controlled cycle accounting">
+              <span><span class="math-var">C</span><sub>measured</sub></span><span>=</span><span>191,780.6 cycles = 105.952 µs at 1.81007 GHz</span>
+              <span><span class="math-var">C</span><sub>roof</sub></span><span>=</span><span>94,976.0 cycles = 52.471 µs at the same clock</span>
+              <span><span class="math-var">C</span><sub>measured</sub></span><span>=</span><span>94,976.0 + 45,176.6 + 43,397.2 + 8,936.4 − 705.7 cycles</span>
             </div>
-            <div class="axis-row" aria-hidden="true"><span>0</span><span>30</span><span>60</span><span>90</span><span>120 µs</span></div>
+            <ul>
+              <li>The roof is 29 nominal producer tiles × 3,200 cycles, plus a 2,176-cycle final Tensor drain.</li>
+              <li>Locality sensitivity is ordered-unique TopK=2,048 cycles minus one-hot-record cycles at the same specialization.</li>
+              <li>The hot fit is <span class="math-var">C</span><sub>hot</sub>(<span class="math-var">T</span>) = 4,696.46<span class="math-var">T</span> + 11,112.44 cycles, with <span class="math-var">R</span><sup>2</sup> = 0.9993 over the valid high-TopK points.</li>
+              <li>Recurring excess is (4,696.46 − 3,200) cycles/tile × 29 tiles. Fixed/drain excess is 11,112.44 − 2,176 cycles.</li>
+              <li>The actual hot TopK=2,048 point is 705.7 cycles below the fit, producing the signed correction.</li>
+              <li>The earlier heuristic 103.424 − 51.90 = 51.524&nbsp;µs only motivated the audit. The 51.90&nbsp;µs roof used a different reference clock, so that subtraction is not a decomposition and is not rescaled here.</li>
+            </ul>
           </div>
-        </div>
+        </details>
 
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Address case</th><th>Five fresh repetitions</th><th>Median</th><th>Range</th><th>What changed</th></tr></thead>
-            <tbody>
-              <tr class="older-row"><td><strong>Historical walkthrough</strong></td><td>Original 78-layer CUDA-graph trace</td><td><strong class="numeric">103.424 µs mean</strong></td><td>Not retained</td><td>Target main-kernel observation; selected-index order and SM clock were not captured.</td></tr>
-              <tr class="fresh-row"><td><strong>Ordered unique</strong></td><td class="numeric">105.280, 105.600, 105.632, 105.632, 105.664</td><td><strong class="numeric">105.632 µs</strong></td><td class="numeric">0.384 µs</td><td>The same per-request records are traversed in nearby physical order.</td></tr>
-              <tr class="fresh-row"><td><strong>Random unique</strong></td><td class="numeric">109.696, 109.792, 110.112, 110.240, 110.368</td><td><strong class="numeric">110.112 µs</strong></td><td class="numeric">0.672 µs</td><td>204,800 logical references visit unique records in a seeded scattered order.</td></tr>
-              <tr class="fresh-row"><td><strong>One hot record</strong></td><td class="numeric">79.744, 80.192, 80.352, 80.640, 80.640</td><td><strong class="numeric">80.352 µs</strong></td><td class="numeric">0.896 µs</td><td>Every request repeats one private record while retaining TopK and the kernel specialization.</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <details>
+          <summary>Launch geometry, scheduler classes, and occupancy math</summary>
+          <div class="detail-body">
+            <ul>
+              <li>Grid: 132 CTAs on 132 H200 SMs. Block: 384 threads = 12 warps = three 128-thread warpgroups.</li>
+              <li>Shared memory: 231,424 B dynamic + 1,024 B driver = 232,448 B (227 KiB) allocated against the 233,472 B (228 KiB) SM configuration.</li>
+              <li>Registers: 168/thread × 384 threads = 64,512 registers/CTA. Registers and shared memory both independently cap residency at one CTA/SM. Theoretical warp occupancy is 12/64 = 18.75%.</li>
+              <li>Scheduler metadata: 25 CTAs × 29 tiles, 25 × 27, 75 × 24, and 7 × 0 = 3,200 tiles. The 29-tile class is the nominal arithmetic maximum, not a proven runtime straggler; two-fragment 24-tile CTAs can compete through extra request-boundary work.</li>
+            </ul>
+          </div>
+        </details>
 
-        <div class="compare-controls" role="group" aria-label="Select a fresh profile summary">
-          <button class="case-button" type="button" data-case="random" aria-pressed="true">Random unique</button>
-          <button class="case-button" type="button" data-case="ordered" aria-pressed="false">Ordered unique</button>
-          <button class="case-button" type="button" data-case="hot" aria-pressed="false">One hot record</button>
-        </div>
-        <div class="case-panel" aria-live="polite">
-          <div class="case-stat"><span>Timing median</span><strong data-case-stat="median">110.112 µs</strong></div>
-          <div class="case-stat"><span>Issue active</span><strong data-case-stat="issue">29.019%</strong></div>
-          <div class="case-stat"><span>Eligible warps</span><strong data-case-stat="eligible">0.353</strong></div>
-          <div class="case-stat"><span>Long scoreboard</span><strong data-case-stat="scoreboard">3.552</strong></div>
-          <div class="case-stat"><span>Barrier</span><strong data-case-stat="barrier">3.723</strong></div>
-        </div>
-        <p class="micro-note">Timing medians come from five independent one-replay NCU main-only captures per fresh case. Issue and stall values come from separate 21-pass random or 15-pass controlled reports; those deeper replay durations are not substituted for the headline timing.</p>
+        <details>
+          <summary>Fresh scheduler, cache, PC-sampling, and PM evidence</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Control</th><th>Issue active</th><th>Eligible warps / cycle</th><th>Long scoreboard</th><th>Barrier</th><th>One-replay median</th></tr></thead>
+                <tbody>
+                  <tr><td><strong>Random unique</strong></td><td>29.019%</td><td>0.353</td><td>3.552</td><td>3.723</td><td>110.112 µs</td></tr>
+                  <tr><td><strong>Ordered unique</strong></td><td>30.109%</td><td>0.368</td><td>3.278</td><td>3.603</td><td>105.632 µs</td></tr>
+                  <tr><td><strong>One hot record</strong></td><td>40.389%</td><td>0.532</td><td>1.282</td><td>2.726</td><td>80.352 µs</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <ul>
+              <li>Stall values are average resident warps in a state per issue-active cycle. They are neither percentages nor additive time slices.</li>
+              <li>Fresh random core counters: 157.278 MB HBM read, 312.751 MB L2 traffic, 36.759% L2-read hit, and 17.803% L1 global-load hit.</li>
+              <li>Of 10,766 fresh random PC samples, 3,986 are barrier and 3,664 long scoreboard. Next-PC attribution identifies dependency locations, not the cost of the displayed next instruction.</li>
+              <li>Ordinary PM metrics share timestamps in one pass group. Warp-state PM series occupy five independent replay groups and must never be aligned or summed as simultaneous activity.</li>
+              <li>The PM sampler reports zero merged samples and no sampling warning. A dropped-sample metric is absent, so no numeric zero-drop claim is made.</li>
+            </ul>
+          </div>
+        </details>
 
-        <div class="setting-grid">
-          <div class="setting"><span class="key">Cluster / node</span><span class="value">Japan / H200-36</span><small><code>prod-maas-h200-jp</code>, node <code>gpu-h200-36</code></small></div>
-          <div class="setting"><span class="key">Isolation</span><span class="value">8 GPUs reserved</span><small>One H200 profiled; the whole node allocation prevents unrelated GPU work.</small></div>
-          <div class="setting"><span class="key">Batch and selection</span><span class="value">100 × 2,048</span><small>100 requests, 2,048 selected positions per request.</small></div>
-          <div class="setting"><span class="key">Head contract</span><span class="value">8 → 64</span><small>Eight logical TP-local heads; 64 scheduled by this wrapper path.</small></div>
-          <div class="setting"><span class="key">QK / value width</span><span class="value">576 / 512</span><small>QK includes the RoPE portion; value uses the 512-wide latent.</small></div>
-          <div class="setting"><span class="key">KV representation</span><span class="value">FP8 E4M3</span><small>V32 packed sparse-decode record format.</small></div>
-          <div class="setting"><span class="key">Runtime image</span><span class="value">Pinned digest</span><small><code>sha256:8fa3a4c39786…b789f8b</code></small></div>
-          <div class="setting"><span class="key">FlashMLA source</span><span class="value">df022eb</span><small>Exact pinned commit used by the published walkthrough.</small></div>
-        </div>
-      </section>
+        <details>
+          <summary>Pinned source and SASS evidence for what still executes with hot data</summary>
+          <div class="detail-body">
+            <ul>
+              <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L365">WG0</a>: K-ready wait, QK, online softmax, score publication, and local-half PV. Static loop footprint: 649 SASS slots.</li>
+              <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L366-L453">WG1</a>: score wait, rescaling, and remote-half PV. Static loop footprint: 177 slots.</li>
+              <li><a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L454-L671">WG2</a>: sparse indices/KV gather, dequantization, publication, and ready signaling. Static loop footprint: 1,080 slots—644 conversion/multiply and 436 load/store/address/control/fence/barrier slots.</li>
+              <li>Static SASS is code footprint, not cycles. Predication and branches mean not every slot executes in every lane. The fresh random report independently records 26,479,662 dynamic warp instructions and no observed local-memory spilling requests.</li>
+            </ul>
+          </div>
+        </details>
 
-      <section id="launch">
-        <h2>One Large CTA Occupies Each of the H200’s 132 SMs</h2>
-        <p class="section-lede">The launch is one wave: 132 CTAs for 132 SMs. Each CTA contains three 128-thread warpgroups. The block uses 168 registers per thread—64,512 registers across 384 threads—and allocates 231,424 B of dynamic plus 1,024 B of driver shared memory: 232,448 B (227 KiB) against the SM’s 233,472 B (228 KiB) configuration. Registers and shared memory each independently prohibit a second CTA, leaving 12 resident warps and 18.75% theoretical warp occupancy.</p>
-
-        <div class="visual-card">
-          <div class="visual-head"><strong>One CTA / one SM cutaway</strong><span>Fresh launch attributes · source roles</span></div>
-          <div class="visual-body">
-            <div class="cta-shell">
-              <div class="sm-card">
-                <div class="sm-card-head"><span>Hopper SM</span><span>one resident CTA</span></div>
-                <div class="cta-block">
-                  <strong>384 threads · 12 warps</strong>
-                  <div class="wg-row" role="img" aria-label="Four WG0 warps, four WG1 warps, and four WG2 warps">
-                    <span class="warp"></span><span class="warp"></span><span class="warp"></span><span class="warp"></span>
-                    <span class="warp wg1"></span><span class="warp wg1"></span><span class="warp wg1"></span><span class="warp wg1"></span>
-                    <span class="warp wg2"></span><span class="warp wg2"></span><span class="warp wg2"></span><span class="warp wg2"></span>
-                  </div>
-                  <div class="cta-foot"><span>64,512 registers / CTA</span><span>231,424 B dynamic + 1,024 B driver shared</span><span>12 barriers</span></div>
-                </div>
-                <div class="sm-card-head"><span>18.75% warp occupancy</span><span>no second CTA</span></div>
-              </div>
-              <div>
-                <div class="warp-grid">
-                  <article class="warp-card wg0"><span class="evidence-tag interpreted">WG0</span><h3>QK + softmax + PV 0–255</h3><p>Consumes each prepared K/V tile, calculates attention scores, maintains online normalization, and accumulates the first half of the value output.</p></article>
-                  <article class="warp-card wg1"><span class="evidence-tag interpreted">WG1</span><h3>PV 256–511</h3><p>Waits for the probabilities, accumulates the second value half, and participates in the score and buffer-release handoff.</p></article>
-                  <article class="warp-card wg2"><span class="evidence-tag interpreted">WG2</span><h3>Gather + dequantize + publish</h3><p>Follows sparse physical addresses, loads FP8/scale/RoPE data, converts it, and fills alternating shared-memory buffers.</p></article>
-                </div>
-                <div class="sm-grid" data-sm-grid role="img" aria-label="132 H200 streaming multiprocessors, each receiving one CTA"></div>
-                <div class="sm-grid-label"><span>132 cells = 132 SMs = 132 CTAs</span><span>orange: 25-CTA nominal 29-tile scheduler class</span></div>
-              </div>
+        <details>
+          <summary>What is direct, controlled, modeled, fitted, and unknowable</summary>
+          <div class="detail-body">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Claim</th><th>Evidence class</th><th>Boundary</th></tr></thead>
+                <tbody>
+                  <tr><td><strong>Historical 103.424 µs</strong></td><td><span class="tag original">Direct original</span></td><td>Mean of 78 main intervals; only the total is retained.</td></tr>
+                  <tr><td><strong>Controlled 105.952 µs</strong></td><td><span class="tag direct">Direct control</span></td><td>One clock-measured ordered-unique launch that the ledger reconstructs.</td></tr>
+                  <tr><td><strong>24.958 µs locality response</strong></td><td><span class="tag control">Controlled delta</span></td><td>End-to-end critical-path response, not isolated DRAM time.</td></tr>
+                  <tr><td><strong>52.471 µs roof</strong></td><td><span class="tag model">Modeled</span></td><td>Aggregate-throughput floor at the measured clock, not a timer.</td></tr>
+                  <tr><td><strong>23.975 / 4.937 / −0.390 µs</strong></td><td><span class="tag model">Fitted</span></td><td>Regression-derived recurring, intercept, and residual accounting.</td></tr>
+                  <tr><td><strong>Exact original internal split</strong></td><td><span class="tag unknown">Unknown</span></td><td>Cannot be recovered without its clock, address order, cache state, or intrusive internal timestamps.</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        </details>
+      </div>
 
-        <div class="callout warning">
-          <strong>Why low occupancy matters here:</strong> occupancy is not itself a performance score. It matters because a warp stalled on a sparse dependency cannot be hidden behind a second unrelated CTA on the same SM. The scheduler can only search among the other warps of this same producer/consumer pipeline.
-        </div>
-        <p class="micro-note">The scheduler metadata contains 25 × 29-tile, 25 × 27-tile, 75 × 24-tile, and 7 empty partitions: 3,200 tiles across 125 work-bearing CTAs. The 29-tile class is the nominal arithmetic maximum, not a directly proven runtime straggler; a 24-tile CTA carrying two request fragments can compete because it executes extra Q prologues and output epilogues.</p>
-      </section>
+      <div class="downloads">
+        <a class="download" href="evidence.json"><strong>Evidence JSON</strong><span>Exact settings, values, evidence classes, hashes, and guardrails.</span></a>
+        <a class="download" href="metrics.csv"><strong>Metrics CSV</strong><span>Normalized timing, counter, PM, and ledger rows.</span></a>
+        <a class="download" href="pm_activity.csv"><strong>PM activity CSV</strong><span>Workload-clipped same-pass 1.5 µs activity samples.</span></a>
+        <a class="download" href="../flashmla-cache-locality-experiment/"><strong>Cache experiment</strong><span>Standalone explanation of L1, L2, and HBM locality controls.</span></a>
+      </div>
 
-      <section id="relay">
-        <h2>The Kernel Is an Overlapping A/B Relay, Not a List of Serial Stages</h2>
-        <p class="section-lede">WG2 prepares the next 64-record tile while WG0 and WG1 consume the current tile. Two shared-memory buffers alternate. A producer load delay matters end to end because the buffer-ready barrier is a dependency edge into both consumer warpgroups.</p>
-
-        <div class="visual-card">
-          <div class="visual-head"><strong>Conceptual steady-state dependency map</strong><span>Source-derived ordering · widths are illustrative, not measured time</span></div>
-          <div class="visual-body">
-            <div class="relay" role="img" aria-label="WG2 prepares alternating tiles while WG0 and WG1 consume the previous tile, with a sparse-load wait delaying the next ready barrier">
-              <div class="relay-lane producer">
-                <div class="relay-label"><strong>WG2</strong><small>producer</small></div>
-                <div class="relay-track"><div class="relay-step">prepare tile N</div><div class="relay-step wait">sparse-load wait</div><div class="relay-step">prepare tile N+1</div><div class="relay-step">publish + signal</div></div>
-              </div>
-              <div class="relay-lane consumer">
-                <div class="relay-label"><strong>WG0</strong><small>QK / softmax / PV</small></div>
-                <div class="relay-track"><div class="relay-step">consume tile N−1</div><div class="relay-step">consume tile N</div><div class="relay-step wait">wait ready</div><div class="relay-step">consume tile N+1</div></div>
-              </div>
-              <div class="relay-lane consumer2">
-                <div class="relay-label"><strong>WG1</strong><small>second PV half</small></div>
-                <div class="relay-track"><div class="relay-step">consume tile N−1</div><div class="relay-step">consume tile N</div><div class="relay-step wait">wait ready</div><div class="relay-step">consume tile N+1</div></div>
-              </div>
-            </div>
-            <div class="relay-legend"><span class="legend-item"><span class="legend-swatch"></span>producer work</span><span class="legend-item"><span class="legend-swatch tensor"></span>consumer work</span><span class="legend-item"><span class="legend-swatch wait"></span>dependency wait</span></div>
-          </div>
-        </div>
-
-        <div class="callout model">
-          <strong>Do not add producer time to Tensor time.</strong> In steady state, their service demands compete through overlap; the slower dependency chain controls cadence. Fill, handoffs, request boundaries, and the final drain still contribute to the launch tail.
-        </div>
-      </section>
-
-      <section id="temporal">
-        <h2>Fresh 1.5 µs Sampling Shows the Whole Relay Compress When Data Is Hot</h2>
-        <p class="section-lede">This is the closest direct temporal view of the single kernel. Within one ordinary PM-sampling pass group, Tensor, SM-instruction, ALU, FMA, DRAM-read, and L2-throughput metrics share the exact same timestamp IDs. Ordered unique sustains both DRAM and Tensor activity through most of a 105.024&nbsp;µs sampling window; the one-hot control spends almost all of its DRAM activity in an early fill burst, then runs a denser Tensor pattern and finishes after 80.352&nbsp;µs.</p>
-
-        <div class="visual-card pm-figure">
-          <div class="visual-head"><strong>Same-pass Tensor and DRAM-read activity</strong><span>Fresh direct PM sampling · nominal 1.5 µs bins · lines join samples only</span></div>
-          <div class="visual-body">
-            <svg class="pm-svg" viewBox="0 0 1000 570" role="img" aria-labelledby="pm-title pm-desc">
-              <title id="pm-title">Ordered-unique and one-hot FlashMLA PM activity over time</title>
-              <desc id="pm-desc">Ordered unique sustains DRAM-read and Tensor activity across about 105 microseconds. One-hot has an early DRAM burst, then near-zero DRAM and dense Tensor activity until about 80 microseconds.</desc>
-              <rect class="pm-region" x="50" y="50" width="900" height="180"></rect>
-              <rect class="pm-region" x="50" y="320" width="657.6" height="180"></rect>
-              <line class="pm-grid-line" x1="50" y1="50" x2="50" y2="500"></line>
-              <line class="pm-grid-line" x1="254.5" y1="50" x2="254.5" y2="500"></line>
-              <line class="pm-grid-line" x1="459.1" y1="50" x2="459.1" y2="500"></line>
-              <line class="pm-grid-line" x1="663.6" y1="50" x2="663.6" y2="500"></line>
-              <line class="pm-grid-line" x1="868.2" y1="50" x2="868.2" y2="500"></line>
-              <line class="pm-grid-line" x1="950" y1="50" x2="950" y2="500"></line>
-              <line class="pm-axis-line" x1="50" y1="230" x2="950" y2="230"></line>
-              <line class="pm-axis-line" x1="50" y1="500" x2="950" y2="500"></line>
-              <line class="pm-window-end" x1="909.3" y1="50" x2="909.3" y2="230"></line>
-              <line class="pm-window-end" x1="707.6" y1="320" x2="707.6" y2="500"></line>
-              <text class="pm-label" x="50" y="38">Ordered unique · 105.024 µs window</text>
-              <text class="pm-label" x="50" y="308">One hot record · 80.352 µs window</text>
-              <text class="pm-annotation" x="70" y="70">early DRAM fill</text>
-              <text class="pm-annotation" x="770" y="70">drain begins ~87–90 µs</text>
-              <text class="pm-annotation" x="80" y="340">single large DRAM burst</text>
-              <text class="pm-annotation" x="540" y="340">drain begins ~67 µs</text>
-              <polyline class="pm-tensor-line" points="53.9,230.0 66.2,230.0 78.5,230.0 90.8,220.5 103.1,139.9 115.5,187.2 127.8,150.0 140.1,170.8 152.1,165.2 164.4,156.4 176.7,214.5 189.0,159.8 201.3,199.6 213.6,173.3 225.9,163.3 238.2,182.2 250.3,155.7 262.6,191.2 274.9,154.7 287.2,182.5 299.5,158.3 311.8,170.6 324.1,166.9 336.4,161.4 348.5,174.2 360.8,156.2 373.1,181.3 385.4,152.4 397.7,189.6 410.0,174.7 422.3,196.5 434.6,178.1 446.7,167.1 459.0,165.4 471.3,163.4 483.6,168.0 495.9,162.9 508.2,167.2 520.5,161.8 532.8,169.5 544.8,160.8 557.1,171.3 569.4,160.9 581.8,170.2 594.1,160.3 606.4,174.7 618.7,177.6 631.0,179.7 643.0,178.7 655.3,172.2 667.6,161.8 679.9,167.6 692.2,163.5 704.5,168.0 716.9,163.2 729.2,166.5 741.2,164.4 753.5,165.0 765.8,159.6 778.1,172.8 790.4,211.0 802.7,196.5 815.0,213.4 827.3,215.2 839.4,217.5 851.7,213.8 864.0,220.0 876.3,229.8 888.6,230.0 900.9,230.0 913.2,230.0"></polyline>
-              <polyline class="pm-dram-line" points="53.9,156.0 66.2,115.2 78.5,129.8 90.8,177.3 103.1,167.7 115.5,182.2 127.8,166.5 140.1,172.6 152.1,179.1 164.4,153.5 176.7,189.3 189.0,183.0 201.3,176.3 213.6,169.7 225.9,172.6 238.2,174.5 250.3,173.3 262.6,178.4 274.9,171.7 287.2,175.6 299.5,167.5 311.8,172.2 324.1,166.8 336.4,170.5 348.5,169.4 360.8,169.9 373.1,179.0 385.4,164.4 397.7,160.1 410.0,194.8 422.3,173.2 434.6,163.9 446.7,170.2 459.0,166.8 471.3,170.3 483.6,165.5 495.9,171.2 508.2,166.0 520.5,170.7 532.8,166.2 544.8,171.3 557.1,167.8 569.4,169.7 581.8,174.6 594.1,168.1 606.4,151.7 618.7,179.0 631.0,177.6 643.0,163.2 655.3,170.3 667.6,166.7 679.9,169.4 692.2,167.9 704.5,168.8 716.9,168.6 729.2,169.5 741.2,168.3 753.5,180.6 765.8,203.8 778.1,204.8 790.4,214.5 802.7,216.6 815.0,217.4 827.3,217.1 839.4,220.6 851.7,229.1 864.0,230.0 876.3,230.0 888.6,230.0 900.9,230.0 913.2,230.0"></polyline>
-              <polyline class="pm-tensor-line" points="50.0,500.0 61.3,500.0 73.6,500.0 85.9,425.4 98.2,428.1 110.5,411.3 122.8,409.0 135.1,415.4 147.4,435.9 159.4,437.9 171.7,429.3 184.1,413.4 196.4,421.4 208.7,415.6 221.0,414.8 233.3,413.7 245.6,415.8 257.6,418.9 269.9,412.2 282.2,412.7 294.5,417.6 306.8,431.4 319.1,431.2 331.5,430.7 343.8,415.6 355.8,417.4 368.1,413.5 380.4,414.0 392.7,417.5 405.0,413.6 417.3,413.7 429.6,415.4 441.9,413.2 454.0,417.5 466.3,430.0 478.6,430.1 490.9,432.5 503.2,414.9 515.5,414.1 527.8,415.9 540.1,413.4 552.2,416.7 564.5,413.7 576.8,410.6 589.1,418.5 601.4,459.7 613.7,472.7 626.0,482.1 638.3,480.9 650.3,488.0 662.7,498.1 675.0,499.8 687.3,500.0 699.6,500.0 711.9,500.0"></polyline>
-              <polyline class="pm-dram-line" points="50.0,491.3 61.3,350.5 73.6,474.0 85.9,500.0 98.2,500.0 110.5,500.0 122.8,500.0 135.1,488.5 147.4,494.1 159.4,500.0 171.7,500.0 184.1,500.0 196.4,500.0 208.7,499.9 221.0,500.0 233.3,500.0 245.6,500.0 257.6,500.0 269.9,500.0 282.2,500.0 294.5,484.4 306.8,491.3 319.1,500.0 331.5,500.0 343.8,500.0 355.8,500.0 368.1,500.0 380.4,500.0 392.7,500.0 405.0,500.0 417.3,500.0 429.6,500.0 441.9,499.9 454.0,478.4 466.3,495.2 478.6,499.1 490.9,500.0 503.2,500.0 515.5,500.0 527.8,499.9 540.1,500.0 552.2,500.0 564.5,500.0 576.8,500.0 589.1,500.0 601.4,500.0 613.7,500.0 626.0,500.0 638.3,500.0 650.3,500.0 662.7,500.0 675.0,500.0 687.3,500.0 699.6,500.0 711.9,500.0"></polyline>
-              <text class="pm-tick" x="45" y="530">0</text><text class="pm-tick" x="245" y="530">25</text><text class="pm-tick" x="450" y="530">50</text><text class="pm-tick" x="655" y="530">75</text><text class="pm-tick" x="852" y="530">100</text><text class="pm-tick" x="930" y="530">110 µs</text>
-            </svg>
-            <div class="pm-legend"><span><i></i>Tensor-pipe active (% of peak)</span><span><i class="dram"></i>DRAM-read throughput (% of peak)</span><span>dashed purple = workload-window end</span></div>
-          </div>
-        </div>
-
-        <div class="pm-summary">
-          <article class="pm-summary-card"><span>Compute activity area</span><strong>99.78–99.90%</strong><small>Hot / ordered for Tensor, SM instruction, ALU, and FMA. The amount of sampled compute activity is essentially conserved while the window shortens.</small></article>
-          <article class="pm-summary-card"><span>DRAM-read activity area</span><strong>6.85%</strong><small>Hot / ordered. Sampled DRAM-read activity collapses by 93.15% when one record per request is repeatedly reused.</small></article>
-          <article class="pm-summary-card"><span>Window compression</span><strong>−24.672 µs</strong><small>105.024 → 80.352 µs within the ordinary same-pass PM-sampling report.</small></article>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Same-pass PM metric</th><th>Ordered weighted mean</th><th>Hot weighted mean</th><th>Hot / ordered activity area</th><th>Reading</th></tr></thead>
-            <tbody>
-              <tr class="fresh-row"><td><strong>Tensor pipe</strong></td><td class="numeric">28.299%</td><td class="numeric">36.908%</td><td class="numeric">99.78%</td><td>Nearly identical integrated activity compressed into a shorter window.</td></tr>
-              <tr class="fresh-row"><td><strong>SM instructions</strong></td><td class="numeric">25.691%</td><td class="numeric">33.507%</td><td class="numeric">99.79%</td><td>Instruction work is conserved; average density rises.</td></tr>
-              <tr class="fresh-row"><td><strong>ALU / FMA</strong></td><td class="numeric">19.376% / 11.871%</td><td class="numeric">25.295% / 15.501%</td><td class="numeric">99.88% / 99.90%</td><td>Non-Tensor compute also remains essentially constant.</td></tr>
-              <tr class="fresh-row"><td><strong>DRAM read</strong></td><td class="numeric">29.145%</td><td class="numeric">2.611%</td><td class="numeric">6.85%</td><td>The dominant temporal change is removal of sustained external-memory activity.</td></tr>
-              <tr class="fresh-row"><td><strong>L2 throughput</strong></td><td class="numeric">28.215%</td><td class="numeric">8.575%</td><td class="numeric">23.25%</td><td>Cache-fabric activity also falls sharply under maximal reuse.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="micro-note">Activity area means percent-of-peak × workload-window microseconds; it is not elapsed time. Correlation-ID 0 roll-ups are omitted. The sampler recorded <code>merged_samples=0</code> and emitted no sampling warning. A dropped-sample metric was not present, so this page does not claim numerically that zero samples were dropped. The sampled CTA-launch burst is not used for launch-count proof; exact metadata supplies 132 CTAs.</p>
-      </section>
-
-      <section id="scheduler">
-        <h2>The Strongest Fresh Symptom: Schedulers Have No Instruction to Issue on ~71% of Cycles</h2>
-        <p class="section-lede">The 21-replay random-unique report records a large idle-issue fraction despite substantial queued work. This is dependency starvation: about three warps are resident per scheduler, but only 0.353 are eligible on an average scheduler cycle.</p>
-
-        <div class="issue-meter" role="img" aria-label="Issue active on 29.019 percent of random profile cycles and no issue on 70.981 percent">
-          <div class="issue-track">
-            <div class="issue-part active"><strong>29.019%</strong><span>at least one instruction issues</span></div>
-            <div class="issue-part empty"><strong>70.981%</strong><span>no instruction issues</span></div>
-          </div>
-          <p class="issue-note"><span class="evidence-tag direct">Fresh 21-pass counter</span> This split is a scheduler utilization measurement, not a division of the 110.112&nbsp;µs headline timing into two non-overlapping software phases.</p>
-        </div>
-
-        <div class="comparison-pair">
-          <article class="comparison-panel">
-            <div class="panel-head"><strong>Random unique</strong><span>fresh deep profile</span></div>
-            <div class="stall-bars">
-              <div class="stall-row"><strong>Long scoreboard</strong><div class="stall-track"><div class="stall-fill" style="--width:95.42%"></div></div><span class="stall-value">3.552</span></div>
-              <div class="stall-row barrier"><strong>Barrier</strong><div class="stall-track"><div class="stall-fill" style="--width:100%"></div></div><span class="stall-value">3.723</span></div>
-              <div class="stall-row issue"><strong>Issue active</strong><div class="stall-track"><div class="stall-fill" style="--width:71.85%"></div></div><span class="stall-value">29.019%</span></div>
-            </div>
-          </article>
-          <article class="comparison-panel">
-            <div class="panel-head"><strong>One hot record</strong><span>fresh controlled profile</span></div>
-            <div class="stall-bars">
-              <div class="stall-row"><strong>Long scoreboard</strong><div class="stall-track"><div class="stall-fill" style="--width:34.42%"></div></div><span class="stall-value">1.282</span></div>
-              <div class="stall-row barrier"><strong>Barrier</strong><div class="stall-track"><div class="stall-fill" style="--width:73.22%"></div></div><span class="stall-value">2.726</span></div>
-              <div class="stall-row issue"><strong>Issue active</strong><div class="stall-track"><div class="stall-fill" style="--width:100%"></div></div><span class="stall-value">40.389%</span></div>
-            </div>
-          </article>
-        </div>
-        <p class="micro-note">Long-scoreboard and barrier values are Nsight Compute’s average resident warps in that state per issue-active cycle. They are not percentages, are not mutually exclusive time bins, and should be compared row-to-row rather than summed.</p>
-
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Fresh profile</th><th>Replay passes</th><th>Issue active</th><th>Eligible warps / scheduler cycle</th><th>Long scoreboard</th><th>Barrier</th><th>Diagnostic reading</th></tr></thead>
-            <tbody>
-              <tr class="fresh-row"><td><strong>Random unique</strong></td><td class="numeric">21</td><td class="numeric">29.018746%</td><td class="numeric">0.353027</td><td class="numeric">3.552206</td><td class="numeric">3.722662</td><td>Scattered service leaves few eligible warps and high producer/dependency waits.</td></tr>
-              <tr class="fresh-row"><td><strong>Ordered unique</strong></td><td class="numeric">15</td><td class="numeric">30.109402%</td><td class="numeric">0.368128</td><td class="numeric">3.278430</td><td class="numeric">3.603416</td><td>Regular traversal modestly improves eligibility and wait pressure.</td></tr>
-              <tr class="fresh-row"><td><strong>One hot record</strong></td><td class="numeric">15</td><td class="numeric">40.388608%</td><td class="numeric">0.532407</td><td class="numeric">1.281626</td><td class="numeric">2.725805</td><td>Reuse sharply reduces scoreboard pressure; barrier work remains because the relay still exists.</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="callout good">
-          <strong>Causal consistency:</strong> from ordered unique to one hot record, the five-run median drops by <strong class="numeric">25.280&nbsp;µs</strong>, long-scoreboard pressure drops by about <strong class="numeric">61%</strong>, barrier pressure drops by about <strong class="numeric">24%</strong>, and issue-active rises by <strong class="numeric">10.279 percentage points</strong>. The movements support the producer-delay mechanism without pretending that any one stall counter equals elapsed microseconds.
-        </div>
-
-        <h3>Where fresh PC samples land</h3>
-        <p>Of 10,766 fresh random-unique PC samples, 3,986 are classified as barrier and 3,664 as long scoreboard—<strong>71.05%</strong> together. The top next-PC locations line up with the source dependency chain rather than one inexplicably slow arithmetic instruction.</p>
-        <div class="pc-grid">
-          <article class="pc-card barrier"><span>WG1 · barrier samples</span><strong>2,965</strong><small>The sample is attributed to the next <code>UMOV</code> PC, but the warp is actually waiting at the preceding barrier. The <code>UMOV</code> itself is not being timed as expensive.</small></article>
-          <article class="pc-card"><span>WG0 · long scoreboard</span><strong>1,689</strong><small>Next-PC branch at the K-buffer-ready try-wait path. This localizes the dependency edge by which a late producer blocks QK consumption.</small></article>
-          <article class="pc-card"><span>WG2 · long scoreboard</span><strong>788 + 301</strong><small>Next-PC <code>SEL</code> locations consuming sparse-load results. The samples point to pending load data, not intrinsic <code>SEL</code> latency.</small></article>
-        </div>
-        <p class="micro-note">PC sampling uses next-PC attribution. Counts identify locations and dependency chains where sampled warps wait; they are not per-instruction microseconds and cannot be divided by the total to obtain an exclusive time share.</p>
-
-        <div class="callout warning">
-          <strong>PM warp-state lanes are separate replays.</strong> Barrier is in PM group 0, long scoreboard in group 2, short scoreboard in group 3, and wait in group 4. Their curves must not be aligned as simultaneous timestamps. Full-window mean sampled activity shows locality nearly halves long-scoreboard activity, while sampled barrier activity remains essentially unchanged and other now-visible waits rise; none may be added or converted to microseconds. This sampled-barrier statement is distinct from the aggregate 15-pass barrier ratio above, which falls from 3.603 to 2.726 warps per issue-active cycle.
-        </div>
-      </section>
-
-      <section id="memory">
-        <h2>Memory Service Is Material, but “HBM-Bound” Is Too Coarse</h2>
-        <p class="section-lede">The fresh random core report measures 157.278 MB of HBM reads, 312.751 MB of L2 traffic, a 36.759% L2-read hit rate, and a 17.803% L1 global-load hit rate. Yet the useful explanation is not a bandwidth percentage: sparse misses create long scoreboard dependencies in WG2, and those dependencies propagate through barriers.</p>
-
-        <div class="cache-funnel" role="group" aria-label="Fresh random unique memory service path from L1 through L2 to HBM">
-          <article class="cache-stage"><span>First opportunity</span><strong>17.803% L1 hit</strong><p>Ordinary LSU global-load sectors served by per-SM L1TEX.</p></article>
-          <div class="cache-arrow" aria-hidden="true">→</div>
-          <article class="cache-stage l2"><span>Reads seen at L2</span><strong>36.759% hit</strong><p>Conditional L2-read hit rate. Total measured L2 traffic is 312.751 MB.</p></article>
-          <div class="cache-arrow" aria-hidden="true">→</div>
-          <article class="cache-stage hbm"><span>Off-chip service</span><strong>157.278 MB read</strong><p>Whole-kernel physical HBM read traffic; writes add 14.372 MB.</p></article>
-        </div>
-
-        <div class="callout warning">
-          <strong>Different denominators:</strong> the L1 percentage covers ordinary LSU global-load sectors, while the L2 percentage is conditional on read sectors reaching L2 and includes a different traffic mix. Do not add the hit rates or multiply them to reconstruct HBM bytes.
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Address case</th><th>Generation</th><th>L1 global-load hit</th><th>L2 read hit</th><th>L2 traffic</th><th>HBM read / write</th><th>Role in this report</th></tr></thead>
-            <tbody>
-              <tr class="fresh-row"><td><strong>Random unique</strong></td><td><span class="evidence-tag direct">Fresh</span></td><td class="numeric">17.803388%</td><td class="numeric">36.759102%</td><td class="numeric">312.750720 MB</td><td class="numeric">157.278208 / 14.372096 MB</td><td>Direct current-run baseline.</td></tr>
-              <tr class="older-row"><td><strong>Ordered unique</strong></td><td><span class="evidence-tag older">Older same build</span></td><td class="numeric">18.889274%</td><td class="numeric">39.833760%</td><td class="numeric">304.391072 MB</td><td class="numeric">144.907520 / 13.899520 MB</td><td>Exact same binary and shape; complete earlier four-replay memory control.</td></tr>
-              <tr class="older-row"><td><strong>One hot record</strong></td><td><span class="evidence-tag older">Older same build</span></td><td class="numeric">95.338323%</td><td class="numeric">25.327326%</td><td class="numeric">62.055264 MB</td><td class="numeric">7.958272 / 4.605440 MB</td><td>Counterfactual cache-residency control. The low L2 percentage follows because most ordinary loads already hit L1.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="micro-note">MB is decimal, matching Nsight Compute. The older rows are displayed because they preserve the exact binary, workload shape, and launch specialization while supplying a complete memory-counter matrix. They are intentionally not labeled as fresh measurements.</p>
-      </section>
-
-      <section id="instructions">
-        <h2>Hot Data Still Leaves a Large Real Program to Execute</h2>
-        <p class="section-lede">The fresh deep random report executes 26,479,662 warp-level SASS instructions and observes no local-memory spilling requests. Tensor-pipe activity is 26.936% of elapsed cycles—not 100%—while the source and compiled loop show extensive work beyond the ideal conversion and HGMMA roofs.</p>
-
-        <div class="setting-grid">
-          <div class="setting"><span class="key">Fresh dynamic SASS</span><span class="value">26,479,662</span><small>Warp instructions in the 21-pass random report.</small></div>
-          <div class="setting"><span class="key">Thread instructions</span><span class="value">825,141,728</span><small>Fresh dynamic thread-level instruction count.</small></div>
-          <div class="setting"><span class="key">Tensor-pipe active</span><span class="value">26.936%</span><small>Fresh random deep-profile elapsed-cycle metric.</small></div>
-          <div class="setting"><span class="key">Local-memory spilling</span><span class="value">None observed</span><small>Zero spilling requests in the fresh deep report.</small></div>
-        </div>
-
-        <div class="source-map" role="group" aria-label="Source and SASS work inventory for one 64-record tile">
-          <div class="source-row"><strong>WG2 sparse gather</strong><span>Address calculation, validity, indices, scale, FP8 NoPE, and BF16 RoPE loads.</span><span>Feeds registers whose late arrival appears as long-scoreboard pressure.</span><span class="inventory">part of 1,080 static SASS</span></div>
-          <div class="source-row"><strong>WG2 conversion</strong><span>FP8 → FP32/BF16 conversion and scale multiplication.</span><span>The 50-cycle roof models ideal aggregate throughput for only this central conversion sequence.</span><span class="inventory">644 / 1,080</span></div>
-          <div class="source-row"><strong>WG2 publication</strong><span>Shared-memory stores, fences, buffer state, and ready-barrier signaling.</span><span>Necessary even with hot data; connects producer completion to both consumers.</span><span class="inventory">included in remainder</span></div>
-          <div class="source-row consumer"><strong>WG0 QK + PV</strong><span>HGMMA, online softmax, reductions, rescaling, score conversion, and stores.</span><span>The ideal Tensor roof covers HGMMA throughput, not the entire consumer loop or its dependencies.</span><span class="inventory">649 static SASS</span></div>
-          <div class="source-row softmax"><strong>WG1 second PV</strong><span>Second-half accumulation, rescaling, score handoff, and release.</span><span>Works concurrently with WG0 after the producer’s ready barrier.</span><span class="inventory">177 static SASS</span></div>
-          <div class="source-row fixed"><strong>Boundaries and drain</strong><span>Q TMA prologues, request fragments, output epilogues, and final pipeline drain.</span><span>Does not scale as a single uniform cost per selected record.</span><span class="inventory">fixed / nonlinear</span></div>
-        </div>
-        <p class="micro-note"><span class="evidence-tag interpreted">Older source/SASS audit</span> The 1,080, 649, and 177 quantities are static compiled-loop inventories from the same pinned binary, not fresh timing slices or launch-wide dynamic totals. Predication and branches also mean not every static slot executes in every lane. The fresh dynamic counts above independently confirm substantial instruction execution and no observed local-memory spills.</p>
-
-        <div class="callout model">
-          <strong>Why a cache hit cannot reach the ideal roof by itself:</strong> hot service removes much of the external-memory wait, but it does not remove load instructions, address formation, validity checks, conversion lowering, shared-memory publication, softmax/rescaling, HGMMA coordination, fences, barriers, request boundaries, or the final drain.
-        </div>
-      </section>
-
-      <section id="attribution">
-        <h2>What the ~100 µs Is Made Of—Without Inventing a Serial Timeline</h2>
-        <p class="section-lede">Two views answer different questions. The fresh timing contrasts show what changes end to end when only address order or reuse changes. The older same-build ledger reconstructs a faithful 105.952&nbsp;µs launch in the cycle domain, using a theoretical roof plus controlled and fitted critical-path terms.</p>
-
-        <h3>Fresh causal timing contrasts</h3>
-        <div class="fresh-delta" role="group" aria-label="Fresh timing medians and causal deltas">
-          <div class="delta-card"><div><strong>110.112 µs</strong><span>random unique median</span></div></div>
-          <div class="delta-arrow" aria-hidden="true">−4.480</div>
-          <div class="delta-card"><div><strong>105.632 µs</strong><span>ordered unique median</span></div></div>
-          <div class="delta-arrow" aria-hidden="true">−25.280</div>
-          <div class="delta-card"><div><strong>80.352 µs</strong><span>one hot record median</span></div></div>
-        </div>
-        <p class="micro-note">These are end-to-end changes of the complete main-kernel critical path. The 4.480&nbsp;µs and 25.280&nbsp;µs differences are not isolated “memory phases”; address service changes when downstream barriers and consumers become ready.</p>
-
-        <h3 style="margin-top:30px">Older same-build counterfactual cycle ledger</h3>
-        <div class="ledger">
-          <div class="ledger-head"><strong>Reconstruction of a 105.952 µs main launch</strong><span>Segment width follows positive modeled contribution · not temporal placement</span></div>
-          <div class="ledger-stack" role="img" aria-label="Counterfactual cycle ledger: 52.471 microseconds ideal roof, 24.958 microseconds locality response, 23.975 microseconds hot steady-tile excess, 4.937 microseconds fixed and drain excess, plus a negative 0.390 microsecond fit correction">
-            <div class="ledger-segment roof"><strong>52.471 µs</strong>ideal arithmetic roof</div>
-            <div class="ledger-segment locality"><strong>24.958 µs</strong>locality response</div>
-            <div class="ledger-segment steady"><strong>23.975 µs</strong>hot steady-tile excess</div>
-            <div class="ledger-segment fixed"><strong>4.937 µs</strong>fixed / drain excess</div>
-          </div>
-          <div class="ledger-correction">Signed hot-fit correction: <strong>−0.390&nbsp;µs</strong>. Adding this correction closes the measured 191,780.6 cycles at 1.81007&nbsp;GHz.</div>
-        </div>
-
-        <div class="math-block" aria-label="Older same-build counterfactual cycle reconstruction">
-          <span><span class="math-var">C</span><sub>measured</sub></span><span class="math-op">=</span><span>191,780.6 cycles = 105.952 µs at 1.81007 GHz</span>
-          <span><span class="math-var">C</span><sub>roof</sub></span><span class="math-op">=</span><span>94,976.0 cycles = 52.471 µs at the same clock</span>
-          <span><span class="math-var">C</span><sub>measured</sub></span><span class="math-op">=</span><span>94,976.0 + 45,176.6 + 43,397.2 + 8,936.4 − 705.7 cycles</span>
-        </div>
-
-        <div class="callout warning">
-          <strong>This ledger is a causal accounting identity, not a GPU timeline.</strong> Its locality term is an end-to-end controlled response; its steady-tile and fixed terms come from a fit; and its roof is a theoretical aggregate-throughput lower bound. The terms overlap through the actual producer/consumer machinery, so drawing them back-to-back in time would be false precision.
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Claim</th><th>Evidence</th><th>What it can say</th><th>What it cannot say</th></tr></thead>
-            <tbody>
-              <tr class="fresh-row"><td><strong>Ordered reproduction takes 105.632 µs</strong></td><td><span class="evidence-tag direct">Fresh direct</span></td><td>Stable median of five independent one-replay NCU main-only captures; within 2.135% of the historical 103.424 µs mean.</td><td>Does not assign individual microseconds to instructions.</td></tr>
-              <tr class="fresh-row"><td><strong>Address reuse saves ~25–30 µs</strong></td><td><span class="evidence-tag direct">Fresh controlled</span></td><td>Causal end-to-end response with fixed specialization and logical work.</td><td>Is not a standalone HBM sub-kernel or serial memory phase.</td></tr>
-              <tr class="model-row"><td><strong>Ideal roof is 52.471 µs</strong></td><td><span class="evidence-tag modeled">Model</span></td><td>Same-clock lower bound for the modeled conversion/Tensor service and drain.</td><td>Does not model the full tile program or predict measured latency alone.</td></tr>
-              <tr class="older-row"><td><strong>~24 µs hot recurring excess</strong></td><td><span class="evidence-tag older">Older fit</span></td><td>Critical-path slope beyond the ideal producer roof in hot controls.</td><td>Cannot be divided uniquely among conversion, softmax, barriers, or other instructions.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="provenance">
-        <h2>Evidence Contract: Measured, Reused, Modeled, or Interpreted</h2>
-        <p class="section-lede">A detailed profiler report becomes misleading when all numbers look equally direct. This table is the contract for reading the page.</p>
-
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Value or statement</th><th>Evidence class</th><th>Collection / derivation</th><th>Confidence boundary</th></tr></thead>
-            <tbody>
-              <tr class="fresh-row"><td><strong>105.632 / 110.112 / 80.352 µs medians</strong></td><td><span class="evidence-tag direct provenance-name">Fresh direct</span></td><td>Five independent one-replay NCU main-only captures per address case on the isolated Japan H200 node.</td><td>Headline launch timing; combine excluded.</td></tr>
-              <tr class="fresh-row"><td><strong>191,618.375 cycles at 1.787632 GHz</strong></td><td><span class="evidence-tag direct provenance-name">Fresh direct</span></td><td>Low-replay random core report; 107.2 µs profiled duration.</td><td>Clock/cycle cross-check; repeated timing remains the headline.</td></tr>
-              <tr class="fresh-row"><td><strong>Issue, eligibility, stalls, Tensor activity</strong></td><td><span class="evidence-tag direct provenance-name">Fresh counters</span></td><td>21-pass random deep report and 15-pass ordered/hot causal reports.</td><td>Comparative diagnostics; replayed duration is not headline latency.</td></tr>
-              <tr class="fresh-row"><td><strong>132 CTAs, 384 threads, resources</strong></td><td><span class="evidence-tag direct provenance-name">Fresh direct</span></td><td>Nsight Compute launch attributes.</td><td>Exact for the captured kernel specialization.</td></tr>
-              <tr class="older-row"><td><strong>Complete ordered/hot cache table</strong></td><td><span class="evidence-tag older provenance-name">Older same build</span></td><td>Earlier controlled four-replay reports using the exact binary and launch shape.</td><td>Not presented as a fresh 12 August measurement.</td></tr>
-              <tr class="model-row"><td><strong>52.471 + 24.958 + 23.975 + 4.937 − 0.390</strong></td><td><span class="evidence-tag modeled provenance-name">Model</span></td><td>Older same-build theoretical roof, address controls, high-TopK fit, and signed residual.</td><td>Counterfactual critical-path reconstruction, never sequential phases.</td></tr>
-              <tr><td><strong>WG2 delay reaches WG0/WG1</strong></td><td><span class="evidence-tag interpreted provenance-name">Interpretation</span></td><td>Pinned source dependency structure plus coordinated scoreboard/barrier movement.</td><td>Mechanistically supported; no per-warp wall-clock trace was captured.</td></tr>
-              <tr><td><strong>Exact time of each SASS group</strong></td><td><span class="evidence-tag provenance-name">Unknown</span></td><td>No counter supplies exclusive start/stop timestamps for overlapping instruction groups.</td><td>Intentionally not fabricated.</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h3 style="margin-top:28px">Profiler separation</h3>
-        <div class="answer-grid">
-          <article class="card clock"><span class="evidence-tag direct">Timing</span><h3>Repeated one-replay captures</h3><p>Use five independent one-replay NCU main-only captures per case for the headline medians and ranges.</p></article>
-          <article class="card wait"><span class="evidence-tag direct">Counters</span><h3>Replay when necessary</h3><p>Use low-replay reports for cycles, clock, and memory; deeper 15/21-pass reports for scheduler, stalls, SASS, and PC sampling.</p></article>
-          <article class="card overlap"><span class="evidence-tag interpreted">Correlation</span><h3>Compare mechanisms</h3><p>Join duration deltas, counter movement, launch geometry, source dependencies, and compiled instruction inventory without double-counting overlap.</p></article>
-        </div>
-      </section>
-
-      <section id="limits">
-        <h2>Limits, Reproduction Trail, and Downloads</h2>
-        <p class="section-lede">The experiment is unusually controlled, but it is still a synthetic single-GPU reproducer. The strongest conclusions concern this exact kernel specialization and the mechanism exposed by controlled address changes.</p>
-
-        <div class="limit-grid">
-          <article class="limit-card"><h3>Main kernel only</h3><p>The report deliberately excludes the dependent combine kernel and does not claim to equal a complete layer’s sparse-attention union.</p></article>
-          <article class="limit-card"><h3>Synthetic addresses</h3><p>Random, ordered, and one-hot patterns isolate address service. None is claimed to reproduce the online selected-index distribution.</p></article>
-          <article class="limit-card"><h3>One executing GPU</h3><p>All eight GPUs were reserved for isolation, but the reproducer profiles one H200 and does not measure TP communication.</p></article>
-          <article class="limit-card"><h3>Profiler replay</h3><p>The 15- and 21-pass reports perturb execution and cache state. Their counters diagnose behavior; their durations are not headline timing.</p></article>
-          <article class="limit-card"><h3>Stalls overlap</h3><p>Warp-state ratios describe resident warps in states per issue-active cycle. They are not exclusive time percentages and cannot be summed.</p></article>
-          <article class="limit-card"><h3>Source inventory ≠ cycles</h3><p>Static and dynamic SASS counts show executed work, but dependencies, pipeline concurrency, and repeated loops prevent direct count-to-time conversion.</p></article>
-          <article class="limit-card"><h3>No instrumented phase slices</h3><p>A <code>clock64()</code> rebuild would add instructions to an already register- and shared-memory-limited binary, while the three warpgroups would still overlap. This report preserves the production binary and leaves exclusive source-group times explicitly unknown.</p></article>
-        </div>
-
-        <div class="download-grid">
-          <a class="download-card" href="evidence.json"><strong>Evidence JSON</strong><span>Exact environment, launch shape, fresh values, older controls, ledger, hashes, and guardrails.</span></a>
-          <a class="download-card" href="metrics.csv"><strong>Normalized metrics CSV</strong><span>Compact table with generation, evidence class, profile, units, replay count, and headline eligibility.</span></a>
-          <a class="download-card" href="pm_activity.csv"><strong>PM activity CSV</strong><span>Workload-clipped 1.5 µs samples for the same-pass ordered and one-hot Tensor, DRAM, SM, ALU, FMA, and L2 curves.</span></a>
-          <a class="download-card" href="../flashmla-cache-locality-experiment/evidence.json"><strong>Cache-locality evidence</strong><span>The separate four-layout L1/L2/HBM experiment and its exact counter definitions.</span></a>
-        </div>
-
-        <h3 style="margin-top:28px">Pinned source trail</h3>
-        <div class="download-grid">
-          <a class="download-card" href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/config.h#L15-L130"><strong>H64 configuration</strong><span>CTA size, warpgroups, shared-memory plan, buffers, and WGMMA atoms.</span></a>
-          <a class="download-card" href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L186-L647"><strong>Main sparse kernel</strong><span>QK, online softmax, PV, gather, dequantization, publication, and synchronization.</span></a>
-          <a class="download-card" href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/components/dequant.h#L20-L85"><strong>Load and dequant helpers</strong><span>Vector conversions, scale multiplication, and global-load cache hints.</span></a>
-        </div>
-
-        <div class="callout good">
-          <strong>Bottom line:</strong> the fresh ordered-unique rerun reproduces the historical 103.424&nbsp;µs main kernel at 105.632&nbsp;µs—within 2.135%—and directly shows one-CTA-per-SM residency, low warp eligibility, high no-issue time, and a relay whose sustained DRAM activity disappears under hot reuse while compute activity is conserved. Random order stretches the median to 110.112&nbsp;µs; one-hot reuse compresses it to 80.352&nbsp;µs. The remaining hot-cache duration is expected real kernel work, not evidence that the locality experiment failed.
-        </div>
-
-        <footer>MaaS Docs temporary experiment report · fresh Japan H200 FlashMLA single-kernel profile · measured and prepared 12 August 2026</footer>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    (() => {
-      "use strict";
-
-      const cases = {
-        random: { median: "110.112 µs", issue: "29.019%", eligible: "0.353", scoreboard: "3.552", barrier: "3.723" },
-        ordered: { median: "105.632 µs", issue: "30.109%", eligible: "0.368", scoreboard: "3.278", barrier: "3.603" },
-        hot: { median: "80.352 µs", issue: "40.389%", eligible: "0.532", scoreboard: "1.282", barrier: "2.726" }
-      };
-
-      const buttons = [...document.querySelectorAll("[data-case]")];
-      const stats = [...document.querySelectorAll("[data-case-stat]")];
-      buttons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const selected = cases[button.dataset.case];
-          buttons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
-          stats.forEach((item) => { item.textContent = selected[item.dataset.caseStat]; });
-        });
-      });
-
-      const smGrid = document.querySelector("[data-sm-grid]");
-      if (smGrid && !smGrid.children.length) {
-        for (let index = 0; index < 132; index += 1) {
-          const cell = document.createElement("span");
-          if (index < 25) cell.classList.add("tail");
-          cell.setAttribute("aria-hidden", "true");
-          smGrid.appendChild(cell);
-        }
-      }
-
-      const links = [...document.querySelectorAll(".toc a")];
-      const sections = links.map((link) => document.querySelector(link.getAttribute("href"))).filter(Boolean);
-      let scrollFrame = 0;
-      const updateToc = () => {
-        scrollFrame = 0;
-        const threshold = 86;
-        let current = sections[0];
-        sections.forEach((section) => {
-          if (section.getBoundingClientRect().top <= threshold) current = section;
-        });
-        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = sections[sections.length - 1];
-        links.forEach((link) => {
-          if (link.getAttribute("href") === `#${current.id}`) link.setAttribute("aria-current", "location");
-          else link.removeAttribute("aria-current");
-        });
-      };
-      const scheduleTocUpdate = () => {
-        if (scrollFrame) return;
-        scrollFrame = requestAnimationFrame(updateToc);
-      };
-      window.addEventListener("scroll", scheduleTocUpdate, { passive: true });
-      window.addEventListener("resize", scheduleTocUpdate);
-      window.addEventListener("hashchange", () => requestAnimationFrame(updateToc));
-      updateToc();
-    })();
-  </script>
+      <footer>MaaS Docs temporary experiment report · NVIDIA H200 · historical trace, controlled reconstruction, and fresh validation kept explicitly separate · prepared 12 August 2026</footer>
+    </section>
+  </main>
 </body>
 </html>
