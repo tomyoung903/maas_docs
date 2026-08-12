@@ -859,6 +859,145 @@
       font-size: 13px;
     }
 
+    .producer-equation-walkthrough {
+      display: grid;
+      gap: 14px;
+      max-width: 980px;
+      margin-top: 18px;
+    }
+
+    .producer-equation-step {
+      border: 1px solid #baa9c3;
+      border-radius: 9px;
+      background: var(--paper);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .producer-equation-head {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .producer-equation-number {
+      display: inline-flex;
+      width: 34px;
+      height: 34px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--flash-gather);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .producer-equation-title {
+      min-width: 0;
+    }
+
+    .producer-equation-title > span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .producer-equation-title h4 {
+      margin: 2px 0 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 20px;
+      line-height: 1.22;
+    }
+
+    .producer-equation-result {
+      border-radius: 999px;
+      background: var(--flash-gather-soft);
+      padding: 4px 10px;
+      color: #584064;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .producer-factor-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+      margin-top: 14px;
+    }
+
+    .producer-factor {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fbf9fc;
+      padding: 12px 13px;
+    }
+
+    .producer-factor:not(:last-child)::after {
+      content: "\00d7";
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      width: 12px;
+      color: var(--memory);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 20px;
+      font-weight: 800;
+      text-align: center;
+      transform: translateY(-50%);
+    }
+
+    .producer-factor-grid.sum .producer-factor:not(:last-child)::after {
+      content: "+";
+    }
+
+    .producer-factor > small,
+    .producer-factor > strong,
+    .producer-factor > span {
+      display: block;
+    }
+
+    .producer-factor > small {
+      color: var(--flash-gather);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .producer-factor > strong {
+      margin-top: 2px;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 17px;
+      line-height: 1.3;
+    }
+
+    .producer-factor > span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.48;
+    }
+
+    .producer-equation-read {
+      margin: 12px 0 0;
+      border-left: 3px solid var(--flash-softmax);
+      padding-left: 11px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .producer-equation-read strong {
+      color: var(--ink);
+    }
+
     .example-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2642,6 +2781,15 @@
         grid-template-columns: minmax(0, 1fr);
       }
 
+      .producer-factor-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .producer-factor:not(:last-child)::after {
+        display: none;
+      }
+
       .split-combine {
         grid-template-columns: minmax(0, 1fr);
       }
@@ -2745,6 +2893,19 @@
       .math-rhs {
         font-size: 17px;
         overflow-wrap: anywhere;
+      }
+
+      .producer-equation-step {
+        padding: 14px;
+      }
+
+      .producer-equation-head {
+        grid-template-columns: 34px minmax(0, 1fr);
+      }
+
+      .producer-equation-result {
+        grid-column: 2;
+        justify-self: start;
       }
 
       .flashmla-hero-copy,
@@ -2888,7 +3049,7 @@
         <div class="meta-line" role="group" aria-label="Document metadata">
           <span>Audience: inference engineers</span>
           <span>Hardware: Hopper / H200</span>
-          <span>Updated: August 11, 2026</span>
+          <span>Updated: August 12, 2026</span>
         </div>
       </header>
 
@@ -3756,7 +3917,130 @@ with torch.cuda.stream(forward_stream):
           <span class="math-op">=</span>
           <span class="math-rhs">512 B FP8 + 16 B scales + 128 B RoPE = 656 B</span>
         </div>
-        <p class="math-note">Four lanes with the same lane-modulo-eight value collaborate on each record: <span class="math-dim">r, r+8, r+16, r+24</span> (for example, lanes 0, 8, 16, and 24). Their 16-value vector loads are interleaved across the record&rsquo;s 64-dimension segments. Each lane also issues the same 16-byte scale-vector load. Cache/coalescing may suppress duplicate DRAM transactions, but the source-level duplication is another reason that 656 B is a useful logical floor rather than measured physical traffic.</p>
+        <p class="math-note">Read the four equalities at two different levels: the first partitions a whole <span class="math-dim">64-record</span> tile across WG2; the next two reconstruct one selected cache record; the last adds that record&rsquo;s useful stored fields.</p>
+
+        <div class="producer-equation-walkthrough" aria-label="Four-step derivation of the H64 producer geometry and logical record payload">
+          <article class="producer-equation-step">
+            <div class="producer-equation-head">
+              <span class="producer-equation-number">1</span>
+              <div class="producer-equation-title">
+                <span>Whole tile &middot; thread assignment</span>
+                <h4><span class="math-var">N</span><sub>record/tile</sub> = 4 &times; 8 &times; 2 = 64 records</h4>
+              </div>
+              <span class="producer-equation-result">one WG2 tile</span>
+            </div>
+            <div class="producer-factor-grid">
+              <div class="producer-factor">
+                <small>Factor 1</small>
+                <strong>4 producer warps</strong>
+                <span>WG2 has 128 threads, hence four 32-lane warps.</span>
+              </div>
+              <div class="producer-factor">
+                <small>Factor 2</small>
+                <strong>8 records / warp / round</strong>
+                <span>Within each warp, <span class="math-var">lane</span> mod 8 selects one of eight record IDs. The 32 lanes therefore form eight four-lane teams&mdash;not 32 independent records.</span>
+              </div>
+              <div class="producer-factor">
+                <small>Factor 3</small>
+                <strong>2 rounds</strong>
+                <span>The H64 path gives each thread two record assignments. Round 0 covers record slots 0&ndash;31; adding the fixed 32-record stride makes round 1 cover 32&ndash;63.</span>
+              </div>
+            </div>
+            <p class="producer-equation-read"><strong>Read it as:</strong> each round covers <span class="math-dim">4 warps &times; 8 records = 32 records</span>; two rounds fill the kernel&rsquo;s <span class="math-dim">64-record</span> TopK tile. This is assignment geometry, not a byte count.</p>
+          </article>
+
+          <article class="producer-equation-step">
+            <div class="producer-equation-head">
+              <span class="producer-equation-number">2</span>
+              <div class="producer-equation-title">
+                <span>One record &middot; NoPE latent coverage</span>
+                <h4><span class="math-var">D</span><sub>NoPE</sub> = 8 &times; 4 &times; 16 = 512 FP8 values</h4>
+              </div>
+              <span class="producer-equation-result">512 B useful FP8</span>
+            </div>
+            <div class="producer-factor-grid">
+              <div class="producer-factor">
+                <small>Factor 1</small>
+                <strong>8 dimension chunks</strong>
+                <span>The NoPE latent is traversed in eight 64-value segments because <span class="math-dim">512 / 64 = 8</span>.</span>
+              </div>
+              <div class="producer-factor">
+                <small>Factor 2</small>
+                <strong>4 collaborating lanes</strong>
+                <span>For one record, lanes with the same lane-modulo-eight value collaborate: for example, lanes 0, 8, 16, and 24.</span>
+              </div>
+              <div class="producer-factor">
+                <small>Factor 3</small>
+                <strong>16 FP8 values / lane / chunk</strong>
+                <span>Each lane issues one 128-bit vector load: <span class="math-dim">16 B = 16</span> one-byte E4M3 values. Four lanes therefore cover all 64 values in a chunk.</span>
+              </div>
+            </div>
+            <p class="producer-equation-read"><strong>Read it as:</strong> one four-lane team covers <span class="math-dim">4 &times; 16 = 64</span> FP8 values per dimension chunk; repeating that across eight chunks reconstructs the record&rsquo;s <span class="math-dim">512</span>-value NoPE latent.</p>
+          </article>
+
+          <article class="producer-equation-step">
+            <div class="producer-equation-head">
+              <span class="producer-equation-number">3</span>
+              <div class="producer-equation-title">
+                <span>One record &middot; RoPE byte coverage</span>
+                <h4><span class="math-var">B</span><sub>RoPE</sub> = 2 &times; 4 &times; 16 B = 128 B</h4>
+              </div>
+              <span class="producer-equation-result">64 BF16 values</span>
+            </div>
+            <div class="producer-factor-grid">
+              <div class="producer-factor">
+                <small>Factor 1</small>
+                <strong>2 vector loads / lane</strong>
+                <span>The RoPE loop has two 32-value segments because <span class="math-dim">64 / 32 = 2</span>.</span>
+              </div>
+              <div class="producer-factor">
+                <small>Factor 2</small>
+                <strong>4 collaborating lanes</strong>
+                <span>The same four-lane record team supplies four disjoint eight-value slices inside each 32-value segment.</span>
+              </div>
+              <div class="producer-factor">
+                <small>Factor 3</small>
+                <strong>16 B / vector load</strong>
+                <span>One load contains eight BF16 values, so <span class="math-dim">8 values &times; 2 B = 16 B</span>.</span>
+              </div>
+            </div>
+            <p class="producer-equation-read"><strong>Read it as:</strong> each segment contributes <span class="math-dim">4 &times; 16 B = 64 B</span>; two segments produce <span class="math-dim">128 B</span>, which is exactly 64 BF16 RoPE values.</p>
+          </article>
+
+          <article class="producer-equation-step">
+            <div class="producer-equation-head">
+              <span class="producer-equation-number">4</span>
+              <div class="producer-equation-title">
+                <span>One record &middot; logical cache format</span>
+                <h4><span class="math-var">B</span><sub>logical record</sub> = 512 B + 16 B + 128 B = 656 B</h4>
+              </div>
+              <span class="producer-equation-result">unique packed payload</span>
+            </div>
+            <div class="producer-factor-grid sum">
+              <div class="producer-factor">
+                <small>Field 1</small>
+                <strong>512 B FP8 latent</strong>
+                <span>The 512 NoPE values above are E4M3, one byte each. They are later dequantized and serve both non-RoPE K and V.</span>
+              </div>
+              <div class="producer-factor">
+                <small>Field 2</small>
+                <strong>16 B scales</strong>
+                <span>Four FP32 scales occupy <span class="math-dim">4 &times; 4 B = 16 B</span>, one scale per 128-value quantization group.</span>
+              </div>
+              <div class="producer-factor">
+                <small>Field 3</small>
+                <strong>128 B RoPE</strong>
+                <span>The 64 BF16 RoPE values above occupy <span class="math-dim">64 &times; 2 B = 128 B</span> and augment K only.</span>
+              </div>
+            </div>
+            <p class="producer-equation-read"><strong>Read it as:</strong> <span class="math-dim">656 B</span> is the useful logical content of one selected V32 cache record. It is not the dequantized shared-memory footprint and not a measurement of physical HBM traffic.</p>
+          </article>
+        </div>
+
+        <div class="callout memory">
+          <strong>Do not multiply the four equations together.</strong> Step 1 counts records in a tile. Steps 2&ndash;4 describe the contents of one record. Also, every lane in a four-lane team independently issues the same 16-byte scale load, while index reads and validity checks add more requested traffic. Cache reuse can make physical HBM traffic smaller than <span class="math-dim">656 B</span> per invocation, while transaction granularity can make it larger; <span class="math-dim">656 B</span> is the exact unique packed payload, not an HBM counter prediction.
+        </div>
+        <p class="math-note">Source anchors: <a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L455-L475">warp/round record assignment</a>, <a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/csrc/sm90/decode/sparse_fp8/splitkv_mla.cuh#L509-L619">four-lane NoPE and RoPE loads</a>, and the <a href="https://github.com/deepseek-ai/FlashMLA/blob/df022ebafb88578eab9f0300606ee765608d8b5c/flash_mla/flash_mla_interface.py#L92-L98">packed V32 record definition</a>.</p>
 
         <div class="record-card">
           <div class="record-heading">
