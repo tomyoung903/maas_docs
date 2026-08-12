@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "report": {
+    "title": "FlashMLA H200 single-kernel deep profile",
+    "prepared_at": "2026-08-12",
+    "scope": "One main flash_fwd_splitkv_mla_fp8_sparse_kernel launch; the dependent combine kernel is excluded",
+    "public_path": "/maas_docs/tmp/flashmla-h200-single-kernel-deep-profile/"
+  },
+  "environment": {
+    "cluster": "prod-maas-h200-jp",
+    "namespace": "maas-dev-tom",
+    "node": "gpu-h200-36",
+    "gpu": "NVIDIA H200",
+    "reserved_gpus": 8,
+    "profiled_gpu_count": 1,
+    "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime@sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b",
+    "flashmla_commit": "df022ebafb88578eab9f0300606ee765608d8b5c"
+  },
+  "workload": {
+    "batch_size": 100,
+    "kernel_topk": 2048,
+    "valid_keys": 2048,
+    "scheduled_query_heads": 64,
+    "logical_active_query_heads": 8,
+    "qk_dimension": 576,
+    "value_dimension": 512,
+    "kv_dtype": "FP8 E4M3",
+    "layout_cases": ["random_unique", "ordered_unique", "one_hot_record_per_request"]
+  },
+  "launch": {
+    "grid": [1, 1, 132],
+    "block": [384, 1, 1],
+    "ctas": 132,
+    "sms": 132,
+    "warps_per_cta": 12,
+    "registers_per_thread": 168,
+    "dynamic_shared_memory_kb_decimal": 231.424,
+    "allocated_shared_memory_kb_decimal": 232.448,
+    "dynamic_shared_memory_bytes": 231424,
+    "driver_shared_memory_bytes": 1024,
+    "static_shared_memory_bytes": 0,
+    "sm_shared_memory_configuration_bytes": 233472,
+    "registers_per_cta": 64512,
+    "resident_ctas_per_sm": 1,
+    "theoretical_occupancy_percent": 18.75,
+    "register_spill_instructions_executed": 0
+  },
+  "fresh_one_replay_main_only_timing": {
+    "evidence_class": "fresh_direct_measurement",
+    "profiler_note": "Five independent Nsight Compute one-replay timing captures; this is the lowest-replay method available for isolating the main kernel from combine",
+    "random_unique_us": [109.696, 109.792, 110.112, 110.240, 110.368],
+    "random_unique_median_us": 110.112,
+    "ordered_unique_us": [105.280, 105.600, 105.632, 105.632, 105.664],
+    "ordered_unique_median_us": 105.632,
+    "historical_main_mean_us": 103.424,
+    "ordered_minus_historical_us": 2.208,
+    "ordered_over_historical_percent": 2.134901,
+    "one_hot_record_us": [79.744, 80.192, 80.352, 80.640, 80.640],
+    "one_hot_record_median_us": 80.352,
+    "random_minus_ordered_median_us": 4.480,
+    "ordered_minus_hot_median_us": 25.280,
+    "random_minus_hot_median_us": 29.760
+  },
+  "fresh_random_core_profile": {
+    "evidence_class": "fresh_direct_measurement",
+    "profiler_note": "Low-replay core counter report; use the five-run timing medians above for the headline latency",
+    "duration_us": 107.2,
+    "elapsed_cycles": 191618.375,
+    "in_kernel_clock_ghz": 1.787632,
+    "dram_read_mb_decimal": 157.278208,
+    "dram_write_mb_decimal": 14.372096,
+    "l2_traffic_mb_decimal": 312.750720,
+    "l2_read_hit_percent": 36.759102,
+    "l1_global_load_hit_percent": 17.803388,
+    "issue_active_percent": 28.92985
+  },
+  "fresh_multi_replay_profiles": {
+    "evidence_class": "fresh_direct_counters_not_headline_latency",
+    "random_unique": {
+      "replay_passes": 21,
+      "profiled_duration_us": 109.120,
+      "issue_active_percent": 29.018746,
+      "no_issue_percent": 70.981254,
+      "eligible_warps_per_scheduler_cycle": 0.353027,
+      "active_warps_per_scheduler_cycle": 2.999699,
+      "tensor_pipe_active_percent": 26.936292,
+      "long_scoreboard_warps_per_issue_active_cycle": 3.552206,
+      "barrier_warps_per_issue_active_cycle": 3.722662,
+      "sass_warp_instructions": 26479662,
+      "pc_samples": 10766,
+      "pc_sample_dropped_bytes": 0,
+      "pc_samples_barrier": 3986,
+      "pc_samples_long_scoreboard": 3664,
+      "pc_samples_barrier_plus_long_scoreboard_percent": 71.057031,
+      "pc_sampling_note": "Next-PC attribution identifies dependency locations, not per-instruction elapsed time"
+    },
+    "ordered_unique": {
+      "replay_passes": 15,
+      "profiled_duration_us": 104.928,
+      "elapsed_cycles": 188727.375,
+      "issue_active_percent": 30.109402,
+      "eligible_warps_per_scheduler_cycle": 0.368128,
+      "long_scoreboard_warps_per_issue_active_cycle": 3.278430,
+      "barrier_warps_per_issue_active_cycle": 3.603416,
+      "sass_warp_instructions": 26465024,
+      "pc_samples": 10375,
+      "pc_sample_dropped_bytes": 0
+    },
+    "one_hot_record": {
+      "replay_passes": 15,
+      "profiled_duration_us": 79.072,
+      "elapsed_cycles": 143015.875,
+      "issue_active_percent": 40.388608,
+      "eligible_warps_per_scheduler_cycle": 0.532407,
+      "long_scoreboard_warps_per_issue_active_cycle": 1.281626,
+      "barrier_warps_per_issue_active_cycle": 2.725805,
+      "sass_warp_instructions": 26273123,
+      "pc_samples": 7762,
+      "pc_sample_dropped_bytes": 0
+    }
+  },
+  "fresh_pm_sampling": {
+    "evidence_class": "fresh_direct_temporal_sampling",
+    "sampling_interval_ns": 1500,
+    "merged_samples": 0,
+    "dropped_samples": null,
+    "dropped_samples_note": "The dropped-samples metric is absent. No sampling warning was emitted, but absence is not numeric proof of zero drops.",
+    "ordinary_pm_pass_groups": 1,
+    "ordered_window_us": 105.024,
+    "one_hot_window_us": 80.352,
+    "ordered_to_one_hot_activity_area_ratio": {
+      "tensor": 0.9978,
+      "sm": 0.9979,
+      "alu": 0.9988,
+      "fma": 0.9990,
+      "dram_read": 0.0685,
+      "l2_throughput": 0.2325
+    },
+    "warning": "An activity area is percent-times-microseconds, not a duration component. PM warp-state metrics were collected in five separate replay groups and must not be aligned across groups."
+  },
+  "source_and_sass_interpretation": {
+    "evidence_class": "same_pinned_binary_source_and_static_sass_audit",
+    "wg0_source_lines": "splitkv_mla.cuh:186-365",
+    "wg1_source_lines": "splitkv_mla.cuh:366-453",
+    "wg2_source_lines": "splitkv_mla.cuh:454-671",
+    "wg0_static_loop_slots": 649,
+    "wg1_static_loop_slots": 177,
+    "wg2_static_loop_slots": 1080,
+    "wg2_conversion_and_multiply_slots": 644,
+    "wg2_other_static_slots": 436,
+    "warning": "Static compiled slots are code footprint, not cycles or launch-wide dynamic instructions; predication and branches mean not every slot executes in every lane."
+  },
+  "scheduler_metadata": {
+    "total_tiles": 3200,
+    "partition_classes": [
+      {"ctas": 25, "tiles_per_cta": 29},
+      {"ctas": 25, "tiles_per_cta": 27},
+      {"ctas": 75, "tiles_per_cta": 24},
+      {"ctas": 7, "tiles_per_cta": 0}
+    ],
+    "warning": "The 29-tile class is the nominal arithmetic maximum, not a proven runtime straggler; two-fragment 24-tile CTAs can compete because of request-boundary work."
+  },
+  "older_same_build_memory_controls": {
+    "evidence_class": "older_direct_measurement_same_binary_and_shape",
+    "ordered_unique": {
+      "l1_global_load_hit_percent": 18.889274,
+      "l2_read_hit_percent": 39.833760,
+      "l2_traffic_mb_decimal": 304.391072,
+      "dram_read_mb_decimal": 144.907520,
+      "dram_write_mb_decimal": 13.899520
+    },
+    "one_hot_record": {
+      "l1_global_load_hit_percent": 95.338323,
+      "l2_read_hit_percent": 25.327326,
+      "l2_traffic_mb_decimal": 62.055264,
+      "dram_read_mb_decimal": 7.958272,
+      "dram_write_mb_decimal": 4.605440
+    }
+  },
+  "older_same_build_counterfactual_ledger": {
+    "evidence_class": "analytical_model_using_older_controlled_measurements",
+    "warning": "The entries reconstruct one overlapping critical path. They are not sequential hardware phases and must not be read as a literal timeline.",
+    "measured_cycles": 191780.6,
+    "measured_duration_us": 105.952,
+    "measured_clock_ghz": 1.81007,
+    "terms": [
+      {"name": "ideal_arithmetic_roof", "cycles": 94976.0, "duration_us": 52.471},
+      {"name": "address_locality_response", "cycles": 45176.6, "duration_us": 24.958},
+      {"name": "hot_cache_steady_tile_excess", "cycles": 43397.2, "duration_us": 23.975},
+      {"name": "fixed_request_drain_excess", "cycles": 8936.4, "duration_us": 4.937},
+      {"name": "signed_fit_residual", "cycles": -705.7, "duration_us": -0.390}
+    ]
+  },
+  "interpretation_guardrails": [
+    "Multi-replay profiler durations are not used as headline latency.",
+    "Headline timings are independent one-replay Nsight Compute captures, not unprofiled CUDA-event timings.",
+    "Warp-stall ratios are average resident warps in a state per issue-active cycle; they are neither percentages nor additive time slices.",
+    "L1 and L2 hit rates have different conditional denominators and cannot be added.",
+    "The hot-record case is a deliberately non-production counterfactual that preserves the kernel specialization and logical work.",
+    "Static or dynamic instruction counts are work inventories, not elapsed-time partitions.",
+    "The dependent combine kernel is outside this report's timing boundary."
+  ],
+  "local_artifact_sha256": {
+    "ncu_b100_random_deep_raw.csv": "14c7669304ee849ef97afefdffd07186502be93d331927283e8292e98284721d",
+    "ncu_b100_ordered_causal_raw.csv": "4c583b389b4aa568f7688c9be32ef04e333a9bc13c697add168bfba15a5782e6",
+    "ncu_b100_hotset1_causal_raw.csv": "6c509e1c397547560c1931cd2555a15131c17252ef52dc4d48ad9b7274d67612",
+    "pod.yaml": "c4f56381703b485c2b9091d97f56f412aa17425957712a5ce67576c0a4de95de",
+    "pms_timeseries.csv": "b4c9285c60efe707f7383d25232f5ff43a8f233f21b6e60c9dc21c848ca07948",
+    "pmws_timeseries.csv": "42192320723264f8086698fc5583c81c7839dba508b5d23bac75f087bb5c88a7",
+    "pm_timeseries_metadata.json": "877293d7d4de0276dbaf24de7e86abadb3d4216250bbdbd4c9f79f69d573a732",
+    "ncu_b100_ordered_pms.ncu-rep": "caf902e31c462208d1cc9a4b1b260cb36500b76d993cf00894b5c628588cd1d7",
+    "ncu_b100_hotset1_pms.ncu-rep": "c1333eefe001e91fbbb18101f8c148a5fcbef7c91c92eab5f926bd69ada93eb9",
+    "ncu_b100_ordered_pmws.ncu-rep": "29dd8ee463097e815176a22cab3134636a357d7ea6d945a8153f043bf018d5d9",
+    "ncu_b100_hotset1_pmws.ncu-rep": "78653dc8f58b3988eb464d676abc7308f5817ad72deff6f36c2dba6492cf3be4"
+  }
+}
