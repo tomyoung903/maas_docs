@@ -1,0 +1,143 @@
+{
+  "schema": "flashmla-cache-locality-experiment-v1",
+  "title": "FlashMLA H64 V32 synthetic cache-locality experiment",
+  "measured_at": "2026-08-07",
+  "page_prepared_at": "2026-08-12",
+  "evidence_class": "controlled synthetic hardware-counter experiment",
+  "hardware": {
+    "node": "gpu-h200-36",
+    "device": "NVIDIA H200",
+    "executing_cuda_device": 0,
+    "node_gpu_count_reserved": 8,
+    "gpu_count_used_by_benchmark": 1,
+    "compute_capability": "9.0",
+    "addressable_device_bytes": 150121283584,
+    "reported_l2_bytes": 62914560
+  },
+  "runtime": {
+    "torch": "2.11.0+cu130",
+    "cuda": "13.0",
+    "nsight_compute": "2025.3.1.0",
+    "image_digest": "sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b",
+    "flashmla_commit": "df022ebafb88578eab9f0300606ee765608d8b5c",
+    "flashmla_commit_provenance": "broader source/binary audit; not a field printed by the four Nsight reports"
+  },
+  "kernel": {
+    "name": "flash_fwd_splitkv_mla_fp8_sparse_kernel",
+    "specialization": "V32 sparse FP8 decode, H64",
+    "profile_scope": "one main-kernel invocation; combine excluded",
+    "grid_ctas": 132,
+    "threads_per_cta": 384,
+    "batch_size": 100,
+    "topk_per_request": 2048,
+    "logical_selections": 204800,
+    "physical_query_heads": 64,
+    "logical_active_query_heads": 8,
+    "qk_dimension": 576,
+    "value_dimension": 512,
+    "page_size_records": 64,
+    "packed_record_bytes": 656,
+    "kv_values": "zero",
+    "q_values": "seeded random BF16; inactive physical heads zeroed"
+  },
+  "index_construction": {
+    "request_private_base": "request_index * 2048",
+    "physical_index": "request_private_base + selected_position",
+    "cross_request_record_sharing": false,
+    "layouts": {
+      "random": "a seeded random permutation of positions 0 through 2047 per request",
+      "ordered": "positions 0 through 2047 in ascending order per request",
+      "hotset64": "positions modulo 64; each request repeats its own 64 records 32 times",
+      "hotset1": "position zero; each request repeats its own first record 2048 times"
+    }
+  },
+  "metrics": {
+    "l1_global_load_hit_pct": "l1tex__t_sector_pipe_lsu_mem_global_op_ld_hit_rate.pct",
+    "l2_read_hit_pct": "lts__t_sector_op_read_hit_rate.pct",
+    "l2_all_operation_hit_pct": "lts__t_sector_hit_rate.pct",
+    "l2_traffic_mb": "lts__t_bytes.sum",
+    "dram_read_mb": "dram__bytes_read.sum",
+    "dram_write_mb": "dram__bytes_write.sum"
+  },
+  "results": [
+    {
+      "layout": "random",
+      "logical_unique_records": 204800,
+      "unique_record_payload_bytes": 134348800,
+      "l1_global_load_hit_pct": 17.798612,
+      "l2_read_hit_pct": 36.810670,
+      "l2_all_operation_hit_pct": 44.583404,
+      "l2_traffic_mb": 312.797216,
+      "dram_read_mb": 157.309440,
+      "dram_write_mb": 14.391552
+    },
+    {
+      "layout": "ordered",
+      "logical_unique_records": 204800,
+      "unique_record_payload_bytes": 134348800,
+      "l1_global_load_hit_pct": 18.889274,
+      "l2_read_hit_pct": 39.833760,
+      "l2_all_operation_hit_pct": 47.253212,
+      "l2_traffic_mb": 304.391072,
+      "dram_read_mb": 144.907520,
+      "dram_write_mb": 13.899520
+    },
+    {
+      "layout": "hotset64",
+      "logical_unique_records": 6400,
+      "unique_record_payload_bytes": 4198400,
+      "l1_global_load_hit_pct": 19.338894,
+      "l2_read_hit_pct": 87.656144,
+      "l2_all_operation_hit_pct": 89.815090,
+      "l2_traffic_mb": 204.219616,
+      "dram_read_mb": 13.007616,
+      "dram_write_mb": 4.824320
+    },
+    {
+      "layout": "hotset1",
+      "logical_unique_records": 100,
+      "unique_record_payload_bytes": 65600,
+      "l1_global_load_hit_pct": 95.338323,
+      "l2_read_hit_pct": 25.327326,
+      "l2_all_operation_hit_pct": 73.767795,
+      "l2_traffic_mb": 62.055264,
+      "dram_read_mb": 7.958272,
+      "dram_write_mb": 4.605440
+    }
+  ],
+  "profiler_conditions": {
+    "replay_passes": 4,
+    "cache_control": "none",
+    "clock_control": "none",
+    "cache_thrash_mib": 0,
+    "benchmark_warmup_before_profile_one": false,
+    "gpu_caches_controlled": false,
+    "gpu_clocks_modified_by_profiler": false,
+    "headline_latency_evidence": false
+  },
+  "interpretation_contract": {
+    "measured": [
+      "cache hit percentages",
+      "L2 traffic",
+      "physical DRAM traffic",
+      "kernel launch attributes"
+    ],
+    "derived": [
+      "unique record counts",
+      "unique record payload sizes"
+    ],
+    "analyzed": [
+      "the 64-record case is consistent with L2-centered reuse",
+      "the one-record case is consistent with L1-centered reuse",
+      "ordered access has better spatial locality than random access"
+    ],
+    "not_measured": [
+      "production address distribution",
+      "production cache-hit rates",
+      "KV-only DRAM bytes",
+      "per-access memory latency",
+      "residency lifetime of individual cache lines",
+      "combine-kernel cache behavior"
+    ]
+  }
+}
