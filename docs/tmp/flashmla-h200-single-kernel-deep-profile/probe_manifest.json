@@ -1,0 +1,229 @@
+{
+  "schema_version": "flashmla-composite-probe-manifest/v1",
+  "title": "FlashMLA H200 ~100 us composite source timeline",
+  "workload_identity": {
+    "flashmla_commit": "df022ebafb88578eab9f0300606ee765608d8b5c",
+    "gpu": "NVIDIA H200",
+    "batch": 100,
+    "query_heads": 64,
+    "logical_query_heads": 8,
+    "topk": 2048,
+    "d_qk": 576,
+    "d_v": 512,
+    "grid_ctas": 132,
+    "threads_per_cta": 384
+  },
+  "production_anchor": {
+    "duration_us": 103.2,
+    "evidence": "fresh direct production-cubin NCU replay on the same Europe H200",
+    "prior_direct_duration_us": 102.464,
+    "historical_mean_us": 103.4241667
+  },
+  "accepted_probe_analysis": {
+    "path": "../accepted-analysis/accepted_probe_analysis.json",
+    "description": "39 accepted first-generation sparse-probe runs: CTA setup/drain, WG0, WG1, WG2 outer anchors, and same-launch relays"
+  },
+  "optional_wg2_internal_analysis": {
+    "path": "../runs-wg2-gen9/accepted_full_axis_analysis.json",
+    "description": "Fail-closed slot for a low-overhead internal WG2 axis. No accepted artifact exists after the completed experiment ladder."
+  },
+  "rejected_gen9_mechanistic_shape": {
+    "path": "../runs-wg2-gen9-rejected/rejected_full_axis_analysis.json",
+    "description": "Rejected +~30% same-launch full axis, loaded only as a normalized mechanism-shape inset. No absolute phase microseconds are exposed to the page."
+  },
+  "rejected_gen13_stop_record": {
+    "path": "../runs-wg2-gen13-rejected/rejected_all_cta_register_pair_analysis.json",
+    "description": "Final register-only E3-to-E4 probe. Its exact coverage, wrap safety, compile-resource equivalence, and failed runtime gates establish the stop condition; no phase duration is exposed."
+  },
+  "wg2_microscope_outer_reference": {
+    "partition": 1,
+    "ordinal": 14,
+    "partition_tile_count": 24,
+    "paths": [
+      "../runs/wg2_anchor-r1/trace_events.csv",
+      "../runs/wg2_anchor-r2/trace_events.csv",
+      "../runs/wg2_anchor-r3/trace_events.csv"
+    ],
+    "description": "Independent accepted WG2 TILE_BEGIN to K-ready duration for the exact non-straggler CTA/tile targeted by the repeated microscope"
+  },
+  "rejected_wg2_internal_generation": {
+    "name": "deferred serial-flush pair probes",
+    "median_overhead_range_pct": [5.36, 17.89],
+    "source_envelope_range_us": [111.0, 129.0],
+    "use_for_phase_attribution": false,
+    "reason": "Every measured pair crossed the 5% gate or materially stretched the producer source envelope."
+  },
+  "rejected_wg2_all_cta_selected_ordinal_generation": {
+    "name": "all-active-CTA selected-ordinal pair probe",
+    "sampled_ctas_per_event": 125,
+    "reported_overhead_pct": 8.16,
+    "use_for_phase_attribution": false,
+    "reason": "Sampling the selected ordinal on all 125 active CTAs still crossed the 5% gate."
+  },
+  "rejected_wg2_selected_cohort_generation": {
+    "name": "25-CTA selected steady-tile cohort",
+    "sampled_ctas_per_event": 25,
+    "reported_overhead_pct": 7.5,
+    "use_for_phase_attribution": false,
+    "reason": "Sampling one steady tile on the complete 29-tile cohort still crossed the 5% gate."
+  },
+  "accepted_scaffold": {
+    "id": "compiletime-sample-on-r1",
+    "path": "../../flashmla_timestamp_profile_20260813/runs/compiletime-sample-on/trace_events.csv",
+    "summary_path": "../../flashmla_timestamp_profile_20260813/runs/compiletime-sample-on/summary.json",
+    "trace_overhead_pct": 3.124996818639958,
+    "required_cta_events": [
+      "CTA_ENTER",
+      "CTA_EXIT"
+    ],
+    "required_tile_events": [
+      "TILE_BEGIN",
+      "K_READY_SIGNAL_DONE_TILE_END"
+    ],
+    "expected_ctas": 132,
+    "expected_active_ctas": 125,
+    "expected_tile_histogram": {
+      "0": 7,
+      "24": 75,
+      "27": 25,
+      "29": 25
+    }
+  },
+  "perturbed_reference": {
+    "id": "compiletime-detail-p50",
+    "path": "../../flashmla_timestamp_profile_20260813/runs/compiletime-detail-p50/trace_events.csv",
+    "summary_path": "../../flashmla_timestamp_profile_20260813/runs/compiletime-detail-p50/summary.json",
+    "partition": 50,
+    "representative_tile_ordinal": 14,
+    "trace_overhead_pct": 73.125317,
+    "absolute_transfer_allowed": false
+  },
+  "alignment_policy": {
+    "clock": "global_ns only",
+    "cta_key": [
+      "partition"
+    ],
+    "tile_key": [
+      "partition",
+      "ordinal",
+      "batch_idx",
+      "block_idx",
+      "buf_idx"
+    ],
+    "required_shared_anchors": [
+      "CTA_ENTER",
+      "CTA_EXIT",
+      "TILE_BEGIN",
+      "K_READY_SIGNAL_DONE_TILE_END"
+    ],
+    "max_cta_duration_delta_pct": 5.0,
+    "max_shared_anchor_residual_us": 1.0,
+    "note": "The grid partition uniquely identifies a CTA. Tile batch_idx/block_idx describe scheduled sparse work and therefore are used only in the tile key, not to find the CTA_ENTER row. Separate launches are aligned statistically by CTA identity, tile ordinal, and shared anchors. They are never described as one cycle-exact launch. SM-cycle clocks are not compared across SMs or runs."
+  },
+  "sparse_probe_sets": [
+    {
+      "id": "cta-setup-drain",
+      "status": "pending_measurement",
+      "lane": "CTA",
+      "path": null,
+      "required_target_events": [
+        "BARRIER_INIT_DONE",
+        "Q_TMA_ISSUED",
+        "Q_READY",
+        "MAINLOOP_DONE",
+        "LM_REDUCE_DONE",
+        "OUTPUT_STORE_DONE"
+      ],
+      "shared_anchor_events": [
+        "CTA_ENTER",
+        "CTA_EXIT"
+      ]
+    },
+    {
+      "id": "wg0-k-ready-qk",
+      "status": "pending_measurement",
+      "lane": "WG0",
+      "path": null,
+      "required_target_events": [
+        "TILE_BEGIN_K_WAIT_BEGIN",
+        "K_READY",
+        "QK_ISSUED",
+        "QK_DONE"
+      ],
+      "shared_anchor_events": [
+        "CTA_ENTER",
+        "CTA_EXIT",
+        "TILE_BEGIN",
+        "K_READY_SIGNAL_DONE_TILE_END"
+      ]
+    },
+    {
+      "id": "wg0-softmax-local-pv",
+      "status": "pending_measurement",
+      "lane": "WG0",
+      "path": null,
+      "required_target_events": [
+        "SCOREBUF_FREE",
+        "SOFTMAX_DONE",
+        "SCORE_PUBLISHED",
+        "LOCAL_PV_ISSUED",
+        "SCORE_READY_SIGNAL_DONE",
+        "LOCAL_PV_DONE",
+        "TILE_END"
+      ],
+      "shared_anchor_events": [
+        "CTA_ENTER",
+        "CTA_EXIT",
+        "TILE_BEGIN",
+        "K_READY_SIGNAL_DONE_TILE_END"
+      ]
+    },
+    {
+      "id": "wg1-score-ready-remote-pv",
+      "status": "pending_measurement",
+      "lane": "WG1",
+      "path": null,
+      "required_target_events": [
+        "TILE_BEGIN_SCORE_WAIT_BEGIN",
+        "SCORE_READY",
+        "RESCALE_DONE",
+        "REMOTE_PV_ISSUED",
+        "REMOTE_PV_DONE",
+        "KBUF_RELEASED",
+        "SCOREBUF_FREE_SIGNAL_DONE",
+        "TILE_END"
+      ],
+      "shared_anchor_events": [
+        "CTA_ENTER",
+        "CTA_EXIT",
+        "TILE_BEGIN",
+        "K_READY_SIGNAL_DONE_TILE_END"
+      ]
+    },
+    {
+      "id": "wg2-internal-gather",
+      "status": "pending_measurement",
+      "lane": "WG2",
+      "path": null,
+      "required_target_events": [
+        "R0_ADDR_BEGIN",
+        "R0_INDEX_SCALE_READY",
+        "KBUF_AVAILABLE",
+        "R0_NOPE_GATHER_DEQUANT_DONE",
+        "R0_ROPE_DONE",
+        "R1_ADDR_BEGIN",
+        "R1_INDEX_SCALE_READY",
+        "R1_NOPE_GATHER_DEQUANT_DONE",
+        "R1_ROPE_DONE",
+        "SMEM_FENCE_DONE",
+        "VALIDITY_DONE"
+      ],
+      "shared_anchor_events": [
+        "CTA_ENTER",
+        "CTA_EXIT",
+        "TILE_BEGIN",
+        "K_READY_SIGNAL_DONE_TILE_END"
+      ]
+    }
+  ]
+}
