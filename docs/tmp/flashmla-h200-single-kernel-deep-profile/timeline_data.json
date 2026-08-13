@@ -1,0 +1,265 @@
+{
+  "artifact": {
+    "name": "FlashMLA H200 production main kernel and source-trace audit",
+    "generated_at": "2026-08-13T11:30:00+08:00",
+    "sources": [
+      "prod_profiles/ncu_ordered_core.ncu-rep",
+      "prod_profiles/ncu_hotset1_core.ncu-rep",
+      "prod_profiles/ncu_ordered_pmsampling.ncu-rep",
+      "prod_profiles/ncu_hotset1_pmsampling.ncu-rep",
+      "prod_profiles/pms_timeseries.csv",
+      "runs/pristine/summary.json",
+      "runs/compiletime-sample-off/summary.json",
+      "runs/compiletime-sample-on/summary.json",
+      "runs/compiletime-sample-on-r2/summary.json",
+      "runs/compiletime-sample-on-r3/summary.json",
+      "runs/compiletime-coarse-off/summary.json",
+      "runs/compiletime-coarse-on/summary.json",
+      "runs/compiletime-detail-off/summary.json",
+      "runs/compiletime-detail-all/summary.json",
+      "runs/compiletime-detail-p50/trace_events.csv",
+      "normalized-analysis-current.json"
+    ]
+  },
+  "bin_seconds": 0.000102464,
+  "duration_seconds": 0.000102464,
+  "profile_start_note": "The normalized core bin is one direct NCU replay of the production main kernel. The source-trace lane clock is separate and is never overlaid on this production time base.",
+  "category_colors": {
+    "flashmla_main": "#176b87"
+  },
+  "category_totals": {
+    "flashmla_main": {
+      "count": 1,
+      "total_ms": 0.102464,
+      "top_kernel_names": [
+        "flash_fwd_splitkv_mla_fp8_sparse_kernel"
+      ],
+      "interpretation": "One recorded execution of the production FlashMLA sparse decode main kernel on one NVIDIA H200."
+    }
+  },
+  "bins": [
+    {
+      "t": 0,
+      "kernel_ms": {
+        "flashmla_main": 0.102464
+      },
+      "kernel_count": {
+        "flashmla_main": 1
+      },
+      "decode_graph_ms": 0,
+      "decode_graph_count": 0
+    }
+  ],
+  "flashmla": {
+    "workload": {
+      "gpu": "NVIDIA H200",
+      "batch": 100,
+      "query_heads": 64,
+      "logical_query_heads": 8,
+      "topk": 2048,
+      "d_qk": 576,
+      "d_v": 512,
+      "grid_ctas": 132,
+      "threads_per_cta": 384
+    },
+    "historical": {
+      "main_kernel_mean_us": 103.4241667,
+      "interval_count": 78
+    },
+    "production": {
+      "main_kernel_us": 102.464,
+      "hbm_read_mb": 145.12384,
+      "hbm_write_mb": 13.948672,
+      "l2_bytes_mb": 304.773728,
+      "l1_global_load_hit_pct": 18.886207,
+      "l2_read_hit_pct": 39.850667,
+      "sm_clock_ghz": 1.801187,
+      "tensor_hmma_active_pct_elapsed": 28.5828,
+      "issue_active_pct_active": 30.16768,
+      "active_warps_per_scheduler": 2.999686,
+      "eligible_warps_per_scheduler": 0.370136
+      ,"dram_read_tbps": 1.41634,
+      "dram_read_write_tbps": 1.552472,
+      "directional_full_section_dram_throughput_pct": 35.38,
+      "directional_full_section_memory_throughput_pct": 52.42,
+      "directional_full_section_compute_throughput_pct": 27.70,
+      "directional_no_eligible_scheduler_cycles_pct": 69.79
+    },
+    "hotset_control": {
+      "main_kernel_us": 79.584,
+      "hbm_read_mb": 7.837696,
+      "hbm_write_mb": 4.672768,
+      "l2_bytes_mb": 62.371328,
+      "l1_global_load_hit_pct": 95.338323,
+      "l2_read_hit_pct": 24.5323,
+      "tensor_hmma_active_pct_elapsed": 36.531869,
+      "issue_active_pct_active": 39.900795,
+      "eligible_warps_per_scheduler": 0.525542
+    },
+    "pm_sampling": {
+      "interval_us": 1.5,
+      "ordered_kernel_us": 104.992,
+      "hotset_kernel_us": 78.944,
+      "merged_samples": 0,
+      "ordinary_metrics_pass_groups": 1,
+      "warp_state_pass_groups": 5,
+      "ordered_timeseries": {"source":"prod_profiles/pms_timeseries.csv","scope":"separate one-pass 1.5 us PM-sampling replay of ordered production main kernel","x_us":[0.352,1.856,3.36,4.864,6.336,7.84,9.344,10.848,12.352,13.856,15.36,16.864,18.336,19.84,21.344,22.848,24.352,25.856,27.36,28.864,30.336,31.84,33.344,34.848,36.352,37.856,39.36,40.864,42.336,43.84,45.344,46.848,48.352,49.856,51.36,52.864,54.336,55.84,57.344,58.848,60.352,61.856,63.36,64.864,66.336,67.84,69.344,70.848,72.352,73.856,75.36,76.864,78.336,79.84,81.344,82.848,84.352,85.856,87.36,88.832,90.336,91.84,93.344,94.848,96.352,97.856,99.36,100.832,102.336,103.84,105.344],"tensor_pct":[0.0,0.0,0.0,0.58,45.83,33.07,39.06,40.12,20.79,52.01,8.47,34.94,27.28,20.0,42.81,22.4,40.67,27.21,38.04,33.7,32.26,40.05,27.97,42.25,26.75,43.34,27.25,42.77,27.62,30.72,28.13,30.88,31.37,40.04,34.37,38.53,35.37,37.18,36.91,30.65,27.95,34.37,37.04,34.55,38.3,33.27,29.68,27.34,30.44,28.07,40.58,31.46,40.98,32.08,38.74,34.77,37.33,35.97,39.1,33.46,13.27,16.7,11.8,7.75,7.58,8.16,5.86,0.91,0.0,0.0,0.0],"dram_read_pct":[30.89,72.45,44.94,33.2,35.87,32.29,36.02,32.54,24.58,34.41,31.19,27.14,31.71,32.48,31.02,28.26,32.62,30.69,34.19,32.48,33.83,33.27,33.55,33.66,32.01,34.82,29.44,32.09,47.13,28.0,30.41,38.89,34.09,36.13,33.84,36.61,33.67,36.12,34.05,16.75,39.01,35.14,34.39,32.32,30.87,45.28,31.97,29.39,35.44,34.99,35.57,33.65,36.27,33.04,36.14,34.34,34.75,29.15,16.18,13.85,10.44,7.34,7.2,6.93,4.96,1.32,0.01,0.0,0.0,0.0,0.0],"sm_throughput_pct":[11.05,3.26,16.49,22.05,30.24,32.29,25.98,36.85,24.26,36.39,18.41,23.18,28.92,23.63,34.95,26.24,31.65,27.16,28.34,30.49,27.49,34.12,27.85,34.34,28.38,34.18,27.82,31.57,27.0,25.78,28.74,28.81,31.36,31.5,33.12,31.36,33.23,30.91,33.51,24.53,25.9,31.1,31.34,30.82,31.27,28.53,28.26,25.37,29.85,29.73,32.7,30.95,32.59,31.46,31.73,32.0,31.66,31.12,28.39,29.03,16.41,12.64,11.43,7.87,6.67,5.67,4.82,1.98,0.44,0.04,0.0]}
+    },
+    "sampled_source_trace": {
+      "status": "accepted_low_overhead",
+      "records": "CTA enter/exit and WG2 tile begin/K-ready publication only",
+      "trace_disabled_sass_identical": true,
+      "trace_disabled_vs_pristine_pct": -1.229719,
+      "resources": {
+        "registers_per_thread": 168,
+        "barriers_per_cta": 12,
+        "local_memory_spills": 0
+      },
+      "repeat_runs": [
+        {"median_overhead_pct": 3.124997, "p90_overhead_pct": 3.20, "cta_grid_makespan_us": 100.704},
+        {"median_overhead_pct": 2.367542, "p90_overhead_pct": 4.99, "cta_grid_makespan_us": 101.056},
+        {"median_overhead_pct": 3.275949, "p90_overhead_pct": 3.68, "cta_grid_makespan_us": 101.344}
+      ],
+      "correctness": "output and LSE bitwise equal in all three repeats",
+      "coverage": {
+        "recorded_event_rows_each_repeat": 6664,
+        "cta_records": 132,
+        "active_ctas": 125,
+        "no_work_ctas": 7,
+        "wg2_tiles": 3200,
+        "overflow_records": 0,
+        "wg2_tile_histogram": {"0": 7, "24": 75, "27": 25, "29": 25}
+      },
+      "wg2_service": {
+        "pooled_tile_count": 9600,
+        "p50_cycles": 5415,
+        "p90_cycles": 6319,
+        "p99_cycles": 9424.08,
+        "p50_us": 3.072,
+        "p90_us": 3.5552,
+        "p99_us": 4.864
+      },
+      "wg2_begin_cadence": {
+        "same_request_p50_cycles": 5602,
+        "request_boundary_p50_cycles": 15488
+      },
+      "limitation": "This accepted trace validates the CTA-grid envelope and WG2 producer cadence; it has no WG0/WG1 phase landmarks."
+    },
+    "source_trace": {
+      "status": "secondary_detailed_high_perturbation",
+      "correctness": "bitwise_equal",
+      "pristine_median_us": 126.2080073,
+      "trace_disabled_sass_identical": true,
+      "coarse_all_cta": {
+        "trace_on_median_us": 162.1280015,
+        "trace_disabled_median_us": 124.6080026,
+        "trace_on_overhead_pct": 29.976909,
+        "source_span_us": 136.16
+      },
+      "detailed_all_cta": {
+        "trace_on_median_us": 218.7360004,
+        "trace_disabled_median_us": 125.6479993,
+        "trace_on_overhead_pct": 74.086338,
+        "source_span_us": 190.08
+      },
+      "detailed_filtered_cta": {
+        "trace_on_median_us": 215.7279998,
+        "trace_disabled_median_us": 124.6080026,
+        "trace_on_overhead_pct": 73.125317,
+        "source_span_us": 187.2,
+        "partition": 50
+      },
+      "coverage": {
+        "cta_records": 132,
+        "active_ctas": 125,
+        "no_work_ctas": 7,
+        "tiles_per_warpgroup": 3200,
+        "overflow_records": 0,
+        "wg2_tile_histogram": {
+          "0": 7,
+          "24": 75,
+          "27": 25,
+          "29": 25
+        }
+      },
+      "normalized_summary": {
+        "detailed_all_tile_medians_fraction_of_own_lane": {
+          "wg0_k_ready_wait": 0.666666667,
+          "wg1_score_ready_wait": 0.857142857,
+          "wg2_r0_address_index_scale": 0.13719888,
+          "wg2_r0_nope_gather_dequant": 0.240223464,
+          "wg2_r0_rope": 0.086021505,
+          "wg2_r1_address_index_scale": 0.111380798,
+          "wg2_r1_nope_gather_dequant": 0.2,
+          "wg2_r1_rope": 0.086021505
+        },
+        "busiest_29_tile_cta": {
+          "partition": 45,
+          "smid": 46,
+          "three_lanes_active_fraction": 0.864846646,
+          "two_lanes_active_fraction": 0.09925851,
+          "one_lane_active_fraction": 0.008257499,
+          "no_tile_lane_active_fraction": 0.027637344,
+          "lane_overlap_factor": 2.880935875
+        }
+      },
+      "representative_cta": {
+        "selection": "compile-time detailed filtered run, partition 50, a 29-tile CTA; selected as a readable representative lane, not as the production critical path",
+        "tile_ordinal": 14,
+        "coordinate": "fraction_of_perturbed_cta_lifetime",
+        "view_start_fraction": 0.485,
+        "view_end_fraction": 0.535,
+        "lanes": [
+          {
+            "id": "wg2",
+            "label": "WG2 producer",
+            "segments": [
+              {
+                "label": "gather + dequant + publish K/V",
+                "start_fraction": 0.48872,
+                "end_fraction": 0.51829,
+                "kind": "memory"
+              }
+            ]
+          },
+          {
+            "id": "wg0",
+            "label": "WG0 consumer",
+            "segments": [
+              {
+                "label": "wait K-ready",
+                "start_fraction": 0.49949,
+                "end_fraction": 0.51846,
+                "kind": "wait"
+              },
+              {
+                "label": "QK + softmax + local PV",
+                "start_fraction": 0.51846,
+                "end_fraction": 0.52838,
+                "kind": "compute"
+              }
+            ]
+          },
+          {
+            "id": "wg1",
+            "label": "WG1 consumer",
+            "segments": [
+              {
+                "label": "wait score-ready",
+                "start_fraction": 0.50171,
+                "end_fraction": 0.52667,
+                "kind": "wait"
+              },
+              {
+                "label": "rescale + remote PV",
+                "start_fraction": 0.52667,
+                "end_fraction": 0.53111,
+                "kind": "compute"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

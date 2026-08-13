@@ -1,232 +1,2650 @@
 {
-  "schema_version": 1,
-  "report": {
-    "title": "FlashMLA H200 single-kernel deep profile",
-    "prepared_at": "2026-08-12",
-    "scope": "One main flash_fwd_splitkv_mla_fp8_sparse_kernel launch; the dependent combine kernel is excluded",
-    "public_path": "/maas_docs/tmp/flashmla-h200-single-kernel-deep-profile/"
-  },
-  "environment": {
-    "cluster": "prod-maas-h200-jp",
-    "namespace": "maas-dev-tom",
-    "node": "gpu-h200-36",
-    "gpu": "NVIDIA H200",
-    "reserved_gpus": 8,
-    "profiled_gpu_count": 1,
-    "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime@sha256:8fa3a4c397860756070300e9adab901abd0098a34ac7bfff13ae0be20b789f8b",
-    "flashmla_commit": "df022ebafb88578eab9f0300606ee765608d8b5c"
-  },
-  "workload": {
-    "batch_size": 100,
-    "kernel_topk": 2048,
-    "valid_keys": 2048,
-    "scheduled_query_heads": 64,
-    "logical_active_query_heads": 8,
-    "qk_dimension": 576,
-    "value_dimension": 512,
-    "kv_dtype": "FP8 E4M3",
-    "layout_cases": ["random_unique", "ordered_unique", "one_hot_record_per_request"]
-  },
-  "historical_original_trace": {
-    "evidence_class": "direct_original_timing_total_only",
-    "main_kernel_interval_count": 78,
-    "sum_duration_us": 8067.085,
-    "mean_duration_us": 103.4241667,
-    "median_duration_us": 103.4885,
-    "minimum_duration_us": 101.824,
-    "maximum_duration_us": 104.896,
-    "standard_deviation_us": 0.70575,
-    "not_retained": ["in-kernel SM clock", "selected-index order", "cache state", "within-kernel timestamps"],
-    "warning": "The historical total is directly measured, but its internal duration cannot be decomposed exactly from the retained trace."
-  },
-  "launch": {
-    "grid": [1, 1, 132],
-    "block": [384, 1, 1],
-    "ctas": 132,
-    "sms": 132,
-    "warps_per_cta": 12,
-    "registers_per_thread": 168,
-    "dynamic_shared_memory_kb_decimal": 231.424,
-    "allocated_shared_memory_kb_decimal": 232.448,
-    "dynamic_shared_memory_bytes": 231424,
-    "driver_shared_memory_bytes": 1024,
-    "static_shared_memory_bytes": 0,
-    "sm_shared_memory_configuration_bytes": 233472,
-    "registers_per_cta": 64512,
-    "resident_ctas_per_sm": 1,
-    "theoretical_occupancy_percent": 18.75,
-    "register_spill_instructions_executed": 0
-  },
-  "fresh_one_replay_main_only_timing": {
-    "evidence_class": "fresh_direct_measurement",
-    "profiler_note": "Five independent Nsight Compute one-replay timing captures; this is the lowest-replay method available for isolating the main kernel from combine",
-    "random_unique_us": [109.696, 109.792, 110.112, 110.240, 110.368],
-    "random_unique_median_us": 110.112,
-    "ordered_unique_us": [105.280, 105.600, 105.632, 105.632, 105.664],
-    "ordered_unique_median_us": 105.632,
-    "historical_main_mean_us": 103.424,
-    "ordered_minus_historical_us": 2.208,
-    "ordered_over_historical_percent": 2.134901,
-    "one_hot_record_us": [79.744, 80.192, 80.352, 80.640, 80.640],
-    "one_hot_record_median_us": 80.352,
-    "random_minus_ordered_median_us": 4.480,
-    "ordered_minus_hot_median_us": 25.280,
-    "random_minus_hot_median_us": 29.760
-  },
-  "fresh_random_core_profile": {
-    "evidence_class": "fresh_direct_measurement",
-    "profiler_note": "Low-replay core counter report; use the five-run timing medians above for the headline latency",
-    "duration_us": 107.2,
-    "elapsed_cycles": 191618.375,
-    "in_kernel_clock_ghz": 1.787632,
-    "dram_read_mb_decimal": 157.278208,
-    "dram_write_mb_decimal": 14.372096,
-    "l2_traffic_mb_decimal": 312.750720,
-    "l2_read_hit_percent": 36.759102,
-    "l1_global_load_hit_percent": 17.803388,
-    "issue_active_percent": 28.92985
-  },
-  "fresh_multi_replay_profiles": {
-    "evidence_class": "fresh_direct_counters_not_headline_latency",
-    "random_unique": {
-      "replay_passes": 21,
-      "profiled_duration_us": 109.120,
-      "issue_active_percent": 29.018746,
-      "no_issue_percent": 70.981254,
-      "eligible_warps_per_scheduler_cycle": 0.353027,
-      "active_warps_per_scheduler_cycle": 2.999699,
-      "tensor_pipe_active_percent": 26.936292,
-      "long_scoreboard_warps_per_issue_active_cycle": 3.552206,
-      "barrier_warps_per_issue_active_cycle": 3.722662,
-      "sass_warp_instructions": 26479662,
-      "pc_samples": 10766,
-      "pc_sample_dropped_bytes": 0,
-      "pc_samples_barrier": 3986,
-      "pc_samples_long_scoreboard": 3664,
-      "pc_samples_barrier_plus_long_scoreboard_percent": 71.057031,
-      "pc_sampling_note": "Next-PC attribution identifies dependency locations, not per-instruction elapsed time"
+  "answer": "The production main kernel is 102.464 us. Three low-overhead sampled traces place its all-CTA envelope at 100.704-101.344 us and measure WG2 producer cadence; the detailed phase trace remains highly perturbing, so it explains normalized overlap/order but cannot numerically partition 102.464 us.",
+  "authoritative_production_main_kernel": {
+    "evidence_label": "direct_ncu_counter_replay",
+    "ordered": {
+      "gpu__time_duration.sum": {
+        "value": 102.464,
+        "unit": "us",
+        "metric": "gpu__time_duration.sum"
+      },
+      "dram__bytes_read.sum": {
+        "value": 145.12384,
+        "unit": "Mbyte",
+        "metric": "dram__bytes_read.sum"
+      },
+      "dram__bytes_write.sum": {
+        "value": 13.948672,
+        "unit": "Mbyte",
+        "metric": "dram__bytes_write.sum"
+      },
+      "lts__t_bytes.sum": {
+        "value": 304.773728,
+        "unit": "Mbyte",
+        "metric": "lts__t_bytes.sum"
+      },
+      "lts__t_sector_op_read_hit_rate.pct": {
+        "value": 39.850667,
+        "unit": "%",
+        "metric": "lts__t_sector_op_read_hit_rate.pct"
+      },
+      "l1tex__t_sector_pipe_lsu_mem_global_op_ld_hit_rate.pct": {
+        "value": 18.886207,
+        "unit": "%",
+        "metric": "l1tex__t_sector_pipe_lsu_mem_global_op_ld_hit_rate.pct"
+      },
+      "sm__pipe_tensor_op_hmma_cycles_active.avg.pct_of_peak_sustained_elapsed": {
+        "value": 28.5828,
+        "unit": "%",
+        "metric": "sm__pipe_tensor_op_hmma_cycles_active.avg.pct_of_peak_sustained_elapsed"
+      },
+      "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+        "value": 30.16768,
+        "unit": "%",
+        "metric": "smsp__issue_active.avg.pct_of_peak_sustained_active"
+      },
+      "smsp__warps_eligible.avg.per_cycle_active": {
+        "value": 0.370136,
+        "unit": "warp",
+        "metric": "smsp__warps_eligible.avg.per_cycle_active"
+      }
     },
-    "ordered_unique": {
-      "replay_passes": 15,
-      "profiled_duration_us": 104.928,
-      "elapsed_cycles": 188727.375,
-      "issue_active_percent": 30.109402,
-      "eligible_warps_per_scheduler_cycle": 0.368128,
-      "long_scoreboard_warps_per_issue_active_cycle": 3.278430,
-      "barrier_warps_per_issue_active_cycle": 3.603416,
-      "sass_warp_instructions": 26465024,
-      "pc_samples": 10375,
-      "pc_sample_dropped_bytes": 0
+    "hotset1_control": {
+      "gpu__time_duration.sum": {
+        "value": 79.584,
+        "unit": "us",
+        "metric": "gpu__time_duration.sum"
+      },
+      "dram__bytes_read.sum": {
+        "value": 7.837696,
+        "unit": "Mbyte",
+        "metric": "dram__bytes_read.sum"
+      },
+      "dram__bytes_write.sum": {
+        "value": 4.672768,
+        "unit": "Mbyte",
+        "metric": "dram__bytes_write.sum"
+      },
+      "lts__t_bytes.sum": {
+        "value": 62.371328,
+        "unit": "Mbyte",
+        "metric": "lts__t_bytes.sum"
+      },
+      "lts__t_sector_op_read_hit_rate.pct": {
+        "value": 24.5323,
+        "unit": "%",
+        "metric": "lts__t_sector_op_read_hit_rate.pct"
+      },
+      "l1tex__t_sector_pipe_lsu_mem_global_op_ld_hit_rate.pct": {
+        "value": 95.338323,
+        "unit": "%",
+        "metric": "l1tex__t_sector_pipe_lsu_mem_global_op_ld_hit_rate.pct"
+      },
+      "sm__pipe_tensor_op_hmma_cycles_active.avg.pct_of_peak_sustained_elapsed": {
+        "value": 36.531869,
+        "unit": "%",
+        "metric": "sm__pipe_tensor_op_hmma_cycles_active.avg.pct_of_peak_sustained_elapsed"
+      },
+      "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+        "value": 39.900795,
+        "unit": "%",
+        "metric": "smsp__issue_active.avg.pct_of_peak_sustained_active"
+      },
+      "smsp__warps_eligible.avg.per_cycle_active": {
+        "value": 0.525542,
+        "unit": "warp",
+        "metric": "smsp__warps_eligible.avg.per_cycle_active"
+      }
     },
-    "one_hot_record": {
-      "replay_passes": 15,
-      "profiled_duration_us": 79.072,
-      "elapsed_cycles": 143015.875,
-      "issue_active_percent": 40.388608,
-      "eligible_warps_per_scheduler_cycle": 0.532407,
-      "long_scoreboard_warps_per_issue_active_cycle": 1.281626,
-      "barrier_warps_per_issue_active_cycle": 2.725805,
-      "sass_warp_instructions": 26273123,
-      "pc_samples": 7762,
-      "pc_sample_dropped_bytes": 0
+    "locality_derived": {
+      "evidence_label": "derived_from_direct_ncu_counter_replays",
+      "duration_reduction_ordered_to_hotset_pct": 22.329793878825733,
+      "dram_read_reduction_ordered_to_hotset_pct": 94.59930497980208,
+      "l1_global_load_hit_rate_change_percentage_points": 76.452116,
+      "l2_read_hit_rate_change_percentage_points": -15.318367000000002,
+      "ordered_actual_dram_read_tb_per_s": 1.4163397876327295,
+      "ordered_actual_dram_read_plus_write_tb_per_s": 1.552472204871955,
+      "ordered_l2_traffic_tb_per_s": 2.974446908182386,
+      "hotset_actual_dram_read_tb_per_s": 0.0984833132287897,
+      "hotset_actual_dram_read_plus_write_tb_per_s": 0.15719823080016082,
+      "hotset_l2_traffic_tb_per_s": 0.7837169280257338,
+      "unit_note": "Nsight Mbyte divided by microseconds is decimal Tbyte/s.",
+      "interpretation": "The hot set is mostly served by L1, so its lower L2 hit percentage does not mean worse overall caching; far fewer requests reach L2/HBM."
+    },
+    "directional_ordered_section_headlines": {
+      "evidence_label": "ncu_section_replay_directional",
+      "source": "prod_profiles/ncu_ordered_sections.details.csv",
+      "sections": {
+        "GPU Speed Of Light Throughput": {
+          "Memory Throughput": {
+            "value": 52.42,
+            "unit": "%"
+          },
+          "DRAM Throughput": {
+            "value": 35.38,
+            "unit": "%"
+          },
+          "Duration": {
+            "value": 105.76,
+            "unit": "us"
+          },
+          "L1/TEX Cache Throughput": {
+            "value": 62.42,
+            "unit": "%"
+          },
+          "Waves Per SM": {
+            "value": 1.0,
+            "unit": ""
+          },
+          "L2 Cache Throughput": {
+            "value": 44.97,
+            "unit": "%"
+          },
+          "SM Active Cycles": {
+            "value": 159926.79,
+            "unit": "cycle"
+          },
+          "Compute (SM) Throughput": {
+            "value": 27.7,
+            "unit": "%"
+          }
+        },
+        "Launch Statistics": {
+          "Block Size": {
+            "value": 384.0,
+            "unit": ""
+          },
+          "Grid Size": {
+            "value": 132.0,
+            "unit": ""
+          },
+          "Registers Per Thread": {
+            "value": 168.0,
+            "unit": "register/thread"
+          },
+          "Driver Shared Memory Per Block": {
+            "value": 1.02,
+            "unit": "Kbyte/block"
+          },
+          "Dynamic Shared Memory Per Block": {
+            "value": 231.42,
+            "unit": "Kbyte/block"
+          },
+          "# SMs": {
+            "value": 132.0,
+            "unit": "SM"
+          },
+          "Waves Per SM": {
+            "value": 1.0,
+            "unit": ""
+          },
+          "Theoretical Occupancy": {
+            "value": 18.75,
+            "unit": "%"
+          },
+          "Achieved Occupancy": {
+            "value": 18.75,
+            "unit": "%"
+          }
+        },
+        "Scheduler Statistics": {
+          "One or More Eligible": {
+            "value": 30.21,
+            "unit": "%"
+          },
+          "Issued Warp Per Scheduler": {
+            "value": 0.3,
+            "unit": ""
+          },
+          "No Eligible": {
+            "value": 69.79,
+            "unit": "%"
+          },
+          "Active Warps Per Scheduler": {
+            "value": 3.0,
+            "unit": "warp"
+          },
+          "Eligible Warps Per Scheduler": {
+            "value": 0.37,
+            "unit": "warp"
+          }
+        },
+        "Memory Workload Analysis": {
+          "Local Memory Spilling Requests": {
+            "value": 0.0,
+            "unit": ""
+          },
+          "Memory Throughput": {
+            "value": 1.7,
+            "unit": "Tbyte/s"
+          },
+          "Mem Busy": {
+            "value": 52.42,
+            "unit": "%"
+          },
+          "L1/TEX Hit Rate": {
+            "value": 18.88,
+            "unit": "%"
+          },
+          "L2 Hit Rate": {
+            "value": 47.11,
+            "unit": "%"
+          },
+          "Mem Pipes Busy": {
+            "value": 17.63,
+            "unit": "%"
+          }
+        }
+      },
+      "caveat": "This ordered section capture required 21 replay passes with cache/clock control disabled. Use it as directional context; the three-pass core report supplies the authoritative 102.464 us headline."
     }
   },
-  "fresh_pm_sampling": {
-    "evidence_class": "fresh_direct_temporal_sampling",
-    "sampling_interval_ns": 1500,
-    "merged_samples": 0,
-    "dropped_samples": null,
-    "dropped_samples_note": "The dropped-samples metric is absent. No sampling warning was emitted, but absence is not numeric proof of zero drops.",
-    "ordinary_pm_pass_groups": 1,
-    "ordered_window_us": 105.024,
-    "one_hot_window_us": 80.352,
-    "ordered_to_one_hot_activity_area_ratio": {
-      "tensor": 0.9978,
-      "sm": 0.9979,
-      "alu": 0.9988,
-      "fma": 0.9990,
-      "dram_read": 0.0685,
-      "l2_throughput": 0.2325
-    },
-    "warning": "An activity area is percent-times-microseconds, not a duration component. PM warp-state metrics were collected in five separate replay groups and must not be aligned across groups."
-  },
-  "source_and_sass_interpretation": {
-    "evidence_class": "same_pinned_binary_source_and_static_sass_audit",
-    "wg0_source_lines": "splitkv_mla.cuh:186-365",
-    "wg1_source_lines": "splitkv_mla.cuh:366-453",
-    "wg2_source_lines": "splitkv_mla.cuh:454-671",
-    "wg0_static_loop_slots": 649,
-    "wg1_static_loop_slots": 177,
-    "wg2_static_loop_slots": 1080,
-    "wg2_conversion_and_multiply_slots": 644,
-    "wg2_other_static_slots": 436,
-    "warning": "Static compiled slots are code footprint, not cycles or launch-wide dynamic instructions; predication and branches mean not every slot executes in every lane."
-  },
-  "scheduler_metadata": {
-    "total_tiles": 3200,
-    "partition_classes": [
-      {"ctas": 25, "tiles_per_cta": 29},
-      {"ctas": 25, "tiles_per_cta": 27},
-      {"ctas": 75, "tiles_per_cta": 24},
-      {"ctas": 7, "tiles_per_cta": 0}
+  "production_stall_evidence": {
+    "pc_sampling_top_states": [
+      {
+        "state": "barrier",
+        "samples": 3689.0,
+        "share_of_all_samples_pct": 35.55319969159599
+      },
+      {
+        "state": "long_sb",
+        "samples": 3469.0,
+        "share_of_all_samples_pct": 33.432922127987666
+      },
+      {
+        "state": "selected",
+        "samples": 1007.0,
+        "share_of_all_samples_pct": 9.70508866615266
+      },
+      {
+        "state": "wait",
+        "samples": 952.0,
+        "share_of_all_samples_pct": 9.175019275250579
+      },
+      {
+        "state": "dispatch",
+        "samples": 324.0,
+        "share_of_all_samples_pct": 3.122590593677718
+      },
+      {
+        "state": "short_sb",
+        "samples": 257.0,
+        "share_of_all_samples_pct": 2.476869699306091
+      }
     ],
-    "warning": "The 29-tile class is the nominal arithmetic maximum, not a proven runtime straggler; two-fragment 24-tile CTAs can compete because of request-boundary work."
+    "pm_sampling_ordered_top_states": [
+      {
+        "state": "barrier",
+        "weight": 174844.464015,
+        "share_of_exported_stall_weights_pct": 41.09155431990613
+      },
+      {
+        "state": "long_scoreboard",
+        "weight": 156742.117424,
+        "share_of_exported_stall_weights_pct": 36.83718136933888
+      },
+      {
+        "state": "wait",
+        "weight": 43761.939394,
+        "share_of_exported_stall_weights_pct": 10.284832979319942
+      },
+      {
+        "state": "dispatch_stall",
+        "weight": 14065.361742,
+        "share_of_exported_stall_weights_pct": 3.3056098133077767
+      },
+      {
+        "state": "short_scoreboard",
+        "weight": 12936.962121,
+        "share_of_exported_stall_weights_pct": 3.040415861745747
+      },
+      {
+        "state": "no_instruction",
+        "weight": 11075.964015,
+        "share_of_exported_stall_weights_pct": 2.603048255097469
+      }
+    ],
+    "warning": "PC/PM states are directional samples from separate multi-pass profiler runs, not additive source phases."
   },
-  "older_same_build_memory_controls": {
-    "evidence_class": "older_direct_measurement_same_binary_and_shape",
-    "ordered_unique": {
-      "l1_global_load_hit_percent": 18.889274,
-      "l2_read_hit_percent": 39.833760,
-      "l2_traffic_mb_decimal": 304.391072,
-      "dram_read_mb_decimal": 144.907520,
-      "dram_write_mb_decimal": 13.899520
+  "source_trace": {
+    "evidence_label": "source_timestamp_mechanistic_high_perturbation",
+    "timing_and_perturbation": {
+      "pristine_api_median_us": 126.20800733566284,
+      "trace_off_baseline_run": "compiletime-detail-off",
+      "trace_off_baseline_api_median_us": 125.11999905109406,
+      "same_run_trace_off_api_median_us": 125.64799934625626,
+      "trace_on_api_median_us": 218.73600035905838,
+      "instrumented_binary_compile_regression_vs_pristine_pct": -0.8620754796287322,
+      "trace_on_vs_same_run_trace_off_pct": 74.08633762346948,
+      "trace_on_vs_mode_matched_trace_off_pct": 74.82097347981538,
+      "trace_on_total_regression_vs_pristine_pct": 73.31388473419761,
+      "trace_on_gate_le_5pct": false,
+      "compile_regression_gate_abs_le_2pct": true,
+      "source_globaltimer_makespan_us": 190.08,
+      "warning": "CUDA-event API timing and source CTA makespan are different scopes. The API includes surrounding work; the source span covers the instrumented main kernel's CTA_ENTER-to-CTA_EXIT envelope."
     },
-    "one_hot_record": {
-      "l1_global_load_hit_percent": 95.338323,
-      "l2_read_hit_percent": 25.327326,
-      "l2_traffic_mb_decimal": 62.055264,
-      "dram_read_mb_decimal": 7.958272,
-      "dram_write_mb_decimal": 4.605440
-    }
+    "coverage": {
+      "recorded_event_rows": 112117,
+      "expected_event_rows_for_sampled_capture": null,
+      "expected_grid_ctas": 132,
+      "recorded_ctas": 132,
+      "recorded_active_ctas": 125,
+      "recorded_no_work_ctas": 7,
+      "unrecorded_partitions": 0,
+      "tiles_by_wg": {
+        "0": 3200,
+        "1": 3200,
+        "2": 3200
+      },
+      "expected_tiles_per_wg_for_full_detailed_capture": 3200,
+      "expected_tiles_by_wg_for_full_capture": {
+        "0": 3200,
+        "1": 3200,
+        "2": 3200
+      },
+      "wg2_tile_histogram_csv_derived": {
+        "0": 7,
+        "24": 75,
+        "27": 25,
+        "29": 25
+      },
+      "expected_wg2_tile_histogram": {
+        "0": 7,
+        "24": 75,
+        "27": 25,
+        "29": 25
+      },
+      "full_capture": true,
+      "summary_reported": {
+        "active_ctas": 125,
+        "cta_records": 132,
+        "no_work_ctas": 7,
+        "nonzero_events_by_wg": {
+          "0": 40000,
+          "1": 26400,
+          "2": 44800
+        },
+        "overflow_sum": 0,
+        "source_trace_makespan_us": 190.08,
+        "tile_counts_by_wg": {
+          "0": 3200,
+          "1": 3200,
+          "2": 3200
+        },
+        "wg2_tile_histogram": {
+          "0": 7,
+          "24": 75,
+          "27": 25,
+          "29": 25
+        }
+      }
+    },
+    "integrity": {
+      "status": "pass",
+      "ordering_error_count": 0,
+      "errors": [],
+      "warnings": [],
+      "same_globaltimer_tick_adjacent_pairs": 614,
+      "active_cta_sm_cycles_per_global_ns": {
+        "n": 125,
+        "min": 1.773812843170899,
+        "p50": 1.7908767772511849,
+        "p90": 1.8013242076564526,
+        "p99": 1.802401012872434,
+        "max": 1.8024372876274235,
+        "mean": 1.7899958113404657
+      },
+      "no_work_cta_sm_cycles_per_global_ns": {
+        "n": 7,
+        "min": 1.9211309523809523,
+        "p50": 1.9630681818181819,
+        "p90": 1.9917207792207792,
+        "p99": 1.9966152597402598,
+        "max": 1.9971590909090908,
+        "mean": 1.9630681818181819
+      },
+      "adjacent_landmark_sm_cycles_per_global_ns_quantized": {
+        "n": 101371,
+        "min": 0.75,
+        "p50": 1.7907608695652173,
+        "p90": 2.125,
+        "p99": 2.96875,
+        "max": 4.125,
+        "mean": 1.8121773188457497
+      },
+      "note": "%globaltimer is the cross-SM axis. The active CTA enter-to-exit ratio is the stable clock sanity check; short adjacent landmark ratios are strongly quantized at the globaltimer tick and are diagnostic only."
+    },
+    "busiest_cta_overlap": {
+      "window_us": 189.888,
+      "time_by_active_warpgroup_count_us": {
+        "0": 5.248,
+        "1": 1.568,
+        "2": 18.848,
+        "3": 164.224
+      },
+      "fraction_by_active_warpgroup_count": {
+        "0": 0.027637344118638354,
+        "1": 0.008257499157398046,
+        "2": 0.09925851027974385,
+        "3": 0.8648466464442197
+      },
+      "time_by_active_lane_set_us": {
+        "WG0+WG1": 5.856,
+        "WG0+WG1+WG2": 164.224,
+        "WG0+WG2": 4.48,
+        "WG1": 1.568,
+        "WG1+WG2": 8.512,
+        "none": 5.248
+      },
+      "fraction_by_active_lane_set": {
+        "WG0+WG1": 0.03083923154701719,
+        "WG0+WG1+WG2": 0.8648466464442197,
+        "WG0+WG2": 0.023592854735422986,
+        "WG1": 0.008257499157398046,
+        "WG1+WG2": 0.044826423997303674,
+        "none": 0.027637344118638354
+      },
+      "any_tile_lane_union_us": 184.64,
+      "sum_warpgroup_lane_residency_us": 531.936,
+      "lane_overlap_factor": 2.880935875216638,
+      "warning": "lane_overlap_factor is summed per-lane residency divided by the union of observed lane intervals; values above 1 quantify cross-lane overlap, while 1 means no cross-lane overlap."
+    },
+    "normalized_phase_distributions": {
+      "wg0": {
+        "k_ready_wait_region": {
+          "n": 3200,
+          "min": 0.5543478260869565,
+          "p50": 0.6666666666666666,
+          "p90": 0.7033492822966507,
+          "p99": 0.7489179331306991,
+          "max": 0.7786259541984732,
+          "mean": 0.6703292561593355
+        },
+        "qk_issue_setup": {
+          "n": 3200,
+          "min": 0.06985294117647059,
+          "p50": 0.1111111111111111,
+          "p90": 0.12048192771084337,
+          "p99": 0.1282051282051282,
+          "max": 0.13580246913580246,
+          "mean": 0.11009051608777548
+        },
+        "qk_completion_wait": {
+          "n": 3200,
+          "min": 0.015037593984962405,
+          "p50": 0.023529411764705882,
+          "p90": 0.028901734104046242,
+          "p99": 0.030864197530864196,
+          "max": 0.036585365853658534,
+          "mean": 0.02438269079475529
+        },
+        "score_buffer_wait_region": {
+          "n": 3200,
+          "min": 0.007352941176470588,
+          "p50": 0.011235955056179775,
+          "p90": 0.016483516483516484,
+          "p99": 0.018072289156626505,
+          "max": 0.01910828025477707,
+          "mean": 0.011984875957031058
+        },
+        "online_softmax": {
+          "n": 3200,
+          "min": 0.048,
+          "p50": 0.07526881720430108,
+          "p90": 0.08900523560209424,
+          "p99": 0.10059643711444029,
+          "max": 0.2009132420091324,
+          "mean": 0.07656799648637164
+        },
+        "score_publish": {
+          "n": 3200,
+          "min": 0.011450381679389313,
+          "p50": 0.02197802197802198,
+          "p90": 0.024096385542168676,
+          "p99": 0.029069767441860465,
+          "max": 0.04504504504504504,
+          "mean": 0.02139231637311972
+        },
+        "local_pv_issue_setup": {
+          "n": 3200,
+          "min": 0.008849557522123894,
+          "p50": 0.01675977653631285,
+          "p90": 0.021505376344086023,
+          "p99": 0.02688317349607669,
+          "max": 0.031746031746031744,
+          "mean": 0.01708532631100926
+        },
+        "score_relay_signal": {
+          "n": 3200,
+          "min": 0.003676470588235294,
+          "p50": 0.010526315789473684,
+          "p90": 0.011834319526627219,
+          "p99": 0.017242375921865633,
+          "max": 0.024691358024691357,
+          "mean": 0.009271476989975882
+        },
+        "local_pv_completion_wait": {
+          "n": 3200,
+          "min": 0.015625,
+          "p50": 0.040229885057471264,
+          "p90": 0.046242774566473986,
+          "p99": 0.05142857142857143,
+          "max": 0.05555555555555555,
+          "mean": 0.040393173318638315
+        },
+        "k_release_and_tile_tail": {
+          "n": 3200,
+          "min": 0.008064516129032258,
+          "p50": 0.017341040462427744,
+          "p90": 0.023121387283236993,
+          "p99": 0.028735632183908046,
+          "max": 0.046632124352331605,
+          "mean": 0.018502371521987818
+        }
+      },
+      "wg1": {
+        "score_ready_wait_region": {
+          "n": 3200,
+          "min": 0.7969543147208121,
+          "p50": 0.8571428571428571,
+          "p90": 0.8756743803916198,
+          "p99": 0.9129060263458147,
+          "max": 0.924924924924925,
+          "mean": 0.8599054138069896
+        },
+        "accumulator_rescale": {
+          "n": 3200,
+          "min": 0.018018018018018018,
+          "p50": 0.03867403314917127,
+          "p90": 0.0446927374301676,
+          "p99": 0.056500923768977335,
+          "max": 0.09644670050761421,
+          "mean": 0.03839120442147733
+        },
+        "remote_pv_issue_setup": {
+          "n": 3200,
+          "min": 0.012269938650306749,
+          "p50": 0.02717391304347826,
+          "p90": 0.0335195530726257,
+          "p99": 0.03804347826086957,
+          "max": 0.05056179775280899,
+          "mean": 0.02687000767413782
+        },
+        "remote_pv_completion_wait": {
+          "n": 3200,
+          "min": 0.016853932584269662,
+          "p50": 0.04020100502512563,
+          "p90": 0.04712041884816754,
+          "p99": 0.05325443786982249,
+          "max": 0.05917159763313609,
+          "mean": 0.040254683780899816
+        },
+        "k_buffer_release": {
+          "n": 3200,
+          "min": 0.005434782608695652,
+          "p50": 0.011299435028248588,
+          "p90": 0.01675977653631285,
+          "p99": 0.017857142857142856,
+          "max": 0.023121387283236993,
+          "mean": 0.012501939238336033
+        },
+        "score_buffer_release": {
+          "n": 3000,
+          "min": 0.006134969325153374,
+          "p50": 0.015789473684210527,
+          "p90": 0.017241379310344827,
+          "p99": 0.0223463687150838,
+          "max": 0.024691358024691357,
+          "mean": 0.014569053581320197
+        },
+        "tile_tail": {
+          "n": 3000,
+          "min": 0.003003003003003003,
+          "p50": 0.005988023952095809,
+          "p90": 0.011299435028248588,
+          "p99": 0.011904761904761904,
+          "max": 0.01507537688442211,
+          "mean": 0.007874626123792397
+        }
+      },
+      "wg2": {
+        "tile_prologue": {
+          "n": 3200,
+          "min": 0.008333333333333333,
+          "p50": 0.01639344262295082,
+          "p90": 0.02030456852791878,
+          "p99": 0.02298983456248751,
+          "max": 0.1,
+          "mean": 0.016494178043425355
+        },
+        "r0_address_index_scale": {
+          "n": 3200,
+          "min": 0.08713692946058091,
+          "p50": 0.13719887955182075,
+          "p90": 0.1761393075836081,
+          "p99": 0.2538860103626943,
+          "max": 0.35148514851485146,
+          "mean": 0.1428766326765376
+        },
+        "k_buffer_wait_region": {
+          "n": 3200,
+          "min": 0.016304347826086956,
+          "p50": 0.029585798816568046,
+          "p90": 0.03910614525139665,
+          "p99": 0.04597701149425287,
+          "max": 0.05142857142857143,
+          "mean": 0.030911106644616076
+        },
+        "r0_nope_gather_dequant": {
+          "n": 3200,
+          "min": 0.14146341463414633,
+          "p50": 0.24022346368715083,
+          "p90": 0.2660360859299851,
+          "p99": 0.28573070607553325,
+          "max": 0.3316582914572864,
+          "mean": 0.23899150082627738
+        },
+        "r0_rope_gather_store": {
+          "n": 3200,
+          "min": 0.05069124423963134,
+          "p50": 0.08602150537634409,
+          "p90": 0.10752688172043011,
+          "p99": 0.15261543782786638,
+          "max": 0.226890756302521,
+          "mean": 0.0882646692671295
+        },
+        "r1_address_begin": {
+          "n": 3200,
+          "min": 0.007633587786259542,
+          "p50": 0.011428571428571429,
+          "p90": 0.016853932584269662,
+          "p99": 0.017964071856287425,
+          "max": 0.02127659574468085,
+          "mean": 0.012870032621144188
+        },
+        "r1_address_index_scale": {
+          "n": 3200,
+          "min": 0.06862745098039216,
+          "p50": 0.11138079827400216,
+          "p90": 0.13777269528501052,
+          "p99": 0.21261529808773863,
+          "max": 0.24766355140186916,
+          "mean": 0.11535296398159924
+        },
+        "r1_nope_gather_dequant": {
+          "n": 3200,
+          "min": 0.14473684210526316,
+          "p50": 0.2,
+          "p90": 0.22448979591836735,
+          "p99": 0.26784347348926346,
+          "max": 0.3333333333333333,
+          "mean": 0.20068100642086306
+        },
+        "r1_rope_gather_store": {
+          "n": 3200,
+          "min": 0.0502092050209205,
+          "p50": 0.08602150537634409,
+          "p90": 0.1076923076923077,
+          "p99": 0.1354192839195979,
+          "max": 0.22535211267605634,
+          "mean": 0.08795090838302377
+        },
+        "shared_fence": {
+          "n": 3200,
+          "min": 0.004016064257028112,
+          "p50": 0.0106951871657754,
+          "p90": 0.011560693641618497,
+          "p99": 0.013215859030837005,
+          "max": 0.017964071856287425,
+          "mean": 0.009791046449827642
+        },
+        "validity_flags": {
+          "n": 3200,
+          "min": 0.026717557251908396,
+          "p50": 0.043243243243243246,
+          "p90": 0.05232558139534885,
+          "p99": 0.0678004622496147,
+          "max": 0.08426966292134831,
+          "mean": 0.04414721916120911
+        },
+        "k_ready_relay": {
+          "n": 3200,
+          "min": 0.0041841004184100415,
+          "p50": 0.011049723756906077,
+          "p90": 0.015957446808510637,
+          "p99": 0.017543859649122806,
+          "max": 0.02030456852791878,
+          "mean": 0.0116687355243471
+        }
+      }
+    },
+    "relay_wait_and_service": {
+      "wg2_k_ready_to_wg0": {
+        "producer_service_tile_begin_to_signal": {
+          "n": 3200,
+          "min_us": 4.736,
+          "p10_us": 5.532800000000001,
+          "p25_us": 5.696,
+          "p50_us": 5.888,
+          "p75_us": 6.112,
+          "p90_us": 6.4,
+          "p95_us": 6.72,
+          "p99_us": 7.552,
+          "max_us": 8.384,
+          "mean_us": 5.94509,
+          "sum_logical_residency_us": 19024.287999999975
+        },
+        "consumer_wait_region": {
+          "n": 3200,
+          "min_us": 3.04,
+          "p10_us": 3.488,
+          "p25_us": 3.648,
+          "p50_us": 3.872,
+          "p75_us": 4.128,
+          "p90_us": 4.64,
+          "p95_us": 5.152,
+          "p99_us": 5.856319999999992,
+          "max_us": 6.688,
+          "mean_us": 3.98455,
+          "sum_logical_residency_us": 12750.560000000085
+        },
+        "consumer_stamp_minus_producer_post_arrive_stamp": {
+          "n": 3200,
+          "min_us": 0.0,
+          "p10_us": 0.0,
+          "p25_us": 0.032,
+          "p50_us": 0.032,
+          "p75_us": 0.032,
+          "p90_us": 0.064,
+          "p95_us": 0.064,
+          "p99_us": 0.064,
+          "max_us": 0.352,
+          "mean_us": 0.0336,
+          "sum_logical_residency_us": 107.51999999999295
+        },
+        "interpretation": "Producer service begins before the WG0 wait; consumer wait and producer service therefore overlap and are not additive. The cross-WG signed stamp delta is scheduling/clock granularity around a post-arrive producer stamp, not barrier latency."
+      },
+      "wg0_score_ready_to_wg1": {
+        "producer_service_k_ready_to_signal": {
+          "n": 3200,
+          "min_us": 1.44,
+          "p10_us": 1.504,
+          "p25_us": 1.536,
+          "p50_us": 1.568,
+          "p75_us": 1.632,
+          "p90_us": 1.696,
+          "p95_us": 1.7280000000000002,
+          "p99_us": 1.792,
+          "max_us": 2.592,
+          "mean_us": 1.5952600000000001,
+          "sum_logical_residency_us": 5104.832000000093
+        },
+        "consumer_wait_region": {
+          "n": 3200,
+          "min_us": 4.096,
+          "p10_us": 4.704,
+          "p25_us": 4.832,
+          "p50_us": 5.056,
+          "p75_us": 5.312,
+          "p90_us": 5.984,
+          "p95_us": 7.459199999999982,
+          "p99_us": 9.12,
+          "max_us": 9.856,
+          "mean_us": 5.28931,
+          "sum_logical_residency_us": 16925.791999999947
+        },
+        "consumer_stamp_minus_producer_post_arrive_stamp": {
+          "n": 3200,
+          "min_us": 0.0,
+          "p10_us": 0.0,
+          "p25_us": 0.032,
+          "p50_us": 0.032,
+          "p75_us": 0.032,
+          "p90_us": 0.032,
+          "p95_us": 0.064,
+          "p99_us": 0.064,
+          "max_us": 0.096,
+          "mean_us": 0.02801,
+          "sum_logical_residency_us": 89.63199999999436
+        },
+        "interpretation": "WG1 waits while WG0 performs QK/softmax/publish/PV issue; the two intervals overlap and are not additive. The cross-WG signed stamp delta is scheduling/clock granularity around a post-arrive producer stamp, not barrier latency."
+      },
+      "double_buffer_reuse": {
+        "wg2_k_buffer_barrier_region": {
+          "n": 3200,
+          "min_us": 0.096,
+          "p10_us": 0.16,
+          "p25_us": 0.16,
+          "p50_us": 0.192,
+          "p75_us": 0.192,
+          "p90_us": 0.224,
+          "p95_us": 0.256,
+          "p99_us": 0.256,
+          "max_us": 0.32,
+          "mean_us": 0.18318,
+          "sum_logical_residency_us": 586.1760000000082
+        },
+        "wg2_k_buffer_ready_headroom_at_wait_entry": {
+          "n": 2950,
+          "min_us": 3.872,
+          "p10_us": 4.384,
+          "p25_us": 4.544,
+          "p50_us": 4.768,
+          "p75_us": 5.056,
+          "p90_us": 5.568,
+          "p95_us": 10.225599999999993,
+          "p99_us": 11.568319999999993,
+          "max_us": 12.512,
+          "mean_us": 5.139677288135593,
+          "sum_logical_residency_us": 15162.047999999902
+        },
+        "wg0_score_buffer_barrier_region": {
+          "n": 3200,
+          "min_us": 0.064,
+          "p10_us": 0.064,
+          "p25_us": 0.064,
+          "p50_us": 0.064,
+          "p75_us": 0.064,
+          "p90_us": 0.096,
+          "p95_us": 0.096,
+          "p99_us": 0.096,
+          "max_us": 0.096,
+          "mean_us": 0.07049,
+          "sum_logical_residency_us": 225.5679999999884
+        },
+        "wg0_score_buffer_ready_headroom_at_wait_entry": {
+          "n": 2875,
+          "min_us": 9.184,
+          "p10_us": 9.888,
+          "p25_us": 10.112,
+          "p50_us": 10.464,
+          "p75_us": 10.912,
+          "p90_us": 11.584,
+          "p95_us": 12.36159999999999,
+          "p99_us": 16.87231999999999,
+          "max_us": 18.176,
+          "mean_us": 10.72686747826087,
+          "sum_logical_residency_us": 30839.74400000001
+        },
+        "interpretation": "Positive headroom means the ordinal-2 producer release occurred before the consumer entered the reuse barrier; the short barrier region is then overhead, not blocked time."
+      }
+    },
+    "representative_filtered_tile": {
+      "ordinal": 14,
+      "intervals": [
+        {
+          "lane": "WG2",
+          "phase": "full_tile_span",
+          "start_fraction_of_cta_lifetime": 0.4887179487179487,
+          "end_fraction_of_cta_lifetime": 0.5182905982905983,
+          "duration_fraction_of_own_wg_tile": 1.0
+        },
+        {
+          "lane": "WG2",
+          "phase": "tile_prologue",
+          "start_fraction_of_cta_lifetime": 0.4887179487179487,
+          "end_fraction_of_cta_lifetime": 0.48923076923076925,
+          "duration_fraction_of_own_wg_tile": 0.017341040462427744
+        },
+        {
+          "lane": "WG2",
+          "phase": "r0_address_index_scale",
+          "start_fraction_of_cta_lifetime": 0.48923076923076925,
+          "end_fraction_of_cta_lifetime": 0.49333333333333335,
+          "duration_fraction_of_own_wg_tile": 0.13872832369942195
+        },
+        {
+          "lane": "WG2",
+          "phase": "k_buffer_wait_region",
+          "start_fraction_of_cta_lifetime": 0.49333333333333335,
+          "end_fraction_of_cta_lifetime": 0.49435897435897436,
+          "duration_fraction_of_own_wg_tile": 0.03468208092485549
+        },
+        {
+          "lane": "WG2",
+          "phase": "r0_nope_gather_dequant",
+          "start_fraction_of_cta_lifetime": 0.49435897435897436,
+          "end_fraction_of_cta_lifetime": 0.5013675213675214,
+          "duration_fraction_of_own_wg_tile": 0.23699421965317918
+        },
+        {
+          "lane": "WG0",
+          "phase": "full_tile_span",
+          "start_fraction_of_cta_lifetime": 0.49948717948717947,
+          "end_fraction_of_cta_lifetime": 0.5283760683760684,
+          "duration_fraction_of_own_wg_tile": 1.0
+        },
+        {
+          "lane": "WG0",
+          "phase": "k_ready_wait_region",
+          "start_fraction_of_cta_lifetime": 0.49948717948717947,
+          "end_fraction_of_cta_lifetime": 0.5184615384615384,
+          "duration_fraction_of_own_wg_tile": 0.6568047337278107
+        },
+        {
+          "lane": "WG2",
+          "phase": "r0_rope_gather_store",
+          "start_fraction_of_cta_lifetime": 0.5013675213675214,
+          "end_fraction_of_cta_lifetime": 0.5042735042735043,
+          "duration_fraction_of_own_wg_tile": 0.09826589595375723
+        },
+        {
+          "lane": "WG1",
+          "phase": "full_tile_span",
+          "start_fraction_of_cta_lifetime": 0.5017094017094017,
+          "end_fraction_of_cta_lifetime": 0.5311111111111111,
+          "duration_fraction_of_own_wg_tile": 1.0
+        },
+        {
+          "lane": "WG1",
+          "phase": "score_ready_wait_region",
+          "start_fraction_of_cta_lifetime": 0.5017094017094017,
+          "end_fraction_of_cta_lifetime": 0.5266666666666666,
+          "duration_fraction_of_own_wg_tile": 0.8488372093023255
+        },
+        {
+          "lane": "WG2",
+          "phase": "r1_address_begin",
+          "start_fraction_of_cta_lifetime": 0.5042735042735043,
+          "end_fraction_of_cta_lifetime": 0.5046153846153846,
+          "duration_fraction_of_own_wg_tile": 0.011560693641618497
+        },
+        {
+          "lane": "WG2",
+          "phase": "r1_address_index_scale",
+          "start_fraction_of_cta_lifetime": 0.5046153846153846,
+          "end_fraction_of_cta_lifetime": 0.5078632478632479,
+          "duration_fraction_of_own_wg_tile": 0.10982658959537572
+        },
+        {
+          "lane": "WG2",
+          "phase": "r1_nope_gather_dequant",
+          "start_fraction_of_cta_lifetime": 0.5078632478632479,
+          "end_fraction_of_cta_lifetime": 0.5138461538461538,
+          "duration_fraction_of_own_wg_tile": 0.2023121387283237
+        },
+        {
+          "lane": "WG2",
+          "phase": "r1_rope_gather_store",
+          "start_fraction_of_cta_lifetime": 0.5138461538461538,
+          "end_fraction_of_cta_lifetime": 0.5160683760683761,
+          "duration_fraction_of_own_wg_tile": 0.07514450867052024
+        },
+        {
+          "lane": "WG2",
+          "phase": "shared_fence",
+          "start_fraction_of_cta_lifetime": 0.5160683760683761,
+          "end_fraction_of_cta_lifetime": 0.5164102564102564,
+          "duration_fraction_of_own_wg_tile": 0.011560693641618497
+        },
+        {
+          "lane": "WG2",
+          "phase": "validity_flags",
+          "start_fraction_of_cta_lifetime": 0.5164102564102564,
+          "end_fraction_of_cta_lifetime": 0.517948717948718,
+          "duration_fraction_of_own_wg_tile": 0.05202312138728324
+        },
+        {
+          "lane": "WG2",
+          "phase": "k_ready_relay",
+          "start_fraction_of_cta_lifetime": 0.517948717948718,
+          "end_fraction_of_cta_lifetime": 0.5182905982905983,
+          "duration_fraction_of_own_wg_tile": 0.011560693641618497
+        },
+        {
+          "lane": "WG0",
+          "phase": "qk_issue_setup",
+          "start_fraction_of_cta_lifetime": 0.5184615384615384,
+          "end_fraction_of_cta_lifetime": 0.5218803418803419,
+          "duration_fraction_of_own_wg_tile": 0.11834319526627218
+        },
+        {
+          "lane": "WG0",
+          "phase": "qk_completion_wait",
+          "start_fraction_of_cta_lifetime": 0.5218803418803419,
+          "end_fraction_of_cta_lifetime": 0.5225641025641026,
+          "duration_fraction_of_own_wg_tile": 0.023668639053254437
+        },
+        {
+          "lane": "WG0",
+          "phase": "score_buffer_wait_region",
+          "start_fraction_of_cta_lifetime": 0.5225641025641026,
+          "end_fraction_of_cta_lifetime": 0.5230769230769231,
+          "duration_fraction_of_own_wg_tile": 0.01775147928994083
+        },
+        {
+          "lane": "WG0",
+          "phase": "online_softmax",
+          "start_fraction_of_cta_lifetime": 0.5230769230769231,
+          "end_fraction_of_cta_lifetime": 0.5252991452991453,
+          "duration_fraction_of_own_wg_tile": 0.07692307692307693
+        },
+        {
+          "lane": "WG0",
+          "phase": "score_publish",
+          "start_fraction_of_cta_lifetime": 0.5252991452991453,
+          "end_fraction_of_cta_lifetime": 0.5258119658119658,
+          "duration_fraction_of_own_wg_tile": 0.01775147928994083
+        },
+        {
+          "lane": "WG0",
+          "phase": "local_pv_issue_setup",
+          "start_fraction_of_cta_lifetime": 0.5258119658119658,
+          "end_fraction_of_cta_lifetime": 0.5263247863247863,
+          "duration_fraction_of_own_wg_tile": 0.01775147928994083
+        },
+        {
+          "lane": "WG0",
+          "phase": "score_relay_signal",
+          "start_fraction_of_cta_lifetime": 0.5263247863247863,
+          "end_fraction_of_cta_lifetime": 0.5266666666666666,
+          "duration_fraction_of_own_wg_tile": 0.011834319526627219
+        },
+        {
+          "lane": "WG0",
+          "phase": "local_pv_completion_wait",
+          "start_fraction_of_cta_lifetime": 0.5266666666666666,
+          "end_fraction_of_cta_lifetime": 0.5278632478632479,
+          "duration_fraction_of_own_wg_tile": 0.04142011834319527
+        },
+        {
+          "lane": "WG1",
+          "phase": "accumulator_rescale",
+          "start_fraction_of_cta_lifetime": 0.5266666666666666,
+          "end_fraction_of_cta_lifetime": 0.5278632478632479,
+          "duration_fraction_of_own_wg_tile": 0.040697674418604654
+        },
+        {
+          "lane": "WG0",
+          "phase": "k_release_and_tile_tail",
+          "start_fraction_of_cta_lifetime": 0.5278632478632479,
+          "end_fraction_of_cta_lifetime": 0.5283760683760684,
+          "duration_fraction_of_own_wg_tile": 0.01775147928994083
+        },
+        {
+          "lane": "WG1",
+          "phase": "remote_pv_issue_setup",
+          "start_fraction_of_cta_lifetime": 0.5278632478632479,
+          "end_fraction_of_cta_lifetime": 0.5285470085470085,
+          "duration_fraction_of_own_wg_tile": 0.023255813953488372
+        },
+        {
+          "lane": "WG1",
+          "phase": "remote_pv_completion_wait",
+          "start_fraction_of_cta_lifetime": 0.5285470085470085,
+          "end_fraction_of_cta_lifetime": 0.5299145299145299,
+          "duration_fraction_of_own_wg_tile": 0.046511627906976744
+        },
+        {
+          "lane": "WG1",
+          "phase": "k_buffer_release",
+          "start_fraction_of_cta_lifetime": 0.5299145299145299,
+          "end_fraction_of_cta_lifetime": 0.5302564102564102,
+          "duration_fraction_of_own_wg_tile": 0.011627906976744186
+        },
+        {
+          "lane": "WG1",
+          "phase": "score_buffer_release",
+          "start_fraction_of_cta_lifetime": 0.5302564102564102,
+          "end_fraction_of_cta_lifetime": 0.5307692307692308,
+          "duration_fraction_of_own_wg_tile": 0.01744186046511628
+        },
+        {
+          "lane": "WG1",
+          "phase": "tile_tail",
+          "start_fraction_of_cta_lifetime": 0.5307692307692308,
+          "end_fraction_of_cta_lifetime": 0.5311111111111111,
+          "duration_fraction_of_own_wg_tile": 0.011627906976744186
+        }
+      ]
+    },
+    "warning": "All source-trace durations are on a highly perturbed trace-on binary. Use normalized shares, ordering, and overlap only; never scale these bars onto the 102.464 us production axis."
   },
-  "older_same_build_counterfactual_ledger": {
-    "evidence_class": "analytical_model_using_older_controlled_measurements",
-    "difference_from_historical_mean_us": 2.528,
-    "difference_from_historical_mean_percent": 2.444,
-    "difference_from_fresh_ordered_median_us": 0.320,
-    "difference_from_fresh_ordered_median_percent": 0.303,
-    "warning": "The entries reconstruct one overlapping critical path. They are not sequential hardware phases and must not be read as a literal timeline. The exact historical 103.424 microsecond mean cannot be decomposed because its clock, index order, cache state, and within-kernel timestamps were not retained.",
-    "measured_cycles": 191780.6,
-    "measured_duration_us": 105.952,
-    "measured_clock_ghz": 1.81007,
-    "terms": [
-      {"name": "ideal_arithmetic_roof", "cycles": 94976.0, "duration_us": 52.471, "share_of_measured_total_percent": 49.5},
-      {"name": "address_locality_response", "cycles": 45176.6, "duration_us": 24.958, "share_of_measured_total_percent": 23.6},
-      {"name": "hot_cache_steady_tile_excess", "cycles": 43397.2, "duration_us": 23.975, "share_of_measured_total_percent": 22.6},
-      {"name": "fixed_request_drain_excess", "cycles": 8936.4, "duration_us": 4.937, "share_of_measured_total_percent": 4.7},
-      {"name": "signed_fit_residual", "cycles": -705.7, "duration_us": -0.390, "share_of_measured_total_percent": -0.4}
-    ]
-  },
-  "interpretation_guardrails": [
-    "Multi-replay profiler durations are not used as headline latency.",
-    "Headline timings are independent one-replay Nsight Compute captures, not unprofiled CUDA-event timings.",
-    "Warp-stall ratios are average resident warps in a state per issue-active cycle; they are neither percentages nor additive time slices.",
-    "L1 and L2 hit rates have different conditional denominators and cannot be added.",
-    "The hot-record case is a deliberately non-production counterfactual that preserves the kernel specialization and logical work.",
-    "Static or dynamic instruction counts are work inventories, not elapsed-time partitions.",
-    "The dependent combine kernel is outside this report's timing boundary."
-  ],
-  "local_artifact_sha256": {
-    "ncu_b100_random_deep_raw.csv": "14c7669304ee849ef97afefdffd07186502be93d331927283e8292e98284721d",
-    "ncu_b100_ordered_causal_raw.csv": "4c583b389b4aa568f7688c9be32ef04e333a9bc13c697add168bfba15a5782e6",
-    "ncu_b100_hotset1_causal_raw.csv": "6c509e1c397547560c1931cd2555a15131c17252ef52dc4d48ad9b7274d67612",
-    "pod.yaml": "c4f56381703b485c2b9091d97f56f412aa17425957712a5ce67576c0a4de95de",
-    "pms_timeseries.csv": "b4c9285c60efe707f7383d25232f5ff43a8f233f21b6e60c9dc21c848ca07948",
-    "pmws_timeseries.csv": "42192320723264f8086698fc5583c81c7839dba508b5d23bac75f087bb5c88a7",
-    "pm_timeseries_metadata.json": "877293d7d4de0276dbaf24de7e86abadb3d4216250bbdbd4c9f79f69d573a732",
-    "ncu_b100_ordered_pms.ncu-rep": "caf902e31c462208d1cc9a4b1b260cb36500b76d993cf00894b5c628588cd1d7",
-    "ncu_b100_hotset1_pms.ncu-rep": "c1333eefe001e91fbbb18101f8c148a5fcbef7c91c92eab5f926bd69ada93eb9",
-    "ncu_b100_ordered_pmws.ncu-rep": "29dd8ee463097e815176a22cab3134636a357d7ea6d945a8153f043bf018d5d9",
-    "ncu_b100_hotset1_pmws.ncu-rep": "78653dc8f58b3988eb464d676abc7308f5817ad72deff6f36c2dba6492cf3be4"
+  "sampled_wg2_trace": {
+    "available": true,
+    "replication": {
+      "evidence_label": "accepted_sampled_source_timestamp",
+      "accepted_for_absolute_grid_envelope_and_wg2_cadence": true,
+      "repeat_count": 3,
+      "sampled_trace_off_vs_pristine_pct": -1.229719413115682,
+      "trace_on_overhead_vs_same_run_off_pct": {
+        "n": 3,
+        "min_pct": 2.3675424920374555,
+        "p50_pct": 3.124996818639958,
+        "p90_pct": 3.2457582731641077,
+        "p99_pct": 3.2729296004320414,
+        "max_pct": 3.275948636795145,
+        "mean_pct": 2.922829315824186
+      },
+      "trace_on_api_median_us_across_repeats": {
+        "n": 3,
+        "min_us": 127.98400223255157,
+        "p10_us": 128.04800122976303,
+        "p25_us": 128.14399972558022,
+        "p50_us": 128.30399721860886,
+        "p75_us": 128.4639984369278,
+        "p90_us": 128.55999916791916,
+        "p95_us": 128.59199941158295,
+        "p99_us": 128.61759960651398,
+        "max_us": 128.62399965524673,
+        "mean_us": 128.3039997021357,
+        "sum_logical_residency_us": 384.91199910640717
+      },
+      "trace_off_api_median_us_across_repeats": {
+        "n": 3,
+        "min_us": 124.41600114107132,
+        "p10_us": 124.44160133600235,
+        "p25_us": 124.4800016283989,
+        "p50_us": 124.54400211572647,
+        "p75_us": 124.78400394320488,
+        "p90_us": 124.92800503969193,
+        "p95_us": 124.9760054051876,
+        "p99_us": 125.01440569758415,
+        "max_us": 125.02400577068329,
+        "mean_us": 124.6613363424937,
+        "sum_logical_residency_us": 373.9840090274811
+      },
+      "source_cta_makespan_us_across_repeats": {
+        "n": 3,
+        "min_us": 100.704,
+        "p10_us": 100.7744,
+        "p25_us": 100.88,
+        "p50_us": 101.056,
+        "p75_us": 101.19999999999999,
+        "p90_us": 101.28639999999999,
+        "p95_us": 101.31519999999999,
+        "p99_us": 101.33823999999998,
+        "max_us": 101.344,
+        "mean_us": 101.03466666666667,
+        "sum_logical_residency_us": 303.104
+      },
+      "source_cta_makespan_repeat_spread_us": 0.6400000000000006,
+      "pooled_wg2_service_tile_begin_to_k_ready_done": {
+        "sm_cycles": {
+          "n": 9600,
+          "min_cycles": 4135.0,
+          "p50_cycles": 5415.0,
+          "p90_cycles": 6319.0,
+          "p99_cycles": 9424.080000000002,
+          "max_cycles": 10650.0,
+          "mean_cycles": 5616.961354166667
+        },
+        "globaltimer": {
+          "n": 9600,
+          "min_us": 2.368,
+          "p10_us": 2.784,
+          "p25_us": 2.912,
+          "p50_us": 3.072,
+          "p75_us": 3.264,
+          "p90_us": 3.5552000000000117,
+          "p95_us": 3.968,
+          "p99_us": 4.864,
+          "max_us": 5.6,
+          "mean_us": 3.1530400000000003,
+          "sum_logical_residency_us": 30269.184000000536
+        },
+        "cta_first_tile_sm_cycles": {
+          "n": 375,
+          "min_cycles": 6879.0,
+          "p50_cycles": 9091.0,
+          "p90_cycles": 9713.8,
+          "p99_cycles": 10329.96,
+          "max_cycles": 10650.0,
+          "mean_cycles": 9078.669333333333
+        },
+        "later_request_first_tile_sm_cycles": {
+          "n": 225,
+          "min_cycles": 4135.0,
+          "p50_cycles": 5381.0,
+          "p90_cycles": 6460.2,
+          "p99_cycles": 7091.2,
+          "max_cycles": 7500.0,
+          "mean_cycles": 5468.453333333333
+        },
+        "continuation_tile_sm_cycles": {
+          "n": 9000,
+          "min_cycles": 4475.0,
+          "p50_cycles": 5393.0,
+          "p90_cycles": 6102.1,
+          "p99_cycles": 7064.090000000002,
+          "max_cycles": 8125.0,
+          "mean_cycles": 5476.436222222223
+        },
+        "by_ordinal_sm_cycles": [
+          {
+            "ordinal": 0,
+            "n": 375,
+            "min_cycles": 6879.0,
+            "p50_cycles": 9091.0,
+            "p90_cycles": 9713.8,
+            "p99_cycles": 10329.96,
+            "max_cycles": 10650.0,
+            "mean_cycles": 9078.669333333333
+          },
+          {
+            "ordinal": 1,
+            "n": 375,
+            "min_cycles": 4690.0,
+            "p50_cycles": 5536.0,
+            "p90_cycles": 6016.799999999999,
+            "p99_cycles": 6691.6799999999985,
+            "max_cycles": 7026.0,
+            "mean_cycles": 5602.362666666667
+          },
+          {
+            "ordinal": 2,
+            "n": 375,
+            "min_cycles": 4838.0,
+            "p50_cycles": 5706.0,
+            "p90_cycles": 6226.200000000001,
+            "p99_cycles": 6588.539999999999,
+            "max_cycles": 6761.0,
+            "mean_cycles": 5720.562666666667
+          },
+          {
+            "ordinal": 3,
+            "n": 375,
+            "min_cycles": 4879.0,
+            "p50_cycles": 6088.0,
+            "p90_cycles": 6652.4,
+            "p99_cycles": 7067.12,
+            "max_cycles": 7474.0,
+            "mean_cycles": 6046.797333333333
+          },
+          {
+            "ordinal": 4,
+            "n": 375,
+            "min_cycles": 4771.0,
+            "p50_cycles": 6043.0,
+            "p90_cycles": 7009.000000000001,
+            "p99_cycles": 7724.839999999998,
+            "max_cycles": 8125.0,
+            "mean_cycles": 6172.693333333334
+          },
+          {
+            "ordinal": 5,
+            "n": 375,
+            "min_cycles": 4858.0,
+            "p50_cycles": 5761.0,
+            "p90_cycles": 6380.6,
+            "p99_cycles": 6797.079999999999,
+            "max_cycles": 7041.0,
+            "mean_cycles": 5779.568
+          },
+          {
+            "ordinal": 6,
+            "n": 375,
+            "min_cycles": 4699.0,
+            "p50_cycles": 5640.0,
+            "p90_cycles": 6177.4,
+            "p99_cycles": 6729.6,
+            "max_cycles": 6881.0,
+            "mean_cycles": 5684.858666666667
+          },
+          {
+            "ordinal": 7,
+            "n": 375,
+            "min_cycles": 4656.0,
+            "p50_cycles": 5607.0,
+            "p90_cycles": 6160.200000000001,
+            "p99_cycles": 7301.539999999999,
+            "max_cycles": 7666.0,
+            "mean_cycles": 5646.565333333333
+          },
+          {
+            "ordinal": 8,
+            "n": 375,
+            "min_cycles": 4757.0,
+            "p50_cycles": 5464.0,
+            "p90_cycles": 6028.0,
+            "p99_cycles": 6735.359999999997,
+            "max_cycles": 7910.0,
+            "mean_cycles": 5525.402666666667
+          },
+          {
+            "ordinal": 9,
+            "n": 375,
+            "min_cycles": 4704.0,
+            "p50_cycles": 5529.0,
+            "p90_cycles": 6949.4,
+            "p99_cycles": 7510.319999999999,
+            "max_cycles": 7768.0,
+            "mean_cycles": 5788.930666666667
+          },
+          {
+            "ordinal": 10,
+            "n": 375,
+            "min_cycles": 4648.0,
+            "p50_cycles": 5329.0,
+            "p90_cycles": 5820.2,
+            "p99_cycles": 6192.84,
+            "max_cycles": 7107.0,
+            "mean_cycles": 5361.768
+          },
+          {
+            "ordinal": 11,
+            "n": 375,
+            "min_cycles": 4344.0,
+            "p50_cycles": 5467.0,
+            "p90_cycles": 6066.200000000001,
+            "p99_cycles": 6867.84,
+            "max_cycles": 7500.0,
+            "mean_cycles": 5492.037333333334
+          },
+          {
+            "ordinal": 12,
+            "n": 375,
+            "min_cycles": 4651.0,
+            "p50_cycles": 5311.0,
+            "p90_cycles": 5913.0,
+            "p99_cycles": 6794.259999999999,
+            "max_cycles": 7303.0,
+            "mean_cycles": 5389.941333333333
+          },
+          {
+            "ordinal": 13,
+            "n": 375,
+            "min_cycles": 4541.0,
+            "p50_cycles": 5354.0,
+            "p90_cycles": 6543.0,
+            "p99_cycles": 7243.299999999999,
+            "max_cycles": 7530.0,
+            "mean_cycles": 5519.298666666667
+          },
+          {
+            "ordinal": 14,
+            "n": 375,
+            "min_cycles": 4596.0,
+            "p50_cycles": 5194.0,
+            "p90_cycles": 5600.6,
+            "p99_cycles": 6216.179999999999,
+            "max_cycles": 7195.0,
+            "mean_cycles": 5233.642666666667
+          },
+          {
+            "ordinal": 15,
+            "n": 375,
+            "min_cycles": 4612.0,
+            "p50_cycles": 5235.0,
+            "p90_cycles": 5644.6,
+            "p99_cycles": 6054.98,
+            "max_cycles": 6178.0,
+            "mean_cycles": 5269.602666666667
+          },
+          {
+            "ordinal": 16,
+            "n": 375,
+            "min_cycles": 4652.0,
+            "p50_cycles": 5191.0,
+            "p90_cycles": 5692.8,
+            "p99_cycles": 6168.68,
+            "max_cycles": 6368.0,
+            "mean_cycles": 5252.152
+          },
+          {
+            "ordinal": 17,
+            "n": 375,
+            "min_cycles": 4675.0,
+            "p50_cycles": 5292.0,
+            "p90_cycles": 5786.400000000001,
+            "p99_cycles": 6180.339999999999,
+            "max_cycles": 6456.0,
+            "mean_cycles": 5344.042666666666
+          },
+          {
+            "ordinal": 18,
+            "n": 375,
+            "min_cycles": 4611.0,
+            "p50_cycles": 5338.0,
+            "p90_cycles": 5750.0,
+            "p99_cycles": 6125.36,
+            "max_cycles": 6389.0,
+            "mean_cycles": 5354.122666666667
+          },
+          {
+            "ordinal": 19,
+            "n": 375,
+            "min_cycles": 4135.0,
+            "p50_cycles": 5321.0,
+            "p90_cycles": 5760.0,
+            "p99_cycles": 6186.259999999999,
+            "max_cycles": 6467.0,
+            "mean_cycles": 5310.805333333334
+          },
+          {
+            "ordinal": 20,
+            "n": 375,
+            "min_cycles": 4606.0,
+            "p50_cycles": 5285.0,
+            "p90_cycles": 5688.2,
+            "p99_cycles": 6142.94,
+            "max_cycles": 6362.0,
+            "mean_cycles": 5306.416
+          },
+          {
+            "ordinal": 21,
+            "n": 375,
+            "min_cycles": 4557.0,
+            "p50_cycles": 5221.0,
+            "p90_cycles": 5658.400000000001,
+            "p99_cycles": 6048.88,
+            "max_cycles": 6529.0,
+            "mean_cycles": 5250.149333333334
+          },
+          {
+            "ordinal": 22,
+            "n": 375,
+            "min_cycles": 4573.0,
+            "p50_cycles": 5157.0,
+            "p90_cycles": 5669.2,
+            "p99_cycles": 6030.719999999999,
+            "max_cycles": 6236.0,
+            "mean_cycles": 5210.322666666667
+          },
+          {
+            "ordinal": 23,
+            "n": 375,
+            "min_cycles": 4549.0,
+            "p50_cycles": 5172.0,
+            "p90_cycles": 5598.8,
+            "p99_cycles": 5965.16,
+            "max_cycles": 6216.0,
+            "mean_cycles": 5199.6106666666665
+          },
+          {
+            "ordinal": 24,
+            "n": 150,
+            "min_cycles": 4576.0,
+            "p50_cycles": 5128.5,
+            "p90_cycles": 5614.299999999999,
+            "p99_cycles": 5950.7,
+            "max_cycles": 6653.0,
+            "mean_cycles": 5175.46
+          },
+          {
+            "ordinal": 25,
+            "n": 150,
+            "min_cycles": 4671.0,
+            "p50_cycles": 5150.5,
+            "p90_cycles": 5556.6,
+            "p99_cycles": 6013.219999999999,
+            "max_cycles": 6124.0,
+            "mean_cycles": 5173.946666666667
+          },
+          {
+            "ordinal": 26,
+            "n": 150,
+            "min_cycles": 4505.0,
+            "p50_cycles": 5131.0,
+            "p90_cycles": 5594.599999999999,
+            "p99_cycles": 6073.49,
+            "max_cycles": 6188.0,
+            "mean_cycles": 5182.326666666667
+          },
+          {
+            "ordinal": 27,
+            "n": 75,
+            "min_cycles": 4584.0,
+            "p50_cycles": 5104.0,
+            "p90_cycles": 5408.4,
+            "p99_cycles": 5635.040000000001,
+            "max_cycles": 5860.0,
+            "mean_cycles": 5112.373333333333
+          },
+          {
+            "ordinal": 28,
+            "n": 75,
+            "min_cycles": 4638.0,
+            "p50_cycles": 5079.0,
+            "p90_cycles": 5359.200000000001,
+            "p99_cycles": 5739.860000000001,
+            "max_cycles": 5748.0,
+            "mean_cycles": 5093.6
+          }
+        ]
+      },
+      "pooled_wg2_cadence": {
+        "same_request_begin_to_begin_sm_cycles": {
+          "n": 9000,
+          "min_cycles": 4287.0,
+          "p50_cycles": 5602.0,
+          "p90_cycles": 6538.0,
+          "p99_cycles": 9620.0,
+          "max_cycles": 10849.0,
+          "mean_cycles": 5808.9835555555555
+        },
+        "request_boundary_begin_to_begin_sm_cycles": {
+          "n": 225,
+          "min_cycles": 14522.0,
+          "p50_cycles": 15488.0,
+          "p90_cycles": 16218.600000000002,
+          "p99_cycles": 17087.760000000002,
+          "max_cycles": 17363.0,
+          "mean_cycles": 15562.68888888889
+        }
+      },
+      "repeats": [
+        {
+          "run_name": "compiletime-sample-on",
+          "source_files": {
+            "summary": "runs/compiletime-sample-on/summary.json",
+            "trace_events": "runs/compiletime-sample-on/trace_events.csv"
+          },
+          "trace_on_api_median_us": 128.30399721860886,
+          "same_run_trace_off_api_median_us": 124.41600114107132,
+          "trace_on_overhead_vs_same_run_off_pct": 3.124996818639958,
+          "source_cta_makespan_us": 100.704,
+          "coverage_full": true,
+          "coverage": {
+            "recorded_event_rows": 6664,
+            "expected_event_rows_for_sampled_capture": 6664,
+            "expected_grid_ctas": 132,
+            "recorded_ctas": 132,
+            "recorded_active_ctas": 125,
+            "recorded_no_work_ctas": 7,
+            "unrecorded_partitions": 0,
+            "tiles_by_wg": {
+              "0": 0,
+              "1": 0,
+              "2": 3200
+            },
+            "expected_tiles_per_wg_for_full_detailed_capture": 3200,
+            "expected_tiles_by_wg_for_full_capture": {
+              "0": 0,
+              "1": 0,
+              "2": 3200
+            },
+            "wg2_tile_histogram_csv_derived": {
+              "0": 7,
+              "24": 75,
+              "27": 25,
+              "29": 25
+            },
+            "expected_wg2_tile_histogram": {
+              "0": 7,
+              "24": 75,
+              "27": 25,
+              "29": 25
+            },
+            "full_capture": true,
+            "summary_reported": {
+              "active_ctas": 125,
+              "cta_records": 132,
+              "no_work_ctas": 7,
+              "nonzero_events_by_wg": {
+                "2": 6400
+              },
+              "overflow_sum": 0,
+              "source_trace_makespan_us": 100.704,
+              "tile_counts_by_wg": {
+                "2": 3200
+              },
+              "wg2_tile_histogram": {
+                "0": 7,
+                "24": 75,
+                "27": 25,
+                "29": 25
+              }
+            }
+          },
+          "integrity_status": "pass",
+          "correctness": {
+            "versus_reference": {
+              "lse_bitwise_equal": true,
+              "lse_max_abs": 0.0,
+              "out_bitwise_equal": true,
+              "out_max_abs": 0.0
+            },
+            "trace_on_versus_same_binary_off": {
+              "lse_bitwise_equal_to_untraced": true,
+              "out_bitwise_equal_to_untraced": true
+            }
+          },
+          "wg2_service_sm_cycles": {
+            "n": 3200,
+            "min_cycles": 4180.0,
+            "p50_cycles": 5436.0,
+            "p90_cycles": 6334.2,
+            "p99_cycles": 9346.549999999987,
+            "max_cycles": 10650.0,
+            "mean_cycles": 5627.986875
+          },
+          "wg2_service_globaltimer": {
+            "n": 3200,
+            "min_us": 2.368,
+            "p10_us": 2.784,
+            "p25_us": 2.88,
+            "p50_us": 3.04,
+            "p75_us": 3.264,
+            "p90_us": 3.552,
+            "p95_us": 3.84,
+            "p99_us": 4.8,
+            "max_us": 5.6,
+            "mean_us": 3.1439299999999997,
+            "sum_logical_residency_us": 10060.576000000063
+          },
+          "same_request_begin_to_begin_sm_cycles": {
+            "n": 3000,
+            "min_cycles": 4334.0,
+            "p50_cycles": 5622.0,
+            "p90_cycles": 6539.3,
+            "p99_cycles": 9566.349999999993,
+            "max_cycles": 10849.0,
+            "mean_cycles": 5818.694666666666
+          },
+          "request_boundary_begin_to_begin_sm_cycles": {
+            "n": 75,
+            "min_cycles": 14522.0,
+            "p50_cycles": 15548.0,
+            "p90_cycles": 16261.8,
+            "p99_cycles": 17159.5,
+            "max_cycles": 17363.0,
+            "mean_cycles": 15615.466666666667
+          }
+        },
+        {
+          "run_name": "compiletime-sample-on-r2",
+          "source_files": {
+            "summary": "runs/compiletime-sample-on-r2/summary.json",
+            "trace_events": "runs/compiletime-sample-on-r2/trace_events.csv"
+          },
+          "trace_on_api_median_us": 127.98400223255157,
+          "same_run_trace_off_api_median_us": 125.02400577068329,
+          "trace_on_overhead_vs_same_run_off_pct": 2.3675424920374555,
+          "source_cta_makespan_us": 101.056,
+          "coverage_full": true,
+          "coverage": {
+            "recorded_event_rows": 6664,
+            "expected_event_rows_for_sampled_capture": 6664,
+            "expected_grid_ctas": 132,
+            "recorded_ctas": 132,
+            "recorded_active_ctas": 125,
+            "recorded_no_work_ctas": 7,
+            "unrecorded_partitions": 0,
+            "tiles_by_wg": {
+              "0": 0,
+              "1": 0,
+              "2": 3200
+            },
+            "expected_tiles_per_wg_for_full_detailed_capture": 3200,
+            "expected_tiles_by_wg_for_full_capture": {
+              "0": 0,
+              "1": 0,
+              "2": 3200
+            },
+            "wg2_tile_histogram_csv_derived": {
+              "0": 7,
+              "24": 75,
+              "27": 25,
+              "29": 25
+            },
+            "expected_wg2_tile_histogram": {
+              "0": 7,
+              "24": 75,
+              "27": 25,
+              "29": 25
+            },
+            "full_capture": true,
+            "summary_reported": {
+              "active_ctas": 125,
+              "cta_records": 132,
+              "no_work_ctas": 7,
+              "nonzero_events_by_wg": {
+                "2": 6400
+              },
+              "overflow_sum": 0,
+              "source_trace_makespan_us": 101.056,
+              "tile_counts_by_wg": {
+                "2": 3200
+              },
+              "wg2_tile_histogram": {
+                "0": 7,
+                "24": 75,
+                "27": 25,
+                "29": 25
+              }
+            }
+          },
+          "integrity_status": "pass",
+          "correctness": {
+            "versus_reference": {
+              "lse_bitwise_equal": true,
+              "lse_max_abs": 0.0,
+              "out_bitwise_equal": true,
+              "out_max_abs": 0.0
+            },
+            "trace_on_versus_same_binary_off": {
+              "lse_bitwise_equal_to_untraced": true,
+              "out_bitwise_equal_to_untraced": true
+            }
+          },
+          "wg2_service_sm_cycles": {
+            "n": 3200,
+            "min_cycles": 4135.0,
+            "p50_cycles": 5387.5,
+            "p90_cycles": 6258.5,
+            "p99_cycles": 9471.249999999995,
+            "max_cycles": 10528.0,
+            "mean_cycles": 5597.3978125
+          },
+          "wg2_service_globaltimer": {
+            "n": 3200,
+            "min_us": 2.368,
+            "p10_us": 2.816,
+            "p25_us": 2.912,
+            "p50_us": 3.072,
+            "p75_us": 3.264,
+            "p90_us": 3.584,
+            "p95_us": 4.096,
+            "p99_us": 4.864319999999992,
+            "max_us": 5.6,
+            "mean_us": 3.16269,
+            "sum_logical_residency_us": 10120.608000000037
+          },
+          "same_request_begin_to_begin_sm_cycles": {
+            "n": 3000,
+            "min_cycles": 4287.0,
+            "p50_cycles": 5573.5,
+            "p90_cycles": 6473.199999999999,
+            "p99_cycles": 9684.05,
+            "max_cycles": 10722.0,
+            "mean_cycles": 5789.4873333333335
+          },
+          "request_boundary_begin_to_begin_sm_cycles": {
+            "n": 75,
+            "min_cycles": 14739.0,
+            "p50_cycles": 15440.0,
+            "p90_cycles": 16229.2,
+            "p99_cycles": 17107.54,
+            "max_cycles": 17166.0,
+            "mean_cycles": 15513.866666666667
+          }
+        },
+        {
+          "run_name": "compiletime-sample-on-r3",
+          "source_files": {
+            "summary": "runs/compiletime-sample-on-r3/summary.json",
+            "trace_events": "runs/compiletime-sample-on-r3/trace_events.csv"
+          },
+          "trace_on_api_median_us": 128.62399965524673,
+          "same_run_trace_off_api_median_us": 124.54400211572647,
+          "trace_on_overhead_vs_same_run_off_pct": 3.275948636795145,
+          "source_cta_makespan_us": 101.344,
+          "coverage_full": true,
+          "coverage": {
+            "recorded_event_rows": 6664,
+            "expected_event_rows_for_sampled_capture": 6664,
+            "expected_grid_ctas": 132,
+            "recorded_ctas": 132,
+            "recorded_active_ctas": 125,
+            "recorded_no_work_ctas": 7,
+            "unrecorded_partitions": 0,
+            "tiles_by_wg": {
+              "0": 0,
+              "1": 0,
+              "2": 3200
+            },
+            "expected_tiles_per_wg_for_full_detailed_capture": 3200,
+            "expected_tiles_by_wg_for_full_capture": {
+              "0": 0,
+              "1": 0,
+              "2": 3200
+            },
+            "wg2_tile_histogram_csv_derived": {
+              "0": 7,
+              "24": 75,
+              "27": 25,
+              "29": 25
+            },
+            "expected_wg2_tile_histogram": {
+              "0": 7,
+              "24": 75,
+              "27": 25,
+              "29": 25
+            },
+            "full_capture": true,
+            "summary_reported": {
+              "active_ctas": 125,
+              "cta_records": 132,
+              "no_work_ctas": 7,
+              "nonzero_events_by_wg": {
+                "2": 6400
+              },
+              "overflow_sum": 0,
+              "source_trace_makespan_us": 101.344,
+              "tile_counts_by_wg": {
+                "2": 3200
+              },
+              "wg2_tile_histogram": {
+                "0": 7,
+                "24": 75,
+                "27": 25,
+                "29": 25
+              }
+            }
+          },
+          "integrity_status": "pass",
+          "correctness": {
+            "versus_reference": {
+              "lse_bitwise_equal": true,
+              "lse_max_abs": 0.0,
+              "out_bitwise_equal": true,
+              "out_max_abs": 0.0
+            },
+            "trace_on_versus_same_binary_off": {
+              "lse_bitwise_equal_to_untraced": true,
+              "out_bitwise_equal_to_untraced": true
+            }
+          },
+          "wg2_service_sm_cycles": {
+            "n": 3200,
+            "min_cycles": 4344.0,
+            "p50_cycles": 5418.5,
+            "p90_cycles": 6362.2,
+            "p99_cycles": 9379.099999999999,
+            "max_cycles": 10553.0,
+            "mean_cycles": 5625.499375
+          },
+          "wg2_service_globaltimer": {
+            "n": 3200,
+            "min_us": 2.432,
+            "p10_us": 2.784,
+            "p25_us": 2.912,
+            "p50_us": 3.072,
+            "p75_us": 3.264,
+            "p90_us": 3.584,
+            "p95_us": 3.968,
+            "p99_us": 4.832319999999992,
+            "max_us": 5.536,
+            "mean_us": 3.1525,
+            "sum_logical_residency_us": 10088.00000000005
+          },
+          "same_request_begin_to_begin_sm_cycles": {
+            "n": 3000,
+            "min_cycles": 4497.0,
+            "p50_cycles": 5607.5,
+            "p90_cycles": 6570.2,
+            "p99_cycles": 9553.039999999999,
+            "max_cycles": 10745.0,
+            "mean_cycles": 5818.768666666667
+          },
+          "request_boundary_begin_to_begin_sm_cycles": {
+            "n": 75,
+            "min_cycles": 14809.0,
+            "p50_cycles": 15507.0,
+            "p90_cycles": 16103.2,
+            "p99_cycles": 16883.440000000002,
+            "max_cycles": 16953.0,
+            "mean_cycles": 15558.733333333334
+          }
+        }
+      ],
+      "interpretation": "This low-overhead two-stamp symbol supports the absolute all-CTA grid envelope and WG2 producer cadence. It does not observe WG0/WG1 or split WG2 into gather/dequant/RoPE subphases."
+    },
+    "evidence_label": "source_timestamp_mechanistic_accepted_perturbation",
+    "timing_and_perturbation": {
+      "pristine_api_median_us": 126.20800733566284,
+      "trace_off_baseline_run": "compiletime-sample-off",
+      "trace_off_baseline_api_median_us": 124.65600296854973,
+      "same_run_trace_off_api_median_us": 124.41600114107132,
+      "trace_on_api_median_us": 128.30399721860886,
+      "instrumented_binary_compile_regression_vs_pristine_pct": -1.229719413115682,
+      "trace_on_vs_same_run_trace_off_pct": 3.124996818639958,
+      "trace_on_vs_mode_matched_trace_off_pct": 2.9264489179710917,
+      "trace_on_total_regression_vs_pristine_pct": 1.6607423943961974,
+      "trace_on_gate_le_5pct": true,
+      "compile_regression_gate_abs_le_2pct": true,
+      "source_globaltimer_makespan_us": 100.704,
+      "warning": "CUDA-event API timing and source CTA makespan are different scopes. The API includes surrounding work; the source span covers the instrumented main kernel's CTA_ENTER-to-CTA_EXIT envelope."
+    },
+    "coverage": {
+      "recorded_event_rows": 6664,
+      "expected_event_rows_for_sampled_capture": 6664,
+      "expected_grid_ctas": 132,
+      "recorded_ctas": 132,
+      "recorded_active_ctas": 125,
+      "recorded_no_work_ctas": 7,
+      "unrecorded_partitions": 0,
+      "tiles_by_wg": {
+        "0": 0,
+        "1": 0,
+        "2": 3200
+      },
+      "expected_tiles_per_wg_for_full_detailed_capture": 3200,
+      "expected_tiles_by_wg_for_full_capture": {
+        "0": 0,
+        "1": 0,
+        "2": 3200
+      },
+      "wg2_tile_histogram_csv_derived": {
+        "0": 7,
+        "24": 75,
+        "27": 25,
+        "29": 25
+      },
+      "expected_wg2_tile_histogram": {
+        "0": 7,
+        "24": 75,
+        "27": 25,
+        "29": 25
+      },
+      "full_capture": true,
+      "summary_reported": {
+        "active_ctas": 125,
+        "cta_records": 132,
+        "no_work_ctas": 7,
+        "nonzero_events_by_wg": {
+          "2": 6400
+        },
+        "overflow_sum": 0,
+        "source_trace_makespan_us": 100.704,
+        "tile_counts_by_wg": {
+          "2": 3200
+        },
+        "wg2_tile_histogram": {
+          "0": 7,
+          "24": 75,
+          "27": 25,
+          "29": 25
+        }
+      }
+    },
+    "integrity": {
+      "status": "pass",
+      "ordering_error_count": 0,
+      "errors": [],
+      "warnings": [],
+      "same_globaltimer_tick_adjacent_pairs": 0,
+      "active_cta_sm_cycles_per_global_ns": {
+        "n": 125,
+        "min": 1.779644312544295,
+        "p50": 1.7929844148742253,
+        "p90": 1.7990592584280867,
+        "p99": 1.799686445800619,
+        "max": 1.799897759601707,
+        "mean": 1.7916434330213524
+      },
+      "no_work_cta_sm_cycles_per_global_ns": {
+        "n": 7,
+        "min": 1.869485294117647,
+        "p50": 1.98125,
+        "p90": 2.01875,
+        "p99": 2.02296875,
+        "max": 2.0234375,
+        "mean": 1.9589592086834735
+      },
+      "adjacent_landmark_sm_cycles_per_global_ns_quantized": {
+        "n": 3332,
+        "min": 1.6771875,
+        "p50": 1.7875702247191012,
+        "p90": 1.8053842703349283,
+        "p99": 1.9743903085483705,
+        "max": 2.0234375,
+        "mean": 1.7875034074736444
+      },
+      "note": "%globaltimer is the cross-SM axis. The active CTA enter-to-exit ratio is the stable clock sanity check; short adjacent landmark ratios are strongly quantized at the globaltimer tick and are diagnostic only."
+    },
+    "launch_envelope": {
+      "makespan_us": 100.704,
+      "active_cta_duration": {
+        "n": 125,
+        "min_us": 87.744,
+        "p10_us": 88.832,
+        "p25_us": 89.632,
+        "p50_us": 90.624,
+        "p75_us": 94.016,
+        "p90_us": 99.15520000000001,
+        "p95_us": 99.7952,
+        "p99_us": 100.48896,
+        "max_us": 100.576,
+        "mean_us": 92.465152,
+        "sum_logical_residency_us": 11558.143999999995
+      },
+      "no_work_cta_duration": {
+        "n": 7,
+        "min_us": 0.448,
+        "p10_us": 0.448,
+        "p25_us": 0.46399999999999997,
+        "p50_us": 0.512,
+        "p75_us": 0.528,
+        "p90_us": 0.5568000000000001,
+        "p95_us": 0.5664,
+        "p99_us": 0.5740799999999999,
+        "max_us": 0.576,
+        "mean_us": 0.5028571428571429,
+        "sum_logical_residency_us": 3.52
+      },
+      "cta_start_skew_from_first_enter": {
+        "n": 132,
+        "min_us": 0.0,
+        "p10_us": 0.064,
+        "p25_us": 0.096,
+        "p50_us": 0.128,
+        "p75_us": 0.192,
+        "p90_us": 0.224,
+        "p95_us": 0.256,
+        "p99_us": 0.256,
+        "max_us": 0.256,
+        "mean_us": 0.14278787878787877,
+        "sum_logical_residency_us": 18.848000000000013
+      },
+      "cta_concurrency": {
+        "peak_concurrent_ctas": 132,
+        "time_weighted_mean_concurrent_ctas": 114.80838894184939,
+        "time_by_concurrent_cta_count_us": {
+          "1": 0.096,
+          "3": 0.288,
+          "5": 0.096,
+          "6": 0.384,
+          "9": 0.096,
+          "10": 0.096,
+          "11": 0.352,
+          "12": 0.064,
+          "14": 0.032,
+          "16": 0.032,
+          "17": 0.064,
+          "19": 0.064,
+          "20": 0.16,
+          "21": 0.096,
+          "22": 0.032,
+          "23": 0.032,
+          "24": 0.864,
+          "25": 2.816,
+          "26": 0.448,
+          "27": 0.064,
+          "28": 0.352,
+          "29": 0.032,
+          "30": 0.096,
+          "31": 0.064,
+          "32": 0.032,
+          "33": 0.096,
+          "34": 0.064,
+          "37": 0.064,
+          "38": 0.064,
+          "39": 0.064,
+          "40": 0.032,
+          "43": 0.192,
+          "44": 0.064,
+          "45": 0.032,
+          "46": 0.064,
+          "47": 0.224,
+          "48": 0.096,
+          "49": 0.576,
+          "50": 0.736,
+          "51": 0.128,
+          "52": 0.256,
+          "54": 0.032,
+          "55": 0.192,
+          "57": 0.096,
+          "58": 0.064,
+          "59": 0.032,
+          "60": 0.128,
+          "62": 0.032,
+          "64": 0.096,
+          "65": 0.032,
+          "66": 0.096,
+          "68": 0.064,
+          "70": 0.032,
+          "71": 0.064,
+          "72": 0.16,
+          "74": 0.032,
+          "76": 0.032,
+          "78": 0.032,
+          "81": 0.032,
+          "82": 0.032,
+          "84": 0.064,
+          "86": 0.032,
+          "87": 0.032,
+          "88": 0.064,
+          "89": 0.032,
+          "90": 0.064,
+          "92": 0.032,
+          "94": 0.032,
+          "95": 0.064,
+          "97": 0.032,
+          "98": 0.032,
+          "100": 0.032,
+          "102": 0.032,
+          "103": 0.064,
+          "104": 0.128,
+          "105": 0.16,
+          "108": 0.032,
+          "109": 0.032,
+          "110": 0.032,
+          "111": 0.128,
+          "113": 0.064,
+          "114": 0.096,
+          "115": 0.096,
+          "116": 0.096,
+          "117": 0.032,
+          "119": 0.032,
+          "120": 0.128,
+          "121": 0.128,
+          "122": 0.288,
+          "123": 0.128,
+          "125": 87.168,
+          "126": 0.032,
+          "128": 0.032,
+          "129": 0.032,
+          "130": 0.032,
+          "132": 0.416
+        },
+        "sum_cta_residency_us": 11561.664,
+        "wall_makespan_us": 100.704
+      }
+    },
+    "wg2_cycle_distribution": {
+      "evidence_label": "sampled_source_timestamp_mechanistic",
+      "service_span_tile_begin_to_k_ready_signal_done": {
+        "sm_cycles": {
+          "n": 3200,
+          "min_cycles": 4180.0,
+          "p50_cycles": 5436.0,
+          "p90_cycles": 6334.2,
+          "p99_cycles": 9346.549999999987,
+          "max_cycles": 10650.0,
+          "mean_cycles": 5627.986875
+        },
+        "globaltimer": {
+          "n": 3200,
+          "min_us": 2.368,
+          "p10_us": 2.784,
+          "p25_us": 2.88,
+          "p50_us": 3.04,
+          "p75_us": 3.264,
+          "p90_us": 3.552,
+          "p95_us": 3.84,
+          "p99_us": 4.8,
+          "max_us": 5.6,
+          "mean_us": 3.1439299999999997,
+          "sum_logical_residency_us": 10060.576000000063
+        },
+        "sm_cycles_per_global_ns": {
+          "n": 3200,
+          "min": 1.6771875,
+          "p50": 1.787005844771789,
+          "p90": 1.8056683084239131,
+          "p99": 1.9736142086330934,
+          "max": 1.990419708029197,
+          "mean": 1.7869666281605407
+        },
+        "normalized_cycles_relative_to_global_median": {
+          "n": 3200,
+          "min": 0.7689477557027226,
+          "p50": 1.0,
+          "p90": 1.16523178807947,
+          "p99": 1.7193800588668113,
+          "max": 1.9591611479028697,
+          "mean": 1.0353176738410597
+        },
+        "by_ordinal_sm_cycles": [
+          {
+            "ordinal": 0,
+            "n": 125,
+            "min_cycles": 7749.0,
+            "p50_cycles": 9059.0,
+            "p90_cycles": 9656.400000000001,
+            "p99_cycles": 10186.0,
+            "max_cycles": 10650.0,
+            "mean_cycles": 9071.656
+          },
+          {
+            "ordinal": 1,
+            "n": 125,
+            "min_cycles": 4815.0,
+            "p50_cycles": 5592.0,
+            "p90_cycles": 5956.4,
+            "p99_cycles": 6596.520000000001,
+            "max_cycles": 7026.0,
+            "mean_cycles": 5603.872
+          },
+          {
+            "ordinal": 2,
+            "n": 125,
+            "min_cycles": 4965.0,
+            "p50_cycles": 5687.0,
+            "p90_cycles": 6241.0,
+            "p99_cycles": 6596.920000000001,
+            "max_cycles": 6761.0,
+            "mean_cycles": 5747.128
+          },
+          {
+            "ordinal": 3,
+            "n": 125,
+            "min_cycles": 4879.0,
+            "p50_cycles": 6088.0,
+            "p90_cycles": 6674.0,
+            "p99_cycles": 7051.28,
+            "max_cycles": 7076.0,
+            "mean_cycles": 6056.344
+          },
+          {
+            "ordinal": 4,
+            "n": 125,
+            "min_cycles": 4794.0,
+            "p50_cycles": 5868.0,
+            "p90_cycles": 6396.200000000001,
+            "p99_cycles": 7153.480000000002,
+            "max_cycles": 7325.0,
+            "mean_cycles": 5872.392
+          },
+          {
+            "ordinal": 5,
+            "n": 125,
+            "min_cycles": 4970.0,
+            "p50_cycles": 5815.0,
+            "p90_cycles": 6424.8,
+            "p99_cycles": 6898.280000000001,
+            "max_cycles": 7041.0,
+            "mean_cycles": 5829.464
+          },
+          {
+            "ordinal": 6,
+            "n": 125,
+            "min_cycles": 4899.0,
+            "p50_cycles": 5651.0,
+            "p90_cycles": 6159.6,
+            "p99_cycles": 6787.12,
+            "max_cycles": 6881.0,
+            "mean_cycles": 5682.328
+          },
+          {
+            "ordinal": 7,
+            "n": 125,
+            "min_cycles": 4874.0,
+            "p50_cycles": 5625.0,
+            "p90_cycles": 6143.400000000001,
+            "p99_cycles": 6514.960000000001,
+            "max_cycles": 6693.0,
+            "mean_cycles": 5646.04
+          },
+          {
+            "ordinal": 8,
+            "n": 125,
+            "min_cycles": 4758.0,
+            "p50_cycles": 5400.0,
+            "p90_cycles": 5935.2,
+            "p99_cycles": 6208.36,
+            "max_cycles": 6340.0,
+            "mean_cycles": 5450.28
+          },
+          {
+            "ordinal": 9,
+            "n": 125,
+            "min_cycles": 4704.0,
+            "p50_cycles": 5406.0,
+            "p90_cycles": 5908.400000000001,
+            "p99_cycles": 6321.6,
+            "max_cycles": 6545.0,
+            "mean_cycles": 5444.328
+          },
+          {
+            "ordinal": 10,
+            "n": 125,
+            "min_cycles": 4648.0,
+            "p50_cycles": 5385.0,
+            "p90_cycles": 5864.2,
+            "p99_cycles": 6146.6,
+            "max_cycles": 6630.0,
+            "mean_cycles": 5387.688
+          },
+          {
+            "ordinal": 11,
+            "n": 125,
+            "min_cycles": 4648.0,
+            "p50_cycles": 5488.0,
+            "p90_cycles": 6516.6,
+            "p99_cycles": 7057.120000000001,
+            "max_cycles": 7500.0,
+            "mean_cycles": 5610.888
+          },
+          {
+            "ordinal": 12,
+            "n": 125,
+            "min_cycles": 4723.0,
+            "p50_cycles": 5386.0,
+            "p90_cycles": 6274.0,
+            "p99_cycles": 7136.84,
+            "max_cycles": 7303.0,
+            "mean_cycles": 5567.296
+          },
+          {
+            "ordinal": 13,
+            "n": 125,
+            "min_cycles": 4600.0,
+            "p50_cycles": 6161.0,
+            "p90_cycles": 6972.800000000001,
+            "p99_cycles": 7285.280000000001,
+            "max_cycles": 7530.0,
+            "mean_cycles": 5995.8
+          },
+          {
+            "ordinal": 14,
+            "n": 125,
+            "min_cycles": 4652.0,
+            "p50_cycles": 5189.0,
+            "p90_cycles": 5739.0,
+            "p99_cycles": 6775.24,
+            "max_cycles": 7195.0,
+            "mean_cycles": 5251.472
+          },
+          {
+            "ordinal": 15,
+            "n": 125,
+            "min_cycles": 4612.0,
+            "p50_cycles": 5247.0,
+            "p90_cycles": 5706.2,
+            "p99_cycles": 6064.52,
+            "max_cycles": 6150.0,
+            "mean_cycles": 5278.608
+          },
+          {
+            "ordinal": 16,
+            "n": 125,
+            "min_cycles": 4716.0,
+            "p50_cycles": 5227.0,
+            "p90_cycles": 5804.800000000001,
+            "p99_cycles": 6162.32,
+            "max_cycles": 6368.0,
+            "mean_cycles": 5273.728
+          },
+          {
+            "ordinal": 17,
+            "n": 125,
+            "min_cycles": 4689.0,
+            "p50_cycles": 5341.0,
+            "p90_cycles": 5922.0,
+            "p99_cycles": 6234.840000000001,
+            "max_cycles": 6264.0,
+            "mean_cycles": 5398.552
+          },
+          {
+            "ordinal": 18,
+            "n": 125,
+            "min_cycles": 4611.0,
+            "p50_cycles": 5337.0,
+            "p90_cycles": 5728.0,
+            "p99_cycles": 5960.5599999999995,
+            "max_cycles": 6240.0,
+            "mean_cycles": 5338.544
+          },
+          {
+            "ordinal": 19,
+            "n": 125,
+            "min_cycles": 4180.0,
+            "p50_cycles": 5310.0,
+            "p90_cycles": 5727.6,
+            "p99_cycles": 6010.68,
+            "max_cycles": 6223.0,
+            "mean_cycles": 5317.016
+          },
+          {
+            "ordinal": 20,
+            "n": 125,
+            "min_cycles": 4627.0,
+            "p50_cycles": 5290.0,
+            "p90_cycles": 5638.6,
+            "p99_cycles": 6085.92,
+            "max_cycles": 6157.0,
+            "mean_cycles": 5290.152
+          },
+          {
+            "ordinal": 21,
+            "n": 125,
+            "min_cycles": 4652.0,
+            "p50_cycles": 5236.0,
+            "p90_cycles": 5711.400000000001,
+            "p99_cycles": 6383.440000000001,
+            "max_cycles": 6529.0,
+            "mean_cycles": 5275.856
+          },
+          {
+            "ordinal": 22,
+            "n": 125,
+            "min_cycles": 4573.0,
+            "p50_cycles": 5113.0,
+            "p90_cycles": 5551.4,
+            "p99_cycles": 5921.76,
+            "max_cycles": 6084.0,
+            "mean_cycles": 5164.912
+          },
+          {
+            "ordinal": 23,
+            "n": 125,
+            "min_cycles": 4549.0,
+            "p50_cycles": 5186.0,
+            "p90_cycles": 5637.0,
+            "p99_cycles": 5963.08,
+            "max_cycles": 6109.0,
+            "mean_cycles": 5231.032
+          },
+          {
+            "ordinal": 24,
+            "n": 50,
+            "min_cycles": 4732.0,
+            "p50_cycles": 5159.5,
+            "p90_cycles": 5680.2,
+            "p99_cycles": 6242.869999999998,
+            "max_cycles": 6653.0,
+            "mean_cycles": 5235.82
+          },
+          {
+            "ordinal": 25,
+            "n": 50,
+            "min_cycles": 4673.0,
+            "p50_cycles": 5131.5,
+            "p90_cycles": 5559.599999999999,
+            "p99_cycles": 5949.5599999999995,
+            "max_cycles": 6124.0,
+            "mean_cycles": 5207.72
+          },
+          {
+            "ordinal": 26,
+            "n": 50,
+            "min_cycles": 4694.0,
+            "p50_cycles": 5166.5,
+            "p90_cycles": 5682.5,
+            "p99_cycles": 5965.67,
+            "max_cycles": 6023.0,
+            "mean_cycles": 5204.06
+          },
+          {
+            "ordinal": 27,
+            "n": 25,
+            "min_cycles": 4734.0,
+            "p50_cycles": 5096.0,
+            "p90_cycles": 5388.6,
+            "p99_cycles": 5471.44,
+            "max_cycles": 5482.0,
+            "mean_cycles": 5100.4
+          },
+          {
+            "ordinal": 28,
+            "n": 25,
+            "min_cycles": 4763.0,
+            "p50_cycles": 5071.0,
+            "p90_cycles": 5247.6,
+            "p99_cycles": 5437.16,
+            "max_cycles": 5441.0,
+            "mean_cycles": 5059.84
+          }
+        ]
+      },
+      "producer_cadence_begin_to_next_begin": {
+        "sm_cycles": {
+          "n": 3075,
+          "min_cycles": 4334.0,
+          "p50_cycles": 5635.0,
+          "p90_cycles": 6740.0,
+          "p99_cycles": 15679.3,
+          "max_cycles": 17363.0,
+          "mean_cycles": 6057.640325203252
+        },
+        "globaltimer": {
+          "n": 3075,
+          "min_us": 2.464,
+          "p10_us": 2.88,
+          "p25_us": 3.008,
+          "p50_us": 3.168,
+          "p75_us": 3.392,
+          "p90_us": 3.776,
+          "p95_us": 4.608,
+          "p99_us": 8.8,
+          "max_us": 9.728,
+          "mean_us": 3.382290731707317,
+          "sum_logical_residency_us": 10400.544000000047
+        },
+        "same_request": {
+          "sm_cycles": {
+            "n": 3000,
+            "min_cycles": 4334.0,
+            "p50_cycles": 5622.0,
+            "p90_cycles": 6539.3,
+            "p99_cycles": 9566.349999999993,
+            "max_cycles": 10849.0,
+            "mean_cycles": 5818.694666666666
+          },
+          "globaltimer": {
+            "n": 3000,
+            "min_us": 2.464,
+            "p10_us": 2.88,
+            "p25_us": 3.008,
+            "p50_us": 3.168,
+            "p75_us": 3.36,
+            "p90_us": 3.648,
+            "p95_us": 3.9695999999999914,
+            "p99_us": 4.928319999999993,
+            "max_us": 5.728,
+            "mean_us": 3.247957333333333,
+            "sum_logical_residency_us": 9743.872000000063
+          }
+        },
+        "request_boundary": {
+          "sm_cycles": {
+            "n": 75,
+            "min_cycles": 14522.0,
+            "p50_cycles": 15548.0,
+            "p90_cycles": 16261.8,
+            "p99_cycles": 17159.5,
+            "max_cycles": 17363.0,
+            "mean_cycles": 15615.466666666667
+          },
+          "globaltimer": {
+            "n": 75,
+            "min_us": 8.096,
+            "p10_us": 8.384,
+            "p25_us": 8.512,
+            "p50_us": 8.768,
+            "p75_us": 8.992,
+            "p90_us": 9.1264,
+            "p95_us": 9.312,
+            "p99_us": 9.562240000000001,
+            "max_us": 9.728,
+            "mean_us": 8.755626666666666,
+            "sum_logical_residency_us": 656.6719999999999
+          }
+        }
+      },
+      "producer_tail_gap_end_to_next_begin": {
+        "sm_cycles": {
+          "n": 3075,
+          "min_cycles": 152.0,
+          "p50_cycles": 156.0,
+          "p90_cycles": 200.0,
+          "p99_cycles": 10176.119999999997,
+          "max_cycles": 11884.0,
+          "mean_cycles": 412.6149593495935
+        },
+        "globaltimer": {
+          "n": 3075,
+          "min_us": 0.064,
+          "p10_us": 0.064,
+          "p25_us": 0.096,
+          "p50_us": 0.096,
+          "p75_us": 0.096,
+          "p90_us": 0.128,
+          "p95_us": 0.128,
+          "p99_us": 5.696,
+          "max_us": 6.656,
+          "mean_us": 0.23059772357723576,
+          "sum_logical_residency_us": 709.0880000000061
+        },
+        "same_request": {
+          "sm_cycles": {
+            "n": 3000,
+            "min_cycles": 152.0,
+            "p50_cycles": 156.0,
+            "p90_cycles": 199.0,
+            "p99_cycles": 216.0,
+            "max_cycles": 255.0,
+            "mean_cycles": 169.27733333333333
+          },
+          "globaltimer": {
+            "n": 3000,
+            "min_us": 0.064,
+            "p10_us": 0.064,
+            "p25_us": 0.096,
+            "p50_us": 0.096,
+            "p75_us": 0.096,
+            "p90_us": 0.128,
+            "p95_us": 0.128,
+            "p99_us": 0.128,
+            "max_us": 0.16,
+            "mean_us": 0.09409066666666667,
+            "sum_logical_residency_us": 282.2719999999998
+          }
+        },
+        "request_boundary": {
+          "sm_cycles": {
+            "n": 75,
+            "min_cycles": 9612.0,
+            "p50_cycles": 10045.0,
+            "p90_cycles": 10671.600000000002,
+            "p99_cycles": 11290.520000000004,
+            "max_cycles": 11884.0,
+            "mean_cycles": 10146.12
+          },
+          "globaltimer": {
+            "n": 75,
+            "min_us": 5.344,
+            "p10_us": 5.408,
+            "p25_us": 5.472,
+            "p50_us": 5.632,
+            "p75_us": 5.856,
+            "p90_us": 6.054400000000001,
+            "p95_us": 6.112,
+            "p99_us": 6.466560000000002,
+            "max_us": 6.656,
+            "mean_us": 5.69088,
+            "sum_logical_residency_us": 426.81600000000003
+          }
+        }
+      },
+      "warning": "These cycles measure the sampled trace symbol. Use the distribution shape and normalized cadence; only compare absolute cycles with production if the measured trace-on perturbation gate passes."
+    },
+    "busiest_cta_overlap": {
+      "window_us": 100.576,
+      "time_by_active_warpgroup_count_us": {
+        "0": 9.12,
+        "1": 91.456
+      },
+      "fraction_by_active_warpgroup_count": {
+        "0": 0.09067769646834235,
+        "1": 0.9093223035316577
+      },
+      "time_by_active_lane_set_us": {
+        "WG2": 91.456,
+        "none": 9.12
+      },
+      "fraction_by_active_lane_set": {
+        "WG2": 0.9093223035316577,
+        "none": 0.09067769646834235
+      },
+      "any_tile_lane_union_us": 91.456,
+      "sum_warpgroup_lane_residency_us": 91.456,
+      "lane_overlap_factor": 1.0,
+      "warning": "lane_overlap_factor is summed per-lane residency divided by the union of observed lane intervals; values above 1 quantify cross-lane overlap, while 1 means no cross-lane overlap."
+    },
+    "warning": "The sampled symbol records only CTA enter/exit and WG2 tile begin/end. WG0/WG1 phase rows are intentionally absent and must not be inferred."
   }
 }
