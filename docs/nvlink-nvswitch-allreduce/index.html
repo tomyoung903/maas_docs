@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An animated, byte-accurate explanation of the TP=8 FlashInfer one-shot Lamport all-reduce seen in the B=100 H200 trace: seven unicast copies per source, 56 directed transfers, NVLS contrast, and correct 450/900 GB/s accounting.">
+  <title>NVLink, NVSwitch, and One-Shot All-Reduce — Where Every Byte Goes</title>
+  <link rel="stylesheet" href="nvlink.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the explanation</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../" aria-label="Back to MaaS Docs">
+        <span class="brand-mark" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+        <span>
+          <strong>MaaS Docs</strong>
+          <small>GPU communication visual guide</small>
+        </span>
+      </a>
+      <div class="topbar-tags" aria-label="Document scope">
+        <span>HGX H200</span>
+        <span>TP = 8</span>
+        <span>FlashInfer Lamport push</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-shell">
+    <aside class="overview" aria-label="On this page">
+      <p class="overview-title">On this page</p>
+      <nav>
+        <a href="#mental-model">The correction</a>
+        <a href="#walkthrough">Animated walkthrough</a>
+        <a href="#matrix">8 × 8 traffic matrix</a>
+        <a href="#multicast">Why it is not multicast</a>
+        <a href="#implementations">Pull versus push</a>
+        <a href="#accounting">Byte accounting</a>
+        <a href="#bandwidth">The 900 GB/s label</a>
+        <a href="#sources">Scope and sources</a>
+      </nav>
+      <div class="rail-key">
+        <span><i class="key-dot outbound"></i>focused rank outbound</span>
+        <span><i class="key-dot inbound"></i>focused rank inbound</span>
+        <span><i class="key-dot peer"></i>other rank traffic</span>
+      </div>
+    </aside>
+
+    <main id="main">
+      <section class="hero" id="mental-model">
+        <div class="eyebrow"><span>NVLink byte accounting</span><span class="eyebrow-rule"></span><span>visual proof</span></div>
+        <h1>One transfer.<br><em>Two endpoint views.</em></h1>
+        <p class="lede">
+          In the TP = 8 FlashInfer <code>oneshot_lamport</code> path captured in the B = 100 trace, each GPU holds a different partial tensor
+          <span class="sym sym-tensor math-vec">S<sub>i</sub></span>. Every other rank needs that tensor.
+          The kernel explicitly writes seven remote rank buffers, so NVSwitch routes seven point-to-point copies. It does not use the separate NVLS multicast mechanism.
+        </p>
+
+        <div class="thesis-grid" aria-label="Three central conclusions">
+          <article>
+            <span class="thesis-number">01</span>
+            <strong>One wire transfer</strong>
+            <p><span class="sym sym-out math-vec">S<sub>0→1</sub></span> is GPU 0 outbound and GPU 1 inbound—but still one unique payload.</p>
+          </article>
+          <article>
+            <span class="thesis-number">07</span>
+            <strong>Seven source copies</strong>
+            <p>GPU 0 serves one destination-specific copy to each peer, so its transmit boundary carries <span class="math-num">7<span class="math-var">S</span></span>.</p>
+          </article>
+          <article>
+            <span class="thesis-number">56</span>
+            <strong>Directed transfers</strong>
+            <p>Eight sources × seven remote destinations gives 56 unique off-diagonal matrix cells.</p>
+          </article>
+        </div>
+
+        <div class="correction-card">
+          <div class="correction-icon" aria-hidden="true">↯</div>
+          <div>
+            <span class="label">The correction</span>
+            <p>
+              The familiar <q>eight GPUs connected to one fabric</q> sketch is a topology abstraction—not proof of the algorithm’s traffic pattern.
+              For this traced kernel, the source loop proves seven per-rank stores; a better picture follows those packets across each GPU boundary.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card" id="walkthrough">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">Interactive explainer</span>
+            <h2>Follow every copy through the fabric</h2>
+          </div>
+          <p>Choose a rank, scrub the chapters, or let the tour play. Packet labels preserve source and destination identity.</p>
+        </div>
+
+        <div class="story" data-story data-scene="0">
+          <div class="story-toolbar">
+            <div class="story-identity">
+              <span class="live-light" aria-hidden="true"></span>
+              <span><strong>Lamport-push traffic microscope</strong><small>logical routes · endpoint-accurate bytes</small></span>
+            </div>
+            <div class="story-controls" aria-label="Animation controls">
+              <label class="rank-picker">Focus
+                <select data-rank-select aria-label="Focused GPU rank">
+                  <option value="0">GPU 0</option>
+                  <option value="1">GPU 1</option>
+                  <option value="2">GPU 2</option>
+                  <option value="3">GPU 3</option>
+                  <option value="4">GPU 4</option>
+                  <option value="5">GPU 5</option>
+                  <option value="6">GPU 6</option>
+                  <option value="7">GPU 7</option>
+                </select>
+              </label>
+              <button type="button" class="control-button icon-button" data-previous aria-label="Previous chapter">←</button>
+              <button type="button" class="control-button play-button" data-play aria-pressed="false">Play tour</button>
+              <button type="button" class="control-button icon-button" data-next aria-label="Next chapter">→</button>
+              <button type="button" class="control-button" data-replay>Replay step</button>
+            </div>
+          </div>
+
+          <div class="chapter-strip" role="tablist" aria-label="Walkthrough chapters">
+            <button type="button" role="tab" data-step="0" data-title="Eight partial tensors" aria-selected="true">
+              <span>01</span><strong>Local state</strong>
+            </button>
+            <button type="button" role="tab" data-step="1" data-title="One directed transfer" aria-selected="false">
+              <span>02</span><strong>One edge</strong>
+            </button>
+            <button type="button" role="tab" data-step="2" data-title="Seven destination tickets" aria-selected="false">
+              <span>03</span><strong>Fan-out</strong>
+            </button>
+            <button type="button" role="tab" data-step="3" data-title="Bidirectional endpoint traffic" aria-selected="false">
+              <span>04</span><strong>Both ways</strong>
+            </button>
+            <button type="button" role="tab" data-step="4" data-title="All-to-all peer traffic" aria-selected="false">
+              <span>05</span><strong>All ranks</strong>
+            </button>
+            <button type="button" role="tab" data-step="5" data-title="The matched bandwidth ledger" aria-selected="false">
+              <span>06</span><strong>Account</strong>
+            </button>
+          </div>
+
+          <div class="story-progress-row">
+            <span data-step-count>Step 1 of 6</span>
+            <div class="story-progress" role="progressbar" aria-label="Current chapter progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-progress>
+              <span data-progress-fill></span>
+            </div>
+            <span data-motion-label>playing</span>
+          </div>
+
+          <div class="story-stage">
+            <div class="topology-panel">
+              <div class="topology-toolbar">
+                <div class="status-badges">
+                  <span class="status-badge" data-mode-badge>Local HBM only</span>
+                  <span class="status-badge subtle">schematic, not board wiring</span>
+                </div>
+                <div class="packet-legend" aria-label="Packet colors">
+                  <span><i class="key-dot outbound"></i>TX from focus</span>
+                  <span><i class="key-dot inbound"></i>RX into focus</span>
+                  <span><i class="key-dot peer"></i>peer ↔ peer</span>
+                </div>
+              </div>
+
+              <div class="topology-canvas">
+                <svg data-topology viewBox="0 0 1100 650" role="img" aria-labelledby="topology-title topology-desc">
+                  <title id="topology-title">Eight-GPU NVSwitch one-shot all-reduce topology</title>
+                  <desc id="topology-desc">An animated schematic showing destination-specific tensors traveling between eight GPUs through an NVSwitch fabric.</desc>
+                  <defs>
+                    <linearGradient id="fabric-face" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#203951"></stop>
+                      <stop offset="1" stop-color="#10263a"></stop>
+                    </linearGradient>
+                    <linearGradient id="gpu-face" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#fbfdff"></stop>
+                      <stop offset="1" stop-color="#e9f0f4"></stop>
+                    </linearGradient>
+                    <filter id="packet-glow" x="-200%" y="-200%" width="500%" height="500%">
+                      <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+                      <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+                    </filter>
+                  </defs>
+                  <g data-link-layer></g>
+                  <g data-fabric-layer></g>
+                  <g data-flow-layer></g>
+                  <g data-gpu-layer></g>
+                  <g data-packet-layer></g>
+                </svg>
+
+                <div class="boundary-ledger" aria-label="Focused GPU boundary counters">
+                  <span class="ledger-rank" data-ledger-rank>GPU 0 endpoint</span>
+                  <span class="ledger-direction tx"><i>TX</i><strong data-tx-value>0</strong><small>outbound</small></span>
+                  <span class="ledger-direction rx"><i>RX</i><strong data-rx-value>0</strong><small>inbound</small></span>
+                </div>
+              </div>
+
+              <div class="wire-trace" aria-label="Focused GPU packet trace">
+                <div class="trace-axis"><span>GPU boundary</span><span>earlier</span><i></i><span>later</span></div>
+                <div class="trace-row tx-row">
+                  <strong>TX</strong>
+                  <div class="trace-track" data-tx-track></div>
+                </div>
+                <div class="trace-row rx-row">
+                  <strong>RX</strong>
+                  <div class="trace-track" data-rx-track></div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="narration" aria-live="polite">
+              <span class="narration-step" data-narration-step>Step 1 · Before communication</span>
+              <h3 data-narration-title>Eight ranks, eight different partials</h3>
+              <div data-narration-body></div>
+              <div class="equation-card" data-equation></div>
+              <div class="watch-for">
+                <span>Watch for</span>
+                <p data-watch-for>The switch is idle. Each partial tensor exists only in its owner’s HBM.</p>
+              </div>
+            </aside>
+          </div>
+
+          <p class="sr-only" aria-live="polite" data-live-region></p>
+        </div>
+
+        <noscript>
+          <p class="noscript-note">JavaScript is disabled. The static traffic matrix and byte ledger below contain the complete explanation.</p>
+        </noscript>
+      </section>
+
+      <section class="section-card" id="matrix">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">A proof you can count</span>
+            <h2>The 8 × 8 directed traffic matrix</h2>
+          </div>
+          <p>Every off-diagonal cell is one unique source-to-destination payload. Click a cell to inspect its route above.</p>
+        </div>
+
+        <div class="matrix-layout">
+          <div class="matrix-wrap">
+            <div class="matrix-corner-label">destination →<br><span>source ↓</span></div>
+            <div class="traffic-matrix" data-matrix aria-label="Eight by eight directed transfer matrix"></div>
+          </div>
+          <aside class="matrix-inspector">
+            <span class="inspector-kicker">Selected matrix cell</span>
+            <h3 data-cell-title><span class="sym sym-out math-vec">S<sub>0→1</sub></span></h3>
+            <p data-cell-copy>GPU 0’s partial tensor crosses the fabric once and arrives at GPU 1.</p>
+            <div class="endpoint-pair">
+              <div><span>source label</span><strong class="tx-text" data-cell-source>GPU 0 · outbound</strong></div>
+              <div class="same-transfer"><i></i><span>one transfer</span><i></i></div>
+              <div><span>destination label</span><strong class="rx-text" data-cell-destination>GPU 1 · inbound</strong></div>
+            </div>
+            <p class="micro-note">The two labels describe the two ends of the same matrix cell. They do not create a second payload.</p>
+          </aside>
+        </div>
+
+        <div class="matrix-totals">
+          <article><span>Diagonal cells</span><strong>8 local</strong><p>Each rank reads its own <span class="math-vec">S<sub>i</sub></span> from local HBM. No NVLink payload.</p></article>
+          <article><span>Off-diagonal cells</span><strong>56 remote</strong><p>Eight rows × seven remote destinations. These are the unique directed transfers.</p></article>
+          <article><span>Focused row + column</span><strong>7 TX + 7 RX</strong><p>Different tensors cross the focused endpoint in opposite directions.</p></article>
+        </div>
+      </section>
+
+      <section class="section-card" id="multicast">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">The tempting—but wrong—picture</span>
+            <h2>NVLS multicast is real—but this trace did not use it</h2>
+          </div>
+          <p>Both drawings can produce seven receivers. The kernel name and source loop tell us which traffic geometry belongs to this trace.</p>
+        </div>
+
+        <div class="compare-grid">
+          <article class="compare-card actual">
+            <div class="compare-title"><span>Observed FlashInfer path</span><strong>7 destination tickets cross TX</strong></div>
+            <div class="mini-flow actual-flow" aria-hidden="true">
+              <div class="mini-gpu">GPU 0<small><span class="math-vec">S<sub>0</sub></span></small></div>
+              <div class="ticket-stack">
+                <i style="--n:0">→1</i><i style="--n:1">→2</i><i style="--n:2">→3</i><i style="--n:3">→4</i><i style="--n:4">→5</i><i style="--n:5">→6</i><i style="--n:6">→7</i>
+              </div>
+              <div class="mini-switch">route</div>
+              <div class="mini-peers"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i></div>
+            </div>
+            <p><code>allreduce_fusion_kernel_oneshot_lamport</code> loops over all eight rank buffers. One write is local; seven are remote. The physical lanes can pipeline them, but the source endpoint still serves <span class="math-num">7<span class="math-var">S</span></span>.</p>
+          </article>
+
+          <article class="compare-card multicast">
+            <div class="compare-title"><span>Explicit NVLS multicast</span><strong>1 multimem operation addresses the team</strong></div>
+            <div class="mini-flow multicast-flow" aria-hidden="true">
+              <div class="mini-gpu">GPU 0<small><span class="math-vec">S<sub>0</sub></span></small></div>
+              <div class="single-ticket">→ all</div>
+              <div class="mini-switch clone">NVLS</div>
+              <div class="mini-peers"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i></div>
+            </div>
+            <p>CUDA multicast objects and <code>multimem.*</code> instructions can broadcast to, or reduce across, a GPU team in hardware. Current SGLang has an explicit multicast mode, but the captured FlashInfer Lamport kernel is the per-rank-buffer loop shown at left.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-card" id="implementations">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Same payload geometry, different initiator</span>
+            <h2>Peer-memory pull and Lamport push both move seven copies</h2>
+          </div>
+          <p>This section describes ordinary peer loads/stores. An explicitly selected NVLS multicast mode is a different path.</p>
+        </div>
+
+        <div class="implementation-grid">
+          <article class="implementation-card pull-card">
+            <header><span class="method-badge">LSA PULL</span><h3>Every destination reads all rank buffers</h3></header>
+            <ol class="implementation-flow">
+              <li><i>1</i><span>GPU <em>j</em> obtains peer pointers to <span class="math-vec">S<sub>0</sub></span> … <span class="math-vec">S<sub>7</sub></span>.</span></li>
+              <li><i>2</i><span>GPU <em>j</em> loads seven remote tensors and one local tensor.</span></li>
+              <li><i>3</i><span>GPU <em>j</em> reduces the eight values and writes its result locally.</span></li>
+            </ol>
+            <div class="implementation-result"><span>Effect on GPU <em>i</em></span><strong>seven peers remotely read <span class="math-vec">S<sub>i</sub></span> → <span class="math-num">7<span class="math-var">S</span></span> outbound</strong></div>
+          </article>
+
+          <article class="implementation-card push-card">
+            <header><span class="method-badge">PUSH</span><h3>Every source writes all destination buffers</h3></header>
+            <ol class="implementation-flow">
+              <li><i>1</i><span>GPU <em>i</em> writes <span class="math-vec">S<sub>i</sub></span> into each rank’s reserved peer buffer.</span></li>
+              <li><i>2</i><span>Each destination polls until all eight rank slots are ready.</span></li>
+              <li><i>3</i><span>Each destination reduces its local set of received slots.</span></li>
+            </ol>
+            <div class="implementation-result"><span>Effect on GPU <em>i</em></span><strong>seven remote stores carry <span class="math-vec">S<sub>i</sub></span> → <span class="math-num">7<span class="math-var">S</span></span> outbound</strong></div>
+          </article>
+        </div>
+
+        <div class="result-equation">
+          <span class="equation-label">Every rank eventually computes</span>
+          <div><span class="math-vec sym-result">R<sub>j</sub></span><span class="operator">=</span><span class="sum">∑<sup>7</sup><sub>i=0</sub></span><span class="math-vec sym-tensor">S<sub>i</sub></span><span class="shape-note">for every destination rank <em>j</em></span></div>
+        </div>
+      </section>
+
+      <section class="section-card" id="accounting">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Keep the numerator and denominator matched</span>
+            <h2>Three ledgers, each answering a different question</h2>
+          </div>
+          <p>The apparent double count appears only when endpoint labels are mistaken for unique network payload.</p>
+        </div>
+
+        <div class="ledger-grid">
+          <article class="ledger-card unique">
+            <span class="ledger-index">A</span>
+            <span class="ledger-name">Unique directed payload</span>
+            <strong><span class="math-num">56<span class="math-var">S</span></span></strong>
+            <p>Count each off-diagonal matrix cell exactly once across the whole eight-GPU node.</p>
+            <div class="ledger-denominator">Compare with <span>8 × 450 GB/s source-side capacity</span></div>
+          </article>
+          <article class="ledger-card direction">
+            <span class="ledger-index">B</span>
+            <span class="ledger-name">One GPU, one direction</span>
+            <strong><span class="math-num">7<span class="math-var">S</span></span></strong>
+            <p>Count the focused GPU’s outbound row—or its inbound column, separately.</p>
+            <div class="ledger-denominator">Compare with <span>approximately 450 GB/s</span></div>
+          </article>
+          <article class="ledger-card endpoint">
+            <span class="ledger-index">C</span>
+            <span class="ledger-name">One GPU, endpoint aggregate</span>
+            <strong><span class="math-num">14<span class="math-var">S</span></span></strong>
+            <p>Add the focused row and column: <span class="math-num">7<span class="math-var">S</span></span> TX + <span class="math-num">7<span class="math-var">S</span></span> RX.</p>
+            <div class="ledger-denominator">Compare with <span>900 GB/s bidirectional aggregate</span></div>
+          </article>
+        </div>
+
+        <div class="identity-strip">
+          <div>
+            <span>Same utilization, two conventions</span>
+            <p>For symmetric traffic, one-direction and endpoint-aggregate accounting are numerically equivalent.</p>
+          </div>
+          <div class="identity-equation">
+            <span class="fraction"><b><span class="math-num">7<span class="math-var">S</span></span> / <span class="math-var">t</span></b><i>450 GB/s</i></span>
+            <span class="equals">=</span>
+            <span class="fraction"><b><span class="math-num">14<span class="math-var">S</span></span> / <span class="math-var">t</span></b><i>900 GB/s</i></span>
+          </div>
+        </div>
+
+        <h3 class="worked-title"><span class="math-var">B</span> = 100 trace payload · hidden width = 6,144, BF16</h3>
+        <div class="worked-grid">
+          <article><span>One partial tensor</span><strong>1.2288 MB</strong><small>100 × 6,144 × 2 bytes</small></article>
+          <article><span>Per-GPU outbound</span><strong>8.6016 MB</strong><small>seven remote copies</small></article>
+          <article><span>Per-GPU endpoint total</span><strong>17.2032 MB</strong><small>TX + RX</small></article>
+          <article><span>Whole-node unique payload</span><strong>68.8128 MB</strong><small>56 directed cells</small></article>
+        </div>
+        <div class="trace-denominator">
+          <span>Captured denominator for the repeated sparse-layer kernel</span>
+          <strong>9.599317 ms ÷ 74 calls = 129.7205 µs per call</strong>
+          <p>The separate 75th M4 launch is a 17.312 µs SGLang two-shot kernel. It is not folded into the Lamport per-call denominator. MB and GB use decimal units.</p>
+        </div>
+      </section>
+
+      <section class="section-card" id="bandwidth">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Decode the product label</span>
+            <h2>“900 GB/s bidirectional” means 450 + 450</h2>
+          </div>
+          <p>Simultaneous directions share elapsed time, but they remain different directional resources carrying different tensors.</p>
+        </div>
+
+        <div class="link-decomposition" aria-label="Hopper NVLink directional bandwidth decomposition">
+          <span><strong>18</strong><small>NVLinks / GPU</small></span>
+          <b>×</b>
+          <span><strong>25 + 25</strong><small>GB/s TX + RX / link</small></span>
+          <b>=</b>
+          <span class="outcome"><strong>450 + 450</strong><small>GB/s TX + RX / GPU</small></span>
+        </div>
+
+        <div class="bandwidth-board">
+          <div class="bandwidth-heading">
+            <span>One H200 SXM GPU endpoint</span>
+            <strong>900 GB/s <small>bidirectional aggregate</small></strong>
+          </div>
+          <div class="direction-meter">
+            <div class="meter-side tx-side">
+              <div class="meter-label"><span>TX · GPU → fabric</span><strong>≈ 450 GB/s peak</strong></div>
+              <div class="meter-track"><i style="--fill:14.74%"></i></div>
+              <div class="meter-reading"><strong>66.31 GB/s</strong><span>payload-equivalent · 14.74%</span></div>
+            </div>
+            <div class="meter-divider"><i></i><span>simultaneous</span><i></i></div>
+            <div class="meter-side rx-side">
+              <div class="meter-label"><span>RX · fabric → GPU</span><strong>≈ 450 GB/s peak</strong></div>
+              <div class="meter-track"><i style="--fill:14.74%"></i></div>
+              <div class="meter-reading"><strong>66.31 GB/s</strong><span>payload-equivalent · 14.74%</span></div>
+            </div>
+          </div>
+          <div class="aggregate-reading">
+            <span>endpoint aggregate</span>
+            <strong>132.62 GB/s</strong>
+            <i></i>
+            <span>matched peak</span>
+            <strong>900 GB/s</strong>
+            <i></i>
+            <span>utilization</span>
+            <strong>14.74%</strong>
+          </div>
+        </div>
+
+        <div class="warning-card">
+          <span class="warning-mark">!</span>
+          <div><strong>Do not cross the conventions.</strong><p>Never divide TX + RX bytes by a one-direction 450 GB/s peak, and never divide TX-only bytes by the 900 GB/s aggregate peak. Either mismatch creates a factor-of-two error.</p></div>
+        </div>
+      </section>
+
+      <section class="section-card sources-section" id="sources">
+        <div class="section-heading compact">
+          <div>
+            <span class="section-kicker">Interpretation boundary</span>
+            <h2>What this page proves—and what it estimates</h2>
+          </div>
+        </div>
+
+        <div class="scope-grid">
+          <article><strong>Proved by algorithm geometry</strong><p>Seven remote copies per source, 56 directed node-wide transfers, and the equivalence of matched directional versus aggregate accounting.</p></article>
+          <article><strong>Payload-equivalent, not counter-measured</strong><p>The 66.31 and 132.62 GB/s readings use payload size divided by the 129.7205 µs average traced kernel duration. That duration also contains polling, reduction, fused normalization, and local HBM work.</p></article>
+          <article><strong>Topology is schematic</strong><p>The central fabric represents NVSwitch routing. It deliberately does not claim literal switch-chip placement or cable geometry.</p></article>
+        </div>
+
+        <div class="scope-alert">
+          <strong>Algorithm identity is part of the traffic model.</strong>
+          <p>The seven-copy conclusion applies to the captured FlashInfer <code>oneshot_lamport</code> implementation and ordinary peer-memory LSA paths. Do not reuse its numerator for an NVLS/multimem kernel without reading that kernel and, ideally, collecting NVLink counters.</p>
+        </div>
+
+        <ul class="source-list">
+          <li><a href="https://docs.nvidia.com/cuda/hopper-tuning-guide/index.html">NVIDIA Hopper Tuning Guide</a><span>Fourth-generation NVLink: 50 GB/s bidirectional per link; 18 links provide 900 GB/s aggregate.</span></li>
+          <li><a href="https://www.nvidia.com/en-us/data-center/h200/">NVIDIA H200 specifications</a><span>H200 SXM GPU interconnect specification.</span></li>
+          <li><a href="https://developer.nvidia.com/blog/introducing-nvidia-hgx-h100-an-accelerated-server-platform-for-ai-and-high-performance-computing/">NVIDIA HGX H100 topology</a><span>Eight GPUs connect through four fully non-blocking NVSwitches; the central drawing above is their logical abstraction.</span></li>
+          <li><a href="https://github.com/flashinfer-ai/flashinfer/blob/v0.6.12/include/flashinfer/comm/trtllm_allreduce_fusion.cuh#L1339-L1399">FlashInfer v0.6.12 Lamport one-shot source</a><span>The observed kernel loops over every rank buffer, stores the local input, polls local slots, reduces, and applies the fused operation.</span></li>
+          <li><a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/jit/csrc/distributed/custom_all_reduce.cuh">Current SGLang custom all-reduce source</a><span>Separates one-shot push, ordinary pull, and an explicit multicast-address mode—why the kernel variant must be identified first.</span></li>
+          <li><a href="https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__MULTICAST.html">CUDA multicast object documentation</a><span>Defines multicast objects that let supported memory operations broadcast to a team of devices.</span></li>
+          <li><a href="../tmp/basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.10.1#timeline">B = 100 H200 trace report</a><span>M4 contains 74 repeated FlashInfer one-shot Lamport calls totaling 9.599317 ms, plus one separate 17.312 µs SGLang two-shot call.</span></li>
+        </ul>
+      </section>
+
+      <footer class="page-footer">
+        <span>MaaS Docs · NVLink traffic mental model</span>
+        <a href="#mental-model">Back to top ↑</a>
+      </footer>
+    </main>
+  </div>
+
+  <script src="nvlink.js"></script>
+</body>
+</html>
