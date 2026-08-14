@@ -92,6 +92,80 @@ WG2_INTERNAL_PHASES = [
     ("publish", "Fence, validity, K-ready publish", "9", "13"),
 ]
 
+WG2_MECHANISM_EXPLANATIONS: dict[str, dict[str, str]] = {
+    "tile_to_r0_index": {
+        "short_label": "Round 0 · index, address, scales",
+        "scope": "Prepare selected records 0–31",
+        "family": "address_index_scales",
+        "what_happens": "WG2 resolves selected token IDs to paged-KV addresses, prefetches the next sparse index, forms each cache-record pointer, and loads the four FP32 dequantization scales used by V32.",
+        "data_movement": "Reads TopK index entries and scale metadata from global memory. The 512-value NoPE payload has not yet been gathered in this phase.",
+        "share_meaning": "The relative share of the perturbed beat's pooled mean spent reaching the first round's index-and-scale-ready landmark.",
+    },
+    "k_buffer_wait": {
+        "short_label": "K-buffer wait",
+        "scope": "Wait before overwriting the rotating shared buffer",
+        "family": "coordination",
+        "what_happens": "WG2 waits on the transaction barrier until WG0 and WG1 have finished consuming the selected shared-memory K/V buffer slot.",
+        "data_movement": "This is reuse coordination, not a bulk KV copy. It prevents the producer from overwriting a buffer that consumer warpgroups still read. Gen9 samples clustered at 0, 32, or 64 ns—near the captured timer granularity.",
+        "share_meaning": "The buffer was usually already available in these perturbed Gen9 samples, but the sub-tick-sized share is resolution-limited. It does not prove that production waits by this percentage.",
+    },
+    "r0_nope": {
+        "short_label": "Round 0 · NoPE gather/dequant",
+        "scope": "Prepare selected records 0–31",
+        "family": "nope",
+        "what_happens": "For the first 32 selected records, WG2 gathers the non-positional latent in eight chunks, applies the previously loaded scales, converts FP8 values to BF16, and stores the result in the shared K/V layout.",
+        "data_movement": "Across this 32-record round, it reads 16 KiB of unique FP8 NoPE payload from sparse cache addresses and expands that to 32 KiB of BF16 data in shared memory.",
+        "share_meaning": "This was the largest single interval on the perturbed clock. Treat that as a strong source-inspection lead, not a production-time percentage.",
+    },
+    "r0_rope": {
+        "short_label": "Round 0 · RoPE gather/store",
+        "scope": "Prepare selected records 0–31",
+        "family": "rope",
+        "what_happens": "WG2 gathers the cached positional part for the first 32 records and stages it in shared memory. This kernel phase loads the RoPE-bearing values; it does not perform a new rotary transform here.",
+        "data_movement": "Per selected record, it reads 64 BF16 positional values (128 bytes) and stores them unchanged into the shared K tile used by QK.",
+        "share_meaning": "The relative mean share of first-round positional-field gathering on the perturbed Gen9 beat.",
+    },
+    "r1_index": {
+        "short_label": "Round 1 · index, address, scales",
+        "scope": "Prepare selected records 32–63",
+        "family": "address_index_scales",
+        "what_happens": "The producer advances to the second 32-record assignment, resolves its sparse indices to cache addresses, updates prefetched indices, and loads the scales for those records.",
+        "data_movement": "Reads the second round's TopK index entries and scale metadata from global memory before its bulk latent gather.",
+        "share_meaning": "The relative share of the perturbed mean spent preparing addresses and scales for records 32–63.",
+    },
+    "r1_nope": {
+        "short_label": "Round 1 · NoPE gather/dequant",
+        "scope": "Prepare selected records 32–63",
+        "family": "nope",
+        "what_happens": "WG2 repeats the sparse NoPE load, scale application, FP8-to-BF16 conversion, and shared-memory staging for the second 32 records.",
+        "data_movement": "Across this second 32-record round, it again reads 16 KiB of unique FP8 NoPE payload and expands it to 32 KiB of BF16 data in the remaining shared K/V tile region.",
+        "share_meaning": "The second large NoPE interval on the perturbed clock. Round-to-round differences may reflect cache/TLB state, scheduling, or the probe itself; they are not a production speedup or slowdown.",
+    },
+    "r1_rope": {
+        "short_label": "Round 1 · RoPE gather/store",
+        "scope": "Prepare selected records 32–63",
+        "family": "rope",
+        "what_happens": "WG2 gathers and stages the cached positional field for the second 32 records, completing the 64-record tile's RoPE-bearing K data.",
+        "data_movement": "Reads 64 BF16 positional values (128 bytes) per selected record and writes them unchanged into shared memory.",
+        "share_meaning": "The relative mean share of second-round positional-field gathering on the perturbed Gen9 beat.",
+    },
+    "publish": {
+        "short_label": "Fence, validity, K-ready publish",
+        "scope": "Make the complete 64-record tile consumable",
+        "family": "coordination",
+        "what_happens": "After both rounds, WG2 issues the shared-memory visibility fence, writes validity flags for selected indices, lane 0 performs its local K-ready barrier arrival, and the code flips the rotating buffer phase.",
+        "data_movement": "No new bulk KV payload is gathered. This phase orders and publishes the shared data already written so WG0 and WG1 can safely consume it.",
+        "share_meaning": "The perturbed mean share ending after lane 0's own K-ready arrival. E13 is not proof that every producer arrival completed or that consumers started or finished QK, softmax, or PV.",
+    },
+}
+
+WG2_MECHANISM_FAMILY_LABELS = {
+    "nope": "NoPE gather/dequant",
+    "address_index_scales": "Address/index/scales",
+    "rope": "RoPE gather/store",
+    "coordination": "Buffer wait + publish",
+}
+
 WG2_CUMULATIVE_SCHEMA = (
     "flashmla-wg2-single-cta-cumulative-axis-analysis/v1"
 )
@@ -950,6 +1024,7 @@ def load_rejected_gen9_mechanistic_shape(path: Path) -> dict[str, Any]:
                 "start_event_id": start_event,
                 "end_event_id": end_event,
                 "sample_count": 300,
+                **WG2_MECHANISM_EXPLANATIONS[key],
             }
         )
 
@@ -980,6 +1055,23 @@ def load_rejected_gen9_mechanistic_shape(path: Path) -> dict[str, Any]:
     ):
         raise ValueError(f"{path}: normalized Gen9 shares do not close to 100 percent")
 
+    family_shares = []
+    for family, label in WG2_MECHANISM_FAMILY_LABELS.items():
+        share = sum(
+            item["normalized_share_pct"]
+            for item in normalized_segments
+            if item["family"] == family
+        )
+        family_shares.append(
+            {"key": family, "label": label, "normalized_share_pct": share}
+        )
+    if not math.isclose(
+        sum(item["normalized_share_pct"] for item in family_shares),
+        100.0,
+        abs_tol=1e-9,
+    ):
+        raise ValueError(f"{path}: normalized Gen9 family shares do not close")
+
     compile_evidence = source.get("compile_evidence") or {}
     trace_symbol = compile_evidence.get("trace_symbol") or {}
     normal_symbol = compile_evidence.get("normal_symbol") or {}
@@ -997,8 +1089,29 @@ def load_rejected_gen9_mechanistic_shape(path: Path) -> dict[str, Any]:
             for item in repeat_overheads
         ],
         "samples": 300,
+        "selected_context": {
+            "partition": 1,
+            "warpgroup": 2,
+            "lane_in_warpgroup": 0,
+            "tile_ordinal": 14,
+            "cta_tile_count": 24,
+            "event_span": "E0 TILE_BEGIN to E13 K_READY_SIGNAL_DONE_TILE_END",
+        },
         "normalization": "share_of_sum_of_pooled_direct_phase_means_on_perturbed_clock",
+        "normalization_explanation": {
+            "denominator": "The denominator is the pooled E0-to-E13 mean for Gen9's selected partition-1, WG2 lane-0, ordinal-14 beat inside a non-straggler 24-tile CTA. It is defined as 100% for this inset only—not the whole kernel, the critical CTA, the 29 producer beats, or their 91.456-microsecond union.",
+            "why_means_close": "Every sample partitions the same event-0-to-event-13 beat into eight adjacent intervals with exact integer-nanosecond closure. Arithmetic means preserve addition, so the eight pooled phase means sum to the pooled whole-beat mean and their shares sum to 100%.",
+            "why_not_medians": "A separate median for each phase can come from a different sample. Marginal medians are not additive, so their sum need not equal the median whole beat; they are unsuitable for a closed composition bar.",
+            "not_the_denominator": "The denominator is not the accepted approximately 3-microsecond outer beat, the direct 91.456-microsecond 29-window union, or the approximately 103-microsecond main-kernel duration.",
+        },
+        "two_round_geometry": {
+            "tile_records": 64,
+            "round_records": 32,
+            "rounds": 2,
+            "explanation": "On this H64 path, WG2's four producer warps prepare one 64-record tile in two 32-record rounds. Each round performs address/index/scale preparation, then NoPE gather/dequant, then RoPE gather/store. The plotted round difference is observed only on the perturbed clock; cache/TLB state, scheduling, and probe effects can all contribute, so it is not evidence that either round is intrinsically faster.",
+        },
         "segments": normalized_segments,
+        "family_shares": family_shares,
         "shares_close_pct": sum(
             item["normalized_share_pct"] for item in normalized_segments
         ),
@@ -1006,7 +1119,42 @@ def load_rejected_gen9_mechanistic_shape(path: Path) -> dict[str, Any]:
         "compile_resources_match_normal": trace_symbol == normal_symbol,
         "absolute_phase_us_available_to_page": False,
         "production_clock_rescaling_allowed": False,
-        "interpretation": "This inset preserves event order and dimensionless phase shape only. It is not an accepted production-time decomposition and is neither rescaled nor observer-corrected.",
+        "observer_boundary": {
+            "invalidates": [
+                "Absolute phase durations and any conversion of these shares into production microseconds.",
+                "Claims that production spends an exact percentage in NoPE, RoPE, indexing, waiting, or publishing.",
+                "Multiplying a segment share by the accepted outer beat, the 91.456-microsecond union, or the main-kernel duration.",
+                "Interpreting the round-0 versus round-1 difference as an intrinsic speedup, slowdown, cache effect, or production asymmetry.",
+            ],
+            "still_supports": [
+                "The source order: address/index/scales, optional buffer wait, NoPE gather/dequant, RoPE gather/store, second round, then fence/validity/publish.",
+                "A qualitative optimization hypothesis: NoPE gather/dequant is the largest relative component on the instrumented path, followed by address/index/scale preparation.",
+                "Direct same-launch event ordering and exact phase-to-whole closure for all 300 perturbed samples.",
+            ],
+        },
+        "glossary": [
+            {
+                "term": "WG2",
+                "definition": "The 128-thread producer warpgroup. It follows sparse addresses and prepares the next 64-record K/V tile while WG0 and WG1 consume other pipeline work.",
+            },
+            {
+                "term": "NoPE",
+                "definition": "The non-positional MLA latent. For each selected V32 cache record, WG2 gathers 512 FP8 values, applies four scales, converts them to BF16, and stages them for K/V use.",
+            },
+            {
+                "term": "RoPE field",
+                "definition": "The cached positional part used by QK: 64 BF16 values, or 128 bytes, per selected record. This producer phase loads and stages that field; it does not apply a new rotary transform.",
+            },
+            {
+                "term": "K-buffer wait",
+                "definition": "A transaction-barrier wait before WG2 reuses a rotating shared-memory K/V slot. The wait ends only after consumer warpgroups release that slot.",
+            },
+            {
+                "term": "Fence + publish",
+                "definition": "A shared-memory visibility fence, validity-flag write, and K-ready barrier arrival. The E13 timestamp is lane 0 after its own arrival, not a timestamp proving all producer arrivals or later consumer work are complete.",
+            },
+        ],
+        "interpretation": "This inset preserves event order and a dimensionless phase-shape hypothesis only. It is not an accepted production-time decomposition and is neither rescaled nor observer-corrected.",
     }
 
 
