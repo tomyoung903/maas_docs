@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Evidence-backed TTFT, queueing, topology, and ideal KV-cache audit for GLM-5.2 real-trace prefill on GB300 PP4 versus H200 PP8.">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="report.css">
+  <title>GLM-5.2 Prefill Audit — GB300 PP4 vs H200 PP8</title>
+</head>
+<body>
+  <nav class="topbar" aria-label="Pack navigation">
+    <div class="brand">MaaS · Prefill systems audit</div>
+    <div class="toplinks"><a href="../glm52-europe-h200-pp8-trace-18m/">Original H200 report</a><a href="evidence.json">Evidence JSON</a></div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Equal real-trace prefix · one-token prefill · measured systems, not a PP-only A/B</p>
+      <h1>GB300 PP4 finishes the prefix 1.625× faster—while median internal prefill is 18.2% slower.</h1>
+      <p class="lede">That is not a contradiction. The end-to-end gain is dominated by a much smaller saturated queue. This page reconstructs the clocks, the closed-loop load generator, and the workload’s true infinite-capacity cache ceiling.</p>
+      <div class="badges">
+        <span class="badge">GB300: NVFP4 checkpoint + FP8 KV</span>
+        <span class="badge">one pod · PP4 · 4 GPUs</span>
+        <span class="badge">H200: FP8 checkpoint + FP8 KV</span>
+        <span class="badge">one pod · PP8 · 8 GPUs</span>
+      </div>
+      <div class="hero-metrics">
+        <div class="hero-metric"><span class="value">1.625×</span><span class="label">equal-prefix completion-span speedup</span></div>
+        <div class="hero-metric"><span class="value">3.544M</span><span class="label">GB300 uncached prompt tokens/min</span></div>
+        <div class="hero-metric"><span class="value">82.412%</span><span class="label">ideal infinite-cache hit, first 8,137</span></div>
+        <div class="hero-metric"><span class="value">+18.2%</span><span class="label">GB300 internal-TTFT P50 vs H200</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-grid">
+    <aside class="overview" aria-label="Page contents">
+      <strong>On this page</strong>
+      <a href="#answer">Direct answer</a>
+      <a href="#systems">Systems</a>
+      <a href="#clocks">TTFT clocks</a>
+      <a href="#load">Load generator</a>
+      <a href="#comparison">Equal prefix</a>
+      <a href="#cache">Ideal KV cache</a>
+      <a href="#claim">18.2% audit</a>
+      <a href="#evidence">Evidence</a>
+    </aside>
+
+    <main>
+      <section id="answer" class="reveal">
+        <h2>Direct answers</h2>
+        <p class="section-lede">The precision, topology, TTFT source, queue behavior, cache ceiling, and disputed latency sentence all have separate answers.</p>
+        <div class="grid-3">
+          <article class="card"><p class="kicker">Precision</p><span class="big">NVFP4 + FP8 KV</span><p>The GB300 model checkpoint and weight path were NVFP4 (<code>modelopt_fp4</code>); its KV cache was FP8 E4M3. Calling the whole run simply “FP8” would be wrong.</p></article>
+          <article class="card"><p class="kicker">Topology</p><span class="big">PP4, one pod</span><p>Four GB300 GPUs hosted four pipeline stages in one standalone pod. The reference was PP8 in one pod on eight H200s.</p></article>
+          <article class="card"><p class="kicker">Full-window ideal cache</p><span class="big">82.412%</span><p>The observed 80.154% becomes 82.412% under the offline, sequential, infinite-capacity model: a 2.258-point gap, not a jump to 100%.</p></article>
+        </div>
+        <div class="callout good"><strong>The “18.2% slower” sentence is numerically true but needs narrower wording.</strong> It refers to internal-TTFT P50 on the equal first 4,810 requests. Mean internal TTFT was +15.1%; P90 was +17.2%; P99 was actually 16.7% faster. Queue reduction is the dominant observed mean component, but the experiment is not causal proof that PP4 itself produced it.</div>
+      </section>
+
+      <section id="systems" class="reveal">
+        <h2>What was actually run</h2>
+        <p class="section-lede">Both were direct, standalone, one-token chat replays over the same filtered source. They were not identical machines with only pipeline depth changed.</p>
+        <div class="grid-2">
+          <article class="card system">
+            <div class="title"><div><p class="kicker">Reference</p><span class="big">8 × H200 · PP8</span></div><span class="precision-pill">FP8 weights</span></div>
+            <p>One pod, TP1 / DP1 / PP8, FP8 checkpoint, FP8 E4M3 KV, 8,192-token prefill chunks, maximum 48 running requests.</p>
+            <div class="pipeline" aria-label="Eight H200 pipeline stages"><span class="stage">P0</span><span class="arrow">→</span><span class="stage">P1</span><span class="arrow">→</span><span class="stage">P2</span><span class="arrow">→</span><span class="stage">P3</span><span class="arrow">→</span><span class="stage">P4</span><span class="arrow">→</span><span class="stage">P5</span><span class="arrow">→</span><span class="stage">P6</span><span class="arrow">→</span><span class="stage">P7</span></div>
+          </article>
+          <article class="card system gb">
+            <div class="title"><div><p class="kicker">Current</p><span class="big">4 × GB300 · PP4</span></div><span class="precision-pill">NVFP4 weights</span></div>
+            <p>One pod, TP1 / DP1 / PP4, NVFP4 checkpoint, FP8 E4M3 KV, 32,768-token prefill chunks, maximum 80 running requests.</p>
+            <div class="pipeline" aria-label="Four GB300 pipeline stages"><span class="stage">P0</span><span class="arrow">→</span><span class="stage">P1</span><span class="arrow">→</span><span class="stage">P2</span><span class="arrow">→</span><span class="stage">P3</span></div>
+          </article>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Dimension</th><th>H200 reference</th><th>GB300 current</th><th>Comparison consequence</th></tr></thead>
+          <tbody>
+            <tr><th>Checkpoint / compute path</th><td>FP8</td><td>NVFP4</td><td>Not a precision-controlled comparison</td></tr>
+            <tr><th>KV cache</th><td>FP8 E4M3</td><td>FP8 E4M3</td><td>Common cache element precision</td></tr>
+            <tr><th>Pipeline</th><td>PP8, eight GPUs</td><td>PP4, four GPUs</td><td>Different stage depth and device count</td></tr>
+            <tr><th>Prefill chunk</th><td class="num">8,192</td><td class="num">32,768</td><td>Different batching/chunk scheduling</td></tr>
+            <tr><th>Maximum running</th><td class="num">48</td><td class="num">80</td><td>Directly changes queue/service interaction</td></tr>
+            <tr><th>Client cap</th><td class="num">80 in flight</td><td class="num">80 in flight</td><td>Common closed-loop offered backlog</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout warn"><strong>Scope boundary.</strong> The result is a system comparison: H200/FP8/PP8/8K/48 versus GB300/NVFP4/PP4/32K/80. It cannot isolate the effect of PP4 versus PP8.</div>
+      </section>
+
+      <section id="clocks" class="reveal">
+        <h2>Where each TTFT clock starts and stops</h2>
+        <p class="section-lede">Client TTFT did not include prefill from a prior phase, and it did not start when the source row was read. It began only after the HTTP request headers were sent.</p>
+        <div class="clockline" aria-label="Request timing sequence">
+          <div class="clock admission"><b>Source ready</b>Request body rendered and waiting for a client slot.</div>
+          <div class="clock admission"><b>Semaphore admit</b>One of 80 client in-flight slots is acquired.</div>
+          <div class="clock"><b>Headers sent</b>Client TTFT begins at the aiohttp trace callback.</div>
+          <div class="clock queue"><b>Server queue</b>Dispatch and scheduler backlog before model-forward entry.</div>
+          <div class="clock internal"><b>Forward entry</b>Internal TTFT begins; queue is excluded.</div>
+          <div class="clock internal"><b>Token CPU-visible</b>Prefill-finished timestamp ends internal TTFT.</div>
+          <div class="clock"><b>First SSE token</b>Client observes an output-bearing delta; client TTFT ends.</div>
+        </div>
+        <div class="equation-block" aria-label="Timing definitions">
+          <div class="equation-row"><span class="math-var sym-client">t<sub>client</sub></span><span>=</span><span><span class="math-var">t<sub>first SSE token</sub></span> − <span class="math-var">t<sub>headers sent</sub></span></span></div>
+          <div class="equation-row"><span class="math-var sym-internal">t<sub>internal</sub></span><span>=</span><span><span class="math-var">t<sub>prefill finished</sub></span> − <span class="math-var">t<sub>forward entry</sub></span></span></div>
+          <div class="equation-row"><span class="math-var sym-client">t<sub>client</sub></span><span>≈</span><span><span class="math-var sym-queue">t<sub>queue</sub></span> + <span class="math-var sym-internal">t<sub>internal</sub></span> + <span class="math-var">t<sub>dispatch / response remainder</sub></span></span></div>
+        </div>
+        <p class="fine">The last relationship is exact for means after defining the remainder, but percentile components are not additive. The first-output fallback uses the first SSE data event only when the sampled token has an empty text delta.</p>
+      </section>
+
+      <section id="load" class="reveal">
+        <h2>How the queue was driven</h2>
+        <p class="section-lede">The test used a bounded-backlog, closed-loop client. It held at most 80 admitted requests in flight; it did not hold the SGLang queue at a fixed length and did not tune load to a TTFT target.</p>
+        <div id="queue-machine" class="queue-machine">
+          <div><p class="kicker">Client semaphore</p><div class="slot-bank" aria-label="Eighty in-flight slots"><span class="slot" style="--i:0" aria-hidden="true"></span><span class="slot" style="--i:1" aria-hidden="true"></span><span class="slot" style="--i:2" aria-hidden="true"></span><span class="slot" style="--i:3" aria-hidden="true"></span><span class="slot" style="--i:4" aria-hidden="true"></span><span class="slot" style="--i:5" aria-hidden="true"></span><span class="slot" style="--i:6" aria-hidden="true"></span><span class="slot" style="--i:7" aria-hidden="true"></span><span class="slot" style="--i:8" aria-hidden="true"></span><span class="slot" style="--i:9" aria-hidden="true"></span><span class="slot" style="--i:10" aria-hidden="true"></span><span class="slot" style="--i:11" aria-hidden="true"></span><span class="slot" style="--i:12" aria-hidden="true"></span><span class="slot" style="--i:13" aria-hidden="true"></span><span class="slot" style="--i:14" aria-hidden="true"></span><span class="slot" style="--i:15" aria-hidden="true"></span><span class="slot" style="--i:16" aria-hidden="true"></span><span class="slot" style="--i:17" aria-hidden="true"></span><span class="slot" style="--i:18" aria-hidden="true"></span><span class="slot" style="--i:19" aria-hidden="true"></span><span class="slot" style="--i:20" aria-hidden="true"></span><span class="slot" style="--i:21" aria-hidden="true"></span><span class="slot" style="--i:22" aria-hidden="true"></span><span class="slot" style="--i:23" aria-hidden="true"></span><span class="slot" style="--i:24" aria-hidden="true"></span><span class="slot" style="--i:25" aria-hidden="true"></span><span class="slot" style="--i:26" aria-hidden="true"></span><span class="slot" style="--i:27" aria-hidden="true"></span><span class="slot" style="--i:28" aria-hidden="true"></span><span class="slot" style="--i:29" aria-hidden="true"></span><span class="slot" style="--i:30" aria-hidden="true"></span><span class="slot" style="--i:31" aria-hidden="true"></span><span class="slot" style="--i:32" aria-hidden="true"></span><span class="slot" style="--i:33" aria-hidden="true"></span><span class="slot" style="--i:34" aria-hidden="true"></span><span class="slot" style="--i:35" aria-hidden="true"></span><span class="slot" style="--i:36" aria-hidden="true"></span><span class="slot" style="--i:37" aria-hidden="true"></span><span class="slot" style="--i:38" aria-hidden="true"></span><span class="slot" style="--i:39" aria-hidden="true"></span><span class="slot" style="--i:40" aria-hidden="true"></span><span class="slot" style="--i:41" aria-hidden="true"></span><span class="slot" style="--i:42" aria-hidden="true"></span><span class="slot" style="--i:43" aria-hidden="true"></span><span class="slot" style="--i:44" aria-hidden="true"></span><span class="slot" style="--i:45" aria-hidden="true"></span><span class="slot" style="--i:46" aria-hidden="true"></span><span class="slot" style="--i:47" aria-hidden="true"></span><span class="slot" style="--i:48" aria-hidden="true"></span><span class="slot" style="--i:49" aria-hidden="true"></span><span class="slot" style="--i:50" aria-hidden="true"></span><span class="slot" style="--i:51" aria-hidden="true"></span><span class="slot" style="--i:52" aria-hidden="true"></span><span class="slot" style="--i:53" aria-hidden="true"></span><span class="slot" style="--i:54" aria-hidden="true"></span><span class="slot" style="--i:55" aria-hidden="true"></span><span class="slot" style="--i:56" aria-hidden="true"></span><span class="slot" style="--i:57" aria-hidden="true"></span><span class="slot" style="--i:58" aria-hidden="true"></span><span class="slot" style="--i:59" aria-hidden="true"></span><span class="slot" style="--i:60" aria-hidden="true"></span><span class="slot" style="--i:61" aria-hidden="true"></span><span class="slot" style="--i:62" aria-hidden="true"></span><span class="slot" style="--i:63" aria-hidden="true"></span><span class="slot" style="--i:64" aria-hidden="true"></span><span class="slot" style="--i:65" aria-hidden="true"></span><span class="slot" style="--i:66" aria-hidden="true"></span><span class="slot" style="--i:67" aria-hidden="true"></span><span class="slot" style="--i:68" aria-hidden="true"></span><span class="slot" style="--i:69" aria-hidden="true"></span><span class="slot" style="--i:70" aria-hidden="true"></span><span class="slot" style="--i:71" aria-hidden="true"></span><span class="slot" style="--i:72" aria-hidden="true"></span><span class="slot" style="--i:73" aria-hidden="true"></span><span class="slot" style="--i:74" aria-hidden="true"></span><span class="slot" style="--i:75" aria-hidden="true"></span><span class="slot" style="--i:76" aria-hidden="true"></span><span class="slot" style="--i:77" aria-hidden="true"></span><span class="slot" style="--i:78" aria-hidden="true"></span><span class="slot" style="--i:79" aria-hidden="true"></span></div><button id="queue-toggle" class="tiny-button" type="button">Pause animation</button></div>
+          <div class="machine-arrow">→</div>
+          <div class="worker-box"><strong>One PP worker pod</strong><br>dynamic scheduler queue<br><span class="fine" style="color:#d9e9ef">next source row enters when one request completes</span></div>
+        </div>
+        <div class="grid-3">
+          <article class="card"><p class="kicker">Client cap</p><span class="big">80</span><p>Initial burst fills up to 80 slots. Each completion releases exactly one slot for the next source-order row.</p></article>
+          <article class="card"><p class="kicker">Admission wait P50</p><span class="big">3.47 ms</span><p>This wait happened before headers were sent and is therefore excluded from reported client TTFT.</p></article>
+          <article class="card"><p class="kicker">Observed queue peak</p><span class="big">79</span><p>The queue varied with service completions. It was not clamped; last-ten-bin sampled peaks averaged 74.3.</p></article>
+        </div>
+        <div class="callout"><strong>Why client TTFT remained finite.</strong> The closed loop cannot create more than 80 admitted requests. It keeps the worker saturated, but completions continuously recycle slots. The resulting TTFT is a saturated-capacity latency, not production-cadence latency and not an SLO-controlled latency.</div>
+      </section>
+
+      <section id="comparison" class="reveal">
+        <h2>Equal first 4,810 requests</h2>
+        <p class="section-lede">Both systems processed exactly 206,637,573 prompt tokens from the same contiguous source prefix. The GB300 run completed that prefix in 673.928 seconds versus 1095.280 seconds.</p>
+        <div class="metric-toggle" aria-label="Latency statistic">
+          <button class="active" type="button" data-latency-stat="p50">P50</button>
+          <button type="button" data-latency-stat="mean">Mean</button>
+          <button type="button" data-latency-stat="p90">P90</button>
+          <button type="button" data-latency-stat="p99">P99</button>
+        </div>
+        <div id="latency-bars" class="bar-chart" aria-live="polite"></div>
+        <div class="bar-key"><span style="--key:var(--purple)">H200 PP8</span><span style="--key:var(--green)">GB300 PP4</span></div>
+        <p id="latency-caption" class="fine"></p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Metric</th><th class="num">H200 PP8</th><th class="num">GB300 PP4</th><th class="num">GB300 change</th></tr></thead>
+          <tbody>
+            <tr><th>Client TTFT P50</th><td class="num">17.194 s</td><td class="num">10.715 s</td><td class="num">-37.7%</td></tr>
+            <tr><th>Queue P50</th><td class="num">14.688 s</td><td class="num">7.591 s</td><td class="num">-48.3%</td></tr>
+            <tr><th>Internal TTFT P50</th><td class="num">1.900 s</td><td class="num">2.246 s</td><td class="num">+18.2%</td></tr>
+            <tr><th>Internal TTFT P99</th><td class="num">4.604 s</td><td class="num">3.835 s</td><td class="num">-16.7%</td></tr>
+            <tr><th>Uncached TPM</th><td class="num">2.107M</td><td class="num">3.544M</td><td class="num">+68.2%</td></tr>
+            <tr><th>Uncached TPM / GPU</th><td class="num">0.263M</td><td class="num">0.886M</td><td class="num">3.364×</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="cache" class="reveal">
+        <h2>Infinite cache still tops out near 82%</h2>
+        <p class="section-lede">Capacity can preserve reusable prefixes; it cannot create shared prefixes that are absent from the request stream. The calculator tokenized every request with the pinned GLM-5.2 runtime contract and simulated an unbounded 64-token-page radix namespace.</p>
+        <div class="page-demo" aria-label="Page-aligned ideal prefix matching">
+          <div class="token-page hit" data-label="page 1 · hit"></div><span class="page-arrow">→</span>
+          <div class="token-page hit" data-label="page 2 · hit"></div><span class="page-arrow">→</span>
+          <div class="token-page hit" data-label="page 3 · hit"></div><span class="page-arrow">→</span>
+          <div class="token-page miss" data-label="first miss"></div><span class="page-arrow">→</span>
+          <div class="token-page miss" data-label="new suffix"></div><span class="page-arrow">→</span>
+          <div class="token-page tail" data-label="tail"></div>
+        </div>
+        <p class="fine">Lookup stops at the first missing 64-token page. At most input length minus one is eligible, matching SGLang’s logits requirement. After each request, all full prompt pages are inserted before the next source-order lookup.</p>
+        <div class="cache-bars">
+          <div class="cache-row"><strong>GB300 · first 8,137</strong><div class="cache-track"><div class="cache-fill" style="width:80.1541%"></div><div class="cache-marker" style="left:82.4123%"></div></div><span class="num">80.154%</span></div>
+          <div class="cache-row"><strong>GB300 · first 4,810</strong><div class="cache-track"><div class="cache-fill" style="width:80.7338%"></div><div class="cache-marker" style="left:82.8314%"></div></div><span class="num">80.734%</span></div>
+          <div class="cache-row"><strong>H200 · first 4,810</strong><div class="cache-track"><div class="cache-fill" style="width:81.3822%"></div><div class="cache-marker" style="left:82.8314%"></div></div><span class="num">81.382%</span></div>
+        </div>
+        <div class="grid-3">
+          <article class="card"><p class="kicker">First 4,000 ideal</p><span class="big">82.249%</span><p>140,063,808 reusable tokens out of 170,292,171.</p></article>
+          <article class="card"><p class="kicker">First 4,810 ideal</p><span class="big">82.831%</span><p>GB300 was 2.098 points below; H200 was 1.449 points below.</p></article>
+          <article class="card"><p class="kicker">First 8,137 ideal</p><span class="big">82.412%</span><p>Observed GB300 lost 8,150,336 cacheable tokens relative to this upper bound.</p></article>
+        </div>
+        <div class="callout warn"><strong>Do not call the entire ideal-minus-observed gap “eviction.”</strong> The ideal model commits each request before the next lookup. The real replay had up to 80 concurrent requests, so later requests can arrive before earlier shared KV is committed. Eviction, cache policy, cache movement, and concurrency all live inside the aggregate 2.258-point full-window gap.</div>
+      </section>
+
+      <section id="claim" class="reveal">
+        <h2>Audit of the 18.2% sentence</h2>
+        <p class="section-lede">The median arithmetic is correct. The earlier causal-sounding wording was too strong.</p>
+        <h3>Mean decomposition, where components are additive</h3>
+        <div class="decomp">
+          <div class="decomp-row"><strong>H200 PP8</strong><div class="decomp-track"><span class="seg queue" style="width:85.184%">queue 15.37</span><span class="seg internal" style="width:11.267%">internal 2.03</span><span class="seg other" style="width:3.548%">other</span></div><span class="num">18.045 s</span></div>
+          <div class="decomp-row"><strong>GB300 PP4</strong><div class="decomp-track"><span class="seg queue" style="width:70.663%">queue 7.85</span><span class="seg internal" style="width:21.070%">internal 2.34</span><span class="seg other" style="width:8.267%">other</span></div><span class="num">11.104 s</span></div>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Mean component</th><th class="num">H200</th><th class="num">GB300</th><th class="num">GB300 − H200</th></tr></thead>
+          <tbody>
+            <tr><th>Queue</th><td class="num">15.372 s</td><td class="num">7.846 s</td><td class="num">-7.526 s</td></tr>
+            <tr><th>Internal prefill</th><td class="num">2.033 s</td><td class="num">2.340 s</td><td class="num">+0.306 s</td></tr>
+            <tr><th>Dispatch / response remainder</th><td class="num">0.640 s</td><td class="num">0.918 s</td><td class="num">+0.278 s</td></tr>
+            <tr><th>Client TTFT</th><td class="num">18.045 s</td><td class="num">11.104 s</td><td class="num">-6.942 s</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout good"><strong>Defensible rewrite.</strong> “On the equal first-4,810-request prefix, GB300 client TTFT fell mainly alongside a 7.526-second reduction in mean queue time; mean internal prefill was 0.306 seconds slower and the residual was 0.278 seconds larger. This is a descriptive decomposition of two differently configured saturated systems, not a causal PP-only attribution.”</div>
+        <p>The queue decrease is larger than the net 6.942-second client improvement because slower internal work and a larger remainder offset part of it. This supports “queue was the dominant observed component.” It does not prove why the queue changed: service capacity, maximum-running limit, chunking, GPU generation, precision, pipeline depth, and cache outcomes all differ.</p>
+      </section>
+
+      <section id="evidence" class="reveal">
+        <h2>Evidence and validation boundary</h2>
+        <p class="section-lede">The report is backed by scalar, privacy-safe artifacts. No prompt, message, request body, token IDs, output text, or raw identifiers are published.</p>
+        <ul class="checks">
+          <li>8,137 GB300 requests issued, completed, and succeeded; zero retries, failures, or drain cancellations.</li>
+          <li>Every GB300 request joined to exact structured first-token timing and one consistent timing row from PP0 through PP3.</li>
+          <li>Zero decode batches in the measured request window; every response produced exactly one output token.</li>
+          <li>The ideal-cache tokenizer reproduced exactly 206,637,573 prompt tokens for 4,810 rows and 360,925,156 for 8,137 rows.</li>
+          <li>Filtered source SHA-256: <code>9cb06790675e6cd3b3cf1fcca8232f82f36d5002a86351c6510c1c3bb8c77acb</code>.</li>
+        </ul>
+        <ul class="evidence-list">
+          <li><a href="evidence.json">Combined evidence JSON</a></li>
+          <li><a href="ideal-cache-4810-summary.json">Ideal cache · 4,810 summary</a></li>
+          <li><a href="ideal-cache-8137-summary.json">Ideal cache · 8,137 summary</a></li>
+          <li><a href="../glm52-europe-h200-pp8-trace-18m/">Original H200 18-minute report</a></li>
+        </ul>
+        <div class="callout warn"><strong>Known GB300 runtime caveats.</strong> The standalone run omitted Dynamo registration, prefill/decode disaggregation, Mooncake storage, and a separate decode worker. FP8 KV scale factors were absent and defaulted to 1.0; the DSA indexer HiCache JIT path reported unsupported element size 576. These do not invalidate the measured direct-worker result, but they narrow production equivalence.</div>
+      </section>
+    </main>
+  </div>
+  <footer>Generated 2026-08-15T07:49:17.295834+00:00. Public artifacts are aggregate-only. Percentiles use linear interpolation at the default NumPy / R-7 position.</footer>
+  <script src="report.js"></script>
+</body>
+</html>
