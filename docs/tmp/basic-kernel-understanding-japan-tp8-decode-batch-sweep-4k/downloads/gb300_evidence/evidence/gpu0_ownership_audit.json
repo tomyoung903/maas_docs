@@ -1,0 +1,5508 @@
+{
+  "schema_version": "glm52-gb300-gpu0-ownership-audit-v1",
+  "generated_at": "2026-08-15T08:32:02.007491+00:00",
+  "status": "pass",
+  "input_event_count": 3202,
+  "owned_event_count": 3202,
+  "unique_owned_event_count": 3202,
+  "input_duration_ns": 30812339,
+  "owned_duration_ns": 30812339,
+  "duplicate_event_ids": [],
+  "unowned_event_ids": [],
+  "extra_event_ids": [],
+  "anchor_audit": {
+    "expected_layers": 78,
+    "candidate_patterns": [
+      {
+        "method": "regex",
+        "label": "q-latent RMSNorm with 2048-wide symbol evidence",
+        "pattern": "rmsnorm.*(?:o2048|(?:^|[^0-9])2048(?:[^0-9]|$))",
+        "match_count": 78,
+        "first_ordinals": [
+          10,
+          53,
+          96,
+          139,
+          177,
+          215,
+          253,
+          307
+        ]
+      },
+      {
+        "method": "regex",
+        "label": "q-a/q-lora named RMSNorm",
+        "pattern": "(?:q[_:. -]?(?:a|lora)|query[_:. -]?latent).*rmsnorm|rmsnorm.*(?:q[_:. -]?(?:a|lora)|query[_:. -]?latent)",
+        "match_count": 0,
+        "first_ordinals": []
+      }
+    ],
+    "valid_distinct_match_sets": 1,
+    "selected": {
+      "methods": [
+        {
+          "method": "regex",
+          "label": "q-latent RMSNorm with 2048-wide symbol evidence",
+          "pattern": "rmsnorm.*(?:o2048|(?:^|[^0-9])2048(?:[^0-9]|$))",
+          "match_count": 78,
+          "first_ordinals": [
+            10,
+            53,
+            96,
+            139,
+            177,
+            215,
+            253,
+            307
+          ]
+        }
+      ],
+      "event_ids": [
+        1363,
+        1535,
+        1707,
+        1877,
+        2025,
+        2173,
+        2324,
+        2535,
+        2680,
+        2828,
+        2982,
+        3189,
+        3338,
+        3491,
+        3640,
+        3855,
+        4002,
+        4153,
+        4298,
+        4512,
+        4659,
+        4805,
+        4955,
+        5167,
+        5313,
+        5461,
+        5613,
+        5820,
+        5969,
+        6120,
+        6265,
+        6477,
+        6625,
+        6776,
+        6922,
+        7133,
+        7283,
+        7430,
+        7576,
+        7792,
+        7939,
+        8088,
+        8235,
+        8448,
+        8592,
+        8740,
+        8888,
+        9101,
+        9250,
+        9400,
+        9544,
+        9757,
+        9905,
+        10053,
+        10202,
+        10414,
+        10562,
+        10711,
+        10858,
+        11073,
+        11221,
+        11364,
+        11512,
+        11726,
+        11873,
+        12021,
+        12170,
+        12380,
+        12529,
+        12676,
+        12827,
+        13041,
+        13187,
+        13338,
+        13480,
+        13694,
+        13841,
+        13990
+      ],
+      "ordinals": [
+        10,
+        53,
+        96,
+        139,
+        177,
+        215,
+        253,
+        307,
+        345,
+        383,
+        421,
+        475,
+        513,
+        551,
+        589,
+        643,
+        681,
+        719,
+        757,
+        811,
+        849,
+        887,
+        925,
+        979,
+        1017,
+        1055,
+        1093,
+        1147,
+        1185,
+        1223,
+        1261,
+        1315,
+        1353,
+        1391,
+        1429,
+        1483,
+        1521,
+        1559,
+        1597,
+        1651,
+        1689,
+        1727,
+        1765,
+        1819,
+        1857,
+        1895,
+        1933,
+        1987,
+        2025,
+        2063,
+        2101,
+        2155,
+        2193,
+        2231,
+        2269,
+        2323,
+        2361,
+        2399,
+        2437,
+        2491,
+        2529,
+        2567,
+        2605,
+        2659,
+        2697,
+        2735,
+        2773,
+        2827,
+        2865,
+        2903,
+        2941,
+        2995,
+        3033,
+        3071,
+        3109,
+        3163,
+        3201,
+        3239
+      ],
+      "distinct_kernel_names": [
+        "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0"
+      ]
+    }
+  },
+  "boundary_contract": {
+    "collective_regex": "(?:nccl|all[_]?reduce|reduce[_]?scatter|all[_]?gather|multimem.*(?:reduce|signal)|nvshmem.*(?:reduce|put|signal))",
+    "max_intervening_events_within_one_collective_group": 0,
+    "hidden_norm_regex": "(?:fused[_]?add[_]?rmsnorm|rmsnorm.*(?:o6144|(?:^|[^0-9])6144(?:[^0-9]|$)))",
+    "layer_rule": "q anchor; first logical TP collective ends attention; second ends FFN"
+  },
+  "boundary_audit": [
+    {
+      "layer": 0,
+      "anchor_index": 8,
+      "anchor_event_id": 1363,
+      "anchor_ordinal": 10,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 51,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 40,
+          "end_index": 41,
+          "event_ids": [
+            1488,
+            1493
+          ],
+          "ordinals": [
+            42,
+            43
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 47,
+          "end_index": 48,
+          "event_ids": [
+            1517,
+            1522
+          ],
+          "ordinals": [
+            49,
+            50
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 1,
+      "anchor_index": 51,
+      "anchor_event_id": 1535,
+      "anchor_ordinal": 53,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 94,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 83,
+          "end_index": 84,
+          "event_ids": [
+            1667,
+            1670
+          ],
+          "ordinals": [
+            85,
+            86
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 90,
+          "end_index": 91,
+          "event_ids": [
+            1690,
+            1694
+          ],
+          "ordinals": [
+            92,
+            93
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 2,
+      "anchor_index": 94,
+      "anchor_event_id": 1707,
+      "anchor_ordinal": 96,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 137,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 126,
+          "end_index": 127,
+          "event_ids": [
+            1834,
+            1838
+          ],
+          "ordinals": [
+            128,
+            129
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 133,
+          "end_index": 134,
+          "event_ids": [
+            1863,
+            1867
+          ],
+          "ordinals": [
+            135,
+            136
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 3,
+      "anchor_index": 137,
+      "anchor_event_id": 1877,
+      "anchor_ordinal": 139,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 174,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 153,
+          "end_index": 154,
+          "event_ids": [
+            1940,
+            1945
+          ],
+          "ordinals": [
+            155,
+            156
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 170,
+          "end_index": 171,
+          "event_ids": [
+            2010,
+            2014
+          ],
+          "ordinals": [
+            173,
+            174
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 4,
+      "anchor_index": 174,
+      "anchor_event_id": 2025,
+      "anchor_ordinal": 177,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 211,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 190,
+          "end_index": 191,
+          "event_ids": [
+            2088,
+            2092
+          ],
+          "ordinals": [
+            193,
+            194
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 207,
+          "end_index": 208,
+          "event_ids": [
+            2156,
+            2160
+          ],
+          "ordinals": [
+            211,
+            212
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 5,
+      "anchor_index": 211,
+      "anchor_event_id": 2173,
+      "anchor_ordinal": 215,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 248,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 227,
+          "end_index": 228,
+          "event_ids": [
+            2236,
+            2240
+          ],
+          "ordinals": [
+            231,
+            232
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 244,
+          "end_index": 245,
+          "event_ids": [
+            2305,
+            2309
+          ],
+          "ordinals": [
+            249,
+            250
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 6,
+      "anchor_index": 248,
+      "anchor_event_id": 2324,
+      "anchor_ordinal": 253,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 301,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 280,
+          "end_index": 281,
+          "event_ids": [
+            2450,
+            2454
+          ],
+          "ordinals": [
+            285,
+            286
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 297,
+          "end_index": 298,
+          "event_ids": [
+            2519,
+            2523
+          ],
+          "ordinals": [
+            303,
+            304
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 7,
+      "anchor_index": 301,
+      "anchor_event_id": 2535,
+      "anchor_ordinal": 307,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 338,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 317,
+          "end_index": 318,
+          "event_ids": [
+            2597,
+            2601
+          ],
+          "ordinals": [
+            323,
+            324
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 334,
+          "end_index": 335,
+          "event_ids": [
+            2664,
+            2668
+          ],
+          "ordinals": [
+            341,
+            342
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 8,
+      "anchor_index": 338,
+      "anchor_event_id": 2680,
+      "anchor_ordinal": 345,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 375,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 354,
+          "end_index": 355,
+          "event_ids": [
+            2744,
+            2748
+          ],
+          "ordinals": [
+            361,
+            362
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 371,
+          "end_index": 372,
+          "event_ids": [
+            2814,
+            2818
+          ],
+          "ordinals": [
+            379,
+            380
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 9,
+      "anchor_index": 375,
+      "anchor_event_id": 2828,
+      "anchor_ordinal": 383,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 412,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 391,
+          "end_index": 392,
+          "event_ids": [
+            2893,
+            2897
+          ],
+          "ordinals": [
+            399,
+            400
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 408,
+          "end_index": 409,
+          "event_ids": [
+            2961,
+            2967
+          ],
+          "ordinals": [
+            417,
+            418
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 10,
+      "anchor_index": 412,
+      "anchor_event_id": 2982,
+      "anchor_ordinal": 421,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 465,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 444,
+          "end_index": 445,
+          "event_ids": [
+            3104,
+            3108
+          ],
+          "ordinals": [
+            453,
+            454
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 461,
+          "end_index": 462,
+          "event_ids": [
+            3172,
+            3178
+          ],
+          "ordinals": [
+            471,
+            472
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 11,
+      "anchor_index": 465,
+      "anchor_event_id": 3189,
+      "anchor_ordinal": 475,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 502,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 481,
+          "end_index": 482,
+          "event_ids": [
+            3254,
+            3258
+          ],
+          "ordinals": [
+            491,
+            492
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 498,
+          "end_index": 499,
+          "event_ids": [
+            3322,
+            3326
+          ],
+          "ordinals": [
+            509,
+            510
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 12,
+      "anchor_index": 502,
+      "anchor_event_id": 3338,
+      "anchor_ordinal": 513,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 539,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 518,
+          "end_index": 519,
+          "event_ids": [
+            3404,
+            3408
+          ],
+          "ordinals": [
+            529,
+            530
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 535,
+          "end_index": 536,
+          "event_ids": [
+            3471,
+            3475
+          ],
+          "ordinals": [
+            547,
+            548
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 13,
+      "anchor_index": 539,
+      "anchor_event_id": 3491,
+      "anchor_ordinal": 551,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 576,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 555,
+          "end_index": 556,
+          "event_ids": [
+            3553,
+            3557
+          ],
+          "ordinals": [
+            567,
+            568
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 572,
+          "end_index": 573,
+          "event_ids": [
+            3621,
+            3625
+          ],
+          "ordinals": [
+            585,
+            586
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 14,
+      "anchor_index": 576,
+      "anchor_event_id": 3640,
+      "anchor_ordinal": 589,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 629,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 608,
+          "end_index": 609,
+          "event_ids": [
+            3766,
+            3770
+          ],
+          "ordinals": [
+            621,
+            622
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 625,
+          "end_index": 626,
+          "event_ids": [
+            3838,
+            3842
+          ],
+          "ordinals": [
+            639,
+            640
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 15,
+      "anchor_index": 629,
+      "anchor_event_id": 3855,
+      "anchor_ordinal": 643,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 666,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 645,
+          "end_index": 646,
+          "event_ids": [
+            3917,
+            3922
+          ],
+          "ordinals": [
+            659,
+            660
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 662,
+          "end_index": 663,
+          "event_ids": [
+            3985,
+            3989
+          ],
+          "ordinals": [
+            677,
+            678
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 16,
+      "anchor_index": 666,
+      "anchor_event_id": 4002,
+      "anchor_ordinal": 681,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 703,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 682,
+          "end_index": 683,
+          "event_ids": [
+            4066,
+            4070
+          ],
+          "ordinals": [
+            697,
+            698
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 699,
+          "end_index": 700,
+          "event_ids": [
+            4134,
+            4138
+          ],
+          "ordinals": [
+            715,
+            716
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 17,
+      "anchor_index": 703,
+      "anchor_event_id": 4153,
+      "anchor_ordinal": 719,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 740,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 719,
+          "end_index": 720,
+          "event_ids": [
+            4215,
+            4219
+          ],
+          "ordinals": [
+            735,
+            736
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 736,
+          "end_index": 737,
+          "event_ids": [
+            4280,
+            4284
+          ],
+          "ordinals": [
+            753,
+            754
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 18,
+      "anchor_index": 740,
+      "anchor_event_id": 4298,
+      "anchor_ordinal": 757,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 793,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 772,
+          "end_index": 773,
+          "event_ids": [
+            4425,
+            4429
+          ],
+          "ordinals": [
+            789,
+            790
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 789,
+          "end_index": 790,
+          "event_ids": [
+            4492,
+            4495
+          ],
+          "ordinals": [
+            807,
+            808
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 19,
+      "anchor_index": 793,
+      "anchor_event_id": 4512,
+      "anchor_ordinal": 811,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 830,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 809,
+          "end_index": 810,
+          "event_ids": [
+            4573,
+            4577
+          ],
+          "ordinals": [
+            827,
+            828
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 826,
+          "end_index": 827,
+          "event_ids": [
+            4645,
+            4648
+          ],
+          "ordinals": [
+            845,
+            846
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 20,
+      "anchor_index": 830,
+      "anchor_event_id": 4659,
+      "anchor_ordinal": 849,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 867,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 846,
+          "end_index": 847,
+          "event_ids": [
+            4720,
+            4724
+          ],
+          "ordinals": [
+            865,
+            866
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 863,
+          "end_index": 864,
+          "event_ids": [
+            4787,
+            4792
+          ],
+          "ordinals": [
+            883,
+            884
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 21,
+      "anchor_index": 867,
+      "anchor_event_id": 4805,
+      "anchor_ordinal": 887,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 904,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 883,
+          "end_index": 884,
+          "event_ids": [
+            4868,
+            4872
+          ],
+          "ordinals": [
+            903,
+            904
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 900,
+          "end_index": 901,
+          "event_ids": [
+            4939,
+            4944
+          ],
+          "ordinals": [
+            921,
+            922
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 22,
+      "anchor_index": 904,
+      "anchor_event_id": 4955,
+      "anchor_ordinal": 925,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 957,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 936,
+          "end_index": 937,
+          "event_ids": [
+            5082,
+            5086
+          ],
+          "ordinals": [
+            957,
+            958
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 953,
+          "end_index": 954,
+          "event_ids": [
+            5148,
+            5152
+          ],
+          "ordinals": [
+            975,
+            976
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 23,
+      "anchor_index": 957,
+      "anchor_event_id": 5167,
+      "anchor_ordinal": 979,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 994,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 973,
+          "end_index": 974,
+          "event_ids": [
+            5228,
+            5232
+          ],
+          "ordinals": [
+            995,
+            996
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 990,
+          "end_index": 991,
+          "event_ids": [
+            5301,
+            5306
+          ],
+          "ordinals": [
+            1013,
+            1014
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 24,
+      "anchor_index": 994,
+      "anchor_event_id": 5313,
+      "anchor_ordinal": 1017,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1031,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1010,
+          "end_index": 1011,
+          "event_ids": [
+            5379,
+            5381
+          ],
+          "ordinals": [
+            1033,
+            1034
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1027,
+          "end_index": 1028,
+          "event_ids": [
+            5445,
+            5450
+          ],
+          "ordinals": [
+            1051,
+            1052
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 25,
+      "anchor_index": 1031,
+      "anchor_event_id": 5461,
+      "anchor_ordinal": 1055,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1068,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1047,
+          "end_index": 1048,
+          "event_ids": [
+            5527,
+            5530
+          ],
+          "ordinals": [
+            1071,
+            1072
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1064,
+          "end_index": 1065,
+          "event_ids": [
+            5596,
+            5600
+          ],
+          "ordinals": [
+            1089,
+            1090
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 26,
+      "anchor_index": 1068,
+      "anchor_event_id": 5613,
+      "anchor_ordinal": 1093,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1121,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1100,
+          "end_index": 1101,
+          "event_ids": [
+            5738,
+            5742
+          ],
+          "ordinals": [
+            1125,
+            1126
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1117,
+          "end_index": 1118,
+          "event_ids": [
+            5805,
+            5809
+          ],
+          "ordinals": [
+            1143,
+            1144
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 27,
+      "anchor_index": 1121,
+      "anchor_event_id": 5820,
+      "anchor_ordinal": 1147,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1158,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1137,
+          "end_index": 1138,
+          "event_ids": [
+            5885,
+            5889
+          ],
+          "ordinals": [
+            1163,
+            1164
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1154,
+          "end_index": 1155,
+          "event_ids": [
+            5957,
+            5961
+          ],
+          "ordinals": [
+            1181,
+            1182
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 28,
+      "anchor_index": 1158,
+      "anchor_event_id": 5969,
+      "anchor_ordinal": 1185,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1195,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1174,
+          "end_index": 1175,
+          "event_ids": [
+            6033,
+            6037
+          ],
+          "ordinals": [
+            1201,
+            1202
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1191,
+          "end_index": 1192,
+          "event_ids": [
+            6106,
+            6110
+          ],
+          "ordinals": [
+            1219,
+            1220
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 29,
+      "anchor_index": 1195,
+      "anchor_event_id": 6120,
+      "anchor_ordinal": 1223,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1232,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1211,
+          "end_index": 1212,
+          "event_ids": [
+            6183,
+            6188
+          ],
+          "ordinals": [
+            1239,
+            1240
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1228,
+          "end_index": 1229,
+          "event_ids": [
+            6245,
+            6251
+          ],
+          "ordinals": [
+            1257,
+            1258
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 30,
+      "anchor_index": 1232,
+      "anchor_event_id": 6265,
+      "anchor_ordinal": 1261,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1285,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1264,
+          "end_index": 1265,
+          "event_ids": [
+            6393,
+            6397
+          ],
+          "ordinals": [
+            1293,
+            1294
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1281,
+          "end_index": 1282,
+          "event_ids": [
+            6462,
+            6468
+          ],
+          "ordinals": [
+            1311,
+            1312
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 31,
+      "anchor_index": 1285,
+      "anchor_event_id": 6477,
+      "anchor_ordinal": 1315,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1322,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1301,
+          "end_index": 1302,
+          "event_ids": [
+            6543,
+            6547
+          ],
+          "ordinals": [
+            1331,
+            1332
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1318,
+          "end_index": 1319,
+          "event_ids": [
+            6610,
+            6616
+          ],
+          "ordinals": [
+            1349,
+            1350
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 32,
+      "anchor_index": 1322,
+      "anchor_event_id": 6625,
+      "anchor_ordinal": 1353,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1359,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1338,
+          "end_index": 1339,
+          "event_ids": [
+            6689,
+            6693
+          ],
+          "ordinals": [
+            1369,
+            1370
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1355,
+          "end_index": 1356,
+          "event_ids": [
+            6755,
+            6759
+          ],
+          "ordinals": [
+            1387,
+            1388
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 33,
+      "anchor_index": 1359,
+      "anchor_event_id": 6776,
+      "anchor_ordinal": 1391,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1396,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1375,
+          "end_index": 1376,
+          "event_ids": [
+            6837,
+            6841
+          ],
+          "ordinals": [
+            1407,
+            1408
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1392,
+          "end_index": 1393,
+          "event_ids": [
+            6909,
+            6913
+          ],
+          "ordinals": [
+            1425,
+            1426
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 34,
+      "anchor_index": 1396,
+      "anchor_event_id": 6922,
+      "anchor_ordinal": 1429,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1449,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1428,
+          "end_index": 1429,
+          "event_ids": [
+            7048,
+            7052
+          ],
+          "ordinals": [
+            1461,
+            1462
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1445,
+          "end_index": 1446,
+          "event_ids": [
+            7116,
+            7120
+          ],
+          "ordinals": [
+            1479,
+            1480
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 35,
+      "anchor_index": 1449,
+      "anchor_event_id": 7133,
+      "anchor_ordinal": 1483,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1486,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1465,
+          "end_index": 1466,
+          "event_ids": [
+            7198,
+            7202
+          ],
+          "ordinals": [
+            1499,
+            1500
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1482,
+          "end_index": 1483,
+          "event_ids": [
+            7264,
+            7269
+          ],
+          "ordinals": [
+            1517,
+            1518
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 36,
+      "anchor_index": 1486,
+      "anchor_event_id": 7283,
+      "anchor_ordinal": 1521,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1523,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1502,
+          "end_index": 1503,
+          "event_ids": [
+            7345,
+            7350
+          ],
+          "ordinals": [
+            1537,
+            1538
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1519,
+          "end_index": 1520,
+          "event_ids": [
+            7413,
+            7418
+          ],
+          "ordinals": [
+            1555,
+            1556
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 37,
+      "anchor_index": 1523,
+      "anchor_event_id": 7430,
+      "anchor_ordinal": 1559,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1560,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1539,
+          "end_index": 1540,
+          "event_ids": [
+            7492,
+            7496
+          ],
+          "ordinals": [
+            1575,
+            1576
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1556,
+          "end_index": 1557,
+          "event_ids": [
+            7566,
+            7570
+          ],
+          "ordinals": [
+            1593,
+            1594
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 38,
+      "anchor_index": 1560,
+      "anchor_event_id": 7576,
+      "anchor_ordinal": 1597,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1613,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1592,
+          "end_index": 1593,
+          "event_ids": [
+            7705,
+            7709
+          ],
+          "ordinals": [
+            1629,
+            1630
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1609,
+          "end_index": 1610,
+          "event_ids": [
+            7773,
+            7777
+          ],
+          "ordinals": [
+            1647,
+            1648
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 39,
+      "anchor_index": 1613,
+      "anchor_event_id": 7792,
+      "anchor_ordinal": 1651,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1650,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1629,
+          "end_index": 1630,
+          "event_ids": [
+            7852,
+            7856
+          ],
+          "ordinals": [
+            1667,
+            1668
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1646,
+          "end_index": 1647,
+          "event_ids": [
+            7922,
+            7926
+          ],
+          "ordinals": [
+            1685,
+            1686
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 40,
+      "anchor_index": 1650,
+      "anchor_event_id": 7939,
+      "anchor_ordinal": 1689,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1687,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1666,
+          "end_index": 1667,
+          "event_ids": [
+            8001,
+            8005
+          ],
+          "ordinals": [
+            1705,
+            1706
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1683,
+          "end_index": 1684,
+          "event_ids": [
+            8068,
+            8072
+          ],
+          "ordinals": [
+            1723,
+            1724
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 41,
+      "anchor_index": 1687,
+      "anchor_event_id": 8088,
+      "anchor_ordinal": 1727,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1724,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1703,
+          "end_index": 1704,
+          "event_ids": [
+            8150,
+            8155
+          ],
+          "ordinals": [
+            1743,
+            1744
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1720,
+          "end_index": 1721,
+          "event_ids": [
+            8220,
+            8225
+          ],
+          "ordinals": [
+            1761,
+            1762
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 42,
+      "anchor_index": 1724,
+      "anchor_event_id": 8235,
+      "anchor_ordinal": 1765,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1777,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1756,
+          "end_index": 1757,
+          "event_ids": [
+            8361,
+            8365
+          ],
+          "ordinals": [
+            1797,
+            1798
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1773,
+          "end_index": 1774,
+          "event_ids": [
+            8427,
+            8431
+          ],
+          "ordinals": [
+            1815,
+            1816
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 43,
+      "anchor_index": 1777,
+      "anchor_event_id": 8448,
+      "anchor_ordinal": 1819,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1814,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1793,
+          "end_index": 1794,
+          "event_ids": [
+            8508,
+            8512
+          ],
+          "ordinals": [
+            1835,
+            1836
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1810,
+          "end_index": 1811,
+          "event_ids": [
+            8577,
+            8581
+          ],
+          "ordinals": [
+            1853,
+            1854
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 44,
+      "anchor_index": 1814,
+      "anchor_event_id": 8592,
+      "anchor_ordinal": 1857,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1851,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1830,
+          "end_index": 1831,
+          "event_ids": [
+            8658,
+            8662
+          ],
+          "ordinals": [
+            1873,
+            1874
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1847,
+          "end_index": 1848,
+          "event_ids": [
+            8722,
+            8726
+          ],
+          "ordinals": [
+            1891,
+            1892
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 45,
+      "anchor_index": 1851,
+      "anchor_event_id": 8740,
+      "anchor_ordinal": 1895,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1888,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1867,
+          "end_index": 1868,
+          "event_ids": [
+            8804,
+            8808
+          ],
+          "ordinals": [
+            1911,
+            1912
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1884,
+          "end_index": 1885,
+          "event_ids": [
+            8871,
+            8875
+          ],
+          "ordinals": [
+            1929,
+            1930
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 46,
+      "anchor_index": 1888,
+      "anchor_event_id": 8888,
+      "anchor_ordinal": 1933,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1941,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1920,
+          "end_index": 1921,
+          "event_ids": [
+            9019,
+            9023
+          ],
+          "ordinals": [
+            1965,
+            1966
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1937,
+          "end_index": 1938,
+          "event_ids": [
+            9087,
+            9092
+          ],
+          "ordinals": [
+            1983,
+            1984
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 47,
+      "anchor_index": 1941,
+      "anchor_event_id": 9101,
+      "anchor_ordinal": 1987,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 1978,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1957,
+          "end_index": 1958,
+          "event_ids": [
+            9166,
+            9170
+          ],
+          "ordinals": [
+            2003,
+            2004
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 1974,
+          "end_index": 1975,
+          "event_ids": [
+            9233,
+            9238
+          ],
+          "ordinals": [
+            2021,
+            2022
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 48,
+      "anchor_index": 1978,
+      "anchor_event_id": 9250,
+      "anchor_ordinal": 2025,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2015,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 1994,
+          "end_index": 1995,
+          "event_ids": [
+            9315,
+            9319
+          ],
+          "ordinals": [
+            2041,
+            2042
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2011,
+          "end_index": 2012,
+          "event_ids": [
+            9381,
+            9385
+          ],
+          "ordinals": [
+            2059,
+            2060
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 49,
+      "anchor_index": 2015,
+      "anchor_event_id": 9400,
+      "anchor_ordinal": 2063,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2052,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2031,
+          "end_index": 2032,
+          "event_ids": [
+            9462,
+            9465
+          ],
+          "ordinals": [
+            2079,
+            2080
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2048,
+          "end_index": 2049,
+          "event_ids": [
+            9532,
+            9535
+          ],
+          "ordinals": [
+            2097,
+            2098
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 50,
+      "anchor_index": 2052,
+      "anchor_event_id": 9544,
+      "anchor_ordinal": 2101,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2105,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2084,
+          "end_index": 2085,
+          "event_ids": [
+            9672,
+            9676
+          ],
+          "ordinals": [
+            2133,
+            2134
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2101,
+          "end_index": 2102,
+          "event_ids": [
+            9740,
+            9745
+          ],
+          "ordinals": [
+            2151,
+            2152
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 51,
+      "anchor_index": 2105,
+      "anchor_event_id": 9757,
+      "anchor_ordinal": 2155,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2142,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2121,
+          "end_index": 2122,
+          "event_ids": [
+            9820,
+            9823
+          ],
+          "ordinals": [
+            2171,
+            2172
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2138,
+          "end_index": 2139,
+          "event_ids": [
+            9894,
+            9897
+          ],
+          "ordinals": [
+            2189,
+            2190
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 52,
+      "anchor_index": 2142,
+      "anchor_event_id": 9905,
+      "anchor_ordinal": 2193,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2179,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2158,
+          "end_index": 2159,
+          "event_ids": [
+            9969,
+            9972
+          ],
+          "ordinals": [
+            2209,
+            2210
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2175,
+          "end_index": 2176,
+          "event_ids": [
+            10039,
+            10043
+          ],
+          "ordinals": [
+            2227,
+            2228
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 53,
+      "anchor_index": 2179,
+      "anchor_event_id": 10053,
+      "anchor_ordinal": 2231,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2216,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2195,
+          "end_index": 2196,
+          "event_ids": [
+            10118,
+            10122
+          ],
+          "ordinals": [
+            2247,
+            2248
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2212,
+          "end_index": 2213,
+          "event_ids": [
+            10183,
+            10188
+          ],
+          "ordinals": [
+            2265,
+            2266
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 54,
+      "anchor_index": 2216,
+      "anchor_event_id": 10202,
+      "anchor_ordinal": 2269,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2269,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2248,
+          "end_index": 2249,
+          "event_ids": [
+            10330,
+            10334
+          ],
+          "ordinals": [
+            2301,
+            2302
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2265,
+          "end_index": 2266,
+          "event_ids": [
+            10396,
+            10400
+          ],
+          "ordinals": [
+            2319,
+            2320
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 55,
+      "anchor_index": 2269,
+      "anchor_event_id": 10414,
+      "anchor_ordinal": 2323,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2306,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2285,
+          "end_index": 2286,
+          "event_ids": [
+            10477,
+            10481
+          ],
+          "ordinals": [
+            2339,
+            2340
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2302,
+          "end_index": 2303,
+          "event_ids": [
+            10545,
+            10549
+          ],
+          "ordinals": [
+            2357,
+            2358
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 56,
+      "anchor_index": 2306,
+      "anchor_event_id": 10562,
+      "anchor_ordinal": 2361,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2343,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2322,
+          "end_index": 2323,
+          "event_ids": [
+            10624,
+            10628
+          ],
+          "ordinals": [
+            2377,
+            2378
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2339,
+          "end_index": 2340,
+          "event_ids": [
+            10690,
+            10694
+          ],
+          "ordinals": [
+            2395,
+            2396
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 57,
+      "anchor_index": 2343,
+      "anchor_event_id": 10711,
+      "anchor_ordinal": 2399,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2380,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2359,
+          "end_index": 2360,
+          "event_ids": [
+            10775,
+            10779
+          ],
+          "ordinals": [
+            2415,
+            2416
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2376,
+          "end_index": 2377,
+          "event_ids": [
+            10840,
+            10844
+          ],
+          "ordinals": [
+            2433,
+            2434
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 58,
+      "anchor_index": 2380,
+      "anchor_event_id": 10858,
+      "anchor_ordinal": 2437,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2433,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2412,
+          "end_index": 2413,
+          "event_ids": [
+            10985,
+            10989
+          ],
+          "ordinals": [
+            2469,
+            2470
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2429,
+          "end_index": 2430,
+          "event_ids": [
+            11050,
+            11055
+          ],
+          "ordinals": [
+            2487,
+            2488
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 59,
+      "anchor_index": 2433,
+      "anchor_event_id": 11073,
+      "anchor_ordinal": 2491,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2470,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2449,
+          "end_index": 2450,
+          "event_ids": [
+            11135,
+            11139
+          ],
+          "ordinals": [
+            2507,
+            2508
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2466,
+          "end_index": 2467,
+          "event_ids": [
+            11199,
+            11203
+          ],
+          "ordinals": [
+            2525,
+            2526
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 60,
+      "anchor_index": 2470,
+      "anchor_event_id": 11221,
+      "anchor_ordinal": 2529,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2507,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2486,
+          "end_index": 2487,
+          "event_ids": [
+            11281,
+            11285
+          ],
+          "ordinals": [
+            2545,
+            2546
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2503,
+          "end_index": 2504,
+          "event_ids": [
+            11349,
+            11354
+          ],
+          "ordinals": [
+            2563,
+            2564
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 61,
+      "anchor_index": 2507,
+      "anchor_event_id": 11364,
+      "anchor_ordinal": 2567,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2544,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2523,
+          "end_index": 2524,
+          "event_ids": [
+            11428,
+            11432
+          ],
+          "ordinals": [
+            2583,
+            2584
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2540,
+          "end_index": 2541,
+          "event_ids": [
+            11496,
+            11500
+          ],
+          "ordinals": [
+            2601,
+            2602
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 62,
+      "anchor_index": 2544,
+      "anchor_event_id": 11512,
+      "anchor_ordinal": 2605,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2597,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2576,
+          "end_index": 2577,
+          "event_ids": [
+            11643,
+            11647
+          ],
+          "ordinals": [
+            2637,
+            2638
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2593,
+          "end_index": 2594,
+          "event_ids": [
+            11711,
+            11715
+          ],
+          "ordinals": [
+            2655,
+            2656
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 63,
+      "anchor_index": 2597,
+      "anchor_event_id": 11726,
+      "anchor_ordinal": 2659,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2634,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2613,
+          "end_index": 2614,
+          "event_ids": [
+            11788,
+            11792
+          ],
+          "ordinals": [
+            2675,
+            2676
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2630,
+          "end_index": 2631,
+          "event_ids": [
+            11859,
+            11863
+          ],
+          "ordinals": [
+            2693,
+            2694
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 64,
+      "anchor_index": 2634,
+      "anchor_event_id": 11873,
+      "anchor_ordinal": 2697,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2671,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2650,
+          "end_index": 2651,
+          "event_ids": [
+            11937,
+            11941
+          ],
+          "ordinals": [
+            2713,
+            2714
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2667,
+          "end_index": 2668,
+          "event_ids": [
+            12004,
+            12008
+          ],
+          "ordinals": [
+            2731,
+            2732
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 65,
+      "anchor_index": 2671,
+      "anchor_event_id": 12021,
+      "anchor_ordinal": 2735,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2708,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2687,
+          "end_index": 2688,
+          "event_ids": [
+            12086,
+            12090
+          ],
+          "ordinals": [
+            2751,
+            2752
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2704,
+          "end_index": 2705,
+          "event_ids": [
+            12154,
+            12159
+          ],
+          "ordinals": [
+            2769,
+            2770
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 66,
+      "anchor_index": 2708,
+      "anchor_event_id": 12170,
+      "anchor_ordinal": 2773,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2761,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2740,
+          "end_index": 2741,
+          "event_ids": [
+            12296,
+            12302
+          ],
+          "ordinals": [
+            2805,
+            2806
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2757,
+          "end_index": 2758,
+          "event_ids": [
+            12364,
+            12368
+          ],
+          "ordinals": [
+            2823,
+            2824
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 67,
+      "anchor_index": 2761,
+      "anchor_event_id": 12380,
+      "anchor_ordinal": 2827,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2798,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2777,
+          "end_index": 2778,
+          "event_ids": [
+            12444,
+            12448
+          ],
+          "ordinals": [
+            2843,
+            2844
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2794,
+          "end_index": 2795,
+          "event_ids": [
+            12512,
+            12516
+          ],
+          "ordinals": [
+            2861,
+            2862
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 68,
+      "anchor_index": 2798,
+      "anchor_event_id": 12529,
+      "anchor_ordinal": 2865,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2835,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2814,
+          "end_index": 2815,
+          "event_ids": [
+            12592,
+            12596
+          ],
+          "ordinals": [
+            2881,
+            2882
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2831,
+          "end_index": 2832,
+          "event_ids": [
+            12665,
+            12669
+          ],
+          "ordinals": [
+            2899,
+            2900
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 69,
+      "anchor_index": 2835,
+      "anchor_event_id": 12676,
+      "anchor_ordinal": 2903,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2872,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2851,
+          "end_index": 2852,
+          "event_ids": [
+            12742,
+            12746
+          ],
+          "ordinals": [
+            2919,
+            2920
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2868,
+          "end_index": 2869,
+          "event_ids": [
+            12809,
+            12814
+          ],
+          "ordinals": [
+            2937,
+            2938
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 70,
+      "anchor_index": 2872,
+      "anchor_event_id": 12827,
+      "anchor_ordinal": 2941,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2925,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2904,
+          "end_index": 2905,
+          "event_ids": [
+            12955,
+            12959
+          ],
+          "ordinals": [
+            2973,
+            2974
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2921,
+          "end_index": 2922,
+          "event_ids": [
+            13021,
+            13026
+          ],
+          "ordinals": [
+            2991,
+            2992
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 71,
+      "anchor_index": 2925,
+      "anchor_event_id": 13041,
+      "anchor_ordinal": 2995,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2962,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2941,
+          "end_index": 2942,
+          "event_ids": [
+            13100,
+            13104
+          ],
+          "ordinals": [
+            3011,
+            3012
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2958,
+          "end_index": 2959,
+          "event_ids": [
+            13174,
+            13176
+          ],
+          "ordinals": [
+            3029,
+            3030
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 72,
+      "anchor_index": 2962,
+      "anchor_event_id": 13187,
+      "anchor_ordinal": 3033,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 2999,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 2978,
+          "end_index": 2979,
+          "event_ids": [
+            13248,
+            13252
+          ],
+          "ordinals": [
+            3049,
+            3050
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 2995,
+          "end_index": 2996,
+          "event_ids": [
+            13316,
+            13321
+          ],
+          "ordinals": [
+            3067,
+            3068
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 73,
+      "anchor_index": 2999,
+      "anchor_event_id": 13338,
+      "anchor_ordinal": 3071,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 3036,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 3015,
+          "end_index": 3016,
+          "event_ids": [
+            13398,
+            13403
+          ],
+          "ordinals": [
+            3087,
+            3088
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 3032,
+          "end_index": 3033,
+          "event_ids": [
+            13469,
+            13473
+          ],
+          "ordinals": [
+            3105,
+            3106
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 74,
+      "anchor_index": 3036,
+      "anchor_event_id": 13480,
+      "anchor_ordinal": 3109,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 3089,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 3068,
+          "end_index": 3069,
+          "event_ids": [
+            13609,
+            13612
+          ],
+          "ordinals": [
+            3141,
+            3142
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 3085,
+          "end_index": 3086,
+          "event_ids": [
+            13679,
+            13683
+          ],
+          "ordinals": [
+            3159,
+            3160
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 75,
+      "anchor_index": 3089,
+      "anchor_event_id": 13694,
+      "anchor_ordinal": 3163,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 3126,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 3105,
+          "end_index": 3106,
+          "event_ids": [
+            13759,
+            13763
+          ],
+          "ordinals": [
+            3179,
+            3180
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 3122,
+          "end_index": 3123,
+          "event_ids": [
+            13826,
+            13830
+          ],
+          "ordinals": [
+            3197,
+            3198
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 76,
+      "anchor_index": 3126,
+      "anchor_event_id": 13841,
+      "anchor_ordinal": 3201,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 3163,
+      "collective_group_count": 2,
+      "collective_groups": [
+        {
+          "start_index": 3142,
+          "end_index": 3143,
+          "event_ids": [
+            13906,
+            13910
+          ],
+          "ordinals": [
+            3217,
+            3218
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 3159,
+          "end_index": 3160,
+          "event_ids": [
+            13974,
+            13978
+          ],
+          "ordinals": [
+            3235,
+            3236
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        }
+      ]
+    },
+    {
+      "layer": 77,
+      "anchor_index": 3163,
+      "anchor_event_id": 13990,
+      "anchor_ordinal": 3239,
+      "anchor_kernel_name": "kernel_cutlass_kernel_flashinfernormkernelsrmsnormRMSNormKernel_object_at__tensorptrbf16gmemalign16oi642048i64div81_tensorptrbf16gmemalign16o20481_tensorptrbf16gmemalign16oi642048i64div81_0",
+      "search_end_index": 3202,
+      "collective_group_count": 3,
+      "collective_groups": [
+        {
+          "start_index": 3179,
+          "end_index": 3180,
+          "event_ids": [
+            14052,
+            14056
+          ],
+          "ordinals": [
+            3255,
+            3256
+          ],
+          "kernel_names": [
+            "void flashinfer::trtllm_mnnvl_allreduce::twoshotAllreduceKernel<(unsigned char)8, __nv_bfloat16, (bool)0, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T2>)",
+            "void flashinfer::trtllm_mnnvl_allreduce::rmsNormLamport<__nv_bfloat16, (flashinfer::trtllm_mnnvl_allreduce::QuantType)0, (bool)0, (int)1, float4>(flashinfer::trtllm_mnnvl_allreduce::AllReduceKernelParams<T1>)"
+          ]
+        },
+        {
+          "start_index": 3196,
+          "end_index": 3196,
+          "event_ids": [
+            14121
+          ],
+          "ordinals": [
+            3273
+          ],
+          "kernel_names": [
+            "ncclDevKernel_AllReduce_Sum_bf16_RING_LL(ncclDevKernelArgsStorage<(unsigned long)4096>)"
+          ]
+        },
+        {
+          "start_index": 3199,
+          "end_index": 3199,
+          "event_ids": [
+            14134
+          ],
+          "ordinals": [
+            3277
+          ],
+          "kernel_names": [
+            "ncclDevKernel_AllGather_RING_LL(ncclDevKernelArgsStorage<(unsigned long)4096>)"
+          ]
+        }
+      ]
+    }
+  ],
+  "layer_ledger": [
+    {
+      "layer": 0,
+      "ffn_kind": "dense",
+      "start_ordinal": 7,
+      "q_anchor_ordinal": 10,
+      "attention_handoff_ordinals": [
+        42,
+        43
+      ],
+      "ffn_handoff_ordinals": [
+        49,
+        50
+      ],
+      "end_ordinal": 50,
+      "launches": 44,
+      "summed_residency_ns": 236352,
+      "active_union_ns": 191744,
+      "overlap_excess_ns": 44608,
+      "wall_span_ns": 199584,
+      "summed_residency_ms": 0.236352,
+      "active_union_ms": 0.191744,
+      "overlap_excess_ms": 0.044608,
+      "wall_span_ms": 0.199584
+    },
+    {
+      "layer": 1,
+      "ffn_kind": "dense",
+      "start_ordinal": 51,
+      "q_anchor_ordinal": 53,
+      "attention_handoff_ordinals": [
+        85,
+        86
+      ],
+      "ffn_handoff_ordinals": [
+        92,
+        93
+      ],
+      "end_ordinal": 93,
+      "launches": 43,
+      "summed_residency_ns": 224031,
+      "active_union_ns": 185280,
+      "overlap_excess_ns": 38751,
+      "wall_span_ns": 193088,
+      "summed_residency_ms": 0.224031,
+      "active_union_ms": 0.18528,
+      "overlap_excess_ms": 0.038751,
+      "wall_span_ms": 0.193088
+    },
+    {
+      "layer": 2,
+      "ffn_kind": "dense",
+      "start_ordinal": 94,
+      "q_anchor_ordinal": 96,
+      "attention_handoff_ordinals": [
+        128,
+        129
+      ],
+      "ffn_handoff_ordinals": [
+        135,
+        136
+      ],
+      "end_ordinal": 136,
+      "launches": 43,
+      "summed_residency_ns": 222847,
+      "active_union_ns": 183487,
+      "overlap_excess_ns": 39360,
+      "wall_span_ns": 191296,
+      "summed_residency_ms": 0.222847,
+      "active_union_ms": 0.183487,
+      "overlap_excess_ms": 0.03936,
+      "wall_span_ms": 0.191296
+    },
+    {
+      "layer": 3,
+      "ffn_kind": "moe",
+      "start_ordinal": 137,
+      "q_anchor_ordinal": 139,
+      "attention_handoff_ordinals": [
+        155,
+        156
+      ],
+      "ffn_handoff_ordinals": [
+        173,
+        174
+      ],
+      "end_ordinal": 174,
+      "launches": 37,
+      "summed_residency_ns": 263839,
+      "active_union_ns": 201536,
+      "overlap_excess_ns": 62303,
+      "wall_span_ns": 208672,
+      "summed_residency_ms": 0.263839,
+      "active_union_ms": 0.201536,
+      "overlap_excess_ms": 0.062303,
+      "wall_span_ms": 0.208672
+    },
+    {
+      "layer": 4,
+      "ffn_kind": "moe",
+      "start_ordinal": 175,
+      "q_anchor_ordinal": 177,
+      "attention_handoff_ordinals": [
+        193,
+        194
+      ],
+      "ffn_handoff_ordinals": [
+        211,
+        212
+      ],
+      "end_ordinal": 212,
+      "launches": 37,
+      "summed_residency_ns": 273759,
+      "active_union_ns": 206688,
+      "overlap_excess_ns": 67071,
+      "wall_span_ns": 213536,
+      "summed_residency_ms": 0.273759,
+      "active_union_ms": 0.206688,
+      "overlap_excess_ms": 0.067071,
+      "wall_span_ms": 0.213536
+    },
+    {
+      "layer": 5,
+      "ffn_kind": "moe",
+      "start_ordinal": 213,
+      "q_anchor_ordinal": 215,
+      "attention_handoff_ordinals": [
+        231,
+        232
+      ],
+      "ffn_handoff_ordinals": [
+        249,
+        250
+      ],
+      "end_ordinal": 250,
+      "launches": 37,
+      "summed_residency_ns": 272575,
+      "active_union_ns": 207968,
+      "overlap_excess_ns": 64607,
+      "wall_span_ns": 215072,
+      "summed_residency_ms": 0.272575,
+      "active_union_ms": 0.207968,
+      "overlap_excess_ms": 0.064607,
+      "wall_span_ms": 0.215072
+    },
+    {
+      "layer": 6,
+      "ffn_kind": "moe",
+      "start_ordinal": 251,
+      "q_anchor_ordinal": 253,
+      "attention_handoff_ordinals": [
+        285,
+        286
+      ],
+      "ffn_handoff_ordinals": [
+        303,
+        304
+      ],
+      "end_ordinal": 304,
+      "launches": 53,
+      "summed_residency_ns": 329886,
+      "active_union_ns": 255936,
+      "overlap_excess_ns": 73950,
+      "wall_span_ns": 264384,
+      "summed_residency_ms": 0.329886,
+      "active_union_ms": 0.255936,
+      "overlap_excess_ms": 0.07395,
+      "wall_span_ms": 0.264384
+    },
+    {
+      "layer": 7,
+      "ffn_kind": "moe",
+      "start_ordinal": 305,
+      "q_anchor_ordinal": 307,
+      "attention_handoff_ordinals": [
+        323,
+        324
+      ],
+      "ffn_handoff_ordinals": [
+        341,
+        342
+      ],
+      "end_ordinal": 342,
+      "launches": 37,
+      "summed_residency_ns": 269503,
+      "active_union_ns": 206719,
+      "overlap_excess_ns": 62784,
+      "wall_span_ns": 213792,
+      "summed_residency_ms": 0.269503,
+      "active_union_ms": 0.206719,
+      "overlap_excess_ms": 0.062784,
+      "wall_span_ms": 0.213792
+    },
+    {
+      "layer": 8,
+      "ffn_kind": "moe",
+      "start_ordinal": 343,
+      "q_anchor_ordinal": 345,
+      "attention_handoff_ordinals": [
+        361,
+        362
+      ],
+      "ffn_handoff_ordinals": [
+        379,
+        380
+      ],
+      "end_ordinal": 380,
+      "launches": 37,
+      "summed_residency_ns": 265119,
+      "active_union_ns": 204287,
+      "overlap_excess_ns": 60832,
+      "wall_span_ns": 211616,
+      "summed_residency_ms": 0.265119,
+      "active_union_ms": 0.204287,
+      "overlap_excess_ms": 0.060832,
+      "wall_span_ms": 0.211616
+    },
+    {
+      "layer": 9,
+      "ffn_kind": "moe",
+      "start_ordinal": 381,
+      "q_anchor_ordinal": 383,
+      "attention_handoff_ordinals": [
+        399,
+        400
+      ],
+      "ffn_handoff_ordinals": [
+        417,
+        418
+      ],
+      "end_ordinal": 418,
+      "launches": 37,
+      "summed_residency_ns": 266687,
+      "active_union_ns": 206271,
+      "overlap_excess_ns": 60416,
+      "wall_span_ns": 213600,
+      "summed_residency_ms": 0.266687,
+      "active_union_ms": 0.206271,
+      "overlap_excess_ms": 0.060416,
+      "wall_span_ms": 0.2136
+    },
+    {
+      "layer": 10,
+      "ffn_kind": "moe",
+      "start_ordinal": 419,
+      "q_anchor_ordinal": 421,
+      "attention_handoff_ordinals": [
+        453,
+        454
+      ],
+      "ffn_handoff_ordinals": [
+        471,
+        472
+      ],
+      "end_ordinal": 472,
+      "launches": 53,
+      "summed_residency_ns": 338878,
+      "active_union_ns": 259519,
+      "overlap_excess_ns": 79359,
+      "wall_span_ns": 267968,
+      "summed_residency_ms": 0.338878,
+      "active_union_ms": 0.259519,
+      "overlap_excess_ms": 0.079359,
+      "wall_span_ms": 0.267968
+    },
+    {
+      "layer": 11,
+      "ffn_kind": "moe",
+      "start_ordinal": 473,
+      "q_anchor_ordinal": 475,
+      "attention_handoff_ordinals": [
+        491,
+        492
+      ],
+      "ffn_handoff_ordinals": [
+        509,
+        510
+      ],
+      "end_ordinal": 510,
+      "launches": 37,
+      "summed_residency_ns": 269920,
+      "active_union_ns": 207168,
+      "overlap_excess_ns": 62752,
+      "wall_span_ns": 214208,
+      "summed_residency_ms": 0.26992,
+      "active_union_ms": 0.207168,
+      "overlap_excess_ms": 0.062752,
+      "wall_span_ms": 0.214208
+    },
+    {
+      "layer": 12,
+      "ffn_kind": "moe",
+      "start_ordinal": 511,
+      "q_anchor_ordinal": 513,
+      "attention_handoff_ordinals": [
+        529,
+        530
+      ],
+      "ffn_handoff_ordinals": [
+        547,
+        548
+      ],
+      "end_ordinal": 548,
+      "launches": 37,
+      "summed_residency_ns": 274144,
+      "active_union_ns": 210400,
+      "overlap_excess_ns": 63744,
+      "wall_span_ns": 217792,
+      "summed_residency_ms": 0.274144,
+      "active_union_ms": 0.2104,
+      "overlap_excess_ms": 0.063744,
+      "wall_span_ms": 0.217792
+    },
+    {
+      "layer": 13,
+      "ffn_kind": "moe",
+      "start_ordinal": 549,
+      "q_anchor_ordinal": 551,
+      "attention_handoff_ordinals": [
+        567,
+        568
+      ],
+      "ffn_handoff_ordinals": [
+        585,
+        586
+      ],
+      "end_ordinal": 586,
+      "launches": 37,
+      "summed_residency_ns": 273150,
+      "active_union_ns": 209888,
+      "overlap_excess_ns": 63262,
+      "wall_span_ns": 217312,
+      "summed_residency_ms": 0.27315,
+      "active_union_ms": 0.209888,
+      "overlap_excess_ms": 0.063262,
+      "wall_span_ms": 0.217312
+    },
+    {
+      "layer": 14,
+      "ffn_kind": "moe",
+      "start_ordinal": 587,
+      "q_anchor_ordinal": 589,
+      "attention_handoff_ordinals": [
+        621,
+        622
+      ],
+      "ffn_handoff_ordinals": [
+        639,
+        640
+      ],
+      "end_ordinal": 640,
+      "launches": 53,
+      "summed_residency_ns": 335038,
+      "active_union_ns": 255136,
+      "overlap_excess_ns": 79902,
+      "wall_span_ns": 264384,
+      "summed_residency_ms": 0.335038,
+      "active_union_ms": 0.255136,
+      "overlap_excess_ms": 0.079902,
+      "wall_span_ms": 0.264384
+    },
+    {
+      "layer": 15,
+      "ffn_kind": "moe",
+      "start_ordinal": 641,
+      "q_anchor_ordinal": 643,
+      "attention_handoff_ordinals": [
+        659,
+        660
+      ],
+      "ffn_handoff_ordinals": [
+        677,
+        678
+      ],
+      "end_ordinal": 678,
+      "launches": 37,
+      "summed_residency_ns": 269536,
+      "active_union_ns": 206272,
+      "overlap_excess_ns": 63264,
+      "wall_span_ns": 212960,
+      "summed_residency_ms": 0.269536,
+      "active_union_ms": 0.206272,
+      "overlap_excess_ms": 0.063264,
+      "wall_span_ms": 0.21296
+    },
+    {
+      "layer": 16,
+      "ffn_kind": "moe",
+      "start_ordinal": 679,
+      "q_anchor_ordinal": 681,
+      "attention_handoff_ordinals": [
+        697,
+        698
+      ],
+      "ffn_handoff_ordinals": [
+        715,
+        716
+      ],
+      "end_ordinal": 716,
+      "launches": 37,
+      "summed_residency_ns": 266783,
+      "active_union_ns": 208927,
+      "overlap_excess_ns": 57856,
+      "wall_span_ns": 216608,
+      "summed_residency_ms": 0.266783,
+      "active_union_ms": 0.208927,
+      "overlap_excess_ms": 0.057856,
+      "wall_span_ms": 0.216608
+    },
+    {
+      "layer": 17,
+      "ffn_kind": "moe",
+      "start_ordinal": 717,
+      "q_anchor_ordinal": 719,
+      "attention_handoff_ordinals": [
+        735,
+        736
+      ],
+      "ffn_handoff_ordinals": [
+        753,
+        754
+      ],
+      "end_ordinal": 754,
+      "launches": 37,
+      "summed_residency_ns": 272768,
+      "active_union_ns": 209472,
+      "overlap_excess_ns": 63296,
+      "wall_span_ns": 216640,
+      "summed_residency_ms": 0.272768,
+      "active_union_ms": 0.209472,
+      "overlap_excess_ms": 0.063296,
+      "wall_span_ms": 0.21664
+    },
+    {
+      "layer": 18,
+      "ffn_kind": "moe",
+      "start_ordinal": 755,
+      "q_anchor_ordinal": 757,
+      "attention_handoff_ordinals": [
+        789,
+        790
+      ],
+      "ffn_handoff_ordinals": [
+        807,
+        808
+      ],
+      "end_ordinal": 808,
+      "launches": 53,
+      "summed_residency_ns": 340800,
+      "active_union_ns": 258944,
+      "overlap_excess_ns": 81856,
+      "wall_span_ns": 268256,
+      "summed_residency_ms": 0.3408,
+      "active_union_ms": 0.258944,
+      "overlap_excess_ms": 0.081856,
+      "wall_span_ms": 0.268256
+    },
+    {
+      "layer": 19,
+      "ffn_kind": "moe",
+      "start_ordinal": 809,
+      "q_anchor_ordinal": 811,
+      "attention_handoff_ordinals": [
+        827,
+        828
+      ],
+      "ffn_handoff_ordinals": [
+        845,
+        846
+      ],
+      "end_ordinal": 846,
+      "launches": 37,
+      "summed_residency_ns": 258911,
+      "active_union_ns": 211615,
+      "overlap_excess_ns": 47296,
+      "wall_span_ns": 217856,
+      "summed_residency_ms": 0.258911,
+      "active_union_ms": 0.211615,
+      "overlap_excess_ms": 0.047296,
+      "wall_span_ms": 0.217856
+    },
+    {
+      "layer": 20,
+      "ffn_kind": "moe",
+      "start_ordinal": 847,
+      "q_anchor_ordinal": 849,
+      "attention_handoff_ordinals": [
+        865,
+        866
+      ],
+      "ffn_handoff_ordinals": [
+        883,
+        884
+      ],
+      "end_ordinal": 884,
+      "launches": 37,
+      "summed_residency_ns": 271104,
+      "active_union_ns": 206784,
+      "overlap_excess_ns": 64320,
+      "wall_span_ns": 214240,
+      "summed_residency_ms": 0.271104,
+      "active_union_ms": 0.206784,
+      "overlap_excess_ms": 0.06432,
+      "wall_span_ms": 0.21424
+    },
+    {
+      "layer": 21,
+      "ffn_kind": "moe",
+      "start_ordinal": 885,
+      "q_anchor_ordinal": 887,
+      "attention_handoff_ordinals": [
+        903,
+        904
+      ],
+      "ffn_handoff_ordinals": [
+        921,
+        922
+      ],
+      "end_ordinal": 922,
+      "launches": 37,
+      "summed_residency_ns": 259455,
+      "active_union_ns": 209791,
+      "overlap_excess_ns": 49664,
+      "wall_span_ns": 216608,
+      "summed_residency_ms": 0.259455,
+      "active_union_ms": 0.209791,
+      "overlap_excess_ms": 0.049664,
+      "wall_span_ms": 0.216608
+    },
+    {
+      "layer": 22,
+      "ffn_kind": "moe",
+      "start_ordinal": 923,
+      "q_anchor_ordinal": 925,
+      "attention_handoff_ordinals": [
+        957,
+        958
+      ],
+      "ffn_handoff_ordinals": [
+        975,
+        976
+      ],
+      "end_ordinal": 976,
+      "launches": 53,
+      "summed_residency_ns": 338077,
+      "active_union_ns": 255550,
+      "overlap_excess_ns": 82527,
+      "wall_span_ns": 264544,
+      "summed_residency_ms": 0.338077,
+      "active_union_ms": 0.25555,
+      "overlap_excess_ms": 0.082527,
+      "wall_span_ms": 0.264544
+    },
+    {
+      "layer": 23,
+      "ffn_kind": "moe",
+      "start_ordinal": 977,
+      "q_anchor_ordinal": 979,
+      "attention_handoff_ordinals": [
+        995,
+        996
+      ],
+      "ffn_handoff_ordinals": [
+        1013,
+        1014
+      ],
+      "end_ordinal": 1014,
+      "launches": 37,
+      "summed_residency_ns": 260959,
+      "active_union_ns": 210143,
+      "overlap_excess_ns": 50816,
+      "wall_span_ns": 216768,
+      "summed_residency_ms": 0.260959,
+      "active_union_ms": 0.210143,
+      "overlap_excess_ms": 0.050816,
+      "wall_span_ms": 0.216768
+    },
+    {
+      "layer": 24,
+      "ffn_kind": "moe",
+      "start_ordinal": 1015,
+      "q_anchor_ordinal": 1017,
+      "attention_handoff_ordinals": [
+        1033,
+        1034
+      ],
+      "ffn_handoff_ordinals": [
+        1051,
+        1052
+      ],
+      "end_ordinal": 1052,
+      "launches": 37,
+      "summed_residency_ns": 266431,
+      "active_union_ns": 203904,
+      "overlap_excess_ns": 62527,
+      "wall_span_ns": 210528,
+      "summed_residency_ms": 0.266431,
+      "active_union_ms": 0.203904,
+      "overlap_excess_ms": 0.062527,
+      "wall_span_ms": 0.210528
+    },
+    {
+      "layer": 25,
+      "ffn_kind": "moe",
+      "start_ordinal": 1053,
+      "q_anchor_ordinal": 1055,
+      "attention_handoff_ordinals": [
+        1071,
+        1072
+      ],
+      "ffn_handoff_ordinals": [
+        1089,
+        1090
+      ],
+      "end_ordinal": 1090,
+      "launches": 37,
+      "summed_residency_ns": 258560,
+      "active_union_ns": 208256,
+      "overlap_excess_ns": 50304,
+      "wall_span_ns": 215296,
+      "summed_residency_ms": 0.25856,
+      "active_union_ms": 0.208256,
+      "overlap_excess_ms": 0.050304,
+      "wall_span_ms": 0.215296
+    },
+    {
+      "layer": 26,
+      "ffn_kind": "moe",
+      "start_ordinal": 1091,
+      "q_anchor_ordinal": 1093,
+      "attention_handoff_ordinals": [
+        1125,
+        1126
+      ],
+      "ffn_handoff_ordinals": [
+        1143,
+        1144
+      ],
+      "end_ordinal": 1144,
+      "launches": 53,
+      "summed_residency_ns": 336286,
+      "active_union_ns": 257408,
+      "overlap_excess_ns": 78878,
+      "wall_span_ns": 266144,
+      "summed_residency_ms": 0.336286,
+      "active_union_ms": 0.257408,
+      "overlap_excess_ms": 0.078878,
+      "wall_span_ms": 0.266144
+    },
+    {
+      "layer": 27,
+      "ffn_kind": "moe",
+      "start_ordinal": 1145,
+      "q_anchor_ordinal": 1147,
+      "attention_handoff_ordinals": [
+        1163,
+        1164
+      ],
+      "ffn_handoff_ordinals": [
+        1181,
+        1182
+      ],
+      "end_ordinal": 1182,
+      "launches": 37,
+      "summed_residency_ns": 260479,
+      "active_union_ns": 211583,
+      "overlap_excess_ns": 48896,
+      "wall_span_ns": 218272,
+      "summed_residency_ms": 0.260479,
+      "active_union_ms": 0.211583,
+      "overlap_excess_ms": 0.048896,
+      "wall_span_ms": 0.218272
+    },
+    {
+      "layer": 28,
+      "ffn_kind": "moe",
+      "start_ordinal": 1183,
+      "q_anchor_ordinal": 1185,
+      "attention_handoff_ordinals": [
+        1201,
+        1202
+      ],
+      "ffn_handoff_ordinals": [
+        1219,
+        1220
+      ],
+      "end_ordinal": 1220,
+      "launches": 37,
+      "summed_residency_ns": 254877,
+      "active_union_ns": 207774,
+      "overlap_excess_ns": 47103,
+      "wall_span_ns": 215616,
+      "summed_residency_ms": 0.254877,
+      "active_union_ms": 0.207774,
+      "overlap_excess_ms": 0.047103,
+      "wall_span_ms": 0.215616
+    },
+    {
+      "layer": 29,
+      "ffn_kind": "moe",
+      "start_ordinal": 1221,
+      "q_anchor_ordinal": 1223,
+      "attention_handoff_ordinals": [
+        1239,
+        1240
+      ],
+      "ffn_handoff_ordinals": [
+        1257,
+        1258
+      ],
+      "end_ordinal": 1258,
+      "launches": 37,
+      "summed_residency_ns": 262878,
+      "active_union_ns": 206111,
+      "overlap_excess_ns": 56767,
+      "wall_span_ns": 213696,
+      "summed_residency_ms": 0.262878,
+      "active_union_ms": 0.206111,
+      "overlap_excess_ms": 0.056767,
+      "wall_span_ms": 0.213696
+    },
+    {
+      "layer": 30,
+      "ffn_kind": "moe",
+      "start_ordinal": 1259,
+      "q_anchor_ordinal": 1261,
+      "attention_handoff_ordinals": [
+        1293,
+        1294
+      ],
+      "ffn_handoff_ordinals": [
+        1311,
+        1312
+      ],
+      "end_ordinal": 1312,
+      "launches": 53,
+      "summed_residency_ns": 337630,
+      "active_union_ns": 259742,
+      "overlap_excess_ns": 77888,
+      "wall_span_ns": 268480,
+      "summed_residency_ms": 0.33763,
+      "active_union_ms": 0.259742,
+      "overlap_excess_ms": 0.077888,
+      "wall_span_ms": 0.26848
+    },
+    {
+      "layer": 31,
+      "ffn_kind": "moe",
+      "start_ordinal": 1313,
+      "q_anchor_ordinal": 1315,
+      "attention_handoff_ordinals": [
+        1331,
+        1332
+      ],
+      "ffn_handoff_ordinals": [
+        1349,
+        1350
+      ],
+      "end_ordinal": 1350,
+      "launches": 37,
+      "summed_residency_ns": 258206,
+      "active_union_ns": 209151,
+      "overlap_excess_ns": 49055,
+      "wall_span_ns": 216384,
+      "summed_residency_ms": 0.258206,
+      "active_union_ms": 0.209151,
+      "overlap_excess_ms": 0.049055,
+      "wall_span_ms": 0.216384
+    },
+    {
+      "layer": 32,
+      "ffn_kind": "moe",
+      "start_ordinal": 1351,
+      "q_anchor_ordinal": 1353,
+      "attention_handoff_ordinals": [
+        1369,
+        1370
+      ],
+      "ffn_handoff_ordinals": [
+        1387,
+        1388
+      ],
+      "end_ordinal": 1388,
+      "launches": 37,
+      "summed_residency_ns": 280959,
+      "active_union_ns": 213376,
+      "overlap_excess_ns": 67583,
+      "wall_span_ns": 220512,
+      "summed_residency_ms": 0.280959,
+      "active_union_ms": 0.213376,
+      "overlap_excess_ms": 0.067583,
+      "wall_span_ms": 0.220512
+    },
+    {
+      "layer": 33,
+      "ffn_kind": "moe",
+      "start_ordinal": 1389,
+      "q_anchor_ordinal": 1391,
+      "attention_handoff_ordinals": [
+        1407,
+        1408
+      ],
+      "ffn_handoff_ordinals": [
+        1425,
+        1426
+      ],
+      "end_ordinal": 1426,
+      "launches": 37,
+      "summed_residency_ns": 260192,
+      "active_union_ns": 211104,
+      "overlap_excess_ns": 49088,
+      "wall_span_ns": 217696,
+      "summed_residency_ms": 0.260192,
+      "active_union_ms": 0.211104,
+      "overlap_excess_ms": 0.049088,
+      "wall_span_ms": 0.217696
+    },
+    {
+      "layer": 34,
+      "ffn_kind": "moe",
+      "start_ordinal": 1427,
+      "q_anchor_ordinal": 1429,
+      "attention_handoff_ordinals": [
+        1461,
+        1462
+      ],
+      "ffn_handoff_ordinals": [
+        1479,
+        1480
+      ],
+      "end_ordinal": 1480,
+      "launches": 53,
+      "summed_residency_ns": 345151,
+      "active_union_ns": 258752,
+      "overlap_excess_ns": 86399,
+      "wall_span_ns": 268224,
+      "summed_residency_ms": 0.345151,
+      "active_union_ms": 0.258752,
+      "overlap_excess_ms": 0.086399,
+      "wall_span_ms": 0.268224
+    },
+    {
+      "layer": 35,
+      "ffn_kind": "moe",
+      "start_ordinal": 1481,
+      "q_anchor_ordinal": 1483,
+      "attention_handoff_ordinals": [
+        1499,
+        1500
+      ],
+      "ffn_handoff_ordinals": [
+        1517,
+        1518
+      ],
+      "end_ordinal": 1518,
+      "launches": 37,
+      "summed_residency_ns": 273470,
+      "active_union_ns": 209760,
+      "overlap_excess_ns": 63710,
+      "wall_span_ns": 216896,
+      "summed_residency_ms": 0.27347,
+      "active_union_ms": 0.20976,
+      "overlap_excess_ms": 0.06371,
+      "wall_span_ms": 0.216896
+    },
+    {
+      "layer": 36,
+      "ffn_kind": "moe",
+      "start_ordinal": 1519,
+      "q_anchor_ordinal": 1521,
+      "attention_handoff_ordinals": [
+        1537,
+        1538
+      ],
+      "ffn_handoff_ordinals": [
+        1555,
+        1556
+      ],
+      "end_ordinal": 1556,
+      "launches": 37,
+      "summed_residency_ns": 272030,
+      "active_union_ns": 211166,
+      "overlap_excess_ns": 60864,
+      "wall_span_ns": 217824,
+      "summed_residency_ms": 0.27203,
+      "active_union_ms": 0.211166,
+      "overlap_excess_ms": 0.060864,
+      "wall_span_ms": 0.217824
+    },
+    {
+      "layer": 37,
+      "ffn_kind": "moe",
+      "start_ordinal": 1557,
+      "q_anchor_ordinal": 1559,
+      "attention_handoff_ordinals": [
+        1575,
+        1576
+      ],
+      "ffn_handoff_ordinals": [
+        1593,
+        1594
+      ],
+      "end_ordinal": 1594,
+      "launches": 37,
+      "summed_residency_ns": 262016,
+      "active_union_ns": 210560,
+      "overlap_excess_ns": 51456,
+      "wall_span_ns": 217216,
+      "summed_residency_ms": 0.262016,
+      "active_union_ms": 0.21056,
+      "overlap_excess_ms": 0.051456,
+      "wall_span_ms": 0.217216
+    },
+    {
+      "layer": 38,
+      "ffn_kind": "moe",
+      "start_ordinal": 1595,
+      "q_anchor_ordinal": 1597,
+      "attention_handoff_ordinals": [
+        1629,
+        1630
+      ],
+      "ffn_handoff_ordinals": [
+        1647,
+        1648
+      ],
+      "end_ordinal": 1648,
+      "launches": 53,
+      "summed_residency_ns": 347232,
+      "active_union_ns": 257504,
+      "overlap_excess_ns": 89728,
+      "wall_span_ns": 267488,
+      "summed_residency_ms": 0.347232,
+      "active_union_ms": 0.257504,
+      "overlap_excess_ms": 0.089728,
+      "wall_span_ms": 0.267488
+    },
+    {
+      "layer": 39,
+      "ffn_kind": "moe",
+      "start_ordinal": 1649,
+      "q_anchor_ordinal": 1651,
+      "attention_handoff_ordinals": [
+        1667,
+        1668
+      ],
+      "ffn_handoff_ordinals": [
+        1685,
+        1686
+      ],
+      "end_ordinal": 1686,
+      "launches": 37,
+      "summed_residency_ns": 274751,
+      "active_union_ns": 209407,
+      "overlap_excess_ns": 65344,
+      "wall_span_ns": 216224,
+      "summed_residency_ms": 0.274751,
+      "active_union_ms": 0.209407,
+      "overlap_excess_ms": 0.065344,
+      "wall_span_ms": 0.216224
+    },
+    {
+      "layer": 40,
+      "ffn_kind": "moe",
+      "start_ordinal": 1687,
+      "q_anchor_ordinal": 1689,
+      "attention_handoff_ordinals": [
+        1705,
+        1706
+      ],
+      "ffn_handoff_ordinals": [
+        1723,
+        1724
+      ],
+      "end_ordinal": 1724,
+      "launches": 37,
+      "summed_residency_ns": 266078,
+      "active_union_ns": 204288,
+      "overlap_excess_ns": 61790,
+      "wall_span_ns": 211680,
+      "summed_residency_ms": 0.266078,
+      "active_union_ms": 0.204288,
+      "overlap_excess_ms": 0.06179,
+      "wall_span_ms": 0.21168
+    },
+    {
+      "layer": 41,
+      "ffn_kind": "moe",
+      "start_ordinal": 1725,
+      "q_anchor_ordinal": 1727,
+      "attention_handoff_ordinals": [
+        1743,
+        1744
+      ],
+      "ffn_handoff_ordinals": [
+        1761,
+        1762
+      ],
+      "end_ordinal": 1762,
+      "launches": 37,
+      "summed_residency_ns": 261504,
+      "active_union_ns": 209056,
+      "overlap_excess_ns": 52448,
+      "wall_span_ns": 216608,
+      "summed_residency_ms": 0.261504,
+      "active_union_ms": 0.209056,
+      "overlap_excess_ms": 0.052448,
+      "wall_span_ms": 0.216608
+    },
+    {
+      "layer": 42,
+      "ffn_kind": "moe",
+      "start_ordinal": 1763,
+      "q_anchor_ordinal": 1765,
+      "attention_handoff_ordinals": [
+        1797,
+        1798
+      ],
+      "ffn_handoff_ordinals": [
+        1815,
+        1816
+      ],
+      "end_ordinal": 1816,
+      "launches": 53,
+      "summed_residency_ns": 353184,
+      "active_union_ns": 260032,
+      "overlap_excess_ns": 93152,
+      "wall_span_ns": 268768,
+      "summed_residency_ms": 0.353184,
+      "active_union_ms": 0.260032,
+      "overlap_excess_ms": 0.093152,
+      "wall_span_ms": 0.268768
+    },
+    {
+      "layer": 43,
+      "ffn_kind": "moe",
+      "start_ordinal": 1817,
+      "q_anchor_ordinal": 1819,
+      "attention_handoff_ordinals": [
+        1835,
+        1836
+      ],
+      "ffn_handoff_ordinals": [
+        1853,
+        1854
+      ],
+      "end_ordinal": 1854,
+      "launches": 37,
+      "summed_residency_ns": 271007,
+      "active_union_ns": 212383,
+      "overlap_excess_ns": 58624,
+      "wall_span_ns": 219392,
+      "summed_residency_ms": 0.271007,
+      "active_union_ms": 0.212383,
+      "overlap_excess_ms": 0.058624,
+      "wall_span_ms": 0.219392
+    },
+    {
+      "layer": 44,
+      "ffn_kind": "moe",
+      "start_ordinal": 1855,
+      "q_anchor_ordinal": 1857,
+      "attention_handoff_ordinals": [
+        1873,
+        1874
+      ],
+      "ffn_handoff_ordinals": [
+        1891,
+        1892
+      ],
+      "end_ordinal": 1892,
+      "launches": 37,
+      "summed_residency_ns": 282143,
+      "active_union_ns": 213407,
+      "overlap_excess_ns": 68736,
+      "wall_span_ns": 220224,
+      "summed_residency_ms": 0.282143,
+      "active_union_ms": 0.213407,
+      "overlap_excess_ms": 0.068736,
+      "wall_span_ms": 0.220224
+    },
+    {
+      "layer": 45,
+      "ffn_kind": "moe",
+      "start_ordinal": 1893,
+      "q_anchor_ordinal": 1895,
+      "attention_handoff_ordinals": [
+        1911,
+        1912
+      ],
+      "ffn_handoff_ordinals": [
+        1929,
+        1930
+      ],
+      "end_ordinal": 1930,
+      "launches": 37,
+      "summed_residency_ns": 270591,
+      "active_union_ns": 211071,
+      "overlap_excess_ns": 59520,
+      "wall_span_ns": 218048,
+      "summed_residency_ms": 0.270591,
+      "active_union_ms": 0.211071,
+      "overlap_excess_ms": 0.05952,
+      "wall_span_ms": 0.218048
+    },
+    {
+      "layer": 46,
+      "ffn_kind": "moe",
+      "start_ordinal": 1931,
+      "q_anchor_ordinal": 1933,
+      "attention_handoff_ordinals": [
+        1965,
+        1966
+      ],
+      "ffn_handoff_ordinals": [
+        1983,
+        1984
+      ],
+      "end_ordinal": 1984,
+      "launches": 53,
+      "summed_residency_ns": 340576,
+      "active_union_ns": 260160,
+      "overlap_excess_ns": 80416,
+      "wall_span_ns": 268928,
+      "summed_residency_ms": 0.340576,
+      "active_union_ms": 0.26016,
+      "overlap_excess_ms": 0.080416,
+      "wall_span_ms": 0.268928
+    },
+    {
+      "layer": 47,
+      "ffn_kind": "moe",
+      "start_ordinal": 1985,
+      "q_anchor_ordinal": 1987,
+      "attention_handoff_ordinals": [
+        2003,
+        2004
+      ],
+      "ffn_handoff_ordinals": [
+        2021,
+        2022
+      ],
+      "end_ordinal": 2022,
+      "launches": 37,
+      "summed_residency_ns": 278784,
+      "active_union_ns": 210880,
+      "overlap_excess_ns": 67904,
+      "wall_span_ns": 219104,
+      "summed_residency_ms": 0.278784,
+      "active_union_ms": 0.21088,
+      "overlap_excess_ms": 0.067904,
+      "wall_span_ms": 0.219104
+    },
+    {
+      "layer": 48,
+      "ffn_kind": "moe",
+      "start_ordinal": 2023,
+      "q_anchor_ordinal": 2025,
+      "attention_handoff_ordinals": [
+        2041,
+        2042
+      ],
+      "ffn_handoff_ordinals": [
+        2059,
+        2060
+      ],
+      "end_ordinal": 2060,
+      "launches": 37,
+      "summed_residency_ns": 269728,
+      "active_union_ns": 210432,
+      "overlap_excess_ns": 59296,
+      "wall_span_ns": 217216,
+      "summed_residency_ms": 0.269728,
+      "active_union_ms": 0.210432,
+      "overlap_excess_ms": 0.059296,
+      "wall_span_ms": 0.217216
+    },
+    {
+      "layer": 49,
+      "ffn_kind": "moe",
+      "start_ordinal": 2061,
+      "q_anchor_ordinal": 2063,
+      "attention_handoff_ordinals": [
+        2079,
+        2080
+      ],
+      "ffn_handoff_ordinals": [
+        2097,
+        2098
+      ],
+      "end_ordinal": 2098,
+      "launches": 37,
+      "summed_residency_ns": 267839,
+      "active_union_ns": 212543,
+      "overlap_excess_ns": 55296,
+      "wall_span_ns": 219392,
+      "summed_residency_ms": 0.267839,
+      "active_union_ms": 0.212543,
+      "overlap_excess_ms": 0.055296,
+      "wall_span_ms": 0.219392
+    },
+    {
+      "layer": 50,
+      "ffn_kind": "moe",
+      "start_ordinal": 2099,
+      "q_anchor_ordinal": 2101,
+      "attention_handoff_ordinals": [
+        2133,
+        2134
+      ],
+      "ffn_handoff_ordinals": [
+        2151,
+        2152
+      ],
+      "end_ordinal": 2152,
+      "launches": 53,
+      "summed_residency_ns": 334110,
+      "active_union_ns": 255199,
+      "overlap_excess_ns": 78911,
+      "wall_span_ns": 264224,
+      "summed_residency_ms": 0.33411,
+      "active_union_ms": 0.255199,
+      "overlap_excess_ms": 0.078911,
+      "wall_span_ms": 0.264224
+    },
+    {
+      "layer": 51,
+      "ffn_kind": "moe",
+      "start_ordinal": 2153,
+      "q_anchor_ordinal": 2155,
+      "attention_handoff_ordinals": [
+        2171,
+        2172
+      ],
+      "ffn_handoff_ordinals": [
+        2189,
+        2190
+      ],
+      "end_ordinal": 2190,
+      "launches": 37,
+      "summed_residency_ns": 260383,
+      "active_union_ns": 210495,
+      "overlap_excess_ns": 49888,
+      "wall_span_ns": 217728,
+      "summed_residency_ms": 0.260383,
+      "active_union_ms": 0.210495,
+      "overlap_excess_ms": 0.049888,
+      "wall_span_ms": 0.217728
+    },
+    {
+      "layer": 52,
+      "ffn_kind": "moe",
+      "start_ordinal": 2191,
+      "q_anchor_ordinal": 2193,
+      "attention_handoff_ordinals": [
+        2209,
+        2210
+      ],
+      "ffn_handoff_ordinals": [
+        2227,
+        2228
+      ],
+      "end_ordinal": 2228,
+      "launches": 37,
+      "summed_residency_ns": 264831,
+      "active_union_ns": 202879,
+      "overlap_excess_ns": 61952,
+      "wall_span_ns": 211136,
+      "summed_residency_ms": 0.264831,
+      "active_union_ms": 0.202879,
+      "overlap_excess_ms": 0.061952,
+      "wall_span_ms": 0.211136
+    },
+    {
+      "layer": 53,
+      "ffn_kind": "moe",
+      "start_ordinal": 2229,
+      "q_anchor_ordinal": 2231,
+      "attention_handoff_ordinals": [
+        2247,
+        2248
+      ],
+      "ffn_handoff_ordinals": [
+        2265,
+        2266
+      ],
+      "end_ordinal": 2266,
+      "launches": 37,
+      "summed_residency_ns": 273632,
+      "active_union_ns": 208448,
+      "overlap_excess_ns": 65184,
+      "wall_span_ns": 215072,
+      "summed_residency_ms": 0.273632,
+      "active_union_ms": 0.208448,
+      "overlap_excess_ms": 0.065184,
+      "wall_span_ms": 0.215072
+    },
+    {
+      "layer": 54,
+      "ffn_kind": "moe",
+      "start_ordinal": 2267,
+      "q_anchor_ordinal": 2269,
+      "attention_handoff_ordinals": [
+        2301,
+        2302
+      ],
+      "ffn_handoff_ordinals": [
+        2319,
+        2320
+      ],
+      "end_ordinal": 2320,
+      "launches": 53,
+      "summed_residency_ns": 341023,
+      "active_union_ns": 261248,
+      "overlap_excess_ns": 79775,
+      "wall_span_ns": 270688,
+      "summed_residency_ms": 0.341023,
+      "active_union_ms": 0.261248,
+      "overlap_excess_ms": 0.079775,
+      "wall_span_ms": 0.270688
+    },
+    {
+      "layer": 55,
+      "ffn_kind": "moe",
+      "start_ordinal": 2321,
+      "q_anchor_ordinal": 2323,
+      "attention_handoff_ordinals": [
+        2339,
+        2340
+      ],
+      "ffn_handoff_ordinals": [
+        2357,
+        2358
+      ],
+      "end_ordinal": 2358,
+      "launches": 37,
+      "summed_residency_ns": 279455,
+      "active_union_ns": 211712,
+      "overlap_excess_ns": 67743,
+      "wall_span_ns": 218304,
+      "summed_residency_ms": 0.279455,
+      "active_union_ms": 0.211712,
+      "overlap_excess_ms": 0.067743,
+      "wall_span_ms": 0.218304
+    },
+    {
+      "layer": 56,
+      "ffn_kind": "moe",
+      "start_ordinal": 2359,
+      "q_anchor_ordinal": 2361,
+      "attention_handoff_ordinals": [
+        2377,
+        2378
+      ],
+      "ffn_handoff_ordinals": [
+        2395,
+        2396
+      ],
+      "end_ordinal": 2396,
+      "launches": 37,
+      "summed_residency_ns": 277504,
+      "active_union_ns": 210944,
+      "overlap_excess_ns": 66560,
+      "wall_span_ns": 217600,
+      "summed_residency_ms": 0.277504,
+      "active_union_ms": 0.210944,
+      "overlap_excess_ms": 0.06656,
+      "wall_span_ms": 0.2176
+    },
+    {
+      "layer": 57,
+      "ffn_kind": "moe",
+      "start_ordinal": 2397,
+      "q_anchor_ordinal": 2399,
+      "attention_handoff_ordinals": [
+        2415,
+        2416
+      ],
+      "ffn_handoff_ordinals": [
+        2433,
+        2434
+      ],
+      "end_ordinal": 2434,
+      "launches": 37,
+      "summed_residency_ns": 268736,
+      "active_union_ns": 209920,
+      "overlap_excess_ns": 58816,
+      "wall_span_ns": 217280,
+      "summed_residency_ms": 0.268736,
+      "active_union_ms": 0.20992,
+      "overlap_excess_ms": 0.058816,
+      "wall_span_ms": 0.21728
+    },
+    {
+      "layer": 58,
+      "ffn_kind": "moe",
+      "start_ordinal": 2435,
+      "q_anchor_ordinal": 2437,
+      "attention_handoff_ordinals": [
+        2469,
+        2470
+      ],
+      "ffn_handoff_ordinals": [
+        2487,
+        2488
+      ],
+      "end_ordinal": 2488,
+      "launches": 53,
+      "summed_residency_ns": 340445,
+      "active_union_ns": 259422,
+      "overlap_excess_ns": 81023,
+      "wall_span_ns": 268448,
+      "summed_residency_ms": 0.340445,
+      "active_union_ms": 0.259422,
+      "overlap_excess_ms": 0.081023,
+      "wall_span_ms": 0.268448
+    },
+    {
+      "layer": 59,
+      "ffn_kind": "moe",
+      "start_ordinal": 2489,
+      "q_anchor_ordinal": 2491,
+      "attention_handoff_ordinals": [
+        2507,
+        2508
+      ],
+      "ffn_handoff_ordinals": [
+        2525,
+        2526
+      ],
+      "end_ordinal": 2526,
+      "launches": 37,
+      "summed_residency_ns": 270368,
+      "active_union_ns": 209312,
+      "overlap_excess_ns": 61056,
+      "wall_span_ns": 216224,
+      "summed_residency_ms": 0.270368,
+      "active_union_ms": 0.209312,
+      "overlap_excess_ms": 0.061056,
+      "wall_span_ms": 0.216224
+    },
+    {
+      "layer": 60,
+      "ffn_kind": "moe",
+      "start_ordinal": 2527,
+      "q_anchor_ordinal": 2529,
+      "attention_handoff_ordinals": [
+        2545,
+        2546
+      ],
+      "ffn_handoff_ordinals": [
+        2563,
+        2564
+      ],
+      "end_ordinal": 2564,
+      "launches": 37,
+      "summed_residency_ns": 269150,
+      "active_union_ns": 209342,
+      "overlap_excess_ns": 59808,
+      "wall_span_ns": 216416,
+      "summed_residency_ms": 0.26915,
+      "active_union_ms": 0.209342,
+      "overlap_excess_ms": 0.059808,
+      "wall_span_ms": 0.216416
+    },
+    {
+      "layer": 61,
+      "ffn_kind": "moe",
+      "start_ordinal": 2565,
+      "q_anchor_ordinal": 2567,
+      "attention_handoff_ordinals": [
+        2583,
+        2584
+      ],
+      "ffn_handoff_ordinals": [
+        2601,
+        2602
+      ],
+      "end_ordinal": 2602,
+      "launches": 37,
+      "summed_residency_ns": 280608,
+      "active_union_ns": 210752,
+      "overlap_excess_ns": 69856,
+      "wall_span_ns": 217280,
+      "summed_residency_ms": 0.280608,
+      "active_union_ms": 0.210752,
+      "overlap_excess_ms": 0.069856,
+      "wall_span_ms": 0.21728
+    },
+    {
+      "layer": 62,
+      "ffn_kind": "moe",
+      "start_ordinal": 2603,
+      "q_anchor_ordinal": 2605,
+      "attention_handoff_ordinals": [
+        2637,
+        2638
+      ],
+      "ffn_handoff_ordinals": [
+        2655,
+        2656
+      ],
+      "end_ordinal": 2656,
+      "launches": 53,
+      "summed_residency_ns": 345599,
+      "active_union_ns": 262016,
+      "overlap_excess_ns": 83583,
+      "wall_span_ns": 271392,
+      "summed_residency_ms": 0.345599,
+      "active_union_ms": 0.262016,
+      "overlap_excess_ms": 0.083583,
+      "wall_span_ms": 0.271392
+    },
+    {
+      "layer": 63,
+      "ffn_kind": "moe",
+      "start_ordinal": 2657,
+      "q_anchor_ordinal": 2659,
+      "attention_handoff_ordinals": [
+        2675,
+        2676
+      ],
+      "ffn_handoff_ordinals": [
+        2693,
+        2694
+      ],
+      "end_ordinal": 2694,
+      "launches": 37,
+      "summed_residency_ns": 272159,
+      "active_union_ns": 210816,
+      "overlap_excess_ns": 61343,
+      "wall_span_ns": 217888,
+      "summed_residency_ms": 0.272159,
+      "active_union_ms": 0.210816,
+      "overlap_excess_ms": 0.061343,
+      "wall_span_ms": 0.217888
+    },
+    {
+      "layer": 64,
+      "ffn_kind": "moe",
+      "start_ordinal": 2695,
+      "q_anchor_ordinal": 2697,
+      "attention_handoff_ordinals": [
+        2713,
+        2714
+      ],
+      "ffn_handoff_ordinals": [
+        2731,
+        2732
+      ],
+      "end_ordinal": 2732,
+      "launches": 37,
+      "summed_residency_ns": 269728,
+      "active_union_ns": 208384,
+      "overlap_excess_ns": 61344,
+      "wall_span_ns": 215872,
+      "summed_residency_ms": 0.269728,
+      "active_union_ms": 0.208384,
+      "overlap_excess_ms": 0.061344,
+      "wall_span_ms": 0.215872
+    },
+    {
+      "layer": 65,
+      "ffn_kind": "moe",
+      "start_ordinal": 2733,
+      "q_anchor_ordinal": 2735,
+      "attention_handoff_ordinals": [
+        2751,
+        2752
+      ],
+      "ffn_handoff_ordinals": [
+        2769,
+        2770
+      ],
+      "end_ordinal": 2770,
+      "launches": 37,
+      "summed_residency_ns": 268383,
+      "active_union_ns": 207359,
+      "overlap_excess_ns": 61024,
+      "wall_span_ns": 214304,
+      "summed_residency_ms": 0.268383,
+      "active_union_ms": 0.207359,
+      "overlap_excess_ms": 0.061024,
+      "wall_span_ms": 0.214304
+    },
+    {
+      "layer": 66,
+      "ffn_kind": "moe",
+      "start_ordinal": 2771,
+      "q_anchor_ordinal": 2773,
+      "attention_handoff_ordinals": [
+        2805,
+        2806
+      ],
+      "ffn_handoff_ordinals": [
+        2823,
+        2824
+      ],
+      "end_ordinal": 2824,
+      "launches": 53,
+      "summed_residency_ns": 337310,
+      "active_union_ns": 257343,
+      "overlap_excess_ns": 79967,
+      "wall_span_ns": 265760,
+      "summed_residency_ms": 0.33731,
+      "active_union_ms": 0.257343,
+      "overlap_excess_ms": 0.079967,
+      "wall_span_ms": 0.26576
+    },
+    {
+      "layer": 67,
+      "ffn_kind": "moe",
+      "start_ordinal": 2825,
+      "q_anchor_ordinal": 2827,
+      "attention_handoff_ordinals": [
+        2843,
+        2844
+      ],
+      "ffn_handoff_ordinals": [
+        2861,
+        2862
+      ],
+      "end_ordinal": 2862,
+      "launches": 37,
+      "summed_residency_ns": 271007,
+      "active_union_ns": 212064,
+      "overlap_excess_ns": 58943,
+      "wall_span_ns": 219264,
+      "summed_residency_ms": 0.271007,
+      "active_union_ms": 0.212064,
+      "overlap_excess_ms": 0.058943,
+      "wall_span_ms": 0.219264
+    },
+    {
+      "layer": 68,
+      "ffn_kind": "moe",
+      "start_ordinal": 2863,
+      "q_anchor_ordinal": 2865,
+      "attention_handoff_ordinals": [
+        2881,
+        2882
+      ],
+      "ffn_handoff_ordinals": [
+        2899,
+        2900
+      ],
+      "end_ordinal": 2900,
+      "launches": 37,
+      "summed_residency_ns": 257598,
+      "active_union_ns": 210175,
+      "overlap_excess_ns": 47423,
+      "wall_span_ns": 217312,
+      "summed_residency_ms": 0.257598,
+      "active_union_ms": 0.210175,
+      "overlap_excess_ms": 0.047423,
+      "wall_span_ms": 0.217312
+    },
+    {
+      "layer": 69,
+      "ffn_kind": "moe",
+      "start_ordinal": 2901,
+      "q_anchor_ordinal": 2903,
+      "attention_handoff_ordinals": [
+        2919,
+        2920
+      ],
+      "ffn_handoff_ordinals": [
+        2937,
+        2938
+      ],
+      "end_ordinal": 2938,
+      "launches": 37,
+      "summed_residency_ns": 263135,
+      "active_union_ns": 206944,
+      "overlap_excess_ns": 56191,
+      "wall_span_ns": 214432,
+      "summed_residency_ms": 0.263135,
+      "active_union_ms": 0.206944,
+      "overlap_excess_ms": 0.056191,
+      "wall_span_ms": 0.214432
+    },
+    {
+      "layer": 70,
+      "ffn_kind": "moe",
+      "start_ordinal": 2939,
+      "q_anchor_ordinal": 2941,
+      "attention_handoff_ordinals": [
+        2973,
+        2974
+      ],
+      "ffn_handoff_ordinals": [
+        2991,
+        2992
+      ],
+      "end_ordinal": 2992,
+      "launches": 53,
+      "summed_residency_ns": 326720,
+      "active_union_ns": 258240,
+      "overlap_excess_ns": 68480,
+      "wall_span_ns": 268032,
+      "summed_residency_ms": 0.32672,
+      "active_union_ms": 0.25824,
+      "overlap_excess_ms": 0.06848,
+      "wall_span_ms": 0.268032
+    },
+    {
+      "layer": 71,
+      "ffn_kind": "moe",
+      "start_ordinal": 2993,
+      "q_anchor_ordinal": 2995,
+      "attention_handoff_ordinals": [
+        3011,
+        3012
+      ],
+      "ffn_handoff_ordinals": [
+        3029,
+        3030
+      ],
+      "end_ordinal": 3030,
+      "launches": 37,
+      "summed_residency_ns": 257824,
+      "active_union_ns": 206784,
+      "overlap_excess_ns": 51040,
+      "wall_span_ns": 213888,
+      "summed_residency_ms": 0.257824,
+      "active_union_ms": 0.206784,
+      "overlap_excess_ms": 0.05104,
+      "wall_span_ms": 0.213888
+    },
+    {
+      "layer": 72,
+      "ffn_kind": "moe",
+      "start_ordinal": 3031,
+      "q_anchor_ordinal": 3033,
+      "attention_handoff_ordinals": [
+        3049,
+        3050
+      ],
+      "ffn_handoff_ordinals": [
+        3067,
+        3068
+      ],
+      "end_ordinal": 3068,
+      "launches": 37,
+      "summed_residency_ns": 266878,
+      "active_union_ns": 207391,
+      "overlap_excess_ns": 59487,
+      "wall_span_ns": 214880,
+      "summed_residency_ms": 0.266878,
+      "active_union_ms": 0.207391,
+      "overlap_excess_ms": 0.059487,
+      "wall_span_ms": 0.21488
+    },
+    {
+      "layer": 73,
+      "ffn_kind": "moe",
+      "start_ordinal": 3069,
+      "q_anchor_ordinal": 3071,
+      "attention_handoff_ordinals": [
+        3087,
+        3088
+      ],
+      "ffn_handoff_ordinals": [
+        3105,
+        3106
+      ],
+      "end_ordinal": 3106,
+      "launches": 37,
+      "summed_residency_ns": 254047,
+      "active_union_ns": 208735,
+      "overlap_excess_ns": 45312,
+      "wall_span_ns": 215744,
+      "summed_residency_ms": 0.254047,
+      "active_union_ms": 0.208735,
+      "overlap_excess_ms": 0.045312,
+      "wall_span_ms": 0.215744
+    },
+    {
+      "layer": 74,
+      "ffn_kind": "moe",
+      "start_ordinal": 3107,
+      "q_anchor_ordinal": 3109,
+      "attention_handoff_ordinals": [
+        3141,
+        3142
+      ],
+      "ffn_handoff_ordinals": [
+        3159,
+        3160
+      ],
+      "end_ordinal": 3160,
+      "launches": 53,
+      "summed_residency_ns": 335134,
+      "active_union_ns": 255903,
+      "overlap_excess_ns": 79231,
+      "wall_span_ns": 264864,
+      "summed_residency_ms": 0.335134,
+      "active_union_ms": 0.255903,
+      "overlap_excess_ms": 0.079231,
+      "wall_span_ms": 0.264864
+    },
+    {
+      "layer": 75,
+      "ffn_kind": "moe",
+      "start_ordinal": 3161,
+      "q_anchor_ordinal": 3163,
+      "attention_handoff_ordinals": [
+        3179,
+        3180
+      ],
+      "ffn_handoff_ordinals": [
+        3197,
+        3198
+      ],
+      "end_ordinal": 3198,
+      "launches": 37,
+      "summed_residency_ns": 265055,
+      "active_union_ns": 208063,
+      "overlap_excess_ns": 56992,
+      "wall_span_ns": 215168,
+      "summed_residency_ms": 0.265055,
+      "active_union_ms": 0.208063,
+      "overlap_excess_ms": 0.056992,
+      "wall_span_ms": 0.215168
+    },
+    {
+      "layer": 76,
+      "ffn_kind": "moe",
+      "start_ordinal": 3199,
+      "q_anchor_ordinal": 3201,
+      "attention_handoff_ordinals": [
+        3217,
+        3218
+      ],
+      "ffn_handoff_ordinals": [
+        3235,
+        3236
+      ],
+      "end_ordinal": 3236,
+      "launches": 37,
+      "summed_residency_ns": 264126,
+      "active_union_ns": 207263,
+      "overlap_excess_ns": 56863,
+      "wall_span_ns": 214272,
+      "summed_residency_ms": 0.264126,
+      "active_union_ms": 0.207263,
+      "overlap_excess_ms": 0.056863,
+      "wall_span_ms": 0.214272
+    },
+    {
+      "layer": 77,
+      "ffn_kind": "moe",
+      "start_ordinal": 3237,
+      "q_anchor_ordinal": 3239,
+      "attention_handoff_ordinals": [
+        3255,
+        3256
+      ],
+      "ffn_handoff_ordinals": [
+        3273
+      ],
+      "end_ordinal": 3273,
+      "launches": 36,
+      "summed_residency_ns": 281952,
+      "active_union_ns": 229184,
+      "overlap_excess_ns": 52768,
+      "wall_span_ns": 240160,
+      "summed_residency_ms": 0.281952,
+      "active_union_ms": 0.229184,
+      "overlap_excess_ms": 0.052768,
+      "wall_span_ms": 0.24016
+    }
+  ],
+  "validation_errors": [],
+  "warnings": [],
+  "hierarchy_partition": {
+    "status": "pass",
+    "errors": [],
+    "contract": "every non-leaf child list partitions its parent event IDs and exact summed-residency nanoseconds"
+  },
+  "kernel_family_mapping": {
+    "status": "pass",
+    "mapped_family_count": 30,
+    "strict_comparison_eligible_family_count": 30,
+    "mapped_event_count": 2391,
+    "unmapped_event_count": 811,
+    "artifact": "gpu0_kernel_family_mapping.json",
+    "cross_rank_family_symmetry_audit": {
+      "status": "pass",
+      "expected_ranks": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "observed_ranks": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  }
+}

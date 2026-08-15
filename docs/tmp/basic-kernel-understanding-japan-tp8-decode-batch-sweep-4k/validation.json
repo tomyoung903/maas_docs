@@ -37,7 +37,7 @@
       {
         "name": "Modeled utilization physical bounds",
         "status": "pass",
-        "evidence": "All 384 modeled MFU/MBU values across native, EAGLE, and DP/EP views are within 0\u2013100%."
+        "evidence": "All 386 modeled MFU/MBU values across native and optional complete experiment views are within 0\u2013100%."
       },
       {
         "name": "GPU0 active-union boundary",
@@ -162,6 +162,51 @@
           "status": "pass",
           "evidence": "No raw prompt text, token IDs, response text, or private prefix corpus is published."
         }
+      ]
+    },
+    "b100_gb300": {
+      "status": "fail",
+      "evidence_status": "pass",
+      "failure_scope": "exactly_one_computed_decode_forward",
+      "checks": [
+        {
+          "name": "Measured request payload and real batch",
+          "status": "pass",
+          "evidence": "100 distinct 4,096-token sequences returned HTTP success; server reported real_bs=100 and zero prefill rows."
+        },
+        {
+          "name": "Selected eight-rank generation membership",
+          "status": "pass",
+          "evidence": "Generation 1 has exactly 3,202 graph-member kernels on every TP rank and 25,616 uniquely owned rows in total."
+        },
+        {
+          "name": "GPU0 semantic ownership tree",
+          "status": "pass",
+          "evidence": "All 3,202 selected GPU0 events reconcile through 78 source-ordered layer motifs and the final output tail."
+        },
+        {
+          "name": "Two complete request generations preserved",
+          "status": "pass",
+          "evidence": "Generation 1 is labeled 'selected representative first/longer CUDA-graph replay'; generation 2 remains 'alternate complete CUDA-graph replay; token role unassigned'."
+        },
+        {
+          "name": "Exactly one computed decode forward",
+          "status": "fail",
+          "evidence": "exactly-one-computed-decode-forward claim fails: the matched request contains 2 complete eight-rank CUDA-graph generations, all before the latest Finish boundary; token roles are not attributable"
+        },
+        {
+          "name": "No cleanup designation",
+          "status": "pass",
+          "evidence": "Neither complete replay is called cleanup; no token ordinal is inferred from graph order."
+        },
+        {
+          "name": "GB300 utilization provenance",
+          "status": "pass",
+          "evidence": "MFU and MBU remain null because this capture has no reviewed local numerator/denominator pair or DRAM counters."
+        }
+      ],
+      "errors": [
+        "exactly-one-computed-decode-forward claim fails: the matched request contains 2 complete eight-rank CUDA-graph generations, all before the latest Finish boundary; token roles are not attributable"
       ]
     },
     "b100_dp8_ep8": {

@@ -42,6 +42,7 @@ then the legacy global `experiment.context_tokens` fallback.
     "topology": {"tp": 8, "dp": 1, "ep": 1, "pp": 1},
     "cuda_graph_batches": [1, 10, 100, 200, 500],
     "hardware": {
+      "accelerator": "NVIDIA H200",
       "peak_tflops": null,
       "hbm_tb_s": null,
       "sources": []
@@ -253,18 +254,24 @@ milliseconds unless a key explicitly names another unit.
 
 The five keys under `batches` remain the original TP8/DP1/EP1 batch sweep,
 including native B=500. Separately captured experiments may be added under
-`display_views`: B=20 speculative decoding at `b20_eagle`, and B=100
-TP8/DP8/EP8 at `b100_dp8_ep8`. When both are present, the primary **Displayed
-batch** selector reads B=1, B=10, B=20 (EAGLE), B=100, B=200, B=500, and
-B=100 (DP&EP).
+`display_views`: B=20 speculative decoding at `b20_eagle`, an independently
+captured B=100 GB300 standard-decode view at `b100_gb300`, and B=100
+TP8/DP8/EP8 at `b100_dp8_ep8`. When all are present, the primary **Displayed
+batch** selector reads B=1, B=10, B=20 (EAGLE), B=100, B=100 (GB300), B=200,
+B=500, and B=100 (DP&EP). The GB300 choice is intentionally adjacent to native
+H200 B=100 so the hardware comparison does not masquerade as another numeric
+batch.
 
 Each is a complete experiment view, not a tree overlay and not another numeric
 `batches` key. Every batch-dependent panel consumes its own `batch` object. Missing
 optional evidence is rendered as unavailable and must never fall back to the
 similarly sized native object. Serialized inputs using the legacy `tree_views`
 key are rejected. Every view requires matching configured and experiment
-topologies, passing validation and provenance, a reconciling tree, and a layer
-ledger covering decoder layers 0 through 77.
+topologies, a reconciling tree, and a layer ledger covering decoder layers 0
+through 77. Validation and provenance normally must pass. The GB300 view also
+admits one narrowly checked `evidence_complete_contract_failed` state: evidence
+membership and tree ownership pass, while the pre-capture request contract is
+preserved as failed rather than silently relabeling a second replay as cleanup.
 
 ### B=20 EAGLE
 
@@ -302,6 +309,88 @@ display_views.b20_eagle
     one_rank_tree.scope.context_tokens=4096
     one_rank_tree.layer_ledger                # target layers 0 through 77
 ```
+
+### B=100 GB300
+
+`display_views.b100_gb300` is a separately captured standard-decode TP8/DP1/
+EP1/PP1 experiment on Taiguo GB300 hardware. It uses the same real batch of 100,
+4,096-token effective context, and non-speculative pre-capture contract as
+native H200 B=100. Post-capture audit found two complete eight-rank graph
+generations and therefore disproved the expected exactly-one-computed-forward
+claim. The displayed tree is explicitly the **selected representative
+first/longer CUDA-graph replay**. Generation 2 remains **alternate complete
+CUDA-graph replay; token role unassigned** and is never called cleanup. The
+tree-local primary boundary is GPU-0 active-kernel interval union. It does not
+replace `batches["100"]` and is not placed on the native H200 B=1 scaling
+identity: matching timing semantics do not make different accelerators one
+controlled batch sweep.
+
+Required GB300 fields include:
+
+```text
+display_views.b100_gb300
+  batch_size=100, context_tokens=4096, kind=standard_decode_hardware
+  topology.configured={tp:8, dp:1, ep:1, pp:1}
+  experiment
+    cluster=Taiguo, gpu=<explicit GB300 label>
+    runtime_image, sglang_revision, model_revision
+    topology={tp:8, dp:1, ep:1, pp:1}
+    hardware.accelerator=<same exact label as experiment.gpu>
+    hardware.sources=[]                       # allowed only when utilization is null
+  validation.status=fail
+  validation.evidence_status=pass
+  validation.failure_scope=exactly_one_computed_decode_forward
+  provenance.capture_id, provenance.validation_status=fail
+  provenance.audit_disposition=evidence_complete_contract_failed
+  provenance.artifacts[]                      # staged and content-hashed by adapter
+  related_reports
+    GB300 Kernel efficiency sweep -> ../glm52-gb300-kernel-efficiency-sweep/
+  batch
+    status=fail, context_tokens=4096
+    proof.requested_batch=100, proof.observed_real_batch=100
+    proof.speculative=false
+    proof.complete_model_generations=2
+    proof.selected_generation_ordinal=1
+    proof.selected_generation_role=selected representative first/longer CUDA-graph replay
+    proof.alternate_generation_role=alternate complete CUDA-graph replay; token role unassigned
+    proof.cleanup_designated=false
+    graph.cleanup_* = null                    # no replay is designated cleanup
+    kernel_timing.boundary=gpu0_active_kernel_interval_union
+    one_rank_tree.scope.batch_size=100
+    one_rank_tree.scope.context_tokens=4096
+    one_rank_tree.layer_ledger                # exactly layers 0 through 77
+```
+
+A timing-only GB300 view is valid with every MFU/MBU field null. The linked
+**GB300 Kernel efficiency sweep** supplies standalone MFU/MBU-min and exact
+B=100 full-versus-standalone joins; the full-trace tree does not copy those
+values into unmatched leaves. Publishing any
+`mfu_pct`/`mfu_percent` requires a positive GB300 `hardware.peak_tflops` and a
+non-empty local source list with at least one entry explicitly identifying
+GB300. Publishing any `mbu_min_pct`/`mbu_percent` likewise requires a positive
+sourced GB300 `hardware.hbm_tb_s`. If the tree repeats peak
+constants, `one_rank_tree.constants.accelerator` must match `experiment.gpu`,
+the repeated constants must numerically match `experiment.hardware`, and the
+tree constants need their own source list. This gate prevents an H200 roof from
+silently producing a GB300 percentage.
+
+Use the dedicated scaffold without publishing:
+
+```bash
+python3 build_gb300_b100_display_view.py
+python3 build_gb300_display_view_input.py \
+  --baseline report_maas_b100_dp8_ep8_eagle_b20_integrated/report_data.json \
+  --baseline-assets integrated_b100_eagle_b20_input \
+  --view-input gb300_input/b100_gb300_display_view.json \
+  --output integrated_b100_eagle_b20_gb300_input/report_data.json
+```
+
+The evidence builder derives the view from the real analyzer outputs and
+asserts the two-generation failure shape. The integration adapter does not
+calculate measurements. It validates the complete audited view, recomputes the
+bytes and SHA-256 of each declared artifact, stages those
+files below `gb300_evidence/`, and injects only `display_views.b100_gb300`.
+Missing evidence is a hard error; no placeholder result is emitted.
 
 ### B=100 DP8/EP8
 
@@ -350,8 +439,8 @@ The generator rejects the view unless its configured and experiment topologies
 match, validation and provenance pass, view/batch/tree context counts agree,
 scope and root timing reconcile, child event counts add to their parents, and
 the layer ledger covers all 78 decoder layers. The primary selector renders
-five choices without optional views, six with either optional view, and seven
-with both.
+five choices without optional views and adds one choice per complete optional
+view. With EAGLE, GB300, and DP/EP all present it renders eight choices.
 
 The primary displayed DP8 rate divides 100 useful computed tokens by the
 audited full model-graph envelope across the capture. The representative GPU0
@@ -408,8 +497,9 @@ BF16 latent-value BMM (`2.1.8`), BF16-to-FP8 quantization plus FP8 `o_proj`
 all 234 launches, while each child owns only its own kernels. BF16 work is
 converted at 2x into FP8-equivalent MFU. MBUmin counts only compulsory HBM
 streams; potentially cache-resident logits, page-table entries, and selected
-IDs are excluded. Generation fails if any modeled MFU or MBUmin falls outside
-the physical 0–100% range.
+IDs are excluded. Generation checks both tree keys (`mfu_percent`,
+`mbu_percent`) and summary keys (`mfu_pct`, `mbu_min_pct`) and fails if any
+modeled percentage falls outside the physical 0–100% range.
 
 ## Artifact manifest
 
@@ -499,8 +589,8 @@ at their recorded locations unless they are separately declared in
 
 Only populate `mfu_pct`, `mbu_min_pct`, `modeled_flops_t`, or
 `modeled_min_bytes_gb` when the analysis produced them. The report labels these
-values with `metric_label` and never silently derives H200 peaks. If
-`experiment.hardware.peak_tflops` or `hbm_tb_s` is supplied, add a directly
-supporting source in `experiment.hardware.sources`; the generator rejects an
-unsourced non-null peak. A source can be a string or an object with `label` and
-`url`.
+values with `metric_label` and never silently derives accelerator peaks. If
+`experiment.hardware.peak_tflops`, `bf16_peak_tflops`, or `hbm_tb_s` is
+supplied, add a directly supporting source in `experiment.hardware.sources`;
+the generator rejects an unsourced non-null peak. A source can be a string or
+an object with `label` and `url`.

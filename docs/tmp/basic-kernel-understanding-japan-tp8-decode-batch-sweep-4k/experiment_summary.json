@@ -1822,6 +1822,425 @@
         ]
       }
     },
+    "b100_gb300": {
+      "label": "B=100 (GB300)",
+      "batch_size": 100,
+      "context_tokens": 4096,
+      "topology": {
+        "configured": {
+          "tp": 8,
+          "dp": 1,
+          "ep": 1,
+          "pp": 1
+        },
+        "phase_roles": {
+          "request": "entire matched request contains two complete model generations",
+          "displayed_tree": "selected representative first/longer CUDA-graph replay",
+          "alternate": "alternate complete CUDA-graph replay; token role unassigned"
+        }
+      },
+      "experiment": {
+        "title": "GLM-5.2 FP8 TP=8 B=100 GB300 Decode",
+        "subtitle": "One selected representative graph replay inside an audited two-generation request.",
+        "cluster": "prod-maas-gb300-taiguo",
+        "node": "gpu-master-gb300-132 + gpu-worker-gb300-192",
+        "gpu": "NVIDIA GB300",
+        "model": "zai-org/GLM-5.2-FP8",
+        "precision": "FP8 model weights \u00b7 FP8 E4M3 KV cache \u00b7 trace-only utilization",
+        "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime:284b969e-dev-before-v0.5.14-sync-20260709-168610be-arm64",
+        "sglang_revision": "ff7b9effd409791944f58b003a83bd22a7e8274a",
+        "model_revision": "config-sha256:22e49334abf8562fecf70ca3292ba3f5b33f5602fb2bf10b52dd64a66cfe65ff",
+        "topology": {
+          "tp": 8,
+          "dp": 1,
+          "ep": 1,
+          "pp": 1
+        },
+        "hardware": {
+          "accelerator": "NVIDIA GB300",
+          "peak_tflops": null,
+          "bf16_peak_tflops": null,
+          "hbm_tb_s": null,
+          "sources": []
+        },
+        "contract": [
+          "Real B=100, 4,096-token contexts, max_new_tokens=2, TP8/DP1/EP1/PP1, no speculative decoding.",
+          "The pre-capture expectation was one fake-handoff token plus exactly one computed decode forward.",
+          "Post-capture evidence found two complete eight-rank graph generations, so the one-forward expectation failed.",
+          "Only generation 1 is displayed as 'selected representative first/longer CUDA-graph replay'; generation 2 remains role-unassigned."
+        ],
+        "limitations": [
+          "Independent node session epochs permit a diagnostic cross-node envelope, but its absolute value is sensitive to host clock skew.",
+          "Rank-local graph spans, kernel durations, and same-rank interval unions do not depend on cross-node clock alignment.",
+          "CUPTI start-to-end durations are residency intervals, not isolated arithmetic time or achieved occupancy.",
+          "Semantic model-stage ownership is deliberately deferred; no H200 symbol offsets or hardware assumptions are imported.",
+          "MFU and MBU are omitted until GB300-local peak conventions, model FLOPs/useful bytes, and any required counters are independently reviewed.",
+          "The selected tree is one representative replay, not the entire matched request; a second complete replay is preserved with token role unassigned.",
+          "The request contract failed even though the capture, generation membership, and GPU0 ownership tree are complete.",
+          "Generation order is not a token-role oracle; the alternate is never called cleanup."
+        ]
+      },
+      "validation": {
+        "status": "fail",
+        "evidence_status": "pass",
+        "failure_scope": "exactly_one_computed_decode_forward",
+        "checks": [
+          {
+            "name": "Measured request payload and real batch",
+            "status": "pass",
+            "evidence": "100 distinct 4,096-token sequences returned HTTP success; server reported real_bs=100 and zero prefill rows."
+          },
+          {
+            "name": "Selected eight-rank generation membership",
+            "status": "pass",
+            "evidence": "Generation 1 has exactly 3,202 graph-member kernels on every TP rank and 25,616 uniquely owned rows in total."
+          },
+          {
+            "name": "GPU0 semantic ownership tree",
+            "status": "pass",
+            "evidence": "All 3,202 selected GPU0 events reconcile through 78 source-ordered layer motifs and the final output tail."
+          },
+          {
+            "name": "Two complete request generations preserved",
+            "status": "pass",
+            "evidence": "Generation 1 is labeled 'selected representative first/longer CUDA-graph replay'; generation 2 remains 'alternate complete CUDA-graph replay; token role unassigned'."
+          },
+          {
+            "name": "Exactly one computed decode forward",
+            "status": "fail",
+            "evidence": "exactly-one-computed-decode-forward claim fails: the matched request contains 2 complete eight-rank CUDA-graph generations, all before the latest Finish boundary; token roles are not attributable"
+          },
+          {
+            "name": "No cleanup designation",
+            "status": "pass",
+            "evidence": "Neither complete replay is called cleanup; no token ordinal is inferred from graph order."
+          },
+          {
+            "name": "GB300 utilization provenance",
+            "status": "pass",
+            "evidence": "MFU and MBU remain null because this capture has no reviewed local numerator/denominator pair or DRAM counters."
+          }
+        ],
+        "errors": [
+          "exactly-one-computed-decode-forward claim fails: the matched request contains 2 complete eight-rank CUDA-graph generations, all before the latest Finish boundary; token roles are not attributable"
+        ]
+      },
+      "comparison": {
+        "headline": "GB300 generation 1 is a separately measured representative B=100 replay. Its hardware and runtime differ from native H200 B=100, and the encompassing request failed the one-computed-forward contract.",
+        "observations": [
+          "GPU0 active-kernel interval union is 25.404504 ms for the selected first/longer replay; this is the tree-local primary time.",
+          "The request contains two implementation-equivalent complete graph generations. Only generation 1 is displayed; generation 2 stays role-unassigned, not cleanup.",
+          "MFU and MBU are null because no reviewed GB300-local numerator/denominator pair or hardware DRAM counter is available.",
+          "Do not insert this GB300 point into the H200 B=1 batch-scaling identity.",
+          "Standalone MFU/MBU-min and exact B=100 full-versus-standalone joins live in the linked GB300 Kernel efficiency sweep; this full-trace tree does not borrow those values."
+        ]
+      },
+      "provenance": {
+        "capture_id": "taiguo-gb300-132-192-glm52-fp8-tp8-b100-4k-20260815",
+        "validation_status": "fail",
+        "audit_disposition": "evidence_complete_contract_failed",
+        "selected_generation_ordinal": 1,
+        "selected_generation_role": "selected representative first/longer CUDA-graph replay",
+        "alternate_generation_role": "alternate complete CUDA-graph replay; token role unassigned",
+        "artifacts": [
+          {
+            "path": "gb300_evidence/evidence/artifact_manifest.json",
+            "label": "artifact manifest.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 6836,
+            "bytes": 6836,
+            "sha256": "ba8adc2e9fb4490cca4f43fa097054922f37945c106f6bb9e1e8eb376e63383e",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/gpu0_kernel_tree.json",
+            "label": "gpu0 kernel tree.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 13627087,
+            "bytes": 13627087,
+            "sha256": "c02986b849431482041fa3b22adb641cd20b7094d46cd8326f294ad050bb70b6",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/gpu0_ownership.csv.gz",
+            "label": "gpu0 ownership.csv.gz",
+            "role": "GB300 capture evidence",
+            "kind": "gz",
+            "size_bytes": 85771,
+            "bytes": 85771,
+            "sha256": "2784522c4b78acfa40f6af4f4387b3436c0159cb8510c8cd49a91811f5573df8",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/gpu0_ownership_audit.json",
+            "label": "gpu0 ownership audit.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 191471,
+            "bytes": 191471,
+            "sha256": "d2ab1711f05343402941782f0c7b61c68cdd70b9e26b207d069e65ea7d455d0c",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/gpu0_tree_manifest.json",
+            "label": "gpu0 tree manifest.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 2541,
+            "bytes": 2541,
+            "sha256": "82c5c870847392ce703f249acaa6473e118c09e4bdd5b1fb171f5027ef774c07",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/graph_generation_audit.json",
+            "label": "graph generation audit.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 58053,
+            "bytes": 58053,
+            "sha256": "ca1ef18c9ee27ed435ebe7d89f20f0ab228663430eb6a8d722907fad8ae5860c",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/graph_generation_events.csv.gz",
+            "label": "graph generation events.csv.gz",
+            "role": "GB300 capture evidence",
+            "kind": "gz",
+            "size_bytes": 1874007,
+            "bytes": 1874007,
+            "sha256": "d7b96c5bf4dc58242d003adc75150e0e3cd096e0ec5f9a5868a44f247165410d",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/interval_audit.json",
+            "label": "interval audit.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 4951,
+            "bytes": 4951,
+            "sha256": "6ba03b4bf2f18118854198570d07c6e9248d164922bb4fa4ea9e122084c6638f",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/interval_audit_independent.json",
+            "label": "interval audit independent.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 3670,
+            "bytes": 3670,
+            "sha256": "d00f332bcceac8a2231bd1bf87509911a34309f48bba86790b6c625313212c84",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/kernel_events.csv.gz",
+            "label": "kernel events.csv.gz",
+            "role": "GB300 capture evidence",
+            "kind": "gz",
+            "size_bytes": 1221792,
+            "bytes": 1221792,
+            "sha256": "e10dcfcc4035ed964ae1a8ff5b94b5c19cd7c694686ef47e4e3c0f8207275ec4",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/kernel_summary.csv",
+            "label": "kernel summary.csv",
+            "role": "GB300 capture evidence",
+            "kind": "csv",
+            "size_bytes": 126302,
+            "bytes": 126302,
+            "sha256": "7d465ef300ac4123cfbc29ff4a8814300227d617a62df095f1f07ee4f4679490",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/provider_summary.csv",
+            "label": "provider summary.csv",
+            "role": "GB300 capture evidence",
+            "kind": "csv",
+            "size_bytes": 1771,
+            "bytes": 1771,
+            "sha256": "875be53c639e9127ee28eb43c93265c471de7ee8b5d19d6d8a318e38df928b96",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/rank_device_ledger.csv",
+            "label": "rank device ledger.csv",
+            "role": "GB300 capture evidence",
+            "kind": "csv",
+            "size_bytes": 3346,
+            "bytes": 3346,
+            "sha256": "0baa5200ea48c24e45c6b3ac09a88c0cd1ad7825aa9e8349bd60ac4f934ba054",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/rank_device_ledger.json",
+            "label": "rank device ledger.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 9336,
+            "bytes": 9336,
+            "sha256": "4c0264393e4f619086e26bf032a4d543f0c446d2bd97dc5f1ad9f42c3a1e0cd5",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/summary.json",
+            "label": "summary.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 161920,
+            "bytes": 161920,
+            "sha256": "2b163ccbbb5e00d1ce12b06ef0d650832859f6e758530016584c5f032acadd7f",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/validation.json",
+            "label": "validation.json",
+            "role": "GB300 capture evidence",
+            "kind": "json",
+            "size_bytes": 751,
+            "bytes": 751,
+            "sha256": "b34ccc2ac553580fc276ab3c50a4e294d8951239b919f39aa0b63c76e5e9aa37",
+            "integrity": "sha256 recorded"
+          },
+          {
+            "path": "gb300_evidence/evidence/experiment_contract.md",
+            "label": "Post-capture experiment contract",
+            "role": "GB300 capture evidence",
+            "kind": "md",
+            "size_bytes": 4711,
+            "bytes": 4711,
+            "sha256": "2a4bb66f02eafc81def9cb3decd6ae45cffdda2c708d9faea9991bd44cf30f5d",
+            "integrity": "sha256 recorded"
+          }
+        ]
+      },
+      "batch": {
+        "status": "fail",
+        "context_tokens": 4096,
+        "proof": {
+          "requested_batch": 100,
+          "observed_real_batch": 100,
+          "observed_real_batch_values": [
+            100
+          ],
+          "cuda_graph_batch": 100,
+          "cuda_graph_batch_scope": "one B=100 graph per TP rank in each of two complete request generations; the displayed tree selects generation 1",
+          "prefill_rows": 0,
+          "decode_rows": 1,
+          "scheduler_waves": 1,
+          "full_model_graph_executions": 16,
+          "complete_model_generations": 2,
+          "selected_generation_ordinal": 1,
+          "selected_generation_role": "selected representative first/longer CUDA-graph replay",
+          "alternate_generation_ordinal": 2,
+          "alternate_generation_role": "alternate complete CUDA-graph replay; token role unassigned",
+          "computed_decode_generations": "unassigned: two complete generations; exactly-one-forward contract failed",
+          "cleanup_designated": false,
+          "speculative": false,
+          "receive_rids_matched": 100,
+          "finish_rids_matched": 100,
+          "graph_ranks": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ]
+        },
+        "kernel_timing": {
+          "boundary": "gpu0_active_kernel_interval_union",
+          "primary_time_label": "NVIDIA GB300 GPU0 active-kernel union",
+          "primary_time_ms": 25.404504,
+          "active_union_ms": 25.404504,
+          "kernel_active_tokens_s": 3936.309876,
+          "rate_label": "Kernel-active sequence-row rate",
+          "rate_unit": "rows/s",
+          "rate_scope": "sequence_rows_per_selected_generation_1_gpu0_union",
+          "rate_numerator_tokens": 100,
+          "comparable_to_b1": false,
+          "non_comparable_reason": "This view runs on NVIDIA GB300; the native B=1 reference runs on the baseline H200 accelerator. The timing boundary matches, but the hardware denominator does not. In addition, this request failed its exactly-one-computed-forward contract, so the selected replay is not labeled as one useful decoded token.",
+          "batch_scale_vs_b1": null,
+          "active_time_inflation_vs_b1": null,
+          "kernel_rate_gain_vs_b1": null,
+          "ratio_identity_product": null,
+          "context_tokens": 4096,
+          "context_ratio_vs_b1": 1.0,
+          "same_context_as_b1": true,
+          "graph_wall_span_ms": 30.079488,
+          "idle_gap_ms": 4.674984,
+          "summed_residency_ms": 30.812339,
+          "overlap_excess_ms": 5.407835,
+          "http_request_latency_included": false
+        },
+        "graph": {
+          "wall_span_ms": 39.456847,
+          "aggregate_kernel_ms": 262.565504,
+          "launches": 25616,
+          "distinct_kernel_names": 54,
+          "start_offset_ms": 0.0,
+          "rank_skew_ms": 16.273031,
+          "graph_execution_count": 8,
+          "request_generation_count": 2,
+          "scheduler_wave_count": 1,
+          "cleanup_wall_span_ms": null,
+          "cleanup_aggregate_kernel_ms": null,
+          "cleanup_graph_execution_count": null
+        },
+        "rendezvous": {
+          "arrival_spread_ms": 16.273031,
+          "latest_rank": 7,
+          "first_collective_ms": 4.176256,
+          "notes": [
+            "Rank spans use the selected generation only.",
+            "The two nodes' UTC epoch alignment makes the 39.456847 ms envelope clock-skew-sensitive."
+          ]
+        },
+        "efficiency": {
+          "aggregate_kernel_to_wall_gpu_ratio": 0.831812,
+          "all_rank_active_union_ms": 220.277,
+          "overlap_excess_ms": 42.288504,
+          "active_union_ms_by_rank": {
+            "0": 25.404504,
+            "1": 32.63502,
+            "2": 34.703384,
+            "3": 32.628451,
+            "4": 25.628148,
+            "5": 25.805396,
+            "6": 26.611576,
+            "7": 16.860521
+          },
+          "summed_residency_ms_by_rank": {
+            "0": 30.812339,
+            "1": 38.217644,
+            "2": 39.6049,
+            "3": 37.681043,
+            "4": 30.806018,
+            "5": 31.261878,
+            "6": 32.013157,
+            "7": 22.168525
+          },
+          "metric_label": "Unmodeled GB300 trace timing",
+          "modeled_flops_t": null,
+          "mfu_pct": null,
+          "modeled_min_bytes_gb": null,
+          "mbu_min_pct": null,
+          "notes": [
+            "Per-rank interval unions are summed only as GPU-time diagnostics; they are not wall time.",
+            "MFU and MBU are unavailable: no reviewed GB300-local model-work numerator, byte floor, or DRAM counter is attached."
+          ]
+        },
+        "notes": [
+          "Displayed tree: selected representative first/longer CUDA-graph replay.",
+          "Preserved alternate: alternate complete CUDA-graph replay; token role unassigned.",
+          "No second-replay cleanup claim is made.",
+          "Provider totals cover all eight ranks; the execution tree is the independently audited GPU0 logical-owner view."
+        ]
+      }
+    },
     "b100_dp8_ep8": {
       "label": "B=100 (DP&EP)",
       "batch_size": 100,
@@ -1867,7 +2286,10 @@
           "The detailed GPU0 tree is one representative physical B=13 replay; it is not the full B=100 timing boundary.",
           "The complete DP8 capture is independent and not directly comparable with the native DP1 B=1 timing identity.",
           "Graphless kernels are outside the audited full-model boundary and are not classified as cleanup."
-        ]
+        ],
+        "hardware": {
+          "sources": []
+        }
       },
       "validation": {
         "status": "pass",

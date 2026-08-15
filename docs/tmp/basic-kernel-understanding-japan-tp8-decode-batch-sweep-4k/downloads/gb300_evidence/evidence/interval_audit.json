@@ -1,0 +1,209 @@
+{
+  "schema_version": "per-rank-interval-audit-v1",
+  "resource_columns": [
+    "rank"
+  ],
+  "label_column": "implementation_provider",
+  "event_count": 25616,
+  "raw_residency_ns": 262565504,
+  "interval_union_ns": 220277000,
+  "overlap_excess_ns": 42288504,
+  "per_rank": [
+    {
+      "rank": 0,
+      "raw_residency_ns": 30812339,
+      "interval_union_ns": 25404504,
+      "overlap_excess_ns": 5407835
+    },
+    {
+      "rank": 1,
+      "raw_residency_ns": 38217644,
+      "interval_union_ns": 32635020,
+      "overlap_excess_ns": 5582624
+    },
+    {
+      "rank": 2,
+      "raw_residency_ns": 39604900,
+      "interval_union_ns": 34703384,
+      "overlap_excess_ns": 4901516
+    },
+    {
+      "rank": 3,
+      "raw_residency_ns": 37681043,
+      "interval_union_ns": 32628451,
+      "overlap_excess_ns": 5052592
+    },
+    {
+      "rank": 4,
+      "raw_residency_ns": 30806018,
+      "interval_union_ns": 25628148,
+      "overlap_excess_ns": 5177870
+    },
+    {
+      "rank": 5,
+      "raw_residency_ns": 31261878,
+      "interval_union_ns": 25805396,
+      "overlap_excess_ns": 5456482
+    },
+    {
+      "rank": 6,
+      "raw_residency_ns": 32013157,
+      "interval_union_ns": 26611576,
+      "overlap_excess_ns": 5401581
+    },
+    {
+      "rank": 7,
+      "raw_residency_ns": 22168525,
+      "interval_union_ns": 16860521,
+      "overlap_excess_ns": 5308004
+    }
+  ],
+  "providers": [
+    {
+      "implementation_provider": "cublaslt",
+      "launches": 768,
+      "raw_residency_ns": 1774080,
+      "same_rank_union_ns": 1774080,
+      "incremental_union_ns": 0
+    },
+    {
+      "implementation_provider": "cutlass",
+      "launches": 1200,
+      "raw_residency_ns": 5709824,
+      "same_rank_union_ns": 5709824,
+      "incremental_union_ns": 2842464
+    },
+    {
+      "implementation_provider": "deepgemm",
+      "launches": 3624,
+      "raw_residency_ns": 33387680,
+      "same_rank_union_ns": 32332544,
+      "incremental_union_ns": 17845626
+    },
+    {
+      "implementation_provider": "flashinfer_trtllm",
+      "launches": 4536,
+      "raw_residency_ns": 25320049,
+      "same_rank_union_ns": 17176113,
+      "incremental_union_ns": 8693969
+    },
+    {
+      "implementation_provider": "memory_control",
+      "launches": 3928,
+      "raw_residency_ns": 11270218,
+      "same_rank_union_ns": 11270218,
+      "incremental_union_ns": 10944618
+    },
+    {
+      "implementation_provider": "nccl",
+      "launches": 24,
+      "raw_residency_ns": 86392640,
+      "same_rank_union_ns": 86392640,
+      "incremental_union_ns": 86382944
+    },
+    {
+      "implementation_provider": "nvjet",
+      "launches": 2024,
+      "raw_residency_ns": 9282368,
+      "same_rank_union_ns": 9282368,
+      "incremental_union_ns": 3448640
+    },
+    {
+      "implementation_provider": "other",
+      "launches": 9168,
+      "raw_residency_ns": 88893449,
+      "same_rank_union_ns": 83826551,
+      "incremental_union_ns": 63681293
+    },
+    {
+      "implementation_provider": "triton",
+      "launches": 344,
+      "raw_residency_ns": 535196,
+      "same_rank_union_ns": 535196,
+      "incremental_union_ns": 333696
+    }
+  ],
+  "pairwise_overlap": [
+    {
+      "left": "cublaslt",
+      "right": "deepgemm",
+      "overlap_ns": 1774080
+    },
+    {
+      "left": "cublaslt",
+      "right": "nvjet",
+      "overlap_ns": 292160
+    },
+    {
+      "left": "cublaslt",
+      "right": "other",
+      "overlap_ns": 678912
+    },
+    {
+      "left": "cutlass",
+      "right": "deepgemm",
+      "overlap_ns": 1683712
+    },
+    {
+      "left": "cutlass",
+      "right": "other",
+      "overlap_ns": 2131360
+    },
+    {
+      "left": "deepgemm",
+      "right": "flashinfer_trtllm",
+      "overlap_ns": 2176
+    },
+    {
+      "left": "deepgemm",
+      "right": "nvjet",
+      "overlap_ns": 3376480
+    },
+    {
+      "left": "deepgemm",
+      "right": "other",
+      "overlap_ns": 9367754
+    },
+    {
+      "left": "deepgemm",
+      "right": "triton",
+      "overlap_ns": 201500
+    },
+    {
+      "left": "flashinfer_trtllm",
+      "right": "memory_control",
+      "overlap_ns": 11872
+    },
+    {
+      "left": "flashinfer_trtllm",
+      "right": "nccl",
+      "overlap_ns": 9696
+    },
+    {
+      "left": "flashinfer_trtllm",
+      "right": "nvjet",
+      "overlap_ns": 817760
+    },
+    {
+      "left": "flashinfer_trtllm",
+      "right": "other",
+      "overlap_ns": 7640640
+    },
+    {
+      "left": "memory_control",
+      "right": "other",
+      "overlap_ns": 313728
+    },
+    {
+      "left": "nvjet",
+      "right": "other",
+      "overlap_ns": 1639488
+    }
+  ],
+  "interpretation": {
+    "raw_residency_ns": "sum of all CUPTI kernel durations",
+    "interval_union_ns": "sum of eight independently computed rank-local unions",
+    "incremental_union_ns": "time covered by one provider and no other provider on the same rank",
+    "pairwise_overlap": "intersection of two provider unions on the same rank, summed across ranks"
+  }
+}
