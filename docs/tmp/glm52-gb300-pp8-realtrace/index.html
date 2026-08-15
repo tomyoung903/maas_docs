@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="One-minute TTFT, cache-hit, and prompt-token throughput timelines for a GLM-5.2 GB300 PP8 real-trace prefill run.">
+  <meta name="color-scheme" content="light">
+  <title>GLM-5.2 GB300 PP8 — Real-trace prefill timeline</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="report.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <nav class="topline" aria-label="Report links">
+        <span class="eyebrow">GLM-5.2 · Taiguo GB300 · real trace</span>
+        <span class="toplinks"><a href="analysis.json">Analysis JSON</a><a href="trace-evidence.json">Trace evidence</a></span>
+      </nav>
+      <h1>PP8 prefill, minute by minute.</h1>
+      <p class="lede">A compact view of first-token latency, token-weighted cache reuse, and prompt-token throughput for this run alone.</p>
+      <div class="chips" aria-label="Experiment configuration">
+        <span>2 independent PP8 replicas</span>
+        <span>16 × GB300 total</span>
+        <span>FP8 weights · FP8 KV</span>
+        <span>32K prefill chunks</span>
+      </div>
+      <div class="hero-metrics" aria-label="Run summary">
+        <article><span class="metric-label">Frontend TTFT P50</span><strong id="hero-ttft">—</strong><small id="hero-ttft-detail">P90 — · P99 —</small></article>
+        <article><span class="metric-label">Weighted cache hit</span><strong id="hero-cache">—</strong><small>cached prompt tokens ÷ total prompt tokens</small></article>
+        <article><span class="metric-label">Mean uncached TPM</span><strong id="hero-uncached">—</strong><small id="hero-uncached-detail">full shown window, including gaps</small></article>
+        <article><span class="metric-label">Mean total prompt TPM</span><strong id="hero-total">—</strong><small id="hero-request-detail">— successful requests</small></article>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" id="ttft">
+      <div class="section-head">
+        <div><span class="section-number">01</span><h2>TTFT timeline</h2></div>
+        <p>Exact frontend TTFT grouped by the instant each request produced its first token. The lines show P50, P90, and P99 for every complete 60-second interval.</p>
+      </div>
+      <div class="chart-shell">
+        <div id="ttft-chart" class="chart" aria-live="polite"><p class="fallback">Loading TTFT chart…</p></div>
+      </div>
+      <div class="legend"><span style="--swatch:#176b87">P50</span><span style="--swatch:#d1842c">P90</span><span style="--swatch:#9d3f56">P99</span></div>
+      <p class="definition"><strong>Clock:</strong> frontend request acceptance → first streamed token observed at the frontend. It includes routing, queueing, prefill, KV transfer, and first-token return; client-to-frontend network time is outside this clock.</p>
+    </section>
+
+    <section class="panel" id="cache">
+      <div class="section-head">
+        <div><span class="section-number">02</span><h2>Cache-hit timeline</h2></div>
+        <p>Token-weighted cache reuse from each request's SGLang prefill span, grouped on the same frontend first-token clock. Long prefixes contribute proportionally more than short requests.</p>
+      </div>
+      <div class="chart-shell compact-chart">
+        <div id="cache-chart" class="chart" aria-live="polite"><p class="fallback">Loading cache-hit chart…</p></div>
+      </div>
+      <p class="definition"><strong>Per-minute ratio:</strong> joined cached prompt tokens ÷ joined logical prompt tokens. This is not the unweighted mean of per-request hit percentages.</p>
+    </section>
+
+    <section class="panel" id="throughput">
+      <div class="section-head">
+        <div><span class="section-number">03</span><h2>Prompt-token throughput</h2></div>
+        <p>Cached and uncached TPM are stacked; the dark line marks total prompt TPM. Requests are assigned to the minute in which their first token appeared.</p>
+      </div>
+      <div class="chart-shell">
+        <div id="throughput-chart" class="chart" aria-live="polite"><p class="fallback">Loading throughput chart…</p></div>
+      </div>
+      <div class="legend"><span style="--swatch:#55a77a">Cached TPM</span><span style="--swatch:#54a6c6">Uncached TPM</span><span class="line-key" style="--swatch:#26364a">Total TPM</span></div>
+      <p class="definition"><strong>Identity:</strong> total prompt TPM = cached TPM + uncached TPM. Only the uncached part requires new model forward work.</p>
+    </section>
+
+    <section class="panel data-panel" id="minute-data">
+      <details>
+        <summary><span><span class="section-number">04</span> Minute data</span><small id="minute-row-count">Show numeric rows</small></summary>
+        <p class="data-note">The numeric counterpart to the three charts. Times are shown in China Standard Time and UTC.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Interval end</th><th>Requests</th><th>TTFT P50</th><th>TTFT P90</th><th>TTFT P99</th><th>Cache hit</th><th>Uncached TPM</th><th>Cached TPM</th><th>Total TPM</th></tr></thead>
+            <tbody id="minute-rows"><tr><td colspan="9">Loading minute data…</td></tr></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <section class="method" aria-label="Measurement notes">
+      <div><span>Topology</span><strong>2 × PP8</strong><p>Each prefill replica spans eight GB300 GPUs across two four-GPU pods; aggregate charts cover both replicas.</p></div>
+      <div><span>Aggregation</span><strong>60 seconds</strong><p>Frontend TTFT and SGLang prompt/cache spans are joined per request, then assigned to UTC-aligned first-token minutes.</p></div>
+      <div><span>Run window</span><strong id="run-window">—</strong><p id="run-window-detail">Loading measured interval…</p></div>
+      <div><span>Traffic outcome</span><strong id="traffic-outcome">—</strong><p>No-TTFT completions and requests still in flight when the deployment rolled are excluded from all three charts.</p></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Generated from a privacy-safe frontend ↔ prefill trace join and durable completion logs.</span>
+    <span id="generated-at">—</span>
+  </footer>
+  <script src="report.js"></script>
+</body>
+</html>
