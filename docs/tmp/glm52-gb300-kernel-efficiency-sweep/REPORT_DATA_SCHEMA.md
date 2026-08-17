@@ -22,7 +22,40 @@ The required top-level keys are:
 - `coverage`: catalog/included counts, excluded-family reasons, and counts of
   available versus unavailable full-trace comparisons.
 - `families`: at least one kernel-family record.
+- `official_references`: optional in adapter-stage data and required by the
+  publish-pack builder. It is a complete primary-source literature and official
+  benchmark catalog keyed one-to-one to every included family.
 - `limitations`: at least one explicit limitation.
+
+## Official-reference catalog
+
+`build_publish_pack.py --official-references` requires schema
+`glm52-gb300-official-kernel-reference-catalog-v1`. The catalog is copied
+verbatim to `evidence/official_reference_catalog.json`, hashed into the source
+manifest, embedded in `report_data.json`, and validated again by the HTML
+builder. Its family IDs must equal the report family IDs exactly: no missing,
+extra, or duplicate row is accepted.
+
+Each reference row records the measured runtime provider, dimensions, and
+precision separately from the official reference contract. Its evidence class
+is one of:
+
+- `exact_curve`: same kernel lineage, dimensions and layout, precision,
+  hardware, and timing scope;
+- `nearby_curve`: a first-party curve exists, but at least one material field
+  differs;
+- `nearby_result`: a first-party table, heatmap, speedup, or system result is
+  relevant but is not an exact per-kernel curve;
+- `harness_only`: an official benchmark or formal definition exists without
+  committed measurements;
+- `implementation_only`: official API or source semantics exist without a
+  relevant published benchmark output.
+
+Every source URL must use HTTPS and names its source kind and the narrow claim
+it supports. Curves require at least two strictly increasing x-axis points.
+Tables require a fixed column count. Harness-only and implementation-only rows
+must carry no fabricated result points. The renderer displays every mismatch
+and never interpolates an official source into an expected GB300 latency.
 
 Each family requires:
 

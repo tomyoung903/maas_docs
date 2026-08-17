@@ -1,0 +1,424 @@
+{
+  "schema_version": "glm52-gb300-official-kernel-reference-catalog-v1",
+  "artifact_id": "official-reference-catalog",
+  "scope": "Primary-source audit of all 31 standalone families. No public result matches the measured GB300 B=100 kernel, dimensions, layout, precision, software path, and timing protocol simultaneously; nearby results are context, not expected-latency baselines.",
+  "methodology": [
+    "Only first-party project repositories, official benchmark datasets and reports, vendor documentation, and original papers qualify as sources.",
+    "An exact curve requires the same callable or kernel lineage, dimensions and layout, precision, hardware class, and timing scope. A mismatch in any of these fields is shown explicitly.",
+    "Benchmark source code without committed measurements is labeled harness-only; a definition with zero traces is not called a curve.",
+    "Numeric points are copied from the linked primary source without interpolation. The local GB300 sweep remains the only exact curve for this deployment contract."
+  ],
+  "evidence_classes": [
+    {"id": "exact_curve", "label": "Exact published curve", "definition": "Published measurements match the local kernel lineage, dimensions, layout, precision, hardware, and timing scope."},
+    {"id": "nearby_curve", "label": "Published neighboring curve", "definition": "A first-party curve exists for the same kernel family or operation, but at least one material contract field differs."},
+    {"id": "nearby_result", "label": "Published neighboring result", "definition": "A first-party table, heatmap, speedup summary, or system result is relevant, but it is not an exact per-kernel curve for this row."},
+    {"id": "harness_only", "label": "Official harness · no measurements", "definition": "First-party benchmark code or a formal definition exists, but no committed result curve was located."},
+    {"id": "implementation_only", "label": "Official implementation · no measurements", "definition": "The official API or source establishes semantics, but no relevant public benchmark output was located."}
+  ],
+  "families": [
+    {
+      "family_id": "input_rmsnorm",
+      "runtime_contract": {"provider": "SGLang norm path backed by the captured RMSNorm kernel lineage", "dimensions": "BF16 input and output [B,6144]; local sweep B=1 through 500", "precision": "BF16 data with FP32 reduction semantics"},
+      "classification": "nearby_result",
+      "verdict": "Official norm measurements bound nearby widths and batches, but do not contain B=100 by width 6144 on GB300.",
+      "official_contract": "FlashInfer CuTe-DSL RMSNorm heatmap on B200; BF16; batches 64 and 128; widths 4096 and 8192 shown here.",
+      "comparability": "Same normalization primitive and nearby dimensions; GPU, exact width, batch, software revision, and metric differ. Values are achieved bandwidth, not latency.",
+      "sources": [
+        {"title": "FlashInfer PR 2777 · CuTe-DSL RMSNorm tuning", "url": "https://github.com/flashinfer-ai/flashinfer/pull/2777", "kind": "benchmark_report", "claim": "Publishes B200 BF16 achieved-bandwidth heatmaps for the optimized RMSNorm kernel family."},
+        {"title": "SGLang RMSNorm benchmark harness", "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/aot/benchmark/bench_rmsnorm.py", "kind": "source_code", "claim": "Defines the current SGLang RMSNorm benchmark contract but commits no exact GB300 output table."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official nearby RMSNorm heatmap samples", "context": "B200 BF16; achieved TB/s from the merged FlashInfer tuning report.", "x_label": null, "y_label": null, "points": [], "columns": ["Batch", "Width", "Achieved TB/s"], "rows": [["64", "4096", "0.35"], ["64", "8192", "0.67"], ["128", "4096", "0.67"], ["128", "8192", "1.24"]]}
+    },
+    {
+      "family_id": "fused_add_rmsnorm_hidden",
+      "runtime_contract": {"provider": "SGLang fused residual-add and RMSNorm path", "dimensions": "BF16 hidden and residual [B,6144] with weight [6144]", "precision": "BF16 data with FP32 reduction semantics"},
+      "classification": "nearby_result",
+      "verdict": "Published plain fused-add RMSNorm points use other shapes, hardware, or dtype; the closest current FlashInfer report measures an additional FP8 quantization stage.",
+      "official_contract": "SGLang H200 BF16 and B200 FP16 fused-add RMSNorm tables at nearby widths and batches.",
+      "comparability": "Same primitive, but not the exact GB300 BF16 B=100 width-6144 path or revision.",
+      "sources": [
+        {"title": "SGLang PR 20632 · norm kernel comparison", "url": "https://github.com/sgl-project/sglang/pull/20632", "kind": "benchmark_report", "claim": "Publishes H200 norm and fused-add RMSNorm measurements across multiple shapes."},
+        {"title": "SGLang PR 18871 · FlashInfer JIT norm migration", "url": "https://github.com/sgl-project/sglang/pull/18871", "kind": "benchmark_report", "claim": "Publishes B200 FP16 fused-add RMSNorm tables and documents implementation migration."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official nearby fused-add RMSNorm points", "context": "B200 FP16; local row is GB300 BF16.", "x_label": null, "y_label": null, "points": [], "columns": ["Batch", "Width", "Latency µs"], "rows": [["32", "4096", "18.400"], ["32", "8192", "19.424"], ["128", "4096", "19.456"], ["128", "8192", "21.344"], ["256", "4096", "19.456"], ["256", "8192", "23.584"]]}
+    },
+    {
+      "family_id": "fused_qkv_a_projection",
+      "runtime_contract": {"provider": "SGLang online BF16-to-FP8 quantization plus DeepGEMM", "dimensions": "[B,6144] by [2624,6144] to [B,2624]", "precision": "Block-FP8 inputs, 128 by 128 scaling, BF16 output"},
+      "classification": "nearby_curve",
+      "verdict": "The official GLM matrix geometry is exact, but the published curve is a BF16 fused-A alternative rather than this FP8 composite.",
+      "official_contract": "B300 cold-L2 CUPTI curve; BF16 fused-A JIT; M=1 through 16; N=2624; K=6144.",
+      "comparability": "Same GLM operator dimensions and Blackwell generation; dtype, provider, activation quantization, M range, and timing path differ.",
+      "sources": [
+        {"title": "SGLang PR 31241 · GLM BF16 fused-A GEMMs", "url": "https://github.com/sgl-project/sglang/pull/31241", "kind": "benchmark_report", "claim": "Publishes absolute cold-L2 CUPTI latency for the exact fused-QKV matrix geometry."},
+        {"title": "Official GLM-5.2 optimization report", "url": "https://www.lmsys.org/blog/2026-07-13-glm52-optimization", "kind": "benchmark_report", "claim": "Reports an M=1 through 32 curve averaging 1.08 times cuBLAS and peaking at 1.13 times for the BF16 alternative."}
+      ],
+      "reported_result": {"kind": "curve", "title": "BF16 fused-A latency at the exact GLM matrix geometry", "context": "B300; JIT kernel; cold L2; CUPTI. This is not DeepGEMM FP8 plus quantization.", "x_label": "M", "y_label": "Latency µs", "points": [{"x": 1, "y": 9.50, "label": "M=1"}, {"x": 4, "y": 9.50, "label": "M=4"}, {"x": 8, "y": 9.54, "label": "M=8"}, {"x": 12, "y": 9.89, "label": "M=12"}, {"x": 16, "y": 9.89, "label": "M=16"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "q_latent_rmsnorm",
+      "runtime_contract": {"provider": "sgl_kernel.rmsnorm through SGLang RMSNorm", "dimensions": "Non-contiguous [B,2048] view of [B,2624] with row stride 2624", "precision": "BF16 input and output"},
+      "classification": "nearby_result",
+      "verdict": "An official exact-provider table exists, but none of its rows reproduce the width-2048 strided view or GB300.",
+      "official_contract": "H200 BF16 SGL Kernel RMSNorm table over different multidimensional shapes.",
+      "comparability": "Provider family is relevant; width, parent stride, layout, hardware, and software routing differ.",
+      "sources": [
+        {"title": "SGLang PR 20632 · RMSNorm implementations", "url": "https://github.com/sgl-project/sglang/pull/20632", "kind": "benchmark_report", "claim": "Publishes exact SGL Kernel provider results on H200 for other shapes."},
+        {"title": "SGLang layernorm routing source", "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/layers/layernorm.py", "kind": "source_code", "claim": "Defines the public RMSNorm routing used by SGLang."}
+      ],
+      "reported_result": {"kind": "table", "title": "Exact-provider H200 examples", "context": "BF16 SGL Kernel RMSNorm; none is a strided width-2048 row.", "x_label": null, "y_label": null, "points": [], "columns": ["Shape", "Latency µs"], "rows": [["[1,101,1536]", "11.49"], ["[1,512,2560]", "11.66"], ["[1,512,8,128]", "13.38"], ["[1,512,32,128]", "28.34"]]}
+    },
+    {
+      "family_id": "q_b_projection",
+      "runtime_contract": {"provider": "SGLang online BF16-to-FP8 quantization plus DeepGEMM", "dimensions": "[B,2048] by [2048,2048] to [B,2048]", "precision": "Block-FP8 inputs and BF16 output"},
+      "classification": "nearby_curve",
+      "verdict": "Official data covers the exact matrix geometry with a different BF16 kernel, not the measured FP8 composite.",
+      "official_contract": "B300 cold-L2 CUPTI curve; BF16 fused-A JIT; M=1 through 16; N=2048; K=2048.",
+      "comparability": "Geometry and hardware generation match; dtype, provider, input quantization, M range, and integration do not.",
+      "sources": [
+        {"title": "SGLang PR 31241 · TP8 q_b fused-A curve", "url": "https://github.com/sgl-project/sglang/pull/31241", "kind": "benchmark_report", "claim": "Publishes absolute latency for the exact TP8 q_b geometry using BF16 fused-A."},
+        {"title": "DeepGEMM dense GEMM interface", "url": "https://github.com/deepseek-ai/DeepGEMM#normal-dense-gemms-non-grouped", "kind": "documentation", "claim": "Documents that input casting and layout transforms are caller work and excluded from raw GEMM timing."}
+      ],
+      "reported_result": {"kind": "curve", "title": "BF16 fused-A q_b latency at exact N and K", "context": "B300; cold L2; CUPTI; no activation quantizer.", "x_label": "M", "y_label": "Latency µs", "points": [{"x": 1, "y": 4.86, "label": "M=1"}, {"x": 4, "y": 4.74, "label": "M=4"}, {"x": 8, "y": 4.77, "label": "M=8"}, {"x": 12, "y": 5.06, "label": "M=12"}, {"x": 16, "y": 5.06, "label": "M=16"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "kv_latent_rmsnorm",
+      "runtime_contract": {"provider": "sgl_kernel.rmsnorm through SGLang RMSNorm", "dimensions": "Non-contiguous [B,512] view at offset 2048 of [B,2624], row stride 2624", "precision": "BF16 input and output"},
+      "classification": "nearby_result",
+      "verdict": "The exact public provider has official H200 data, but no width-512 strided-view or GB300 curve.",
+      "official_contract": "H200 BF16 SGL Kernel RMSNorm table over other shapes.",
+      "comparability": "Provider family matches; width, offset, stride, hardware, and software revision do not.",
+      "sources": [
+        {"title": "SGLang PR 20632 · RMSNorm implementations", "url": "https://github.com/sgl-project/sglang/pull/20632", "kind": "benchmark_report", "claim": "Publishes exact-provider H200 measurements for other shapes."},
+        {"title": "SGLang RMSNorm benchmark", "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/aot/benchmark/bench_rmsnorm.py", "kind": "source_code", "claim": "Defines the current official benchmark surface but commits no exact width-512 strided result."}
+      ],
+      "reported_result": {"kind": "table", "title": "Exact-provider H200 examples", "context": "BF16 SGL Kernel RMSNorm; contextual only.", "x_label": null, "y_label": null, "points": [], "columns": ["Shape", "Latency µs"], "rows": [["[1,101,1536]", "11.49"], ["[1,512,2560]", "11.66"], ["[1,512,8,128]", "13.38"], ["[1,512,32,128]", "28.34"]]}
+    },
+    {
+      "family_id": "index_q_projection",
+      "runtime_contract": {"provider": "SGLang online BF16-to-FP8 quantization plus DeepGEMM capped at 80 SMs", "dimensions": "[B,2048] by [4096,2048] to [B,4096]", "precision": "Block-FP8 inputs and BF16 output"},
+      "classification": "nearby_curve",
+      "verdict": "The exact GLM matrix geometry has an official B300 BF16 curve, but not for the measured half-SM FP8 composite.",
+      "official_contract": "B300 cold-L2 CUDA-graph curve; BF16 fused-A; M=1 through 16; N=4096; K=2048.",
+      "comparability": "Same N and K; different dtype, kernel, SM allocation, M range, and activation quantization.",
+      "sources": [
+        {"title": "SGLang PR 31241 · DSA wq_b curve", "url": "https://github.com/sgl-project/sglang/pull/31241", "kind": "benchmark_report", "claim": "Publishes the exact N=4096, K=2048 GLM geometry using a BF16 alternative."},
+        {"title": "SGLang DSA indexer implementation", "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/layers/attention/dsa/dsa_indexer.py", "kind": "source_code", "claim": "Establishes the index-query projection role and execution context."}
+      ],
+      "reported_result": {"kind": "curve", "title": "BF16 fused-A index-query latency at exact N and K", "context": "B300; cold L2; CUDA graph. Not the 80-SM DeepGEMM FP8 composite.", "x_label": "M", "y_label": "Latency µs", "points": [{"x": 1, "y": 6.34, "label": "M=1"}, {"x": 4, "y": 6.50, "label": "M=4"}, {"x": 8, "y": 6.53, "label": "M=8"}, {"x": 12, "y": 6.72, "label": "M=12"}, {"x": 16, "y": 6.72, "label": "M=16"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "index_q_hadamard",
+      "runtime_contract": {"provider": "SGLang JIT Hadamard transform", "dimensions": "[B,32,128], equivalent to 32B independent width-128 rows", "precision": "BF16 with normalized scale"},
+      "classification": "nearby_result",
+      "verdict": "The exact JIT kernel family has official measurements, but only on RTX 5060 at substantially different flattened shapes.",
+      "official_contract": "RTX 5060 Laptop, CUDA 12.8, Torch 2.9.1; AOT and JIT Hadamard results over selected rows and widths.",
+      "comparability": "Kernel lineage matches; effective row count, width combinations, GPU, and integration differ.",
+      "sources": [
+        {"title": "SGLang PR 20030 · JIT Hadamard kernel", "url": "https://github.com/sgl-project/sglang/pull/20030", "kind": "benchmark_report", "claim": "Publishes AOT and JIT latency for the exact SGLang Hadamard family."},
+        {"title": "Fast Hadamard Transform upstream", "url": "https://github.com/Dao-AILab/fast-hadamard-transform", "kind": "source_code", "claim": "Documents the upstream transform primitive and its performance rationale."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official JIT Hadamard samples", "context": "RTX 5060 Laptop; local effective shape is 3200 rows by 128 on GB300.", "x_label": null, "y_label": null, "points": [], "columns": ["Rows × width", "AOT µs", "JIT µs"], "rows": [["1 × 64", "1.30", "1.29"], ["1 × 1024", "1.55", "1.79"], ["256 × 64", "1.63", "1.79"], ["256 × 1024", "5.69", "5.77"], ["256 × 32768", "243.39", "244.12"]]}
+    },
+    {
+      "family_id": "index_k_projection",
+      "runtime_contract": {"provider": "SGLang online BF16-to-FP8 quantization plus DeepGEMM", "dimensions": "[B,6144] by [128,6144] to [B,128]", "precision": "Block-FP8 inputs and BF16 output"},
+      "classification": "nearby_result",
+      "verdict": "No exact isolated curve exists; the official optimized indexer replaces this leaf with a fused BF16 projection and reports end-to-end gains.",
+      "official_contract": "B300 GLM indexer fusion combining key and head-gate projection as N=160, K=6144; system throughput before and after fusion.",
+      "comparability": "The report validates a newer fused design, not this separate FP8 DeepGEMM leaf.",
+      "sources": [
+        {"title": "SGLang PR 27705 · indexer prologue fusion", "url": "https://github.com/sgl-project/sglang/pull/27705", "kind": "benchmark_report", "claim": "Publishes B300 end-to-end improvements after replacing separate key and gate projections."},
+        {"title": "SGLang Blackwell FP8 GEMM benchmark", "url": "https://github.com/sgl-project/sglang/pull/13528", "kind": "benchmark_report", "claim": "Publishes GB200 DeepGEMM curves at other N and K shapes, excluding online quantization."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official fused-indexer system result", "context": "B300; end-to-end decode throughput, not isolated index-K latency.", "x_label": null, "y_label": null, "points": [], "columns": ["Workload", "Before TPS", "After TPS"], "rows": [["Batch 1", "97.72", "107.77"], ["GLM-FP8 batch 128", "3212.05", "3418.63"]]}
+    },
+    {
+      "family_id": "index_key_layernorm",
+      "runtime_contract": {"provider": "flashinfer.norm.layernorm", "dimensions": "BF16 [B,128] with FP32 gamma and beta", "precision": "BF16 input/output and FP32 parameters"},
+      "classification": "nearby_result",
+      "verdict": "Official exact-provider measurements exist on H200, but not for B=100 by width 128 on GB300.",
+      "official_contract": "FlashInfer LayerNorm on H200 at larger widths and different row shapes.",
+      "comparability": "Same provider family and operation; dimensions, hardware, and software version differ.",
+      "sources": [
+        {"title": "SGLang PR 20632 · FlashInfer LayerNorm table", "url": "https://github.com/sgl-project/sglang/pull/20632", "kind": "benchmark_report", "claim": "Publishes exact-provider H200 LayerNorm measurements over several BF16 shapes."},
+        {"title": "FlashInfer norm implementation", "url": "https://github.com/flashinfer-ai/flashinfer/tree/main/flashinfer/norm", "kind": "source_code", "claim": "Defines the official LayerNorm implementation family."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official nearby FlashInfer LayerNorm points", "context": "H200 BF16; local row is width 128 on GB300.", "x_label": null, "y_label": null, "points": [], "columns": ["Shape", "Latency µs"], "rows": [["[1,77,768]", "12.96"], ["[1,101,1536]", "13.14"], ["[1,512,3072]", "14.37"], ["[1,512,6144]", "16.11"]]}
+    },
+    {
+      "family_id": "index_k_hadamard",
+      "runtime_contract": {"provider": "SGLang JIT Hadamard transform", "dimensions": "[B,128]", "precision": "BF16 with normalized scale"},
+      "classification": "nearby_result",
+      "verdict": "The exact JIT family is benchmarked publicly, but the published rows omit B=100 by width 128 and use a laptop GPU.",
+      "official_contract": "RTX 5060 Laptop AOT/JIT Hadamard table over other row counts and widths.",
+      "comparability": "Same transform kernel lineage; different shape, GPU, and execution context.",
+      "sources": [
+        {"title": "SGLang PR 20030 · JIT Hadamard kernel", "url": "https://github.com/sgl-project/sglang/pull/20030", "kind": "benchmark_report", "claim": "Publishes the exact JIT family at other shapes and hardware."},
+        {"title": "SGLang Hadamard source", "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/ops/quantization/hadamard.py", "kind": "source_code", "claim": "Defines the SGLang transform wrapper used by the indexer."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official JIT Hadamard samples", "context": "RTX 5060 Laptop; local shape is 100 rows by 128 on GB300.", "x_label": null, "y_label": null, "points": [], "columns": ["Rows × width", "AOT µs", "JIT µs"], "rows": [["1 × 64", "1.30", "1.29"], ["1 × 1024", "1.55", "1.79"], ["256 × 64", "1.63", "1.79"], ["256 × 1024", "5.69", "5.77"]]}
+    },
+    {
+      "family_id": "index_head_gate_projection",
+      "runtime_contract": {"provider": "torch.mm dispatched through CUDA BLAS", "dimensions": "BF16 [B,6144] by [6144,32] to FP32 [B,32]", "precision": "BF16 inputs and FP32 output"},
+      "classification": "nearby_curve",
+      "verdict": "An official SGLang result uses the exact N and K and identical Torch API, but stops at M=16 and does not disclose hardware in the merged PR.",
+      "official_contract": "torch.mm with BF16 inputs and FP32 output; N=32; K=6144; M=1 through 16.",
+      "comparability": "Same operation and dimensions except M; exact GPU and generated cuBLAS leaf are not established.",
+      "sources": [
+        {"title": "SGLang PR 23856 · index head-gate GEMM", "url": "https://github.com/sgl-project/sglang/pull/23856", "kind": "benchmark_report", "claim": "Publishes the exact N=32, K=6144 torch.mm latency curve with FP32 output."},
+        {"title": "NVIDIA cuBLASLt matmul documentation", "url": "https://docs.nvidia.com/cuda/cublas/#cublasltmatmul", "kind": "documentation", "claim": "Defines the vendor matrix-multiplication API and layout contract."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Exact-operation torch.mm latency", "context": "Hardware omitted in merged PR; M=100 is outside the published range.", "x_label": "M", "y_label": "Latency µs", "points": [{"x": 1, "y": 4.864, "label": "M=1"}, {"x": 2, "y": 4.832, "label": "M=2"}, {"x": 4, "y": 4.896, "label": "M=4"}, {"x": 8, "y": 4.992, "label": "M=8"}, {"x": 16, "y": 5.248, "label": "M=16"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "dsa_index_candidate_scoring",
+      "runtime_contract": {"provider": "deep_gemm.fp8_paged_mqa_logits", "dimensions": "B queries, 32 heads by 128; context 4096; page 64; packed FP8 K; logits [B,4096]", "precision": "FP8 query and K with floating scales and FP32 logits"},
+      "classification": "nearby_curve",
+      "verdict": "The published benchmark matches the DeepGEMM API and GLM index geometry, but only B=1 through 16 and does not name the exact GPU.",
+      "official_contract": "CUPTI and CUDA graph; cold L2; H=32; D=128; page=64; context=4096; next-token count 1.",
+      "comparability": "Kernel and geometry are strong matches; batch, timing mode, state, and exact hardware differ.",
+      "sources": [
+        {"title": "SGLang PR 25220 · paged MQA logits", "url": "https://github.com/sgl-project/sglang/pull/25220", "kind": "benchmark_report", "claim": "Publishes DeepGEMM-native latency for exact GLM indexer geometry at batches up to 16."},
+        {"title": "Pinned official scorer benchmark", "url": "https://github.com/sgl-project/sglang/blob/fefc1743a9ce350bbdb09ff588218011ef188a18/benchmark/kernels/deepseek/benchmark_cute_dsl_fp8_paged_mqa_logits.py", "kind": "source_code", "claim": "Defines the exact H, D, page, context, cache, and timing contract."}
+      ],
+      "reported_result": {"kind": "curve", "title": "DeepGEMM native candidate-scoring latency", "context": "Exact H32, D128, page64, context4096; GPU model not stated; B100 absent.", "x_label": "Batch", "y_label": "Latency µs", "points": [{"x": 1, "y": 4.86, "label": "B=1"}, {"x": 2, "y": 4.74, "label": "B=2"}, {"x": 4, "y": 4.96, "label": "B=4"}, {"x": 6, "y": 5.41, "label": "B=6"}, {"x": 8, "y": 5.54, "label": "B=8"}, {"x": 10, "y": 5.63, "label": "B=10"}, {"x": 12, "y": 6.21, "label": "B=12"}, {"x": 14, "y": 6.54, "label": "B=14"}, {"x": 16, "y": 6.69, "label": "B=16"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "dsa_topk_2048",
+      "runtime_contract": {"provider": "sgl_kernel.fast_topk_v2", "dimensions": "FP32 scores [B,4096] to 2048 selected indices", "precision": "FP32 score selection"},
+      "classification": "nearby_curve",
+      "verdict": "Public curves cover the same TopK lineage or a fused production successor, but not the exact AOT GB300 B=100 by 4096 row.",
+      "official_contract": "Merged GLM report: fused TopK plus page transform at batch 1 and long contexts; open JIT-port PR: plain topk=2048 on RTX 5060.",
+      "comparability": "The displayed curve is the merged production TopK-V2 path and varies context rather than batch. It is not the local plain leaf.",
+      "sources": [
+        {"title": "Official GLM-5.2 TopK-V2 report", "url": "https://www.lmsys.org/blog/2026-07-13-glm52-optimization", "kind": "benchmark_report", "claim": "Publishes absolute V1 and V2 latency from 80K to 1M context."},
+        {"title": "SGLang PR 19958 · fast_topk_v2 JIT port", "url": "https://github.com/sgl-project/sglang/pull/19958", "kind": "benchmark_report", "claim": "Open PR with topk=2048 JIT-port measurements at rows 4096 and 8192; not merged AOT evidence."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Merged TopK-V2 fused-path latency", "context": "Target verification, batch 1 with six drafts; TopK plus page transform; not plain B100 fast_topk_v2.", "x_label": "Context tokens", "y_label": "V2 latency µs", "points": [{"x": 80000, "y": 17.5, "label": "80K"}, {"x": 128000, "y": 19.5, "label": "128K"}, {"x": 256000, "y": 22.2, "label": "256K"}, {"x": 512000, "y": 26.6, "label": "512K"}, {"x": 1000000, "y": 36.6, "label": "1M"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "mla_absorb_q_bmm",
+      "runtime_contract": {"provider": "torch.bmm through CUDA BLAS", "dimensions": "[8,B,192] by [8,192,512] to [8,B,512] with TNT storage", "precision": "BF16 inputs and output"},
+      "classification": "implementation_only",
+      "verdict": "Vendor and framework APIs define the operation, but no official benchmark output for the exact shapes, strides, and GB300 leaf was located.",
+      "official_contract": "PyTorch batched matrix multiply backed by NVIDIA matrix-multiplication libraries.",
+      "comparability": "API semantics only; no numeric baseline is claimed.",
+      "sources": [
+        {"title": "PyTorch torch.bmm documentation", "url": "https://docs.pytorch.org/docs/stable/generated/torch.bmm.html", "kind": "documentation", "claim": "Defines the official batched matrix-multiplication semantics."},
+        {"title": "NVIDIA cuBLASLt matmul documentation", "url": "https://docs.nvidia.com/cuda/cublas/#cublasltmatmul", "kind": "documentation", "claim": "Defines the vendor matmul API, types, and layouts."}
+      ],
+      "reported_result": {"kind": "none", "title": "No exact public BMM curve", "context": "No first-party table for this batch, shape, layout, and GB300 kernel leaf was found.", "x_label": null, "y_label": null, "points": [], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "mla_absorbed_q_concat",
+      "runtime_contract": {"provider": "SGLang concat_mla_absorb_q_general JIT", "dimensions": "[B,8,512] plus [B,8,64] to [B,8,576]", "precision": "BF16 concatenation"},
+      "classification": "harness_only",
+      "verdict": "The exact JIT lineage and benchmark surface are public, but no committed timing curve for this implementation was located.",
+      "official_contract": "SGLang JIT MLA concat with 512 no-PE and 64 RoPE channels; benchmark sweeps token and head dimensions.",
+      "comparability": "Shape semantics match; there is no published measurement to compare.",
+      "sources": [
+        {"title": "SGLang PR 25843 · MLA concat JIT lineage", "url": "https://github.com/sgl-project/sglang/pull/25843", "kind": "source_code", "claim": "Defines and validates the current exact implementation lineage without publishing a timing curve."},
+        {"title": "SGLang MLA concat benchmark", "url": "https://github.com/sgl-project/sglang/blob/main/test/registered/kernels/benchmark/attention/bench_concat_mla.py", "kind": "source_code", "claim": "Sweeps the 512 plus 64 channel contract but commits no result curve."}
+      ],
+      "reported_result": {"kind": "none", "title": "Official harness without published output", "context": "The benchmark can generate a curve; the repository does not publish one for this JIT path.", "x_label": null, "y_label": null, "points": [], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "trtllm_mla_rope_quantize_fp8",
+      "runtime_contract": {"provider": "flashinfer.rope.mla_rope_quantize_fp8", "dimensions": "B tokens, 8 Q heads, one K head, 512 no-PE plus 64 RoPE channels", "precision": "BF16 inputs to raw FP8 Q and KV"},
+      "classification": "nearby_curve",
+      "verdict": "FlashInfer publishes the exact API on GB300 with the same channel dimensions, but 128 Q heads rather than 8.",
+      "official_contract": "GB300; MLA 128 Q heads and one K head; dims 512 plus 64; tokens 1 through 768.",
+      "comparability": "Hardware, API, and channel dimensions match. Head count, token count, fixture, and timing context differ materially.",
+      "sources": [
+        {"title": "FlashInfer PR 1924 · MLA RoPE FP8 quantization", "url": "https://github.com/flashinfer-ai/flashinfer/pull/1924", "kind": "benchmark_report", "claim": "Publishes absolute GB300 latency for the same fused API across token counts."},
+        {"title": "FlashInfer RoPE API", "url": "https://docs.flashinfer.ai/api/rope.html", "kind": "documentation", "claim": "Defines the official MLA RoPE quantization interface."}
+      ],
+      "reported_result": {"kind": "curve", "title": "FlashInfer MLA RoPE plus FP8 latency", "context": "GB300 and same 512 plus 64 dims, but 128 Q heads rather than local H8.", "x_label": "Tokens", "y_label": "Latency µs", "points": [{"x": 1, "y": 2.60, "label": "T=1"}, {"x": 8, "y": 2.74, "label": "T=8"}, {"x": 32, "y": 3.15, "label": "T=32"}, {"x": 64, "y": 4.16, "label": "T=64"}, {"x": 128, "y": 5.60, "label": "T=128"}, {"x": 256, "y": 9.08, "label": "T=256"}, {"x": 512, "y": 21.72, "label": "T=512"}, {"x": 768, "y": 31.14, "label": "T=768"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "trtllm_raw_fp8_kv_store",
+      "runtime_contract": {"provider": "SGLang set_mla_kv_buffer_triton", "dimensions": "Raw FP8 [B,512] plus [B,64] scattered into [capacity,1,576]", "precision": "Raw FP8 cache rows"},
+      "classification": "nearby_curve",
+      "verdict": "A merged SGLang PR publishes the same dispatcher lineage on GB300, but for BF16 inputs and eight-layer CUDA-graph amortization.",
+      "official_contract": "GB300; BF16 512 plus 64 input; CUDA graph; latency amortized across eight layers; batches 1 through 16384.",
+      "comparability": "GPU and semantic role match; dtype, revision, timing mode, amortization, and path differ. It is not an expected line for the raw-FP8 eager leaf.",
+      "sources": [
+        {"title": "SGLang PR 25311 · MLA KV buffer kernel", "url": "https://github.com/sgl-project/sglang/pull/25311", "kind": "benchmark_report", "claim": "Publishes a full GB300 batch curve for the same KV-buffer dispatcher lineage."},
+        {"title": "SGLang MLA buffer implementation", "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/kernels/ops/kvcache/mla_buffer.py", "kind": "source_code", "claim": "Defines the public MLA buffer store path."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Official GB300 MLA buffer wrapper latency", "context": "BF16 input and eight-layer CUDA-graph amortization; local row is raw FP8 eager timing.", "x_label": "Batch", "y_label": "Latency µs", "points": [{"x": 1, "y": 0.84, "label": "B=1"}, {"x": 8, "y": 0.90, "label": "B=8"}, {"x": 32, "y": 0.91, "label": "B=32"}, {"x": 96, "y": 0.94, "label": "B=96"}, {"x": 128, "y": 0.94, "label": "B=128"}, {"x": 512, "y": 1.07, "label": "B=512"}, {"x": 1024, "y": 1.10, "label": "B=1024"}, {"x": 4096, "y": 1.76, "label": "B=4096"}, {"x": 16384, "y": 7.16, "label": "B=16384"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "sparse_mla_trtllm_decode",
+      "runtime_contract": {"provider": "FlashInfer TRTLLM-gen sparse MLA decode", "dimensions": "B=100; 8 Q heads; 512 latent plus 64 RoPE; FP8 page-64 cache; 2048 selected records", "precision": "Raw FP8 cache with BF16 output"},
+      "classification": "nearby_result",
+      "verdict": "Official data covers the same TRTLLM-gen sparse-MLA backend family, but B200, topk 128, other head counts, and speedup rather than absolute latency.",
+      "official_contract": "B200 SM100; DeepSeek-V3; topk 128; sequence 1K through 32K; BF16 and FP8; head counts 16 through 128.",
+      "comparability": "Backend family matches; GPU, topk, head count, model, and reported metric differ. The closer public topk-2048 definition has zero traces.",
+      "sources": [
+        {"title": "FlashInfer PR 2836 · TRTLLM-gen sparse MLA", "url": "https://github.com/flashinfer-ai/flashinfer/pull/2836", "kind": "benchmark_report", "claim": "Publishes speedup ranges for the exact backend family over B200 shapes."},
+        {"title": "FlashInfer-Bench sparse DSA definition", "url": "https://bench.flashinfer.ai/kernels/dsa_sparse_attention_h16_ckv512_kpe64_topk2048_ps64", "kind": "benchmark_dataset", "claim": "Defines page64, topk2048, 512 plus 64 DSA inputs but explicitly contains zero traced workloads."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official TRTLLM-gen sparse-MLA speedup ranges", "context": "B200, topk128, sequence 1K through 32K; speedup versus the prior backend, not absolute latency.", "x_label": null, "y_label": null, "points": [], "columns": ["Q heads", "Batch", "Speedup range"], "rows": [["64", "32", "1.35–1.72×"], ["64", "128", "2.17–2.74×"], ["64", "512", "2.23–2.50×"], ["32", "128", "1.24–1.59×"], ["32", "512", "1.28–1.50×"]]}
+    },
+    {
+      "family_id": "mla_value_restore_bmm",
+      "runtime_contract": {"provider": "torch.bmm through CUDA BLAS", "dimensions": "[8,B,512] by [8,512,256] to [8,B,256] with TNT storage", "precision": "BF16 inputs and output"},
+      "classification": "implementation_only",
+      "verdict": "No first-party benchmark table for the exact batch, shapes, strides, and generated GB300 CUDA BLAS leaf was located.",
+      "official_contract": "PyTorch batched matrix multiply backed by NVIDIA matrix-multiplication libraries.",
+      "comparability": "Official API semantics only; no timing baseline is claimed.",
+      "sources": [
+        {"title": "PyTorch torch.bmm documentation", "url": "https://docs.pytorch.org/docs/stable/generated/torch.bmm.html", "kind": "documentation", "claim": "Defines batched matrix multiplication and supported precision behavior."},
+        {"title": "NVIDIA cuBLASLt matmul documentation", "url": "https://docs.nvidia.com/cuda/cublas/#cublasltmatmul", "kind": "documentation", "claim": "Defines the underlying vendor matmul contract."}
+      ],
+      "reported_result": {"kind": "none", "title": "No exact public BMM curve", "context": "No primary result matches the local TNT storage, shapes, and GB300 leaf.", "x_label": null, "y_label": null, "points": [], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "attention_output_projection",
+      "runtime_contract": {"provider": "SGLang online BF16-to-FP8 quantization plus DeepGEMM", "dimensions": "[B,2048] by [6144,2048] to [B,6144]", "precision": "Block-FP8 inputs and BF16 output"},
+      "classification": "nearby_result",
+      "verdict": "The official GLM report publishes a B300 BF16 alternative at TP4; the local row is TP8 FP8 DeepGEMM plus quantization.",
+      "official_contract": "B300 TP4 BF16 CuTe-DSL o_proj; M=1 through 32; N=6144; K=4096; speedup versus cuBLAS.",
+      "comparability": "Same architectural operation and output width; K, TP degree, dtype, provider, and timing scope differ.",
+      "sources": [
+        {"title": "Official GLM-5.2 GEMM optimization report", "url": "https://www.lmsys.org/blog/2026-07-13-glm52-optimization", "kind": "benchmark_report", "claim": "Reports the BF16 TP4 o_proj curve averaging 1.05 times and peaking at 1.08 times cuBLAS."},
+        {"title": "SGLang FP8 DeepGEMM wrapper", "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/layers/quantization/fp8_utils.py", "kind": "source_code", "claim": "Shows that the SGLang family includes online activation quantization before DeepGEMM."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official BF16 alternative summary", "context": "B300 TP4, M=1 through 32; no absolute per-M values published in text.", "x_label": null, "y_label": null, "points": [], "columns": ["Shape", "Average speedup", "Peak speedup"], "rows": [["(M,6144,4096)", "1.05×", "1.08×"]]}
+    },
+    {
+      "family_id": "dense_gate_up_projection",
+      "runtime_contract": {"provider": "SGLang online BF16-to-FP8 quantization plus DeepGEMM", "dimensions": "[B,6144] by [3072,6144] to [B,3072]", "precision": "Block-FP8 inputs and BF16 output"},
+      "classification": "nearby_result",
+      "verdict": "Official Blackwell DeepGEMM data uses other shapes and excludes activation quantization; no exact N=3072, K=6144 curve exists.",
+      "official_contract": "GB200 prequantized block-FP8 DeepGEMM sweep over M=8 through 4096 at DeepSeek shapes.",
+      "comparability": "Same primitive and Blackwell generation; exact shape, GPU, software version, and composite timing differ.",
+      "sources": [
+        {"title": "SGLang PR 13528 · Blackwell FP8 GEMM benchmark", "url": "https://github.com/sgl-project/sglang/pull/13528", "kind": "benchmark_report", "claim": "Publishes GB200 raw DeepGEMM curves over several other N and K pairs."},
+        {"title": "SGLang PR 30957 · GLM-5.2-FP8 small-M audit", "url": "https://github.com/sgl-project/sglang/pull/30957", "kind": "benchmark_report", "claim": "Reports that measured small-M FP8 paths on B300 sustain 1.6 to 2.1 TB/s and still require activation quantization."}
+      ],
+      "reported_result": {"kind": "table", "title": "Official same-primitive context", "context": "No matching shape curve. These are aggregate or neighboring observations, not expected latency.", "x_label": null, "y_label": null, "points": [], "columns": ["Evidence", "Reported value"], "rows": [["GLM FP8 paths at M no greater than 6", "1.6–2.1 TB/s"], ["GB200 benchmark M range", "8–4096"], ["Exact N=3072,K=6144", "Not published"]]}
+    },
+    {
+      "family_id": "dense_silu_and_mul",
+      "runtime_contract": {"provider": "SGLang JIT act_and_mul_kernel", "dimensions": "BF16 [B,3072] to [B,1536]", "precision": "BF16 fused SiLU and multiply"},
+      "classification": "nearby_curve",
+      "verdict": "The exact JIT family has official B200 curves, but output widths start at 1024 and omit 1536 at B=100.",
+      "official_contract": "B200 BF16 SGLang JIT activation; output widths 1024, 4096, 6144, and 8192; batches powers of two.",
+      "comparability": "Kernel lineage matches; output width, exact batch, GPU, revision, and PDL context differ.",
+      "sources": [
+        {"title": "SGLang PR 21766 · JIT activation kernel", "url": "https://github.com/sgl-project/sglang/pull/21766", "kind": "benchmark_report", "claim": "Publishes H200 and B200 curves for the exact act-and-multiply family."},
+        {"title": "SGLang PR 22094 · JIT activation reland", "url": "https://github.com/sgl-project/sglang/pull/22094", "kind": "source_code", "claim": "Preserves the benchmarked JIT activation implementation and test contract."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Official B200 JIT SiLU-and-multiply curve", "context": "Closest published output width is 1024; local output width is 1536.", "x_label": "Batch", "y_label": "Latency µs", "points": [{"x": 1, "y": 1.036485, "label": "B=1"}, {"x": 8, "y": 1.286643, "label": "B=8"}, {"x": 64, "y": 1.299234, "label": "B=64"}, {"x": 128, "y": 1.308165, "label": "B=128"}, {"x": 512, "y": 1.365630, "label": "B=512"}, {"x": 1024, "y": 1.686673, "label": "B=1024"}, {"x": 4096, "y": 3.311704, "label": "B=4096"}, {"x": 16384, "y": 14.344919, "label": "B=16384"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "dense_down_projection",
+      "runtime_contract": {"provider": "SGLang online BF16-to-FP8 quantization plus DeepGEMM", "dimensions": "[B,1536] by [6144,1536] to [B,6144]", "precision": "Block-FP8 inputs and BF16 output"},
+      "classification": "nearby_curve",
+      "verdict": "The official GB200 raw DeepGEMM curve has exact N and K, but excludes online quantization and predates the local kernel version.",
+      "official_contract": "GB200 prequantized block-FP8 DeepGEMM; N=6144; K=1536; M=8 through 4096.",
+      "comparability": "Exact raw GEMM geometry; different GPU, kernel generation, M points, and scope because local family includes quantization.",
+      "sources": [
+        {"title": "SGLang PR 13528 · exact-shape Blackwell FP8 GEMM", "url": "https://github.com/sgl-project/sglang/pull/13528", "kind": "benchmark_report", "claim": "Publishes the exact N=6144, K=1536 raw DeepGEMM curve on GB200."},
+        {"title": "Pinned Blackwell DeepGEMM benchmark", "url": "https://github.com/sgl-project/sglang/blob/4d2728b7928873327562100d7dd5c6dcbd0f35a5/benchmark/kernels/deepseek/benchmark_deepgemm_fp8_gemm_blackwell.py", "kind": "source_code", "claim": "Shows prequantized operands and excludes activation quantization from timing."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Exact N and K raw DeepGEMM latency", "context": "GB200; prequantized operands; older DeepGEMM; local composite includes quantization.", "x_label": "M", "y_label": "Latency µs", "points": [{"x": 8, "y": 46.336, "label": "M=8"}, {"x": 16, "y": 45.472, "label": "M=16"}, {"x": 32, "y": 46.592, "label": "M=32"}, {"x": 64, "y": 46.224, "label": "M=64"}, {"x": 128, "y": 45.856, "label": "M=128"}, {"x": 256, "y": 46.624, "label": "M=256"}, {"x": 1024, "y": 46.896, "label": "M=1024"}, {"x": 2048, "y": 47.104, "label": "M=2048"}, {"x": 4096, "y": 51.584, "label": "M=4096"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "router_projection",
+      "runtime_contract": {"provider": "torch.mm through CUDA BLAS", "dimensions": "BF16 [B,6144] by [6144,256] to BF16 [B,256]", "precision": "BF16 input, weight, and output"},
+      "classification": "nearby_curve",
+      "verdict": "The exact N and K have an official Torch curve for M=1 through 16; local M=100 and generated GB300 leaf are outside it.",
+      "official_contract": "Torch linear column for N=256, K=6144, M=1 through 16; B200 is named only in a linked SGLang draft.",
+      "comparability": "Same high-level Torch primitive and N/K. M, exact GPU provenance, output details, and cuBLAS dispatch differ.",
+      "sources": [
+        {"title": "FlashInfer PR 3185 · GLM router GEMM", "url": "https://github.com/flashinfer-ai/flashinfer/pull/3185", "kind": "benchmark_report", "claim": "Publishes Torch and specialized-router latency for exact GLM N and K."},
+        {"title": "Pinned GLM router benchmark", "url": "https://github.com/sgl-project/sglang/blob/d63706040eb7098820280b2338070e1d767e0f13/benchmark/kernels/deepseek/benchmark_dsv3_router_gemm_blackwell.py", "kind": "source_code", "claim": "Confirms the values are microseconds and defines the exact M sweep."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Official Torch router projection latency", "context": "Exact N=256,K=6144; merged PR omits GPU; local B=100 lies outside M=1 through 16.", "x_label": "M", "y_label": "Torch latency µs", "points": [{"x": 1, "y": 6.048, "label": "M=1"}, {"x": 2, "y": 6.272, "label": "M=2"}, {"x": 4, "y": 6.304, "label": "M=4"}, {"x": 8, "y": 6.304, "label": "M=8"}, {"x": 12, "y": 7.040, "label": "M=12"}, {"x": 16, "y": 6.400, "label": "M=16"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "routed_moe_input_quant",
+      "runtime_contract": {"provider": "SGLang per_token_group_quant_8bit_v2", "dimensions": "BF16 [B,6144] to FP8 [B,6144] plus 48 FP32 scale groups", "precision": "BF16 to E4M3 with group size 128"},
+      "classification": "nearby_curve",
+      "verdict": "The exact JIT kernel has an official curve, but on H20-3e at hidden width 4096 rather than GB300 width 6144.",
+      "official_contract": "H20-3e SM90, CUDA 13, BF16, hidden 4096, group 128, CUDA-graph timing.",
+      "comparability": "Exact kernel family and group size; width, GPU, scale representation details, graph context, and PDL state differ.",
+      "sources": [
+        {"title": "SGLang PR 27449 · per-token group quantization", "url": "https://github.com/sgl-project/sglang/pull/27449", "kind": "benchmark_report", "claim": "Publishes AOT and JIT latency and JIT bandwidth for the exact quantization family."},
+        {"title": "Pinned quantization benchmark", "url": "https://github.com/sgl-project/sglang/blob/eb18416f9fc684da797ecb5dc3a1fc63701217d0/test/registered/jit/benchmark/bench_per_token_group_quant_8bit_v2.py", "kind": "source_code", "claim": "Defines the exact hidden-size, token, group, dtype, and timing contract."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Official JIT group-quantization latency", "context": "H20-3e, hidden 4096, group 128; local width is 6144 on GB300.", "x_label": "Tokens", "y_label": "JIT latency µs", "points": [{"x": 1, "y": 0.86, "label": "T=1"}, {"x": 8, "y": 0.92, "label": "T=8"}, {"x": 64, "y": 1.22, "label": "T=64"}, {"x": 512, "y": 2.38, "label": "T=512"}, {"x": 4096, "y": 15.31, "label": "T=4096"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "routed_moe_fused_core",
+      "runtime_contract": {"provider": "flashinfer.fused_moe.trtllm_fp8_block_scale_moe", "dimensions": "H=6144, local I=256, 256 experts, topk 8, EP1, synthetic balanced routing", "precision": "Prequantized block-FP8 hidden and weights with BF16 output"},
+      "classification": "nearby_curve",
+      "verdict": "The exact TRTLLM API family has an official B200 curve, but at H7168, I2048, EP8, 32 local experts, and DeepSeek routing.",
+      "official_contract": "Dedicated B200 CUPTI; H7168; I2048; 256 global and 32 local experts; EP8; topk 8; prequantized inputs.",
+      "comparability": "API lineage matches. Shape, EP, local experts, routing histogram, padded tiles, active weights, GPU, and finalize work differ decisively.",
+      "sources": [
+        {"title": "FlashInfer PR 3218 · TRTLLM FP8 MoE baseline", "url": "https://github.com/flashinfer-ai/flashinfer/pull/3218", "kind": "benchmark_report", "claim": "Publishes absolute baseline latency for the same monolithic API on B200."},
+        {"title": "Pinned FlashInfer fused-MoE benchmark", "url": "https://github.com/flashinfer-ai/flashinfer/blob/ede827095ff13f281a3b6c0a9a413ac0674b1ad2/benchmarks/bench_fusemoe_blackwell.py", "kind": "source_code", "claim": "Defines prequantized inputs, expert geometry, routing, and CUPTI timing."},
+        {"title": "FlashInfer TRTLLM MoE launcher", "url": "https://github.com/flashinfer-ai/flashinfer/blob/main/csrc/trtllm_fused_moe_kernel_launcher.cu", "kind": "source_code", "claim": "Shows token-per-expert, padded-token, and tile-mapping state that makes routing part of the work contract."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Official TRTLLM FP8 MoE core latency", "context": "B200, H7168, I2048, EP8, 32 local experts, DeepSeek routing; not transferable as an expected line.", "x_label": "Tokens", "y_label": "Latency µs", "points": [{"x": 1, "y": 190.4, "label": "T=1"}, {"x": 8, "y": 237.9, "label": "T=8"}, {"x": 32, "y": 329.4, "label": "T=32"}, {"x": 128, "y": 387.3, "label": "T=128"}, {"x": 512, "y": 437.7, "label": "T=512"}, {"x": 1024, "y": 461.0, "label": "T=1024"}, {"x": 2048, "y": 589.5, "label": "T=2048"}, {"x": 4096, "y": 884.9, "label": "T=4096"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "shared_expert_gate_up_projection",
+      "runtime_contract": {"provider": "SGLang online quantization plus current DeepGEMM SM100-family kernel", "dimensions": "[B,6144] by [512,6144] to [B,512]", "precision": "Block-FP8 inputs and BF16 output"},
+      "classification": "nearby_curve",
+      "verdict": "An older official GB200 DeepGEMM curve is nearby at N576,K7168, but shape, version, GPU, and quantization scope differ.",
+      "official_contract": "GB200 prequantized block-FP8 DeepGEMM; N=576; K=7168; M=8 through 4096.",
+      "comparability": "Same provider primitive only. Local branch includes quantization and uses a much newer unified kernel on GB300.",
+      "sources": [
+        {"title": "SGLang PR 13528 · Blackwell FP8 GEMM benchmark", "url": "https://github.com/sgl-project/sglang/pull/13528", "kind": "benchmark_report", "claim": "Publishes a nearby GB200 raw DeepGEMM curve."},
+        {"title": "DeepGEMM PR 304 · newer unified release", "url": "https://github.com/deepseek-ai/DeepGEMM/pull/304", "kind": "benchmark_report", "claim": "Documents later dynamic A/B swapping and faster heuristics but provides no replacement dense curve."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Older nearby raw DeepGEMM curve", "context": "GB200, N576,K7168, prequantized operands; local is N512,K6144 plus quantization on a later version.", "x_label": "M", "y_label": "Latency µs", "points": [{"x": 8, "y": 65.120, "label": "M=8"}, {"x": 16, "y": 60.640, "label": "M=16"}, {"x": 32, "y": 61.792, "label": "M=32"}, {"x": 64, "y": 59.904, "label": "M=64"}, {"x": 128, "y": 60.160, "label": "M=128"}, {"x": 256, "y": 58.304, "label": "M=256"}, {"x": 1024, "y": 60.544, "label": "M=1024"}, {"x": 4096, "y": 62.208, "label": "M=4096"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "shared_expert_silu_and_mul",
+      "runtime_contract": {"provider": "SGLang JIT act_and_mul_kernel", "dimensions": "BF16 [B,512] to [B,256]", "precision": "BF16 fused SiLU and multiply"},
+      "classification": "nearby_curve",
+      "verdict": "The exact JIT family has an official B200 curve, but the smallest published output width is 1024 rather than 256.",
+      "official_contract": "B200 BF16 SGLang JIT activation at output width 1024 over power-of-two batches.",
+      "comparability": "Kernel lineage matches; width, GPU, batch points, revision, and PDL context differ.",
+      "sources": [
+        {"title": "SGLang PR 21766 · JIT activation kernel", "url": "https://github.com/sgl-project/sglang/pull/21766", "kind": "benchmark_report", "claim": "Publishes B200 curves for the exact JIT family."},
+        {"title": "SGLang PR 22094 · JIT activation reland", "url": "https://github.com/sgl-project/sglang/pull/22094", "kind": "source_code", "claim": "Preserves the benchmarked JIT activation implementation and test contract."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Official B200 JIT SiLU-and-multiply curve", "context": "Closest output width 1024; local output width 256.", "x_label": "Batch", "y_label": "Latency µs", "points": [{"x": 1, "y": 1.036485, "label": "B=1"}, {"x": 8, "y": 1.286643, "label": "B=8"}, {"x": 64, "y": 1.299234, "label": "B=64"}, {"x": 128, "y": 1.308165, "label": "B=128"}, {"x": 512, "y": 1.365630, "label": "B=512"}, {"x": 1024, "y": 1.686673, "label": "B=1024"}, {"x": 4096, "y": 3.311704, "label": "B=4096"}, {"x": 16384, "y": 14.344919, "label": "B=16384"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "shared_expert_down_projection",
+      "runtime_contract": {"provider": "SGLang online quantization plus current DeepGEMM SM100-family kernel", "dimensions": "[B,256] by [6144,256] to [B,6144]", "precision": "Block-FP8 inputs and BF16 output"},
+      "classification": "nearby_curve",
+      "verdict": "The closest official GB200 curve is N7168,K512 and predates the measured unified kernel; no N6144,K256 result exists.",
+      "official_contract": "GB200 prequantized block-FP8 DeepGEMM; N=7168; K=512; M=8 through 4096.",
+      "comparability": "Same provider primitive only. Shape, GPU, software generation, and online-quantization scope differ.",
+      "sources": [
+        {"title": "SGLang PR 13528 · Blackwell FP8 GEMM benchmark", "url": "https://github.com/sgl-project/sglang/pull/13528", "kind": "benchmark_report", "claim": "Publishes the closest available GB200 raw DeepGEMM curve."},
+        {"title": "Pinned Blackwell DeepGEMM benchmark", "url": "https://github.com/sgl-project/sglang/blob/4d2728b7928873327562100d7dd5c6dcbd0f35a5/benchmark/kernels/deepseek/benchmark_deepgemm_fp8_gemm_blackwell.py", "kind": "source_code", "claim": "Shows that operands are prequantized and only the GEMM is timed."}
+      ],
+      "reported_result": {"kind": "curve", "title": "Older nearby raw DeepGEMM curve", "context": "GB200, N7168,K512, prequantized; local is N6144,K256 plus quantization on GB300.", "x_label": "M", "y_label": "Latency µs", "points": [{"x": 8, "y": 46.464, "label": "M=8"}, {"x": 16, "y": 43.968, "label": "M=16"}, {"x": 32, "y": 44.448, "label": "M=32"}, {"x": 64, "y": 43.648, "label": "M=64"}, {"x": 128, "y": 43.552, "label": "M=128"}, {"x": 256, "y": 42.688, "label": "M=256"}, {"x": 1024, "y": 44.768, "label": "M=1024"}, {"x": 4096, "y": 46.080, "label": "M=4096"}], "columns": [], "rows": []}
+    },
+    {
+      "family_id": "lm_head_vocab_shard",
+      "runtime_contract": {"provider": "torch.mm through CUDA BLAS", "dimensions": "BF16 [B,6144] by [6144,19360] to one TP8 vocabulary shard [B,19360]", "precision": "BF16 inputs and output"},
+      "classification": "implementation_only",
+      "verdict": "Official CUDA BLAS documentation defines the primitive, but no first-party curve for this exact vocabulary shard and GB300 path was located.",
+      "official_contract": "NVIDIA cuBLASLt matrix multiplication with BF16 input and output.",
+      "comparability": "API semantics only; generated-kernel choice is shape-, version-, and state-dependent, so no numeric baseline is claimed.",
+      "sources": [
+        {"title": "NVIDIA cuBLAS documentation", "url": "https://docs.nvidia.com/cuda/cublas/", "kind": "documentation", "claim": "Defines the vendor GEMM and cuBLASLt APIs, data types, layouts, and heuristics."},
+        {"title": "NVIDIA matrix multiplication performance guide", "url": "https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/index.html", "kind": "documentation", "claim": "Explains how GEMM dimensions, alignment, arithmetic intensity, and batch shape affect efficiency without publishing this exact row."}
+      ],
+      "reported_result": {"kind": "none", "title": "No exact public LM-head curve", "context": "No primary result matches M=100,N=19360,K=6144 BF16 on the captured GB300 path.", "x_label": null, "y_label": null, "points": [], "columns": [], "rows": []}
+    }
+  ]
+}
