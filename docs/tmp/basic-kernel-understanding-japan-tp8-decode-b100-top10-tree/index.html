@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="The ten heaviest exact physical kernel families from the GLM-5.2 H200 B=100 GPU0 decode execution tree.">
+  <link rel="icon" href="data:,">
+  <title>GLM-5.2 H200 B=100 · Top-10 Physical Kernel Tree</title>
+  <style>
+:root{--ink:#182230;--muted:#5d6978;--line:#d9e0e8;--paper:#fff;--page:#f5f7fa;
+  --navy:#16324f;--teal:#0f766e;--amber:#a15c00;--shadow:0 12px 34px rgba(22,50,79,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:var(--page);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+a{color:#1857b6}.mono,code{font-family:"SFMono-Regular",Consolas,monospace}
+.topbar{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;gap:18px;
+  padding:9px max(18px,calc((100vw - 1580px)/2));color:#eef6ff;background:rgba(18,43,68,.97)}
+.topbar a{color:#d8eaff;text-decoration:none}.topbar-links{display:flex;flex-wrap:wrap;gap:16px}
+.hero{color:#fff;padding:42px max(22px,calc((100vw - 1500px)/2)) 38px;
+  background:linear-gradient(135deg,#142b45,#183a5b 58%,#124e59)}
+.eyebrow{margin:0 0 8px;color:#a9d9ff;font-size:.76rem;font-weight:760;letter-spacing:.13em;text-transform:uppercase}
+h1{max-width:1050px;margin:0;font:700 clamp(2rem,4vw,3.7rem)/1.08 Georgia,"Times New Roman",serif}
+.hero p:last-child{max-width:970px;margin:14px 0 0;color:#d9e8f4;font-size:1rem}
+main{max-width:1580px;margin:24px auto 72px;padding:0 18px}.band{padding:clamp(19px,3vw,32px);
+  border:1px solid var(--line);border-radius:14px;background:var(--paper);box-shadow:var(--shadow)}
+.scope{margin:0;padding:12px 14px;border-left:4px solid var(--teal);border-radius:7px;
+  color:#34524b;background:#f3faf7;font-size:.84rem}.scope strong{color:#173e35}
+.tree-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:15px 0 11px}
+.tree-button,.download{min-height:34px;padding:6px 11px;border:1px solid #bdcbc6;border-radius:7px;
+  color:#29433b;background:#fff;cursor:pointer;font:700 .78rem/1.4 inherit;text-decoration:none}
+.tree-button:hover,.download:hover{border-color:#688a7e;background:#eef7f3}.tree-status{margin-left:auto;color:var(--muted);font-size:.75rem}
+.kernel-tree,.kernel-children{display:grid;gap:9px;margin:0;padding:0;list-style:none}.kernel-step{position:relative}
+.kernel-row{display:grid;grid-template-columns:minmax(420px,1fr) 78px 104px 112px 94px minmax(210px,270px);
+  gap:11px;align-items:start;min-width:0;padding:12px 13px;border:1px solid #d9e1e8;
+  border-left:4px solid #87968f;border-radius:10px;background:#fff;box-shadow:0 3px 12px rgba(22,50,79,.045)}
+.kernel-step.root>.kernel-row{border-left-color:#126a56;background:#f5fbf8}.kernel-step.collective>.kernel-row{border-left-color:#c46b2d;background:#fffaf6}
+.kernel-step.projection>.kernel-row{border-left-color:#527a9b;background:#fbfdff}.kernel-step.mla>.kernel-row{border-left-color:#318598;background:#f7fbfc}.kernel-step.moe>.kernel-row{border-left-color:#8b5ba5;background:#fcf9fd}
+.kernel-heading{display:flex;align-items:flex-start;gap:8px;min-width:0}.kernel-toggle,.kernel-toggle-spacer{flex:0 0 28px;width:28px;height:28px}
+.kernel-toggle{display:inline-grid;place-items:center;padding:0;border:1px solid #bdc8cc;border-radius:6px;
+  color:#35454a;background:#fff;cursor:pointer;font-size:.93rem;line-height:1}.kernel-toggle:hover{border-color:#71858a;background:#f0f5f4}
+.kernel-toggle[aria-expanded="false"] .expanded,.kernel-toggle[aria-expanded="true"] .collapsed{display:none}
+.kernel-id{flex:0 0 auto;min-width:42px;padding:4px 7px;border:1px solid #cbd4d8;border-radius:5px;
+  color:#35454b;background:#f2f5f6;font:760 .7rem/1.4 "SFMono-Regular",Consolas,monospace;text-align:center;white-space:nowrap}
+.kernel-copy{min-width:0}.kernel-title{font-weight:750;line-height:1.32;overflow-wrap:anywhere}.kernel-role{margin-top:3px;color:#536376;font-size:.72rem;overflow-wrap:anywhere}
+.kernel-evidence{margin-top:6px;color:#52615d;font-size:.68rem;overflow-wrap:anywhere}.kernel-metric{padding-top:2px;text-align:right;font-variant-numeric:tabular-nums}
+.kernel-metric strong{display:block;font-size:.91rem;line-height:1.25;overflow-wrap:anywhere}.kernel-metric span{color:var(--muted);font-size:.58rem;letter-spacing:.025em;text-transform:uppercase}
+.kernel-assessment{min-width:0;padding:2px 0 2px 11px;border-left:1px solid #dce3e9;color:#425266;font-size:.69rem;line-height:1.43;overflow-wrap:anywhere}
+.kernel-assessment strong,.kernel-detail>strong{display:block;margin-bottom:3px;color:#647385;font-size:.58rem;letter-spacing:.055em;text-transform:uppercase}
+.kernel-children{margin:8px 0 0 30px;padding-left:19px;border-left:1px solid #cfd8dc}.kernel-children>.kernel-step::before{position:absolute;top:25px;left:-19px;width:13px;border-top:1px solid #cfd8dc;content:""}
+.kernel-detail{margin:7px 0 0 49px;padding:12px 14px;border:1px solid #dce4e8;border-left:3px solid #789b90;border-radius:8px;background:#fbfdfc}
+.kernel-detail code{display:block;margin:5px 0 13px;padding:9px 10px;border-radius:6px;color:#3d4d59;background:#f0f4f6;font-size:.68rem;line-height:1.45;overflow-wrap:anywhere;white-space:normal}
+.owner-paths{display:grid;gap:7px;margin:5px 0 0;padding:0;list-style:none}.owner-path{display:grid;gap:2px;padding:7px 9px;border:1px solid #e0e7eb;border-radius:6px;background:#fff}
+.owner-path a{text-decoration:none;font-size:.76rem}.owner-path span{color:#607083;font-size:.67rem;overflow-wrap:anywhere}.owner-path small{color:#52615d;font-size:.65rem;font-variant-numeric:tabular-nums}
+.provenance{margin:13px 0 0;color:#64748b;font-size:.71rem;overflow-wrap:anywhere}.hash{font-family:"SFMono-Regular",Consolas,monospace;word-break:break-all}
+@media(max-width:1250px){.kernel-row{grid-template-columns:minmax(0,1fr) 74px 99px 106px 88px;gap:7px}.kernel-assessment{grid-column:1/-1;padding:8px 0 0;border-top:1px solid #e2e8ed;border-left:0}}
+@media(max-width:760px){.topbar{position:static;align-items:flex-start;flex-direction:column}.hero{padding-top:34px}main{padding:0 9px}.band{padding:17px 13px;border-radius:10px}.tree-status{width:100%;margin-left:0}
+  .kernel-row{grid-template-columns:repeat(4,minmax(0,1fr))}.kernel-heading{display:grid;grid-column:1/-1;grid-template-columns:28px 48px minmax(0,1fr);width:100%}.kernel-copy{grid-column:1/-1}.kernel-metric{text-align:left}.kernel-assessment{grid-column:1/-1}.kernel-children{margin-left:0;padding-left:8px}.kernel-children>.kernel-step::before{display:none}.kernel-detail{margin-left:0}}
+@media print{.topbar,.tree-toolbar{display:none!important}body{background:#fff}main{max-width:none;margin:0}.band{border:0;box-shadow:none}.kernel-children,[hidden]{display:grid!important}}
+</style>
+</head>
+<body>
+  <nav class="topbar" aria-label="Pack navigation">
+    <strong>MaaS Kernel Notes</strong>
+    <div class="topbar-links">
+      <a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&view=native#one-rank-tree">Source one-rank tree</a>
+      <a href="../../">MaaS Docs index</a>
+    </div>
+  </nav>
+  <header class="hero">
+    <p class="eyebrow">Basic kernel understanding · Japan H200 · B=100</p>
+    <h1>GLM-5.2 H200 B=100 · Top-10 Physical Kernel Tree</h1>
+    <p>One focused, collapsible cut: ten exact physical kernel symbols cover <strong>86.2%</strong> of the measured GPU0 active timeline.</p>
+  </header>
+  <main>
+    <section class="band" id="top10-kernel-tree" aria-labelledby="tree-heading">
+      <p class="scope" id="tree-heading"><strong>Exact selected scope.</strong> zai-org/GLM-5.2-FP8 · NVIDIA H200 · B=100 · 4,096 context tokens · TP8 / DP1 / EP1 / PP1 · DP0 / TP0 / EP0 · graph key 2 · correlation 505325.</p>
+      <div class="tree-toolbar" aria-label="Top-ten tree controls">
+        <button type="button" class="tree-button" id="expand-all">Expand all ownership</button>
+        <button type="button" class="tree-button" id="collapse-details">Collapse to 10 kernels</button>
+        <a class="download" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/gpu0_kernel_tree.json">Source tree JSON</a>
+        <a class="download" href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/downloads/kernel_events.csv.gz">Source event ledger</a>
+        <span class="tree-status">10 physical symbols · 20 source-tree placements · 1,282 launches</span>
+      </div>
+      <ol class="kernel-tree" id="one-rank-kernel-tree">
+        <li class="kernel-step root">
+          <div class="kernel-row">
+            <div class="kernel-heading">
+              <button type="button" class="kernel-toggle" id="root-toggle" aria-expanded="true" aria-controls="top10-children" title="Show or hide the ten selected kernel families">
+                <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+              </button>
+              <span class="kernel-id">GPU0</span>
+              <div class="kernel-copy">
+                <div class="kernel-title">B=100 top-10 physical-kernel cut</div>
+                <div class="kernel-role">Ranked globally by exact demangled symbol and summed residency; repeated implementations are aggregated once.</div>
+                <div class="kernel-evidence">Exact-symbol selection · 10 families · 20 original semantic placements · 87.7% of full Σ residency · 9.967767 ms selected overlap excess</div>
+              </div>
+            </div>
+            <div class="kernel-metric"><strong>1,282</strong><span>launches</span></div>
+            <div class="kernel-metric"><strong>40.314453</strong><span>∪ kernel ms</span></div>
+            <div class="kernel-metric"><strong>50.282220</strong><span>Σ residency ms</span></div>
+            <div class="kernel-metric"><strong>86.2%</strong><span>of full ∪</span></div>
+            <div class="kernel-assessment"><strong>Coverage</strong>The selected events occupy 86.2% of the full GPU0 active union. The residency sum is shown separately and must not be interpreted as wall time.</div>
+          </div>
+          <ol class="kernel-children" id="top10-children">
+    <li class="kernel-step collective" data-rank="1">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K1" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K1</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">TRTLLM fused TP AllReduce + RMSNorm</div>
+            <div class="kernel-role mono">flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport</div>
+            <div class="kernel-evidence">trace category: attention mla · 3 original semantic placements · 82.412 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>155</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>12.773912</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>12.773912</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>25.4%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #1 by exact-symbol summed residency; 22.28% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K1" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport&lt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0&gt;(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams&lt;T2&gt;)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.10#one-rank-tree"><strong>2.1.10</strong> TP attention output handoff</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.10 TP attention output handoff</span><small>78 launches · 3.059395 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=D2#one-rank-tree"><strong>D2</strong> Dense FFN TP reduction</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › D Dense SwiGLU branch · layers 0–2 › D2 Dense FFN TP reduction</span><small>3 launches · 0.115200 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M4#one-rank-tree"><strong>M4</strong> MoE FFN TP reduction</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › M Sparse MoE branch · layers 3–77 › M4 MoE FFN TP reduction</span><small>74 launches · 9.599317 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step projection" data-rank="2">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K2" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K2</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">Per-token group FP8 quantization</div>
+            <div class="kernel-role mono">per_token_group_quant_8bit_v2_kernel</div>
+            <div class="kernel-evidence">trace category: gemm other · 6 original semantic placements · 36.158 µs mean launch · 0.022720 ms intra-family overlap</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>282</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>10.173719</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>10.196439</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>20.3%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #2 by exact-symbol summed residency; 17.79% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K2" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void &lt;unnamed&gt;::per_token_group_quant_8bit_v2_kernel&lt;&lt;unnamed&gt;::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float&gt;(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.2#one-rank-tree"><strong>2.1.2</strong> fused_qkv_a_proj_with_mqa</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.2 fused_qkv_a_proj_with_mqa</span><small>78 launches · 9.738550 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.4#one-rank-tree"><strong>2.1.4</strong> q_b_proj · expand all MLA queries</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.4 q_b_proj · expand all MLA queries</span><small>78 launches · 0.137920 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=A1.2#one-rank-tree"><strong>A1.2</strong> DSA index-key projection</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.5 Choose the selected-position source › A Refresh selected positions › A1 Indexer projections › A1.2 DSA index-key projection</span><small>21 launches · 0.034400 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=A1.3#one-rank-tree"><strong>A1.3</strong> DSA head-gate projection</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.5 Choose the selected-position source › A Refresh selected positions › A1 Indexer projections › A1.3 DSA head-gate projection</span><small>21 launches · 0.039168 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.9#one-rank-tree"><strong>2.1.9</strong> Attention output projection</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.8–2.1.9 Latent-value expansion and output projection › 2.1.9 Attention output projection</span><small>78 launches · 0.120736 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=D1#one-rank-tree"><strong>D1</strong> Dense FFN compute</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › D Dense SwiGLU branch · layers 0–2 › D1 Dense FFN compute</span><small>6 launches · 0.125665 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step moe" data-rank="3">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K3" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K3</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">Fused MoE expert GEMMs</div>
+            <div class="kernel-role mono">fused_moe_kernel</div>
+            <div class="kernel-evidence">trace category: gemm other · 1 original semantic placement · 55.773 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>150</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>8.365881</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>8.365881</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>16.6%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #3 by exact-symbol summed residency; 14.59% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K3" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>fused_moe_kernel</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M2#one-rank-tree"><strong>M2</strong> Shared and routed expert compute</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › M Sparse MoE branch · layers 3–77 › M2 Shared and routed expert compute</span><small>150 launches · 8.365881 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step mla" data-rank="4">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K4" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K4</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">FlashMLA selected sparse scan</div>
+            <div class="kernel-role mono">sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel</div>
+            <div class="kernel-evidence">trace category: attention mla · 1 original semantic placement · 103.424 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>78</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>8.067085</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>8.067085</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>16.0%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #4 by exact-symbol summed residency; 14.07% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K4" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel&lt;sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;, sm90::decode::sparse_fp8::KernelTemplate&lt;(ModelType)0, (int)64&gt;::TmaParams&lt;cute::tuple&lt;int, int, int, int&gt;, cute::TiledCopy&lt;cute::Copy_Atom&lt;cute::Copy_Traits&lt;cute::SM90_TMA_LOAD, cute::C&lt;(int)65536&gt;, cute::AuxTmaParams&lt;cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;, const cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;, cute::C&lt;(int)1&gt;&gt;, cute::tuple&lt;cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)1&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)0&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)2&gt;, cute::ScaledBasis&lt;cute::C&lt;(int)1&gt;, (int)3&gt;&gt;&gt; &amp;, const cute::Swizzle&lt;(int)3, (int)4, (int)3&gt; &amp;&gt;&gt;, cutlass::bfloat16_t&gt;, cute::Layout&lt;cute::tuple&lt;cute::C&lt;(int)1&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)64&gt;&gt;, cute::C&lt;(int)9&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)0&gt;, cute::tuple&lt;cute::tuple&lt;cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)1&gt;&gt;, cute::C&lt;(int)4096&gt;&gt;&gt;&gt;&gt;, cute::tuple&lt;cute::C&lt;(int)64&gt;, cute::C&lt;(int)576&gt;&gt;&gt;&gt;&gt;(SparseAttnDecodeParams, T2)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.7#one-rank-tree"><strong>2.1.7</strong> Selected sparse MLA scan</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.7 Selected sparse MLA scan</span><small>78 launches · 8.067085 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step collective" data-rank="5">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K5" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K5</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">Two-shot TP AllReduce</div>
+            <div class="kernel-role mono">all_reduce_two_shot_kernel</div>
+            <div class="kernel-evidence">trace category: memory elementwise · 2 original semantic placements · 3,253.655 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>2</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>6.507310</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>6.507310</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>12.9%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #5 by exact-symbol summed residency; 11.35% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K5" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void &lt;unnamed&gt;::all_reduce_two_shot_kernel&lt;__nv_bfloat16, (unsigned int)8, (bool)1&gt;(const host::distributed::AllReduceData *, &lt;unnamed&gt;::AllReduceParams, device::distributed::PullController)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=S2#one-rank-tree"><strong>S2</strong> Initial TP rendezvous</a><span>0 Useful-graph prologue › S2 Initial TP rendezvous</span><small>1 launches · 6.489998 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M4#one-rank-tree"><strong>M4</strong> MoE FFN TP reduction</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › M Sparse MoE branch · layers 3–77 › M4 MoE FFN TP reduction</span><small>1 launches · 0.017312 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step moe" data-rank="6">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K6" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K6</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">MoE routing GatherTopK</div>
+            <div class="kernel-role mono">at::native::sbtopk::gatherTopK</div>
+            <div class="kernel-evidence">trace category: moe routing · 1 original semantic placement · 6.149 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>225</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>1.383427</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>1.383427</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>2.8%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #6 by exact-symbol summed residency; 2.41% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K6" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void at::native::sbtopk::gatherTopK&lt;float, unsigned int, (int)2, (bool)0&gt;(at::cuda::detail::TensorInfo&lt;const T1, T2&gt;, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo&lt;T1, T2&gt;, T2, at::cuda::detail::TensorInfo&lt;long, T2&gt;, T2, T1 *)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M1#one-rank-tree"><strong>M1</strong> MoE routing and token alignment</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › M Sparse MoE branch · layers 3–77 › M1 MoE routing and token alignment</span><small>225 launches · 1.383427 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step projection" data-rank="7">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K7" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K7</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">DeepGEMM FP8 projection · b875074c</div>
+            <div class="kernel-role mono">deep_gemm::sm90_fp8_gemm_1d2d_impl · sha1:b875074c</div>
+            <div class="kernel-evidence">trace category: gemm other · 2 original semantic placements · 11.162 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>81</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>0.904128</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>0.904128</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>1.8%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #7 by exact-symbol summed residency; 1.58% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K7" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void deep_gemm::sm90_fp8_gemm_1d2d_impl&lt;(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)48, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)32, (unsigned int)15, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity&gt;(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.2#one-rank-tree"><strong>2.1.2</strong> fused_qkv_a_proj_with_mqa</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.2 fused_qkv_a_proj_with_mqa</span><small>78 launches · 0.868704 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=D1#one-rank-tree"><strong>D1</strong> Dense FFN compute</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › D Dense SwiGLU branch · layers 0–2 › D1 Dense FFN compute</span><small>3 launches · 0.035424 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step mla" data-rank="8">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K8" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K8</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">FlashMLA combine</div>
+            <div class="kernel-role mono">smxx::decode::flash_fwd_mla_combine_kernel</div>
+            <div class="kernel-evidence">trace category: attention mla · 1 original semantic placement · 9.567 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>78</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>0.746211</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>0.746211</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>1.5%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #8 by exact-symbol summed residency; 1.30% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K8" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void smxx::decode::flash_fwd_mla_combine_kernel&lt;cutlass::bfloat16_t, (int)512, (int)8, (int)160, (int)256&gt;(CombineParams)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.7#one-rank-tree"><strong>2.1.7</strong> Selected sparse MLA scan</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.7 Selected sparse MLA scan</span><small>78 launches · 0.746211 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step projection" data-rank="9">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K9" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K9</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">DeepGEMM FP8 projection · 108ff1dd</div>
+            <div class="kernel-role mono">deep_gemm::sm90_fp8_gemm_1d2d_impl · sha1:108ff1dd</div>
+            <div class="kernel-evidence">trace category: gemm other · 2 original semantic placements · 8.398 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>81</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>0.680257</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>0.680257</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>1.4%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #9 by exact-symbol summed residency; 1.19% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K9" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void deep_gemm::sm90_fp8_gemm_1d2d_impl&lt;(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)96, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)10, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity&gt;(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=2.1.9#one-rank-tree"><strong>2.1.9</strong> Attention output projection</a><span>2 Decoder stack › 2.1 Attention sublayer › 2.1.8–2.1.9 Latent-value expansion and output projection › 2.1.9 Attention output projection</span><small>78 launches · 0.659105 ms Σ residency</small></li><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=D1#one-rank-tree"><strong>D1</strong> Dense FFN compute</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › D Dense SwiGLU branch · layers 0–2 › D1 Dense FFN compute</span><small>3 launches · 0.021152 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+    <li class="kernel-step moe" data-rank="10">
+      <div class="kernel-row">
+        <div class="kernel-heading">
+          <button type="button" class="kernel-toggle" aria-expanded="false" aria-controls="detail-K10" title="Show exact symbol and source-tree ownership">
+            <span class="expanded" aria-hidden="true">&#9662;</span><span class="collapsed" aria-hidden="true">&#9656;</span>
+          </button>
+          <span class="kernel-id">K10</span>
+          <div class="kernel-copy">
+            <div class="kernel-title">MoE routing bitonic sort</div>
+            <div class="kernel-role mono">at::native::bitonicSortKVInPlace</div>
+            <div class="kernel-evidence">trace category: other · 1 original semantic placement · 4.384 µs mean launch</div>
+          </div>
+        </div>
+        <div class="kernel-metric"><strong>150</strong><span>launches</span></div>
+        <div class="kernel-metric"><strong>0.657570</strong><span>∪ kernel ms</span></div>
+        <div class="kernel-metric"><strong>0.657570</strong><span>Σ residency ms</span></div>
+        <div class="kernel-metric"><strong>1.3%</strong><span>of top-10 Σ</span></div>
+        <div class="kernel-assessment"><strong>Why retained</strong>Rank #10 by exact-symbol summed residency; 1.15% of full-graph Σ residency.</div>
+      </div>
+      <div class="kernel-detail" id="detail-K10" hidden>
+        <strong>Exact demangled kernel symbol</strong>
+        <code>void at::native::bitonicSortKVInPlace&lt;(int)2, (int)-1, (int)16, (int)16, float, long, at::native::GTOp&lt;float, (bool)1&gt;, unsigned int&gt;(at::cuda::detail::TensorInfo&lt;T5, T8&gt;, T8, T8, T8, at::cuda::detail::TensorInfo&lt;T6, T8&gt;, T8, T7)</code>
+        <strong>Original one-rank-tree ownership</strong>
+        <ul class="owner-paths"><li class="owner-path"><a href="../basic-kernel-understanding-japan-tp8-decode-batch-sweep-4k/?batch=100&amp;view=native&amp;tree=M3#one-rank-tree"><strong>M3</strong> MoE support</a><span>2 Decoder stack › 2.3 Choose the feed-forward branch › M Sparse MoE branch · layers 3–77 › M3 MoE support</span><small>150 launches · 0.657570 ms Σ residency</small></li></ul>
+      </div>
+    </li>
+          </ol>
+        </li>
+      </ol>
+      <p class="provenance"><strong>Direct interval audit.</strong> Selected union 40.314453 ms ÷ full union 46.768545 ms = 86.199930%. Source report SHA-256 <span class="hash">426e88f661d7dbbed534eec008e909fd5dff4732fe8b6d239da48c4c0ffe539f</span> · event ledger SHA-256 <span class="hash">71a0e0daaeff31f946ff180b0a6c69275d16f212accb504719e8c9cb6446e76c</span>.</p>
+    </section>
+  </main>
+  <script type="application/json" id="top10-tree-data">{"schema_version":"glm52-h200-b100-top10-kernel-tree-v1","title":"GLM-5.2 H200 B=100 \u00b7 Top-10 Physical Kernel Tree","generated_from":"2026-08-04T07:25:13.361060+00:00","scope":{"gpu":"NVIDIA H200","model":"zai-org/GLM-5.2-FP8","model_revision":"ba978f7d347eaf65d22f1a86833408afdb953541","batch_size":100,"context_tokens":4096,"topology":{"tp":8,"dp":1,"ep":1,"pp":1},"rank_label":"DP0 / TP0 / EP0","graph_key":2,"correlation":505325},"source":{"full_launch_count":3575,"full_active_union_ms":46.768545,"full_summed_residency_ms":57.32361,"report_sha256":"426e88f661d7dbbed534eec008e909fd5dff4732fe8b6d239da48c4c0ffe539f","events_sha256":"71a0e0daaeff31f946ff180b0a6c69275d16f212accb504719e8c9cb6446e76c"},"selected":{"distinct_kernel_count":10,"semantic_placement_count":20,"launch_count":1282,"active_union_ms":40.314453,"summed_residency_ms":50.28222,"overlap_excess_ms":9.967767,"active_union_coverage_pct":86.1999298887746,"summed_residency_share_pct":87.71642260492666},"families":[{"id":"K1","rank":1,"label":"TRTLLM fused TP AllReduce + RMSNorm","compact_symbol":"flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport","kernel_name":"void flashinfer::trtllm_allreduce_fusion::allreduce_fusion_kernel_oneshot_lamport<(flashinfer::trtllm_allreduce_fusion::AllReduceFusionPattern)1, __nv_bfloat16, (int)8, (bool)0, (bool)0>(flashinfer::trtllm_allreduce_fusion::AllReduceFusionParams<T2>)","categories":"attention mla","branch_class":"collective","launch_count":155,"active_union_ms":12.773912,"aggregate_kernel_ms":12.773912,"overlap_excess_ms":0.0,"mean_us":82.41233548387096,"selected_residency_share_pct":25.404431228374563,"source_residency_share_pct":22.28385825665899,"placements":[{"leaf_id":"2.1.10.1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.10","title":"TP attention output handoff"}],"event_count":78,"residency_ns":3059395,"active_union_ns":3059395},{"leaf_id":"D2.1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"D","title":"Dense SwiGLU branch \u00b7 layers 0\u20132"},{"id":"D2","title":"Dense FFN TP reduction"}],"event_count":3,"residency_ns":115200,"active_union_ns":115200},{"leaf_id":"M4.1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"M","title":"Sparse MoE branch \u00b7 layers 3\u201377"},{"id":"M4","title":"MoE FFN TP reduction"}],"event_count":74,"residency_ns":9599317,"active_union_ns":9599317}]},{"id":"K2","rank":2,"label":"Per-token group FP8 quantization","compact_symbol":"per_token_group_quant_8bit_v2_kernel","kernel_name":"void <unnamed>::per_token_group_quant_8bit_v2_kernel<<unnamed>::NaiveScheduler, (int)128, (int)8, __nv_bfloat16, __nv_fp8_e4m3, (bool)1, (bool)0, (bool)0, (bool)1, float>(const T4 *, T5 *, T10 *, const int *, int, int, int, int, int)","categories":"gemm other","branch_class":"projection","launch_count":282,"active_union_ms":10.173719,"aggregate_kernel_ms":10.196439,"overlap_excess_ms":0.02272,"mean_us":36.157585106382975,"selected_residency_share_pct":20.278418494648804,"source_residency_share_pct":17.787503264361753,"placements":[{"leaf_id":"2.1.2.k1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.2","title":"fused_qkv_a_proj_with_mqa"}],"event_count":78,"residency_ns":9738550,"active_union_ns":9738550},{"leaf_id":"2.1.4.k1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.4","title":"q_b_proj \u00b7 expand all MLA queries"}],"event_count":78,"residency_ns":137920,"active_union_ns":137920},{"leaf_id":"A1.2.k1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.5","title":"Choose the selected-position source"},{"id":"A","title":"Refresh selected positions"},{"id":"A1","title":"Indexer projections"},{"id":"A1.2","title":"DSA index-key projection"}],"event_count":21,"residency_ns":34400,"active_union_ns":34400},{"leaf_id":"A1.3.k1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.5","title":"Choose the selected-position source"},{"id":"A","title":"Refresh selected positions"},{"id":"A1","title":"Indexer projections"},{"id":"A1.3","title":"DSA head-gate projection"}],"event_count":21,"residency_ns":39168,"active_union_ns":39168},{"leaf_id":"2.1.9.k1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.8\u20132.1.9","title":"Latent-value expansion and output projection"},{"id":"2.1.9","title":"Attention output projection"}],"event_count":78,"residency_ns":120736,"active_union_ns":120736},{"leaf_id":"D1.1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"D","title":"Dense SwiGLU branch \u00b7 layers 0\u20132"},{"id":"D1","title":"Dense FFN compute"}],"event_count":6,"residency_ns":125665,"active_union_ns":125665}]},{"id":"K3","rank":3,"label":"Fused MoE expert GEMMs","compact_symbol":"fused_moe_kernel","kernel_name":"fused_moe_kernel","categories":"gemm other","branch_class":"moe","launch_count":150,"active_union_ms":8.365881,"aggregate_kernel_ms":8.365881,"overlap_excess_ms":0.0,"mean_us":55.77254,"selected_residency_share_pct":16.63785131205424,"source_residency_share_pct":14.594127969260834,"placements":[{"leaf_id":"M2.4","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"M","title":"Sparse MoE branch \u00b7 layers 3\u201377"},{"id":"M2","title":"Shared and routed expert compute"}],"event_count":150,"residency_ns":8365881,"active_union_ns":8365881}]},{"id":"K4","rank":4,"label":"FlashMLA selected sparse scan","compact_symbol":"sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel","kernel_name":"void sm90::decode::sparse_fp8::flash_fwd_splitkv_mla_fp8_sparse_kernel<sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>, sm90::decode::sparse_fp8::KernelTemplate<(ModelType)0, (int)64>::TmaParams<cute::tuple<int, int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>, cute::ScaledBasis<cute::C<(int)1>, (int)3>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)9>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)576>>>>>(SparseAttnDecodeParams, T2)","categories":"attention mla","branch_class":"mla","launch_count":78,"active_union_ms":8.067085,"aggregate_kernel_ms":8.067085,"overlap_excess_ms":0.0,"mean_us":103.42416666666666,"selected_residency_share_pct":16.043613428364935,"source_residency_share_pct":14.072883755925352,"placements":[{"leaf_id":"2.1.7.1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.7","title":"Selected sparse MLA scan"}],"event_count":78,"residency_ns":8067085,"active_union_ns":8067085}]},{"id":"K5","rank":5,"label":"Two-shot TP AllReduce","compact_symbol":"all_reduce_two_shot_kernel","kernel_name":"void <unnamed>::all_reduce_two_shot_kernel<__nv_bfloat16, (unsigned int)8, (bool)1>(const host::distributed::AllReduceData *, <unnamed>::AllReduceParams, device::distributed::PullController)","categories":"memory elementwise","branch_class":"collective","launch_count":2,"active_union_ms":6.50731,"aggregate_kernel_ms":6.50731,"overlap_excess_ms":0.0,"mean_us":3253.655,"selected_residency_share_pct":12.941572587686064,"source_residency_share_pct":11.351884502738052,"placements":[{"leaf_id":"S2.1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"0","title":"Useful-graph prologue"},{"id":"S2","title":"Initial TP rendezvous"}],"event_count":1,"residency_ns":6489998,"active_union_ns":6489998},{"leaf_id":"M4.2","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"M","title":"Sparse MoE branch \u00b7 layers 3\u201377"},{"id":"M4","title":"MoE FFN TP reduction"}],"event_count":1,"residency_ns":17312,"active_union_ns":17312}]},{"id":"K6","rank":6,"label":"MoE routing GatherTopK","compact_symbol":"at::native::sbtopk::gatherTopK","kernel_name":"void at::native::sbtopk::gatherTopK<float, unsigned int, (int)2, (bool)0>(at::cuda::detail::TensorInfo<const T1, T2>, T2, T2, bool, T2, T2, at::cuda::detail::TensorInfo<T1, T2>, T2, at::cuda::detail::TensorInfo<long, T2>, T2, T1 *)","categories":"moe routing","branch_class":"moe","launch_count":225,"active_union_ms":1.383427,"aggregate_kernel_ms":1.383427,"overlap_excess_ms":0.0,"mean_us":6.148564444444444,"selected_residency_share_pct":2.7513244244188106,"source_residency_share_pct":2.41336335935577,"placements":[{"leaf_id":"M1.1","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"M","title":"Sparse MoE branch \u00b7 layers 3\u201377"},{"id":"M1","title":"MoE routing and token alignment"}],"event_count":225,"residency_ns":1383427,"active_union_ns":1383427}]},{"id":"K7","rank":7,"label":"DeepGEMM FP8 projection \u00b7 b875074c","compact_symbol":"deep_gemm::sm90_fp8_gemm_1d2d_impl \u00b7 sha1:b875074c","kernel_name":"void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)48, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)32, (unsigned int)15, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)","categories":"gemm other","branch_class":"projection","launch_count":81,"active_union_ms":0.904128,"aggregate_kernel_ms":0.904128,"overlap_excess_ms":0.0,"mean_us":11.162074074074075,"selected_residency_share_pct":1.7981067661690355,"source_residency_share_pct":1.5772349299006116,"placements":[{"leaf_id":"2.1.2.k2","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.2","title":"fused_qkv_a_proj_with_mqa"}],"event_count":78,"residency_ns":868704,"active_union_ns":868704},{"leaf_id":"D1.2","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"D","title":"Dense SwiGLU branch \u00b7 layers 0\u20132"},{"id":"D1","title":"Dense FFN compute"}],"event_count":3,"residency_ns":35424,"active_union_ns":35424}]},{"id":"K8","rank":8,"label":"FlashMLA combine","compact_symbol":"smxx::decode::flash_fwd_mla_combine_kernel","kernel_name":"void smxx::decode::flash_fwd_mla_combine_kernel<cutlass::bfloat16_t, (int)512, (int)8, (int)160, (int)256>(CombineParams)","categories":"attention mla","branch_class":"mla","launch_count":78,"active_union_ms":0.746211,"aggregate_kernel_ms":0.746211,"overlap_excess_ms":0.0,"mean_us":9.566807692307691,"selected_residency_share_pct":1.4840454538403436,"source_residency_share_pct":1.3017515819397976,"placements":[{"leaf_id":"2.1.7.2","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.7","title":"Selected sparse MLA scan"}],"event_count":78,"residency_ns":746211,"active_union_ns":746211}]},{"id":"K9","rank":9,"label":"DeepGEMM FP8 projection \u00b7 108ff1dd","compact_symbol":"deep_gemm::sm90_fp8_gemm_1d2d_impl \u00b7 sha1:108ff1dd","kernel_name":"void deep_gemm::sm90_fp8_gemm_1d2d_impl<(cute::UMMA::Major)0, (unsigned int)0, (unsigned int)0, (unsigned int)0, (unsigned int)1, (unsigned int)64, (unsigned int)96, (unsigned int)128, (unsigned int)128, (unsigned int)128, (unsigned int)64, (unsigned int)10, (unsigned int)128, (unsigned int)128, (unsigned int)1, (bool)0, (unsigned int)132, (deep_gemm::GemmType)0, deep_gemm::epilogue::transform::EpilogueIdentity>(float *, int *, unsigned int, unsigned int, unsigned int, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)","categories":"gemm other","branch_class":"projection","launch_count":81,"active_union_ms":0.680257,"aggregate_kernel_ms":0.680257,"overlap_excess_ms":0.0,"mean_us":8.398234567901234,"selected_residency_share_pct":1.3528778164528137,"source_residency_share_pct":1.186696022808054,"placements":[{"leaf_id":"2.1.9.k2","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.1","title":"Attention sublayer"},{"id":"2.1.8\u20132.1.9","title":"Latent-value expansion and output projection"},{"id":"2.1.9","title":"Attention output projection"}],"event_count":78,"residency_ns":659105,"active_union_ns":659105},{"leaf_id":"D1.4","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"D","title":"Dense SwiGLU branch \u00b7 layers 0\u20132"},{"id":"D1","title":"Dense FFN compute"}],"event_count":3,"residency_ns":21152,"active_union_ns":21152}]},{"id":"K10","rank":10,"label":"MoE routing bitonic sort","compact_symbol":"at::native::bitonicSortKVInPlace","kernel_name":"void at::native::bitonicSortKVInPlace<(int)2, (int)-1, (int)16, (int)16, float, long, at::native::GTOp<float, (bool)1>, unsigned int>(at::cuda::detail::TensorInfo<T5, T8>, T8, T8, T8, at::cuda::detail::TensorInfo<T6, T8>, T8, T7)","categories":"other","branch_class":"moe","launch_count":150,"active_union_ms":0.65757,"aggregate_kernel_ms":0.65757,"overlap_excess_ms":0.0,"mean_us":4.3838,"selected_residency_share_pct":1.307758487990387,"source_residency_share_pct":1.147118961977447,"placements":[{"leaf_id":"M3.2","ancestors":[{"id":"GPU0","title":"GPU 0 useful TP=8-only decode graph \u00b7 B=100"},{"id":"2","title":"Decoder stack"},{"id":"2.3","title":"Choose the feed-forward branch"},{"id":"M","title":"Sparse MoE branch \u00b7 layers 3\u201377"},{"id":"M3","title":"MoE support"}],"event_count":150,"residency_ns":657570,"active_union_ns":657570}]}]}</script>
+  <script>
+(() => {
+  const rootButton=document.getElementById('root-toggle');
+  const children=document.getElementById('top10-children');
+  const familyButtons=[...document.querySelectorAll('.kernel-step[data-rank] .kernel-toggle')];
+  function setButton(button,expanded){
+    const target=document.getElementById(button.getAttribute('aria-controls'));
+    button.setAttribute('aria-expanded',String(expanded));
+    target.hidden=!expanded;
+  }
+  rootButton.addEventListener('click',()=>setButton(rootButton,rootButton.getAttribute('aria-expanded')!=='true'));
+  familyButtons.forEach(button=>button.addEventListener('click',()=>setButton(button,button.getAttribute('aria-expanded')!=='true')));
+  document.getElementById('expand-all').addEventListener('click',()=>{setButton(rootButton,true);familyButtons.forEach(button=>setButton(button,true));});
+  document.getElementById('collapse-details').addEventListener('click',()=>{setButton(rootButton,true);familyButtons.forEach(button=>setButton(button,false));});
+})();
+</script>
+</body>
+</html>
