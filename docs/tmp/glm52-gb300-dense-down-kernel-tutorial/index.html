@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A first-principles tutorial for understanding and predicting the runtime curve of one GLM-5.2 dense down-projection GEMM on NVIDIA GB300.">
+  <meta name="theme-color" content="#12223f">
+  <title>One Linear Kernel, Completely Understood · GLM-5.2 on GB300</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2312223f'/%3E%3Cpath d='M15 16h34v8H23v12h20v8H23v4h26v8H15z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-dense-down-kernel-tutorial/">
+  <link rel="stylesheet" href="tutorial.css">
+</head>
+<body>
+  <div class="top-rule" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="../../">MaaS Docs</a>
+    <span class="header-divider" aria-hidden="true"></span>
+    <span class="header-context">Kernel mechanics · GB300</span>
+    <a class="parent-link" href="../glm52-gb300-kernel-efficiency-sweep/">Open the source report <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <div class="page-shell">
+    <aside class="contents" aria-label="Page contents">
+      <div class="contents-inner">
+        <p class="contents-kicker">Learning path</p>
+        <nav>
+          <a class="toc-link is-active" href="#start"><span>00</span> Start here</a>
+          <a class="toc-link" href="#vocabulary"><span>01</span> Vocabulary</a>
+          <a class="toc-link" href="#contract"><span>02</span> Kernel contract</a>
+          <a class="toc-link" href="#cta"><span>03</span> One CTA</a>
+          <a class="toc-link" href="#curve"><span>04</span> Measured curve</a>
+          <a class="toc-link" href="#explanation"><span>05</span> Why it bends</a>
+          <a class="toc-link" href="#bytes"><span>06</span> FLOPs &amp; bytes</a>
+          <a class="toc-link" href="#predictor"><span>07</span> Prediction lab</a>
+          <a class="toc-link" href="#method"><span>08</span> Reusable method</a>
+          <a class="toc-link" href="#checkpoint"><span>09</span> Checkpoint</a>
+        </nav>
+        <div class="rail-note">
+          <span class="rail-dot" aria-hidden="true"></span>
+          <p><strong>One promise.</strong> By the end, a kernel-time curve should look like a scheduling diagram—not a mystery line.</p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="article">
+      <section class="hero" id="start">
+        <div class="hero-copy">
+          <p class="eyebrow">GLM-5.2 · dense down projection · one TP8 rank · NVIDIA GB300</p>
+          <h1>One linear kernel,<br><em>completely understood.</em></h1>
+          <p class="hero-deck">A hand-held path from “what is a CTA?” to predicting why runtime stays near <strong>7–8 µs</strong> from <i>M</i> = 1 through 200, then reaches <strong>10.50 µs</strong> at <i>M</i> = 500.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#vocabulary">Begin with the nouns</a>
+            <a class="button button-quiet" href="#curve">Jump to the evidence</a>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-label="The matrix multiplication taught on this page">
+          <div class="matrix-card matrix-x">
+            <span class="matrix-name"><b>X</b></span>
+            <span class="matrix-shape"><i>M</i> × 1536</span>
+            <span class="matrix-type">BF16 activations</span>
+          </div>
+          <span class="matrix-operator" aria-hidden="true">×</span>
+          <div class="matrix-card matrix-w">
+            <span class="matrix-name"><b>W</b><sup>T</sup></span>
+            <span class="matrix-shape">1536 × 6144</span>
+            <span class="matrix-type">FP8 weights</span>
+          </div>
+          <span class="matrix-operator" aria-hidden="true">→</span>
+          <div class="matrix-card matrix-y">
+            <span class="matrix-name"><b>Y</b></span>
+            <span class="matrix-shape"><i>M</i> × 6144</span>
+            <span class="matrix-type">BF16 output</span>
+          </div>
+          <div class="hero-caption">
+            <span class="caption-mark">Focus</span>
+            Only <i>M</i> changes in the measured sweep. The reduction width <i>K</i> = 1536 and output width <i>N</i> = 6144 stay fixed.
+          </div>
+        </div>
+
+        <div class="hero-facts" aria-label="Tutorial outcomes">
+          <div><strong>4</strong><span>overloaded “block” meanings separated</span></div>
+          <div><strong>6</strong><span>measured batch sizes explained</span></div>
+          <div><strong>1</strong><span>reusable prediction worksheet</span></div>
+        </div>
+      </section>
+
+      <section class="lesson-section" id="vocabulary">
+        <header class="section-heading">
+          <span class="section-number">01</span>
+          <div>
+            <p class="section-kicker">Vocabulary before arithmetic</p>
+            <h2>“Block” means four different things here.</h2>
+            <p class="section-intro">Most early confusion is not about matrix multiplication. It is the same word being reused at four layers of the stack. Keep these objects separate and the rest becomes mechanical.</p>
+          </div>
+        </header>
+
+        <div class="term-grid">
+          <article class="term-card term-blue">
+            <div class="term-icon thread-block-icon" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <p class="term-index">A · software work unit</p>
+            <h3>CUDA block = CTA</h3>
+            <p>A <strong>thread block</strong> and a <strong>cooperative thread array</strong> are two names for the same scheduled unit. This kernel puts <strong>256 threads</strong>, or eight 32-thread warps, in each CTA.</p>
+          </article>
+          <article class="term-card term-teal">
+            <div class="term-icon tile-icon" aria-hidden="true"><i></i></div>
+            <p class="term-index">B · output ownership</p>
+            <h3>GEMM output tile</h3>
+            <p>One useful CTA owns a rectangular patch of <b>Y</b>: <span class="math"><span class="code-var">BLOCK</span><sub>M</sub> × <span class="code-var">BLOCK</span><sub>N</sub></span>. Here <span class="math"><span class="code-var">BLOCK</span><sub>N</sub></span> is 128 while <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> changes with <i>M</i>.</p>
+          </article>
+          <article class="term-card term-gold">
+            <div class="term-icon slices-icon" aria-hidden="true"><i></i><i></i><i></i></div>
+            <p class="term-index">C · reduction progress</p>
+            <h3><i>K</i> slice</h3>
+            <p>The CTA cannot consume all 1536 reduction values at once. It advances through chunks of <span class="math"><span class="code-var">BLOCK</span><sub>K</sub></span> = 128, so the accumulation has exactly <strong>12 slices</strong>.</p>
+          </article>
+          <article class="term-card term-violet">
+            <div class="term-icon scale-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <p class="term-index">D · numerical metadata</p>
+            <h3>FP8 scale block</h3>
+            <p>The “128 × 128 block” in the quantization description says which values share scale metadata. It is <strong>not</strong> the CTA’s output tile and it does not imply <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> = 128.</p>
+          </article>
+        </div>
+
+        <div class="hierarchy-card">
+          <div class="hierarchy-copy">
+            <p class="mini-kicker">Hardware and software hierarchy</p>
+            <h3>A CTA is a task. An SM is a worker.</h3>
+            <p>The GPU scheduler assigns CTA tasks to physical streaming multiprocessors. Threads form warps; warps form a CTA; two CTAs form this kernel’s cluster; all CTAs together form the launch grid.</p>
+          </div>
+          <div class="hierarchy-flow" aria-label="Thread, warp, CTA, cluster, grid, and GPU hierarchy">
+            <div class="hierarchy-node"><span class="node-art one-thread"></span><strong>thread</strong><small>one lane</small></div>
+            <span class="flow-arrow">→</span>
+            <div class="hierarchy-node"><span class="node-art one-warp"></span><strong>warp</strong><small>32 threads</small></div>
+            <span class="flow-arrow">→</span>
+            <div class="hierarchy-node is-focus"><span class="node-art one-cta"></span><strong>CTA</strong><small>256 threads</small></div>
+            <span class="flow-arrow">→</span>
+            <div class="hierarchy-node"><span class="node-art one-cluster"></span><strong>cluster</strong><small>2 CTAs</small></div>
+            <span class="flow-arrow">→</span>
+            <div class="hierarchy-node"><span class="node-art one-grid"></span><strong>grid</strong><small>152 CTA slots</small></div>
+            <span class="flow-arrow">→</span>
+            <div class="hierarchy-node"><span class="node-art one-gpu"></span><strong>GB300</strong><small>152 SMs</small></div>
+          </div>
+        </div>
+
+        <aside class="plain-language">
+          <span class="aside-label">The sentence to remember</span>
+          <p><strong>A CTA is a 256-thread software team assigned to one physical SM; for this kernel, that team computes one <span class="math"><span class="code-var">BLOCK</span><sub>M</sub> × 128</span> output tile at a time.</strong></p>
+        </aside>
+      </section>
+
+      <section class="lesson-section" id="contract">
+        <header class="section-heading">
+          <span class="section-number">02</span>
+          <div>
+            <p class="section-kicker">Freeze the operation</p>
+            <h2>What exactly is the kernel being timed?</h2>
+            <p class="section-intro">This is one TP8 rank’s dense FFN down projection. It is not a routed MoE expert kernel. The profiler row combines online activation quantization with the FP8 DeepGEMM that produces the BF16 output.</p>
+          </div>
+        </header>
+
+        <div class="gemm-primer">
+          <div class="primer-copy">
+            <p class="mini-kicker">GEMM in one sentence</p>
+            <h3>One output number is a 1,536-pair dot product.</h3>
+            <p>Choose row <i>m</i> from <b>X</b> and output column <i>n</i> from the transposed weight view. Multiply matching values, add all 1,536 products, and obtain one element <span class="math"><b>Y</b><sub>m,n</sub></span>. GEMM repeats that operation over every one of the <i>M</i> × 6144 output positions.</p>
+          </div>
+          <div class="dot-product-visual" role="img" aria-label="One output value is the sum of pairwise products from an X row and a W column">
+            <div class="vector-strip vector-x">
+              <span><b>X</b> row <i>m</i></span>
+              <div><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <small>1,536 BF16 values</small>
+            </div>
+            <span class="dot-symbol">⊙</span>
+            <div class="vector-strip vector-w">
+              <span><b>W</b> column <i>n</i></span>
+              <div><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <small>1,536 FP8 values</small>
+            </div>
+            <span class="dot-symbol">Σ</span>
+            <div class="output-number"><span>one result</span><strong><b>Y</b><sub>m,n</sub></strong></div>
+          </div>
+          <div class="dimension-cards">
+            <div><strong><i>M</i></strong><span>how many independent rows enter this invocation</span></div>
+            <div><strong><i>N</i> = 6144</strong><span>how many output values each row produces</span></div>
+            <div><strong><i>K</i> = 1536</strong><span>how many multiply-add pairs create each output value</span></div>
+          </div>
+        </div>
+
+        <div class="contract-layout">
+          <div class="operation-board">
+            <div class="operation-stage">
+              <span class="stage-no">1</span>
+              <div>
+                <h3>Online quantize</h3>
+                <p>Read <b>X</b> in BF16, form FP8 activation values and scale metadata for this invocation.</p>
+              </div>
+              <span class="stage-chip chip-quant">≈ 1.75–1.95 µs</span>
+            </div>
+            <div class="operation-connector" aria-hidden="true"><i></i></div>
+            <div class="operation-stage">
+              <span class="stage-no">2</span>
+              <div>
+                <h3>FP8 GEMM</h3>
+                <p>Multiply the quantized rows by the resident FP8 weight matrix and accumulate the output.</p>
+              </div>
+              <span class="stage-chip chip-gemm">≈ 5.35–8.55 µs</span>
+            </div>
+            <div class="operation-connector" aria-hidden="true"><i></i></div>
+            <div class="operation-stage">
+              <span class="stage-no">3</span>
+              <div>
+                <h3>Write <b>Y</b></h3>
+                <p>The GEMM epilogue writes an <i>M</i> × 6144 BF16 tensor for the following FFN operation.</p>
+              </div>
+              <span class="stage-chip chip-output">included</span>
+            </div>
+          </div>
+
+          <div class="definition-panel">
+            <p class="mini-kicker">Dimensions that do not move</p>
+            <dl class="definition-list">
+              <div><dt><i>K</i></dt><dd><strong>1536</strong><span>reduction width</span></dd></div>
+              <div><dt><i>N</i></dt><dd><strong>6144</strong><span>output width</span></dd></div>
+              <div><dt>dtype</dt><dd><strong>FP8 × FP8</strong><span>BF16 output</span></dd></div>
+              <div><dt>rank</dt><dd><strong>one of 8</strong><span>TP-local operation</span></dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <div class="equation-pair">
+          <article class="equation-card">
+            <p class="equation-label">Logical work</p>
+            <div class="display-equation" aria-label="F of M equals two times M times 1536 times 6144">
+              <i>F</i>(<i>M</i>) <span class="eq-op">=</span> 2<i>M</i>(1536)(6144)
+            </div>
+            <div class="equation-result">18,874,368<i>M</i> FLOP</div>
+            <p>Useful model math grows exactly linearly with <i>M</i>.</p>
+          </article>
+          <article class="equation-card">
+            <p class="equation-label">Useful byte floor</p>
+            <div class="display-equation" aria-label="B minimum of M equals 9,439,488 plus 15,360 M bytes">
+              <i>B</i><sub>min</sub>(<i>M</i>) <span class="eq-op">=</span> 9,439,488 + 15,360<i>M</i>
+            </div>
+            <div class="equation-result">fixed weights + row traffic</div>
+            <p>The constant weight stream dominates at small <i>M</i>; §06 derives every byte.</p>
+          </article>
+        </div>
+
+        <aside class="scope-note">
+          <strong>Measurement scope.</strong> “Active union” means elapsed GPU time covered by the quantization-plus-GEMM composite for one logical invocation. It is not the sum of all CTA lifetimes, and it is not multiplied by the number of SMs.
+        </aside>
+      </section>
+
+      <section class="lesson-section" id="cta">
+        <header class="section-heading">
+          <span class="section-number">03</span>
+          <div>
+            <p class="section-kicker">Open one software task</p>
+            <h2>Follow one CTA from empty registers to an output tile.</h2>
+            <p class="section-intro">A GEMM CTA does not compute the whole matrix. It repeatedly loads one reduction slice, performs matrix-multiply-accumulate work, and keeps a partial output tile alive until all 12 slices are consumed.</p>
+          </div>
+        </header>
+
+        <div class="cta-lab">
+          <div class="cta-stage" aria-live="polite">
+            <div class="cta-stage-topline">
+              <span class="live-badge"><i></i> One CTA</span>
+              <span>output ownership: <span class="math"><span class="code-var">BLOCK</span><sub>M</sub> × 128</span></span>
+            </div>
+            <div class="cta-machine">
+              <div class="memory-column">
+                <p>GPU memory</p>
+                <div class="memory-slab slab-x"><b>X</b> tile</div>
+                <div class="memory-slab slab-w"><b>W</b> tile</div>
+                <div class="memory-slab slab-y"><b>Y</b> tile</div>
+              </div>
+              <div class="transfer-lane" aria-hidden="true">
+                <span class="packet packet-a"></span>
+                <span class="packet packet-b"></span>
+                <i class="lane-line"></i>
+              </div>
+              <div class="sm-column">
+                <div class="sm-label"><strong>one SM</strong><span>physical worker</span></div>
+                <div class="shared-memory">
+                  <span>shared memory</span>
+                  <i class="buffer buffer-a">A</i><i class="buffer buffer-b">B</i>
+                </div>
+                <div class="tensor-core">
+                  <span>Tensor Core</span>
+                  <div class="mma-grid"><i></i><i></i><i></i><i></i></div>
+                </div>
+                <div class="accumulator"><span>accumulator</span><b>+</b></div>
+              </div>
+              <div class="k-counter">
+                <span><i>K</i> progress</span>
+                <div class="slice-row" id="slice-row" role="img" aria-label="Twelve K slices"></div>
+                <strong id="slice-count">0 / 12</strong>
+              </div>
+            </div>
+            <p class="cta-caption" id="cta-caption"><strong>Ready.</strong> Choose a step below to walk through the CTA.</p>
+          </div>
+
+          <div class="cta-controls" role="group" aria-label="CTA pipeline steps">
+            <button class="cta-step is-active" type="button" data-step="0"><span>0</span><strong>Reset</strong><small>tile assigned</small></button>
+            <button class="cta-step" type="button" data-step="1"><span>1</span><strong>TMA load</strong><small>stage operands</small></button>
+            <button class="cta-step" type="button" data-step="2"><span>2</span><strong>12 slices</strong><small>advance through <i>K</i></small></button>
+            <button class="cta-step" type="button" data-step="3"><span>3</span><strong>UMMA</strong><small>accumulate tile</small></button>
+            <button class="cta-step" type="button" data-step="4"><span>4</span><strong>Epilogue</strong><small>store BF16</small></button>
+          </div>
+        </div>
+
+        <div class="mechanics-grid">
+          <article>
+            <span class="mechanic-mark">256</span>
+            <h3>Threads cooperate</h3>
+            <p>Eight warps belong to the CTA. DeepGEMM specializes warp roles around loading, matrix math, scheduling, and the epilogue; they are not 256 independent copies of the GEMM.</p>
+          </article>
+          <article>
+            <span class="mechanic-mark">2</span>
+            <h3>CTAs form a cluster</h3>
+            <p>The JIT uses two-CTA clusters. Cluster launch and TMA multicast let a pair coordinate operand movement, so useful CTA counts occur in pairs.</p>
+          </article>
+          <article>
+            <span class="mechanic-mark">207–225 KiB</span>
+            <h3>Shared memory limits residency</h3>
+            <p>Each CTA requests roughly 211–230 KB of dynamic shared memory. Against 228 KiB per SM, this is a deliberate one-resident-CTA-per-SM design.</p>
+          </article>
+          <article>
+            <span class="mechanic-mark">12 → 7</span>
+            <h3>Pipeline depth adapts</h3>
+            <p>As <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> grows, each stage costs more storage. The JIT reduces pipeline stages from 12 to 7 to remain within the shared-memory budget.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="lesson-section" id="curve">
+        <header class="section-heading">
+          <span class="section-number">04</span>
+          <div>
+            <p class="section-kicker">The measured fact pattern</p>
+            <h2>Five hundred rows do not take five hundred times longer.</h2>
+            <p class="section-intro">Select a measured point. The chart, output-tile grid, and 152-SM map move together so that “batch size” becomes concrete scheduler geometry. Each point is the median of 30 synchronized iterations after five warmups.</p>
+          </div>
+        </header>
+
+        <div class="explorer" id="measured-explorer">
+          <div class="explorer-toolbar">
+            <div>
+              <p class="mini-kicker">Measured point</p>
+              <div class="point-buttons" id="point-buttons" aria-label="Choose a measured M value"></div>
+            </div>
+            <div class="explorer-key">
+              <span><i class="key-dot key-total"></i> active-union median</span>
+              <span><i class="key-dot key-useful"></i> useful CTA slot</span>
+              <span><i class="key-dot key-idle"></i> launch slot with no tile</span>
+            </div>
+          </div>
+          <div class="geometry-scope"><strong>Scope of the geometry view:</strong> the tile grid and 152-SM map describe the DeepGEMM half of the composite. Online quantization has a separate launch geometry and appears here only in the component-time bars.</div>
+
+          <div class="curve-layout">
+            <div class="chart-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="mini-kicker">Composite kernel time</p>
+                  <h3>Active union versus <i>M</i></h3>
+                </div>
+                <span class="chart-note">logarithmic <i>M</i> axis</span>
+              </div>
+              <svg id="curve-chart" class="curve-chart" viewBox="0 0 820 350" role="img" aria-label="Measured active-union kernel time versus M"></svg>
+            </div>
+
+            <div class="selected-panel">
+              <p class="selected-overline">Selected · <i>M</i> = <strong id="selected-m">100</strong></p>
+              <div class="selected-time"><strong id="selected-time">8.032</strong><span>µs</span></div>
+              <p class="selected-label">median active union</p>
+              <div class="component-bars">
+                <div><span>quant mean</span><i><b id="quant-bar"></b></i><strong id="selected-quant">1.772 µs</strong></div>
+                <div><span>GEMM mean</span><i><b id="gemm-bar"></b></i><strong id="selected-gemm">6.214 µs</strong></div>
+              </div>
+              <p class="stats-caveat">Component means need not sum exactly to the median composite: they use different summary statistics.</p>
+            </div>
+          </div>
+
+          <div class="geometry-readout">
+            <div><span><span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span></span><strong id="selected-bm">48</strong></div>
+            <div><span><i>M</i>-tile rows</span><strong id="selected-mtiles">3</strong></div>
+            <div><span><i>N</i>-tile columns</span><strong>48</strong></div>
+            <div><span>useful CTAs</span><strong id="selected-ctas">144</strong></div>
+            <div><span>SM coverage</span><strong id="selected-coverage">94.7%</strong></div>
+            <div><span>pipeline stages</span><strong id="selected-stages">10</strong></div>
+          </div>
+
+          <div class="tile-and-sm-layout">
+            <div class="output-tiles-panel">
+              <div class="panel-heading compact">
+                <div><p class="mini-kicker">Logical output tiling</p><h3>One cell = one useful CTA tile</h3></div>
+                <span id="tile-shape-label">3 rows × 48 columns</span>
+              </div>
+              <div class="axis-label axis-n"><i>N</i> = 6144 → 48 tiles of 128</div>
+              <div class="output-tiles-wrap">
+                <span class="axis-label axis-m"><i>M</i> tiles</span>
+                <div class="output-tiles" id="output-tiles" role="img" aria-label="Useful output tiles"></div>
+              </div>
+            </div>
+
+            <div class="sm-panel">
+              <div class="panel-heading compact">
+                <div><p class="mini-kicker">One scheduling wave</p><h3>152 physical SMs</h3></div>
+                <span><strong id="active-sm-count">144</strong> active · <strong id="idle-sm-count">8</strong> idle</span>
+              </div>
+              <div class="sm-grid" id="sm-grid" role="img" aria-label="One hundred fifty-two SM slots"></div>
+              <p class="sm-note">Teaching view: one persistent CTA slot per SM. The real scheduler is dynamic, but the one-resident-CTA shared-memory limit makes this a useful one-wave picture.</p>
+            </div>
+          </div>
+
+          <div class="explainer-strip">
+            <span class="explainer-icon" aria-hidden="true">↳</span>
+            <p id="point-explanation"><strong>At <i>M</i> = 100:</strong> the JIT selects 48 rows per tile. Three tile rows times 48 tile columns produce 144 useful CTAs—94.7% of one GB300 wave.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="evidence-table">
+            <caption>Measured timing joined with exact JIT launch geometry</caption>
+            <thead>
+              <tr>
+                <th scope="col"><i>M</i></th>
+                <th scope="col"><span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span></th>
+                <th scope="col"><i>M</i> tiles</th>
+                <th scope="col"><i>N</i> tiles</th>
+                <th scope="col">useful CTAs</th>
+                <th scope="col">SM coverage</th>
+                <th scope="col">stages</th>
+                <th scope="col">active union</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>16</td><td>1</td><td>48</td><td>48</td><td>31.6%</td><td>12</td><td>6.976 µs</td></tr>
+              <tr><td>10</td><td>16</td><td>1</td><td>48</td><td>48</td><td>31.6%</td><td>12</td><td>7.264 µs</td></tr>
+              <tr><td>20</td><td>16</td><td>2</td><td>48</td><td>96</td><td>63.2%</td><td>12</td><td>7.904 µs</td></tr>
+              <tr class="highlight-row"><td>100</td><td>48</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>10</td><td>8.032 µs</td></tr>
+              <tr><td>200</td><td>80</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>9</td><td>8.064 µs</td></tr>
+              <tr><td>500</td><td>176</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>7</td><td>10.496 µs</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="lesson-section" id="explanation">
+        <header class="section-heading">
+          <span class="section-number">05</span>
+          <div>
+            <p class="section-kicker">Turn the curve into causes</p>
+            <h2>Runtime follows waves and tile shape—not logical FLOPs alone.</h2>
+            <p class="section-intro">The JIT is actively reshaping the work to keep it inside one scheduling wave. That is the missing variable between “500× more useful FLOPs” and “only 1.50× more elapsed time.”</p>
+          </div>
+        </header>
+
+        <div class="three-laws">
+          <article>
+            <span class="law-number">I</span>
+            <h3>Pay the fixed floor</h3>
+            <p>Launch, persistent scheduling, TMA setup, barrier machinery, pipeline fill/drain, and the fixed weight-tile path exist even when <i>M</i> = 1. Small inputs cannot make those costs disappear.</p>
+            <div class="law-sketch floor-sketch" aria-hidden="true"><i></i><b></b></div>
+          </article>
+          <article>
+            <span class="law-number">II</span>
+            <h3>Fill idle workers first</h3>
+            <p>Moving from 48 to 96 to 144 useful CTAs mostly activates SMs that were waiting. Parallel work increases much faster than wall-clock time.</p>
+            <div class="law-sketch fill-sketch" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </article>
+          <article>
+            <span class="law-number">III</span>
+            <h3>Avoid a second wave</h3>
+            <p>The DeepGEMM heuristic explicitly favors a single wave. From <i>M</i> = 100 to 500 it enlarges <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> so the launch remains 144 useful CTAs.</p>
+            <div class="law-sketch wave-sketch" aria-hidden="true"><i></i><i></i><b>1 wave</b></div>
+          </article>
+        </div>
+
+        <div class="one-wave-proof">
+          <div class="proof-heading">
+            <p class="mini-kicker">The central calculation</p>
+            <h3>Count output tiles, then divide by physical workers.</h3>
+          </div>
+          <div class="proof-equations">
+            <div class="proof-line">
+              <span class="proof-name">tile count</span>
+              <div class="display-equation small">
+                ⌈<i>M</i> / <span class="code-var">BLOCK</span><sub>M</sub>⌉ × ⌈6144 / 128⌉
+              </div>
+              <span class="proof-result">=<br><span><i>M</i>-tile rows × 48</span></span>
+            </div>
+            <div class="proof-line">
+              <span class="proof-name">wave count</span>
+              <div class="display-equation small">
+                ⌈useful CTAs / 152 SMs⌉
+              </div>
+              <span class="proof-result">=<br><strong>1</strong> for all six measurements</span>
+            </div>
+          </div>
+          <div class="proof-example">
+            <div><span><i>M</i> = 500</span><strong>⌈500 / 176⌉ = 3</strong><small><i>M</i>-tile rows</small></div>
+            <span class="proof-times">×</span>
+            <div><span><i>N</i> = 6144</span><strong>6144 / 128 = 48</strong><small><i>N</i>-tile columns</small></div>
+            <span class="proof-times">=</span>
+            <div class="proof-answer"><span>useful work</span><strong>144 CTAs</strong><small>72 two-CTA clusters</small></div>
+            <span class="proof-times">≤</span>
+            <div class="proof-answer is-gpu"><span>one GB300 wave</span><strong>152 SMs</strong><small>8 slots remain</small></div>
+          </div>
+        </div>
+
+        <div class="why-500">
+          <div class="why-500-copy">
+            <p class="mini-kicker">Then why does <i>M</i> = 500 rise to 10.50 µs?</p>
+            <h3>One wave is not the same as constant work per CTA.</h3>
+            <p>The wave count stays one, but each useful CTA owns a much taller output tile: 176 rows instead of 16. It moves more activation data, performs more UMMA work, and has only seven pipeline stages instead of twelve. Online quantization also has more rows to process.</p>
+            <p>The resulting prediction is qualitative but strong: <strong>a long plateau, then a gentle within-wave rise—not a 500× line.</strong></p>
+          </div>
+          <div class="tile-comparison" aria-label="Tile height comparison between M equals 1 and M equals 500">
+            <div class="tile-case">
+              <span><i>M</i> = 1</span>
+              <div class="tile-rectangle tile-short"><i>16 × 128 tile</i><b>mostly padded rows</b></div>
+              <small>48 useful CTAs · 12 stages</small>
+            </div>
+            <div class="tile-case">
+              <span><i>M</i> = 500</span>
+              <div class="tile-rectangle tile-tall"><i>176 × 128 tile</i><b>far more work per CTA</b></div>
+              <small>144 useful CTAs · 7 stages</small>
+            </div>
+          </div>
+        </div>
+
+        <aside class="insight-box">
+          <span class="insight-glyph">!</span>
+          <div>
+            <strong>Do not divide total FLOPs by peak FLOP/s and call that the kernel time.</strong>
+            <p>That lower bound ignores launch/setup floors, tile padding, incomplete SM coverage, per-CTA resource limits, pipeline depth, quantization, and cache state. It becomes useful only after those structural checks.</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="lesson-section" id="bytes">
+        <header class="section-heading">
+          <span class="section-number">06</span>
+          <div>
+            <p class="section-kicker">Account before classifying</p>
+            <h2>Why the row term is 15,360<i>M</i> bytes—not 1,536<i>M</i>.</h2>
+            <p class="section-intro">The input width alone is only an element count. A byte model must include dtype size, reads, and writes. The output row is four times wider than the input row.</p>
+          </div>
+        </header>
+
+        <div class="byte-ledger">
+          <div class="ledger-fixed">
+            <p class="mini-kicker">Fixed per logical invocation</p>
+            <h3>FP8 weight and scales</h3>
+            <div class="ledger-row"><span>weight</span><strong>6144 × 1536 × 1 byte</strong><b>9,437,184 B</b></div>
+            <div class="ledger-row"><span>scale metadata</span><strong>48 × 12 × 4 bytes</strong><b>2,304 B</b></div>
+            <div class="ledger-total"><span>fixed useful floor</span><strong>9,439,488 B</strong></div>
+          </div>
+          <div class="ledger-variable">
+            <p class="mini-kicker">Variable per row</p>
+            <h3>BF16 input read + BF16 output write</h3>
+            <div class="byte-bar input-byte-bar">
+              <span><b>X</b> read</span>
+              <i style="--share:20%"></i>
+              <strong>1536 × 2 = 3,072 B</strong>
+            </div>
+            <div class="byte-bar output-byte-bar">
+              <span><b>Y</b> write</span>
+              <i style="--share:80%"></i>
+              <strong>6144 × 2 = 12,288 B</strong>
+            </div>
+            <div class="ledger-total accent"><span>variable useful floor</span><strong>15,360<i>M</i> B</strong></div>
+          </div>
+        </div>
+
+        <div class="byte-derivation">
+          <div class="derivation-piece">
+            <span class="brace-label">input read</span>
+            <strong>1,536 values</strong>
+            <span>× 2 BF16 bytes</span>
+            <b>3,072<i>M</i></b>
+          </div>
+          <span class="derivation-op">+</span>
+          <div class="derivation-piece">
+            <span class="brace-label">output write</span>
+            <strong>6,144 values</strong>
+            <span>× 2 BF16 bytes</span>
+            <b>12,288<i>M</i></b>
+          </div>
+          <span class="derivation-op">=</span>
+          <div class="derivation-piece derivation-answer">
+            <span class="brace-label">row traffic</span>
+            <strong>15,360 bytes</strong>
+            <span>for every row</span>
+            <b>15,360<i>M</i></b>
+          </div>
+        </div>
+
+        <aside class="scope-note">
+          <strong>What this floor excludes.</strong> The composite also writes the temporary FP8 activation and then reads it into the GEMM—roughly another 3,072<i>M</i> bytes, plus small scale traffic. The “useful floor” intentionally counts model inputs, model outputs, weights, and scales once; it is not a claim about all physical HBM or cache transactions.
+        </aside>
+      </section>
+
+      <section class="lesson-section" id="predictor">
+        <header class="section-heading">
+          <span class="section-number">07</span>
+          <div>
+            <p class="section-kicker">Touch the geometry</p>
+            <h2>Prediction lab: move <i>M</i> before running Nsight.</h2>
+            <p class="section-intro">The first tool follows a source-level emulation of the DeepGEMM v0.1.3 heuristic for this exact 6144 × 1536 shape, anchored by the six emitted kernels above. The second is a generic tile-and-wave calculator you can carry to another linear layer.</p>
+          </div>
+        </header>
+
+        <div class="predictor-card shape-predictor">
+          <div class="predictor-heading">
+            <div>
+              <span class="predictor-tag">Shape-specific teaching model</span>
+              <h3>Where does the one-wave plateau end?</h3>
+              <p>Drag through <i>M</i> = 1…960. The selected tile shape follows source-emulated v0.1.3 heuristic regions for this fixed <i>N</i> and <i>K</i>; the six measured points are its anchors.</p>
+            </div>
+            <div class="m-readout"><span><i>M</i></span><strong id="forecast-m">500</strong></div>
+          </div>
+
+          <div class="range-wrap">
+            <input id="m-slider" type="range" min="1" max="960" value="500" step="1" aria-label="M value from 1 to 960">
+            <div class="range-ticks"><span>1</span><span>240</span><span>480</span><span class="knee-tick">720<br><b>one-wave edge</b></span><span>960</span></div>
+          </div>
+
+          <div class="forecast-grid">
+            <div><span>chosen <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span></span><strong id="forecast-bm">176</strong></div>
+            <div><span><i>M</i>-tile rows</span><strong id="forecast-mtiles">3</strong></div>
+            <div><span>useful CTAs</span><strong id="forecast-ctas">144</strong></div>
+            <div class="wave-output"><span>predicted waves</span><strong id="forecast-waves">1</strong></div>
+            <div><span>slot coverage</span><strong id="forecast-coverage">94.7%</strong></div>
+            <div><span>teaching-time estimate</span><strong id="forecast-time">≈ 10.47 µs</strong></div>
+          </div>
+
+          <div class="wave-canvas">
+            <div class="wave-labels"><span>CTA tasks</span><span id="wave-caption">144 tasks fit inside 152 first-wave slots</span></div>
+            <div class="wave-strips" id="wave-strips" role="img" aria-label="Predicted scheduling waves"></div>
+          </div>
+
+          <div class="model-formula" aria-label="The transparent teaching-time model in microseconds">
+            <div><span>quantization term</span><strong>max(1.75, 1.65 + 0.00060<i>M</i>)</strong></div>
+            <b>+</b>
+            <div><span>GEMM term</span><strong>5.21 + 0.0188 × waves × <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span></strong></div>
+            <b>=</b>
+            <div class="model-formula-answer"><span>estimated active union</span><strong>microseconds</strong></div>
+          </div>
+
+          <div class="model-note">
+            <strong>Time model:</strong> a fitted fixed quantization floor plus a tile-height cost, multiplied by wave count. It teaches the curve’s shape; it is not a replacement for measurement and can miss by roughly 0.7 µs in the measured range.
+          </div>
+        </div>
+
+        <div class="predictor-card generic-calculator">
+          <div class="predictor-heading">
+            <div>
+              <span class="predictor-tag generic">Reusable calculator</span>
+              <h3>Count tiles, waves, padding, and <i>K</i> slices.</h3>
+              <p>Enter a candidate JIT configuration from a kernel name, compile log, or source heuristic. This calculator does the structural arithmetic, not the hardware timing calibration.</p>
+            </div>
+            <button type="button" class="reset-button" id="reset-calculator">Reset to <i>M</i> = 100</button>
+          </div>
+
+          <form class="calculator-form" id="tile-calculator">
+            <label><span><i>M</i> rows</span><input name="m" type="number" min="1" value="100"></label>
+            <label><span><i>N</i> columns</span><input name="n" type="number" min="1" value="6144"></label>
+            <label><span><i>K</i> reduction</span><input name="k" type="number" min="1" value="1536"></label>
+            <label><span><span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span></span><input name="bm" type="number" min="1" value="48"></label>
+            <label><span><span class="math"><span class="code-var">BLOCK</span><sub>N</sub></span></span><input name="bn" type="number" min="1" value="128"></label>
+            <label><span><span class="math"><span class="code-var">BLOCK</span><sub>K</sub></span></span><input name="bk" type="number" min="1" value="128"></label>
+            <label><span>physical SMs</span><input name="sms" type="number" min="1" value="152"></label>
+            <label><span>resident CTAs / SM</span><input name="resident" type="number" min="1" value="1"></label>
+          </form>
+
+          <div class="calculator-equation">
+            <span id="calc-m-expression">⌈100 / 48⌉</span>
+            <b>×</b>
+            <span id="calc-n-expression">⌈6144 / 128⌉</span>
+            <b>=</b>
+            <strong id="calc-ctas">144 CTAs</strong>
+            <b>→</b>
+            <strong class="accent-result" id="calc-waves">1 wave</strong>
+          </div>
+
+          <div class="calculator-results">
+            <div><span><i>M</i>-tile rows</span><strong id="calc-mtiles">3</strong></div>
+            <div><span><i>N</i>-tile columns</span><strong id="calc-ntiles">48</strong></div>
+            <div><span><i>K</i> slices / CTA</span><strong id="calc-kslices">12</strong></div>
+            <div><span>wave-slot fill</span><strong id="calc-slot-fill">94.7%</strong></div>
+            <div><span>row tile fill</span><strong id="calc-row-fill">69.4%</strong></div>
+            <div><span>row padding</span><strong id="calc-padding">44 rows</strong></div>
+          </div>
+          <p class="calculator-footnote"><strong>Interpretation:</strong> waves predict large scheduling knees; tile fill warns about boundary waste; <i>K</i> slices estimate repeated work inside every CTA. You still need dtype, cache, occupancy, and a measured anchor to predict microseconds.</p>
+        </div>
+      </section>
+
+      <section class="lesson-section" id="method">
+        <header class="section-heading">
+          <span class="section-number">08</span>
+          <div>
+            <p class="section-kicker">Transfer the reasoning</p>
+            <h2>A nine-question worksheet for any linear kernel.</h2>
+            <p class="section-intro">Use this order. Each answer removes one class of bad explanation before you fit a performance model.</p>
+          </div>
+        </header>
+
+        <ol class="method-list">
+          <li><span>01</span><div><h3>What is the exact operation?</h3><p>Write <i>M</i>, <i>N</i>, <i>K</i>, input/output dtypes, and whether quantization, bias, activation, or communication is fused into the timed range.</p></div><b>contract</b></li>
+          <li><span>02</span><div><h3>Which dimension changes?</h3><p>Hold the others visibly fixed. A batch sweep changes <i>M</i>; a hidden-width comparison may change <i>K</i> or <i>N</i>, which bends the curve differently.</p></div><b>independent variable</b></li>
+          <li><span>03</span><div><h3>What tile did the JIT really choose?</h3><p>Recover <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span>, <span class="math"><span class="code-var">BLOCK</span><sub>N</sub></span>, <span class="math"><span class="code-var">BLOCK</span><sub>K</sub></span>, thread count, cluster shape, and pipeline stages. Never assume them from the FP8 scale-block shape.</p></div><b>launch geometry</b></li>
+          <li><span>04</span><div><h3>How many useful output tiles exist?</h3><p>Count ceiling divisions along <i>M</i> and <i>N</i>. Their product is the useful CTA-task count for a conventional one-tile-per-task view.</p></div><b>parallel tasks</b></li>
+          <li><span>05</span><div><h3>How many tasks can run at once?</h3><p>Start with SM count, then reduce it if registers, shared memory, CTA clusters, or kernel occupancy permit fewer resident tasks.</p></div><b>wave capacity</b></li>
+          <li><span>06</span><div><h3>Where are the wave knees?</h3><p>Divide useful tasks by wave capacity and round up. A transition from one to two waves is a strong candidate for a runtime step.</p></div><b>scheduling shape</b></li>
+          <li><span>07</span><div><h3>How full are the boundary tiles?</h3><p>Compare logical rows and columns with tiled extents. Tiny <i>M</i> can execute a minimum tile even when only one row is useful.</p></div><b>padding</b></li>
+          <li><span>08</span><div><h3>What is fixed, and what grows?</h3><p>Separate weights, startup, and pipeline fill from activation reads, output writes, and arithmetic. This predicts floor versus slope.</p></div><b>cost model</b></li>
+          <li><span>09</span><div><h3>What did the cache and clock actually do?</h3><p>Use a warm-up policy, report cache state and clocks, then measure at least one point per tile region and around every predicted wave boundary.</p></div><b>calibration</b></li>
+        </ol>
+
+        <div class="curve-grammar">
+          <div class="grammar-heading">
+            <p class="mini-kicker">A visual grammar of kernel curves</p>
+            <h3>Read shape as a short list of hypotheses.</h3>
+          </div>
+          <div class="grammar-grid">
+            <article>
+              <svg viewBox="0 0 160 76" aria-hidden="true"><path class="axis" d="M12 8V64H150"/><path class="curve blue" d="M14 54C50 43 92 39 148 38"/></svg>
+              <h4>Fixed floor</h4><p>Launch, setup, and minimum-tile work dominate.</p>
+            </article>
+            <article>
+              <svg viewBox="0 0 160 76" aria-hidden="true"><path class="axis" d="M12 8V64H150"/><path class="curve teal" d="M14 51C42 49 76 48 108 47C128 46 140 44 148 41"/></svg>
+              <h4>Parallel-fill plateau</h4><p>More tasks occupy previously idle SMs.</p>
+            </article>
+            <article>
+              <svg viewBox="0 0 160 76" aria-hidden="true"><path class="axis" d="M12 8V64H150"/><path class="curve gold" d="M14 53H77L82 30H148"/></svg>
+              <h4>Wave knee</h4><p>Useful tasks cross resident capacity.</p>
+            </article>
+            <article>
+              <svg viewBox="0 0 160 76" aria-hidden="true"><path class="axis" d="M12 8V64H150"/><path class="curve violet" d="M14 55L40 43L43 50L71 37L74 45L104 31L107 38L148 24"/></svg>
+              <h4>JIT sawtooth</h4><p>Tile or layout changes reset padding and pipeline choices.</p>
+            </article>
+            <article>
+              <svg viewBox="0 0 160 76" aria-hidden="true"><path class="axis" d="M12 8V64H150"/><path class="curve red" d="M14 57L148 17"/></svg>
+              <h4>Asymptotic slope</h4><p>Compute or bandwidth finally scales with useful work.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="transfer-examples">
+          <div class="transfer-heading">
+            <p class="mini-kicker">Two thought experiments</p>
+            <h3>Change one dimension and predict before profiling.</h3>
+          </div>
+          <article>
+            <span class="change-badge">Double <i>N</i></span>
+            <h4>6144 → 12,288</h4>
+            <p>Keeping <span class="math"><span class="code-var">BLOCK</span><sub>N</sub></span> = 128 would double <i>N</i>-tile columns from 48 to 96. At <i>M</i> = 100 and three row tiles, 288 CTA tasks require <strong>two waves</strong>.</p>
+            <small>First hypothesis: a scheduling step—unless the JIT changes tile width or occupancy.</small>
+          </article>
+          <article>
+            <span class="change-badge">Double <i>K</i></span>
+            <h4>1536 → 3072</h4>
+            <p>Output tile count does not change, but each CTA advances through 24 rather than 12 reduction slices and the weight matrix doubles.</p>
+            <small>First hypothesis: a higher per-wave slope, without a tile-count knee.</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="lesson-section" id="checkpoint">
+        <header class="section-heading">
+          <span class="section-number">09</span>
+          <div>
+            <p class="section-kicker">Close the loop</p>
+            <h2>If these answers feel obvious, you are ready for the next kernel.</h2>
+            <p class="section-intro">Open each checkpoint only after answering it yourself. The goal is not memorizing 152 or 128; it is learning which quantity to ask for.</p>
+          </div>
+        </header>
+
+        <div class="checkpoint-list">
+          <details>
+            <summary><span>1</span>If useful CTA count doubles but remains within one wave, must runtime double?</summary>
+            <p>No. The added CTAs can occupy previously idle SMs. Runtime rises mainly if work per CTA grows, occupancy changes, or tasks spill into another wave.</p>
+          </details>
+          <details>
+            <summary><span>2</span>Does a 128 × 128 FP8 scale block prove that the GEMM uses <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> = 128?</summary>
+            <p>No. Scale grouping is a numerical-format choice. GEMM tile geometry is a JIT scheduling choice. The measured kernels use <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> values from 16 through 176.</p>
+          </details>
+          <details>
+            <summary><span>3</span>Why do <i>M</i> = 100, 200, and 500 all launch 144 useful CTA tasks?</summary>
+            <p>The JIT raises <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> from 48 to 80 to 176. Each case therefore needs exactly three <i>M</i>-tile rows, and three times 48 <i>N</i>-tile columns equals 144.</p>
+          </details>
+          <details>
+            <summary><span>4</span>Why can <i>M</i> = 500 still be slower when it remains one wave?</summary>
+            <p>Each CTA’s tile is taller, activation traffic and arithmetic increase, online quantization processes more rows, and pipeline stages shrink. “One wave” constrains scheduling multiplicity; it does not make every CTA equally cheap.</p>
+          </details>
+          <details>
+            <summary><span>5</span>What is the first calculation for an unfamiliar GEMM?</summary>
+            <p>After recovering the actual JIT tile, compute ceiling-divided <i>M</i> tiles times ceiling-divided <i>N</i> tiles. Then compare that task count with resident CTA capacity.</p>
+          </details>
+        </div>
+
+        <div class="source-card">
+          <div>
+            <p class="mini-kicker">Evidence and next reading</p>
+            <h3>This page is a model tied to trace evidence—not a generic cartoon.</h3>
+            <p>Measurements come from the GB300 kernel-efficiency sweep. Tile geometry was recovered from the emitted DeepGEMM kernels and checked against the v0.1.3 SM100 heuristic and persistent scheduler.</p>
+          </div>
+          <div class="source-links">
+            <a href="../glm52-gb300-kernel-efficiency-sweep/"><span>Measured parent report</span><b>Open ↗</b></a>
+            <a href="https://github.com/sgl-project/DeepGEMM/blob/v0.1.3/csrc/jit_kernels/heuristics/sm100.hpp"><span>DeepGEMM SM100 heuristic</span><b>Source ↗</b></a>
+            <a href="https://github.com/sgl-project/DeepGEMM/tree/v0.1.3/csrc/jit_kernels"><span>DeepGEMM JIT kernels</span><b>Source ↗</b></a>
+            <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html"><span>CUDA programming model</span><b>Docs ↗</b></a>
+            <a href="../../cuda-kernel-basics-h200/"><span>Next: FlashMLA kernel basics</span><b>Continue ↗</b></a>
+          </div>
+        </div>
+
+        <div class="closing-card">
+          <p class="mini-kicker">The compact mental model</p>
+          <p class="closing-line"><span>shape</span> → <span>JIT tile</span> → <span>CTA tasks</span> → <span>resident capacity</span> → <span>waves</span> → <span>per-CTA cost</span> → <strong>kernel-time curve</strong></p>
+          <small>Predict the structure first. Calibrate the microseconds second.</small>
+        </div>
+      </section>
+
+      <footer class="page-footer">
+        <span>MaaS performance note · generated from the retained GB300 trace pack</span>
+        <span>DeepGEMM v0.1.3 · NVIDIA GB300 · CC 10.3</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="tutorial.js"></script>
+</body>
+</html>
