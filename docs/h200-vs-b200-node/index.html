@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A node-to-rack comparison of NVIDIA H200, B200, B300, GB200 NVL72, and GB300 NVL72, with official SGLang deployment evidence for the Grace Blackwell platforms.">
+  <link rel="icon" href="data:,">
+  <meta name="description" content="A node-to-rack comparison of NVIDIA H20, H200, B200, B300, GB200 NVL72, and GB300 NVL72, with observed nodes and official SGLang deployment evidence for H20 and Grace Blackwell.">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/h200-vs-b200-node/">
   <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/h200-vs-b200-node/">
-  <meta property="og:title" content="H200, B200, B300, GB200 &amp; GB300">
-  <meta property="og:description" content="Observed H200/B200 nodes, published B300 and NVL72 references, and official SGLang deployment implications. No workload was run.">
-  <title>H200, B200, B300, GB200 &amp; GB300</title>
+  <meta property="og:title" content="H20, H200, B200, B300, GB200 &amp; GB300">
+  <meta property="og:description" content="Observed H20/H200/B200 nodes, published B300 and NVL72 references, and official SGLang deployment implications. No local workload was run.">
+  <title>H20, H200, B200, B300, GB200 &amp; GB300</title>
   <style>
     :root {
       --bg: #f5f7f7;
@@ -18,6 +19,8 @@
       --line: #cbd6d3;
       --line-strong: #9fb2ad;
       --soft: #edf3f1;
+      --h20: #a84419;
+      --h20-soft: #f7e7dc;
       --h200: #00665e;
       --h200-soft: #dff0ec;
       --b200: #9c345b;
@@ -40,6 +43,12 @@
 
     html {
       scroll-behavior: smooth;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
     }
 
     body {
@@ -223,7 +232,7 @@
 
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
       margin: 26px 0;
     }
@@ -234,14 +243,18 @@
     }
 
     .summary-item:nth-child(1) {
-      border-top-color: var(--gb200);
+      border-top-color: var(--h20);
     }
 
     .summary-item:nth-child(2) {
-      border-top-color: var(--gb300);
+      border-top-color: var(--gb200);
     }
 
     .summary-item:nth-child(3) {
+      border-top-color: var(--gb300);
+    }
+
+    .summary-item:nth-child(4) {
       border-top-color: var(--b300);
     }
 
@@ -292,6 +305,11 @@
       font-weight: 800;
     }
 
+    .bar-label.h20,
+    .bar-value.h20 {
+      color: var(--h20);
+    }
+
     .bar-label.h200,
     .bar-value.h200 {
       color: var(--h200);
@@ -326,6 +344,10 @@
       display: block;
       width: var(--value);
       height: 100%;
+    }
+
+    .bar.h20 {
+      background: var(--h20);
     }
 
     .bar.h200 {
@@ -369,8 +391,8 @@
       font-size: 14px;
     }
 
-    table.five-way {
-      min-width: 1540px;
+    table.six-way {
+      min-width: 1760px;
     }
 
     caption {
@@ -422,6 +444,11 @@
       white-space: nowrap;
     }
 
+    .h20-text {
+      color: var(--h20);
+      font-weight: 800;
+    }
+
     .h200-text {
       color: var(--h200);
       font-weight: 800;
@@ -462,7 +489,7 @@
 
     .topology-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 22px;
       margin: 22px 0 28px;
     }
@@ -472,6 +499,10 @@
       margin: 0;
       border-top: 4px solid var(--line-strong);
       padding-top: 13px;
+    }
+
+    .topology-figure.h20 {
+      border-top-color: var(--h20);
     }
 
     .topology-figure.h200 {
@@ -497,6 +528,10 @@
       padding: 11px 12px;
       text-align: center;
       font-weight: 800;
+    }
+
+    .fabric.h20 {
+      border-bottom: 4px solid var(--h20);
     }
 
     .fabric.h200 {
@@ -632,6 +667,11 @@
     .rack-figure.gb200,
     .evidence-card.gb200 {
       border-top-color: var(--gb200);
+    }
+
+    .evidence-card.h20 {
+      grid-column: 1 / -1;
+      border-top-color: var(--h20);
     }
 
     .rack-figure.gb300,
@@ -838,7 +878,13 @@
       }
 
       .bar-row {
-        grid-template-columns: 50px minmax(50px, 1fr) 122px;
+        grid-template-columns: 50px minmax(0, 1fr);
+      }
+
+      .bar-value {
+        grid-column: 2;
+        text-align: left;
+        white-space: normal;
       }
 
       .numa-grid.two,
@@ -858,7 +904,7 @@
   </header>
 
   <div class="doc-shell">
-    <aside class="content-overview" aria-label="Content overview">
+    <nav class="content-overview" aria-label="On this page">
       <div class="overview-title">On this page</div>
       <a href="#takeaway">Takeaway</a>
       <a href="#gpu-comparison">Platform comparison</a>
@@ -867,19 +913,20 @@
       <a href="#sglang-deployment">SGLang deployment</a>
       <a href="#serving-implications">Serving implications</a>
       <a href="#method">Method and sources</a>
-    </aside>
+    </nav>
 
-    <main id="main">
+    <main id="main" tabindex="-1">
       <article>
         <header class="page-header">
           <p class="eyebrow">Observed nodes + published node-to-rack references</p>
-          <h1>H200, B200, B300, GB200 &amp; GB300</h1>
-          <p class="lead">A deployment-oriented comparison of eight-GPU HGX/DGX-class nodes and Grace Blackwell NVL72 racks, followed by what official SGLang articles actually change in the serving configuration.</p>
-          <div class="meta-line" aria-label="Document scope">
+          <h1>H20, H200, B200, B300, GB200 &amp; GB300</h1>
+          <p class="lead">A deployment-oriented comparison of eight-GPU HGX/DGX-class nodes and Grace Blackwell NVL72 racks, followed by what official SGLang material actually changes in the serving configuration.</p>
+          <div class="meta-line" role="group" aria-label="Document scope">
             <span>H200 + B200 observed 10 July 2026</span>
+            <span>H20 observed 18 August 2026</span>
             <span>B300 + GB series published references</span>
-            <span>SGLang review updated 13 July 2026</span>
-            <span>No benchmark or workload run</span>
+            <span>Comparison updated 18 August 2026</span>
+            <span>No local benchmark or workload run</span>
           </div>
         </header>
 
@@ -891,8 +938,12 @@
           <h2 id="takeaway-title">Takeaway</h2>
           <div class="summary-grid">
             <div class="summary-item">
+              <strong>H20 preserves bandwidth, not H200 Tensor throughput.</strong>
+              <p>The observed H20 node has the same eight-GPU NV18 scale-up shape as H200. Common public and architecture-derived per-GPU figures retain 96 GB HBM, 4.0 TB/s HBM, and 900 GB/s NVLink, but only about 15% of H200's FP8 Tensor peak under the dense-peak interpretation documented below.</p>
+            </div>
+            <div class="summary-item">
               <strong>The GB prefix changes the system boundary.</strong>
-              <p>H200/B200/B300 stop at an eight-GPU NVSwitch node. GB200/GB300 couple GPUs to Grace CPUs and extend the scale-up domain across all 18 trays in an NVL72 rack.</p>
+              <p>H20/H200/B200/B300 stop at an eight-GPU NVSwitch node. GB200/GB300 couple GPUs to Grace CPUs and extend the scale-up domain across all 18 trays in an NVL72 rack.</p>
             </div>
             <div class="summary-item">
               <strong>GB300 adds capacity, not more rack NVLink.</strong>
@@ -904,10 +955,11 @@
             </div>
           </div>
 
-          <p>These bars compare <strong>native scale-up units</strong>: one eight-GPU node for H200/B200/B300 and one 72-GPU rack for GB200/GB300. They are deployment totals, not per-GPU speedups.</p>
-          <div class="metric-grid" aria-label="Native scale-up platform specifications">
+          <p>These bars compare <strong>native scale-up units</strong>: one eight-GPU node for H20/H200/B200/B300 and one 72-GPU rack for GB200/GB300. They are deployment totals, not per-GPU speedups.</p>
+          <div class="metric-grid" role="group" aria-label="Native scale-up platform specifications">
             <section class="metric">
               <h3 class="metric-title">GPUs in one NVLink scale-up domain</h3>
+              <div class="bar-row"><span class="bar-label h20">H20</span><span class="bar-track"><span class="bar h20" style="--value:11.1%"></span></span><span class="bar-value h20">8 GPUs</span></div>
               <div class="bar-row"><span class="bar-label h200">H200</span><span class="bar-track"><span class="bar h200" style="--value:11.1%"></span></span><span class="bar-value h200">8 GPUs</span></div>
               <div class="bar-row"><span class="bar-label b200">B200</span><span class="bar-track"><span class="bar b200" style="--value:11.1%"></span></span><span class="bar-value b200">8 GPUs</span></div>
               <div class="bar-row"><span class="bar-label b300">B300</span><span class="bar-track"><span class="bar b300" style="--value:11.1%"></span></span><span class="bar-value b300">8 GPUs</span></div>
@@ -916,6 +968,7 @@
             </section>
             <section class="metric">
               <h3 class="metric-title">GPU memory in native scale-up unit</h3>
+              <div class="bar-row"><span class="bar-label h20">H20</span><span class="bar-track"><span class="bar h20" style="--value:3.8%"></span></span><span class="bar-value h20">0.768 TB</span></div>
               <div class="bar-row"><span class="bar-label h200">H200</span><span class="bar-track"><span class="bar h200" style="--value:5.6%"></span></span><span class="bar-value h200">1.128 TB</span></div>
               <div class="bar-row"><span class="bar-label b200">B200</span><span class="bar-track"><span class="bar b200" style="--value:7.2%"></span></span><span class="bar-value b200">1.440 TB</span></div>
               <div class="bar-row"><span class="bar-label b300">B300</span><span class="bar-track"><span class="bar b300" style="--value:11.5%"></span></span><span class="bar-value b300">2.304 TB nominal</span></div>
@@ -924,6 +977,7 @@
             </section>
             <section class="metric">
               <h3 class="metric-title">Aggregate HBM bandwidth</h3>
+              <div class="bar-row"><span class="bar-label h20">H20</span><span class="bar-track"><span class="bar h20" style="--value:5.6%"></span></span><span class="bar-value h20">32 TB/s</span></div>
               <div class="bar-row"><span class="bar-label h200">H200</span><span class="bar-track"><span class="bar h200" style="--value:6.7%"></span></span><span class="bar-value h200">38.4 TB/s</span></div>
               <div class="bar-row"><span class="bar-label b200">B200</span><span class="bar-track"><span class="bar b200" style="--value:11.1%"></span></span><span class="bar-value b200">64 TB/s</span></div>
               <div class="bar-row"><span class="bar-label b300">B300</span><span class="bar-track"><span class="bar b300" style="--value:11.1%"></span></span><span class="bar-value b300">64 TB/s</span></div>
@@ -932,6 +986,7 @@
             </section>
             <section class="metric">
               <h3 class="metric-title">Aggregate NVLink bandwidth</h3>
+              <div class="bar-row"><span class="bar-label h20">H20</span><span class="bar-track"><span class="bar h20" style="--value:5.5%"></span></span><span class="bar-value h20">7.2 TB/s</span></div>
               <div class="bar-row"><span class="bar-label h200">H200</span><span class="bar-track"><span class="bar h200" style="--value:5.5%"></span></span><span class="bar-value h200">7.2 TB/s</span></div>
               <div class="bar-row"><span class="bar-label b200">B200</span><span class="bar-track"><span class="bar b200" style="--value:11.1%"></span></span><span class="bar-value b200">14.4 TB/s</span></div>
               <div class="bar-row"><span class="bar-label b300">B300</span><span class="bar-track"><span class="bar b300" style="--value:11.1%"></span></span><span class="bar-value b300">14.4 TB/s</span></div>
@@ -940,6 +995,7 @@
             </section>
             <section class="metric">
               <h3 class="metric-title">Advertised dense FP4 peak</h3>
+              <div class="bar-row"><span class="bar-label h20">H20</span><span class="bar-track"><span class="bar h20" style="--value:0%"></span></span><span class="bar-value h20">not native</span></div>
               <div class="bar-row"><span class="bar-label h200">H200</span><span class="bar-track"><span class="bar h200" style="--value:0%"></span></span><span class="bar-value h200">not native</span></div>
               <div class="bar-row"><span class="bar-label b200">B200</span><span class="bar-track"><span class="bar b200" style="--value:6.7%"></span></span><span class="bar-value b200">72 PFLOPS</span></div>
               <div class="bar-row"><span class="bar-label b300">B300</span><span class="bar-track"><span class="bar b300" style="--value:10%"></span></span><span class="bar-value b300">108 PFLOPS</span></div>
@@ -948,6 +1004,7 @@
             </section>
             <section class="metric">
               <h3 class="metric-title">GPU-facing scale-out link per GPU</h3>
+              <div class="bar-row"><span class="bar-label h20">H20</span><span class="bar-track"><span class="bar h20" style="--value:50%"></span></span><span class="bar-value h20">400 Gb/s observed</span></div>
               <div class="bar-row"><span class="bar-label h200">H200</span><span class="bar-track"><span class="bar h200" style="--value:50%"></span></span><span class="bar-value h200">400 Gb/s observed</span></div>
               <div class="bar-row"><span class="bar-label b200">B200</span><span class="bar-track"><span class="bar b200" style="--value:50%"></span></span><span class="bar-value b200">400 Gb/s observed</span></div>
               <div class="bar-row"><span class="bar-label b300">B300</span><span class="bar-track"><span class="bar b300" style="--value:100%"></span></span><span class="bar-value b300">up to 800 Gb/s</span></div>
@@ -955,53 +1012,53 @@
               <div class="bar-row"><span class="bar-label gb300">GB300</span><span class="bar-track"><span class="bar gb300" style="--value:100%"></span></span><span class="bar-value gb300">up to 800 Gb/s</span></div>
             </section>
           </div>
-          <p class="metric-note">Node totals use eight GPUs. NVL72 totals use 72 GPUs. NVIDIA's published rack totals are used for the GB series; SGLang's workload models use 192 GB/GPU for GB200 and 288 GB/GPU for GB300, discussed below.</p>
+          <p class="metric-note">Node totals use eight GPUs. NVL72 totals use 72 GPUs. H20 memory and topology were observed, but the 4.0 TB/s HBM rate is a common public specification rather than a local bandwidth measurement; the 900 GB/s NVLink rate is derived from the observed full Hopper NVSwitch topology and NVIDIA's fourth-generation NVLink rate. NVIDIA's published rack totals are used for the GB series; SGLang's workload models use 192 GB/GPU for GB200 and 288 GB/GPU for GB300, discussed below.</p>
         </section>
 
         <section id="gpu-comparison" aria-labelledby="gpu-comparison-title">
           <h2 id="gpu-comparison-title">Platform Comparison</h2>
-          <p>The table distinguishes silicon generation from packaging and deployment unit. A GB200 contains Blackwell GPUs coupled to Grace; a GB300 contains Blackwell Ultra GPUs coupled to Grace.</p>
-          <div class="table-scroll" role="region" aria-label="Five-platform accelerator comparison table" tabindex="0">
-            <table class="five-way">
+          <p>The table distinguishes silicon generation from packaging and deployment unit. H20 and H200 are Hopper GPUs with very different compute-to-bandwidth ratios; a GB200 contains Blackwell GPUs coupled to Grace, while a GB300 contains Blackwell Ultra GPUs coupled to Grace.</p>
+          <div class="table-scroll" role="region" aria-label="Six-platform accelerator comparison table" tabindex="0">
+            <table class="six-way">
               <caption>Accelerator, memory, and scale-up characteristics</caption>
               <thead>
-                <tr><th>Characteristic</th><th>Basis</th><th class="h200-text">8× H200 node</th><th class="b200-text">8× B200 node</th><th class="b300-text">8× B300 node</th><th class="gb200-text">GB200 NVL72</th><th class="gb300-text">GB300 NVL72</th><th>Deployment read</th></tr>
+                <tr><th scope="col">Characteristic</th><th scope="col">Basis</th><th scope="col" class="h20-text">8× H20 96 GB node</th><th scope="col" class="h200-text">8× H200 node</th><th scope="col" class="b200-text">8× B200 node</th><th scope="col" class="b300-text">8× B300 node</th><th scope="col" class="gb200-text">GB200 NVL72</th><th scope="col" class="gb300-text">GB300 NVL72</th><th scope="col">Deployment read</th></tr>
               </thead>
               <tbody>
-                <tr><th scope="row">Architecture</th><td class="basis">Published</td><td>Hopper<br>compute capability 9.0</td><td>Blackwell<br>compute capability 10.0</td><td>Blackwell Ultra<br>compute capability 10.3</td><td>Grace + Blackwell GPUs<br>compute capability 10.0</td><td>Grace + Blackwell Ultra GPUs<br>compute capability 10.3</td><td class="delta">GB changes CPU coupling and rack topology; GPU kernel targets remain SM100 versus SM103</td></tr>
-                <tr><th scope="row">Native scale-up unit</th><td class="basis">Mixed</td><td>8-GPU node<br><span class="basis">Observed</span></td><td>8-GPU node<br><span class="basis">Observed</span></td><td>8-GPU baseboard<br><span class="basis">Published</span></td><td>72-GPU rack<br>18 trays × 4 GPUs</td><td>72-GPU rack<br>18 trays × 4 GPUs</td><td class="delta">One NVL72 rack is nine times the GPU count of one eight-GPU node</td></tr>
-                <tr><th scope="row">GPU memory</th><td class="basis">Published</td><td>141 GB/GPU<br>1.128 TB/node</td><td>180 GB/GPU<br>1.440 TB/node</td><td>288 GB/GPU nominal<br>2.304 TB/node</td><td>NVIDIA rack table: 13.4 TB<br>SGLang model: 192 GB/GPU</td><td>NVIDIA rack table: 20 TB<br>SGLang model: 288 GB/GPU</td><td class="delta">Use installed-driver memory for final capacity planning; current official documents use different nominal and platform totals</td></tr>
-                <tr><th scope="row">Memory reported by driver</th><td class="basis">Observed</td><td>143,771 MiB/GPU<br>1.097 TiB/node</td><td>183,359 MiB/GPU<br>1.399 TiB/node</td><td>Not observed</td><td>Not observed</td><td>Not observed</td><td class="delta">Only H200 and B200 are point-in-time machine readings</td></tr>
-                <tr><th scope="row">Aggregate HBM bandwidth</th><td class="basis">Published</td><td>38.4 TB/s/node</td><td>Up to 64 TB/s/node</td><td>Up to 64 TB/s/node</td><td>576 TB/s/rack</td><td>Up to 576 TB/s/rack</td><td class="delta">The GB totals scale with 72 GPUs; per-GPU top-line bandwidth remains approximately 8 TB/s</td></tr>
-                <tr><th scope="row">Aggregate NVLink bandwidth</th><td class="basis">Published</td><td>7.2 TB/s/node</td><td>14.4 TB/s/node</td><td>14.4 TB/s/node</td><td>130 TB/s/rack</td><td>130 TB/s/rack</td><td class="delta">GB200 and GB300 expose all 72 GPUs as one rack-scale NVLink domain</td></tr>
-                <tr><th scope="row">Sparse FP8/FP6 peak</th><td class="basis">Published</td><td>31.7 PFLOPS/node</td><td>72 PFLOPS/node</td><td>72 PFLOPS/node</td><td>720 PFLOPS/rack</td><td>720 PFLOPS/rack</td><td class="delta">GB300's primary compute uplift is dense FP4 and attention, not the published FP8 total</td></tr>
-                <tr><th scope="row">FP4 peak</th><td class="basis">Published sparse | dense</td><td>No native FP4 mode</td><td>144 | 72 PFLOPS/node</td><td>144 | 108 PFLOPS/node</td><td>1,440 | 720 PFLOPS/rack</td><td>1,440 | 1,080 PFLOPS/rack</td><td class="delta">Blackwell Ultra raises dense FP4 by 50%; sparse FP4 remains unchanged in the published tables</td></tr>
-                <tr><th scope="row">Grace CPU coupling</th><td class="basis">Published</td><td>No; external x86 host</td><td>No; external x86 host</td><td>No; external x86 host</td><td>36 Grace CPUs, 17 TB LPDDR5X/rack; NVLink-C2C</td><td>36 Grace CPUs, 17 TB LPDDR5X/rack; NVLink-C2C</td><td class="delta">Grace memory becomes an explicit weight-offload tier in SGLang's GB200 recipe</td></tr>
-                <tr><th scope="row">GPU-facing scale-out</th><td class="basis">Mixed</td><td>1× 400 Gb/s/GPU<br><span class="basis">Observed</span></td><td>1× 400 Gb/s/GPU<br><span class="basis">Observed</span></td><td>1× up to 800 Gb/s/GPU<br><span class="basis">Reference</span></td><td>4× ConnectX-7 400G/tray</td><td>4× ConnectX-8 up to 800G/tray</td><td class="delta">Inside one rack, NVLink handles scale-up; ConnectX carries cross-rack compute traffic</td></tr>
-                <tr><th scope="row">Cooling and power class</th><td class="basis">Mixed</td><td>Observed GPU limits: 5.6 kW/node</td><td>Observed GPU limits: 8.0 kW/node</td><td>DGX reference: 14.5 kW whole system</td><td>Liquid-cooled rack; approximately 120 kW</td><td>Liquid-cooled rack; up to 142 kW</td><td class="delta">GB deployment requires rack-level power, cooling, busbar, and failure-domain planning</td></tr>
+                <tr><th scope="row">Architecture</th><td class="basis">Published</td><td>Hopper<br>compute capability 9.0</td><td>Hopper<br>compute capability 9.0</td><td>Blackwell<br>compute capability 10.0</td><td>Blackwell Ultra<br>compute capability 10.3</td><td>Grace + Blackwell GPUs<br>compute capability 10.0</td><td>Grace + Blackwell Ultra GPUs<br>compute capability 10.3</td><td class="delta">H20 and H200 share the SM90 software target; GB changes CPU coupling and rack topology, while Blackwell targets SM100 or SM103</td></tr>
+                <tr><th scope="row">Native scale-up unit</th><td class="basis">Mixed</td><td>8-GPU node<br><span class="basis">Observed</span></td><td>8-GPU node<br><span class="basis">Observed</span></td><td>8-GPU node<br><span class="basis">Observed</span></td><td>8-GPU baseboard<br><span class="basis">Published</span></td><td>72-GPU rack<br>18 trays × 4 GPUs</td><td>72-GPU rack<br>18 trays × 4 GPUs</td><td class="delta">One NVL72 rack is nine times the GPU count of one eight-GPU node</td></tr>
+                <tr><th scope="row">GPU memory</th><td class="basis">Published</td><td>96 GB HBM/GPU<br>768 GB/node</td><td>141 GB/GPU<br>1.128 TB/node</td><td>180 GB/GPU<br>1.440 TB/node</td><td>288 GB/GPU nominal<br>2.304 TB/node</td><td>NVIDIA rack table: 13.4 TB<br>SGLang model: 192 GB/GPU</td><td>NVIDIA rack table: 20 TB<br>SGLang model: 288 GB/GPU</td><td class="delta">Use installed-driver memory for final capacity planning; current official documents use different nominal and platform totals</td></tr>
+                <tr><th scope="row">Memory reported by driver</th><td class="basis">Observed</td><td>97,871 MiB/GPU<br>0.747 TiB/node</td><td>143,771 MiB/GPU<br>1.097 TiB/node</td><td>183,359 MiB/GPU<br>1.399 TiB/node</td><td>Not observed</td><td>Not observed</td><td>Not observed</td><td class="delta">H20, H200, and B200 are point-in-time machine readings</td></tr>
+                <tr><th scope="row">Aggregate HBM bandwidth</th><td class="basis">Published; H20 common public spec</td><td>32 TB/s/node<br><span class="basis">Not locally measured</span></td><td>38.4 TB/s/node</td><td>Up to 64 TB/s/node</td><td>Up to 64 TB/s/node</td><td>576 TB/s/rack</td><td>Up to 576 TB/s/rack</td><td class="delta">The common H20 figure is about 83% of H200's per-GPU HBM bandwidth; the GB totals scale approximately 8 TB/s/GPU across 72 GPUs</td></tr>
+                <tr><th scope="row">Aggregate NVLink bandwidth</th><td class="basis">Published + observed topology + derived</td><td>7.2 TB/s/node<br><span class="basis">900 GB/s/GPU inferred</span></td><td>7.2 TB/s/node</td><td>14.4 TB/s/node</td><td>14.4 TB/s/node</td><td>130 TB/s/rack</td><td>130 TB/s/rack</td><td class="delta">H20's observed full Hopper NVSwitch topology implies the same 900 GB/s/GPU NVLink class as H200; GB200 and GB300 extend one domain to all 72 GPUs</td></tr>
+                <tr><th scope="row">FP8 (Hopper) / FP8–FP6 (Blackwell) peak</th><td class="basis">Published + derived sparse | dense</td><td>4.736 | 2.368 PFLOPS/node<br><span class="basis">inferred sparse | published peak treated as dense</span></td><td>31.7 | 15.8 PFLOPS/node<br><span class="basis">FP8</span></td><td>72 | 36 PFLOPS/node</td><td>72 | 36 PFLOPS/node</td><td>720 | 360 PFLOPS/rack</td><td>720 | 360 PFLOPS/rack</td><td class="delta">Under this dense-peak interpretation, H20 exposes about 15% of H200's FP8 Tensor peak; sparse values use the documented 2:4 convention</td></tr>
+                <tr><th scope="row">FP4 peak</th><td class="basis">Published sparse | dense</td><td>No native FP4 mode</td><td>No native FP4 mode</td><td>144 | 72 PFLOPS/node</td><td>144 | 108 PFLOPS/node</td><td>1,440 | 720 PFLOPS/rack</td><td>1,440 | 1,080 PFLOPS/rack</td><td class="delta">Hopper has no native FP4 Tensor mode; Blackwell Ultra raises dense FP4 by 50% over Blackwell</td></tr>
+                <tr><th scope="row">Grace CPU coupling</th><td class="basis">Published</td><td>No; external x86 host</td><td>No; external x86 host</td><td>No; external x86 host</td><td>No; external x86 host</td><td>36 Grace CPUs, 17 TB LPDDR5X/rack; NVLink-C2C</td><td>36 Grace CPUs, 17 TB LPDDR5X/rack; NVLink-C2C</td><td class="delta">Grace memory becomes an explicit weight-offload tier in SGLang's GB200 recipe</td></tr>
+                <tr><th scope="row">GPU-facing scale-out</th><td class="basis">Mixed</td><td>1× 400 Gb/s/GPU<br><span class="basis">Observed</span></td><td>1× 400 Gb/s/GPU<br><span class="basis">Observed</span></td><td>1× 400 Gb/s/GPU<br><span class="basis">Observed</span></td><td>1× up to 800 Gb/s/GPU<br><span class="basis">Reference</span></td><td>4× ConnectX-7 400G/tray</td><td>4× ConnectX-8 up to 800G/tray</td><td class="delta">Inside one rack, NVLink handles scale-up; ConnectX carries cross-rack compute traffic</td></tr>
+                <tr><th scope="row">Cooling and power class</th><td class="basis">Mixed scopes; do not compare as one metric</td><td>Observed GPU-only limit sum: 4.0 kW<br><span class="basis">8× driver-enforced 500 W; not server draw</span></td><td>Observed GPU-only limit sum: 5.6 kW</td><td>Observed GPU-only limit sum: 8.0 kW</td><td>DGX reference: 14.5 kW whole system</td><td>Liquid-cooled rack; approximately 120 kW</td><td>Liquid-cooled rack; up to 142 kW</td><td class="delta">GPU-limit sums, whole-system draw, and rack facility envelopes are different scopes; size facilities from the delivered system specification</td></tr>
               </tbody>
             </table>
           </div>
-          <p class="footnotes">Tensor Core figures follow NVIDIA's stated sparsity convention. The H200/B200 observations and published product tables use different GB/GiB reporting conventions. B300 documents currently show 288 GB nominal, a 270 GB named SKU, and 2.1–2.3 TB node totals; GB rack product tables also differ from the per-GPU values used in SGLang's capacity examples. Verify the delivered SKU with the driver.</p>
+          <p class="footnotes">Tensor Core peak cells are ordered <strong>sparse | dense</strong>. NVIDIA's H20 engineering article states a 296 TFLOPS FP8 peak. This page treats that as dense throughput and derives 592 TFLOPS/GPU with Hopper's documented 2:4 sparsity-doubles-Tensor-Core convention; the sparse H20 value is therefore an inference, not a live measurement. Current NVIDIA documentation independently confirms Hopper GH100, compute capability 9.0, the 96 GB SKU, and the HGX NVSwitch topology, but does not expose a complete English H20 product table. FP4 cells show NVIDIA's separately published sparse and dense figures. Observed driver memory and published product tables use different GB/GiB conventions. B300 documents currently show 288 GB nominal, a 270 GB named SKU, and 2.1–2.3 TB node totals; GB rack product tables also differ from the per-GPU values used in SGLang's capacity examples. Verify the delivered SKU and power limit with the driver.</p>
         </section>
 
         <section id="host-platform" aria-labelledby="host-platform-title">
           <h2 id="host-platform-title">Deployment Units</h2>
           <p>The operational distinction is the number of independently booted hosts inside one scale-up domain. An NVL72 rack acts like one GPU fabric, but it is still composed of 18 compute-tray operating-system instances.</p>
           <div class="table-scroll" role="region" aria-label="Deployment unit comparison table" tabindex="0">
-            <table class="five-way">
+            <table class="six-way">
               <caption>Observed node hosts versus published GB compute-tray and rack structure</caption>
               <thead>
-                <tr><th>Characteristic</th><th class="h200-text">Europe H200</th><th class="b200-text">Northwest B200</th><th class="b300-text">B300 reference</th><th class="gb200-text">GB200 NVL72</th><th class="gb300-text">GB300 NVL72</th><th>Operational meaning</th></tr>
+                <tr><th scope="col">Characteristic</th><th scope="col" class="h20-text">H20 observed</th><th scope="col" class="h200-text">Europe H200</th><th scope="col" class="b200-text">Northwest B200</th><th scope="col" class="b300-text">B300 reference</th><th scope="col" class="gb200-text">GB200 NVL72</th><th scope="col" class="gb300-text">GB300 NVL72</th><th scope="col">Operational meaning</th></tr>
               </thead>
               <tbody>
-                <tr><th scope="row">Smallest host unit</th><td>One virtualized 8-GPU guest</td><td>One bare-metal 8-GPU server</td><td>One 8-GPU DGX/HGX server</td><td>One tray: 4 GPUs + 2 Grace CPUs</td><td>One tray: 4 GPUs + 2 Grace CPUs</td><td>GB rank placement spans multiple OS instances even while remaining inside one NVLink domain</td></tr>
-                <tr><th scope="row">Full scale-up unit</th><td>1 node / 8 GPUs</td><td>1 node / 8 GPUs</td><td>1 node / 8 GPUs</td><td>18 trays / 72 GPUs / 36 Grace CPUs / 9 switch trays</td><td>18 trays / 72 GPUs / 36 Grace CPUs / 9 switch trays</td><td>Scheduler topology must distinguish tray, rack, and cross-rack placement</td></tr>
-                <tr><th scope="row">CPU and host memory</th><td>2× Xeon 8468<br>1.538 TiB observed</td><td>2× Xeon 8568Y+<br>1.968 TiB observed</td><td>DGX: 2× Xeon 6776P<br>2 TB default</td><td>2 Grace/tray; 36/rack<br>17 TB LPDDR5X/rack</td><td>2 Grace/tray; 36/rack<br>17 TB LPDDR5X/rack</td><td>GB host memory is coherent through the Grace Blackwell coupling and is usable as an offload tier</td></tr>
-                <tr><th scope="row">Operating-system count</th><td>1 guest OS</td><td>1 host OS</td><td>1 host OS</td><td>18 compute-tray OS instances</td><td>18 compute-tray OS instances</td><td>NVL72 is one GPU fabric, not one Linux process namespace</td></tr>
-                <tr><th scope="row">Compute networking</th><td>8× active 400G mlx5 VFs</td><td>8× active 400G ConnectX-7</td><td>8× ConnectX-8 up to 800G</td><td>4× ConnectX-7 400G per tray</td><td>4× ConnectX-8 up to 800G per tray</td><td>Cross-rack jobs still need InfiniBand or Ethernet even though in-rack collectives use NVLink</td></tr>
-                <tr><th scope="row">Local storage</th><td>About 1.60 TB virtual disks</td><td>About 16.32 TB raw NVMe</td><td>DGX: 8×3.84 TB E1.S + 2×1.92 TB M.2</td><td>Per tray: 4×3.84 TB E1.S + 1×1.92 TB M.2</td><td>Per tray: 4×3.84 TB E1.S + 1×1.92 TB M.2</td><td>Checkpoint and cache placement is tray-local unless backed by remote storage</td></tr>
-                <tr><th scope="row">Evidence</th><td><span class="basis">Passively observed</span></td><td><span class="basis">Passively observed</span></td><td><span class="basis">NVIDIA reference</span></td><td><span class="basis">NVIDIA reference + SGLang articles</span></td><td><span class="basis">NVIDIA reference + SGLang articles</span></td><td>Nothing in the GB columns is a local production-node observation</td></tr>
+                <tr><th scope="row">Smallest host unit</th><td>One bare-metal 8-GPU server</td><td>One virtualized 8-GPU guest</td><td>One bare-metal 8-GPU server</td><td>One 8-GPU DGX/HGX server</td><td>One tray: 4 GPUs + 2 Grace CPUs</td><td>One tray: 4 GPUs + 2 Grace CPUs</td><td>GB rank placement spans multiple OS instances even while remaining inside one NVLink domain</td></tr>
+                <tr><th scope="row">Full scale-up unit</th><td>1 node / 8 GPUs</td><td>1 node / 8 GPUs</td><td>1 node / 8 GPUs</td><td>1 node / 8 GPUs</td><td>18 trays / 72 GPUs / 36 Grace CPUs / 9 switch trays</td><td>18 trays / 72 GPUs / 36 Grace CPUs / 9 switch trays</td><td>Scheduler topology must distinguish node, tray, rack, and cross-rack placement</td></tr>
+                <tr><th scope="row">CPU and host memory</th><td>2× Xeon 8563C<br>1.964 TiB observed</td><td>2× Xeon 8468<br>1.538 TiB observed</td><td>2× Xeon 8568Y+<br>1.968 TiB observed</td><td>DGX: 2× Xeon 6776P<br>2 TB default</td><td>2 Grace/tray; 36/rack<br>17 TB LPDDR5X/rack</td><td>2 Grace/tray; 36/rack<br>17 TB LPDDR5X/rack</td><td>GB host memory is coherent through the Grace Blackwell coupling and is usable as an offload tier</td></tr>
+                <tr><th scope="row">Operating-system count</th><td>1 host OS</td><td>1 guest OS</td><td>1 host OS</td><td>1 host OS</td><td>18 compute-tray OS instances</td><td>18 compute-tray OS instances</td><td>NVL72 is one GPU fabric, not one Linux process namespace</td></tr>
+                <tr><th scope="row">Compute networking</th><td>8× active 400G ConnectX-7</td><td>8× active 400G mlx5 VFs</td><td>8× active 400G ConnectX-7</td><td>8× ConnectX-8 up to 800G</td><td>4× ConnectX-7 400G per tray</td><td>4× ConnectX-8 up to 800G per tray</td><td>Cross-rack jobs still need InfiniBand or Ethernet even though in-rack collectives use NVLink</td></tr>
+                <tr><th scope="row">Local storage</th><td>4×3.84 TB data NVMe<br>+ 480 GB OS disk</td><td>About 1.60 TB virtual disks</td><td>About 16.32 TB raw NVMe</td><td>DGX: 8×3.84 TB E1.S + 2×1.92 TB M.2</td><td>Per tray: 4×3.84 TB E1.S + 1×1.92 TB M.2</td><td>Per tray: 4×3.84 TB E1.S + 1×1.92 TB M.2</td><td>Checkpoint and cache placement is host- or tray-local unless backed by remote storage</td></tr>
+                <tr><th scope="row">Evidence</th><td><span class="basis">Passively observed</span></td><td><span class="basis">Passively observed</span></td><td><span class="basis">Passively observed</span></td><td><span class="basis">NVIDIA reference</span></td><td><span class="basis">NVIDIA reference + SGLang articles</span></td><td><span class="basis">NVIDIA reference + SGLang articles</span></td><td>Nothing in the B300 or GB columns is a local production-node observation</td></tr>
               </tbody>
             </table>
           </div>
@@ -1009,8 +1066,18 @@
 
         <section id="topology" aria-labelledby="topology-title">
           <h2 id="topology-title">Topology and Network</h2>
-          <p>The first row shows the node-scale designs. The second row shows why the GB platforms are operationally different: the NVLink domain crosses compute-tray boundaries.</p>
+          <p>The node-scale grid shows three observed eight-GPU systems plus the B300 reference. The rack-scale row shows why GB platforms are operationally different: their NVLink domain crosses compute-tray boundaries.</p>
           <div class="topology-grid">
+            <figure class="topology-figure h20">
+              <figcaption><span class="h20-text">H20 observed</span> · 2 NUMA domains</figcaption>
+              <div class="fabric h20">1 OS · 8 GPUs · all pairs report NV18</div>
+              <div class="numa-grid two">
+                <div class="numa-domain"><div class="numa-title">NUMA 0 · GPUs 0-3</div><div class="gpu-slots"><div class="gpu-slot">GPU 0<small>400G NDR</small></div><div class="gpu-slot">GPU 1<small>400G NDR</small></div><div class="gpu-slot">GPU 2<small>400G NDR</small></div><div class="gpu-slot">GPU 3<small>400G NDR</small></div></div></div>
+                <div class="numa-domain"><div class="numa-title">NUMA 1 · GPUs 4-7</div><div class="gpu-slots"><div class="gpu-slot">GPU 4<small>400G NDR</small></div><div class="gpu-slot">GPU 5<small>400G NDR</small></div><div class="gpu-slot">GPU 6<small>400G NDR</small></div><div class="gpu-slot">GPU 7<small>400G NDR</small></div></div></div>
+              </div>
+              <p class="topology-note">Each GPU has one <code>PIX</code>-local physical ConnectX-7 path; the node also exposes a separate 100G management adapter.</p>
+            </figure>
+
             <figure class="topology-figure h200">
               <figcaption><span class="h200-text">H200 observed</span> · 2 NUMA domains</figcaption>
               <div class="fabric h200">1 OS · 8 GPUs · all pairs report NV18</div>
@@ -1064,10 +1131,20 @@
         <section id="sglang-deployment" aria-labelledby="sglang-deployment-title">
           <h2 id="sglang-deployment-title">Official SGLang Deployment Evidence</h2>
           <div class="callout">
-            <strong>Yes, the official SGLang articles discuss deployment configuration in concrete terms.</strong> They are DeepSeek V3/R1 performance recipes tied to specific commits, precisions, and workloads. Treat the shapes below as architectural evidence, not as universal current defaults or commands to paste unchanged.
+            <strong>Yes, official SGLang material discusses deployment configuration in concrete terms.</strong> The H20 guide covers model-specific pipeline/chunk tuning; the GB articles cover DeepSeek V3/R1 recipes tied to specific commits, precisions, and workloads. Treat every shape below as source-specific evidence, not a universal current default or a command to paste unchanged.
           </div>
 
           <div class="evidence-grid">
+            <article class="evidence-card h20">
+              <h3><span class="h20-text">H20</span> · pipeline-parallel long-context prefill</h3>
+              <p>SGLang's pipeline-parallelism guide includes H20 case studies for 128K prompts. These are workload-specific chunk-tuning results—not generic H20 defaults—and they do not benchmark the observed node on this page.</p>
+              <div class="config-grid">
+                <div class="config-step"><strong>DeepSeek-V3.1</strong><p><code>TP8 · PP4</code><br>4K fixed; 12K dynamic start with smoothing 0.65.</p></div>
+                <div class="config-step"><strong>Qwen3-235B-A22B</strong><p><code>TP4 · PP8</code><br>6K fixed; 18K dynamic start with smoothing 0.8.</p></div>
+                <div class="config-step"><strong>What it proves</strong><p>Chunk size and pipeline depth remain model- and workload-dependent even on the same H20 generation.</p></div>
+              </div>
+            </article>
+
             <article class="evidence-card gb200">
               <h3><span class="gb200-text">GB200 NVL72</span> · PD + large-scale EP</h3>
               <p>Part I used 14 of the rack's 18 compute trays: two trays / eight GPUs for prefill and twelve trays / 48 GPUs for decode. The reproduction flags pair <code>TP=8, DP=8</code> on prefill with <code>TP=48, DP=48</code> on decode and enable DP attention, DeepEP, and Mooncake KV transfer.</p>
@@ -1095,7 +1172,7 @@
           <div class="table-scroll" role="region" aria-label="SGLang deployment implications table" tabindex="0">
             <table>
               <caption>Hardware property → SGLang deployment consequence</caption>
-              <thead><tr><th>GB property</th><th>Observed SGLang response</th><th>Configuration consequence</th></tr></thead>
+              <thead><tr><th scope="col">GB property</th><th scope="col">Observed SGLang response</th><th scope="col">Configuration consequence</th></tr></thead>
               <tbody>
                 <tr><th scope="row">72-GPU NVLink domain</th><td>Large-scale EP, DP attention, NVLink-aware DeepEP and KV transfer</td><td>Parallel groups may span many four-GPU trays without paying cross-rack RDMA latency; reserve cross-rack networking for jobs that exceed one NVL72 domain.</td></tr>
                 <tr><th scope="row">Separate prefill and decode bottlenecks</th><td>PD disaggregation with independently sized worker pools</td><td>Size P and D pools by workload mix instead of cloning identical replicas. The GB200 article used 8 P GPUs and 48 D GPUs for its decode-focused experiment.</td></tr>
@@ -1114,6 +1191,8 @@
         <section id="serving-implications" aria-labelledby="serving-implications-title">
           <h2 id="serving-implications-title">Serving Implications</h2>
           <div class="implication-list">
+            <div class="implication"><strong>H20 is bandwidth-rich relative to its Tensor peak</strong><p>Against H200, the per-GPU ratios used here are about 68% of HBM capacity, 83% of HBM bandwidth, and 15% of FP8 Tensor peak under the documented dense-peak interpretation. That favors some memory-bound serving paths, but it is not a token/s prediction: kernels, batch shape, communication, and model precision still determine delivery.</p></div>
+            <div class="implication"><strong>H20 and H200 share SM90, not performance</strong><p>The software architecture target is the same, which simplifies compatibility, but H20 has no native FP4 path and its compute-to-bandwidth balance is materially different. Reuse binaries cautiously and retune workload shapes.</p></div>
             <div class="implication"><strong>Think tray, rack, then cluster</strong><p>A GB worker crosses four-GPU tray boundaries while remaining inside NVLink. Resource labels and affinity rules need a rack-domain identity, not only host and GPU IDs.</p></div>
             <div class="implication"><strong>Wide EP becomes practical</strong><p>The 72-GPU domain lowers the communication penalty for distributing MoE experts broadly, reducing per-GPU weight traffic and enabling DP attention alongside expert parallelism.</p></div>
             <div class="implication"><strong>GB300 primarily expands long-context headroom</strong><p>SGLang attributes much of its matched-latency gain to larger HBM, higher active decode batches, fewer retractions, and faster softmax-heavy attention rather than higher rack HBM bandwidth.</p></div>
@@ -1122,7 +1201,7 @@
             <div class="implication"><strong>Facility and failure domains grow</strong><p>A 120–142 kW liquid-cooled rack is a materially larger scheduling and operational unit than one 8-GPU server. A tray restart is local; a rack fabric or cooling event can affect the full 72-GPU domain.</p></div>
           </div>
           <div class="callout">
-            <strong>Performance numbers are not carried into the hardware bars.</strong> The SGLang articles use specific DeepSeek checkpoints, precisions, sequence lengths, latency targets, and historical software revisions. They prove that GB topology changes useful deployment choices; they do not provide a universal GB200/GB300 multiplier for GLM-5.2 or another model.
+            <strong>Performance numbers are not carried into the hardware bars.</strong> The H20 guide and GB articles use specific models, precisions, sequence lengths, latency targets, and software revisions. H20 proves that PP/chunk tuning is workload-specific; GB proves that rack topology changes useful deployment choices. Neither supplies a universal hardware multiplier for GLM-5.2 or another model.
           </div>
         </section>
 
@@ -1132,14 +1211,16 @@
             <div class="method-block">
               <h3>Observed evidence</h3>
               <ul>
-                <li>Only the Europe H200 and Northwest B200 machines were passively inspected.</li>
+                <li>The H20, Europe H200, and Northwest B200 machines were passively inspected.</li>
                 <li><code>nvidia-smi</code>, topology, CPU, memory, PCIe, RDMA, and storage inventory were read without starting a workload.</li>
-                <li>The observations remain point-in-time samples, not claims about every H200 or B200 system.</li>
+                <li>The observations remain point-in-time samples, not claims about every H20, H200, or B200 system.</li>
+                <li>No raw machine-inventory transcript is published with this standalone page; exact observed values should be rechecked before procurement or capacity planning.</li>
               </ul>
             </div>
             <div class="method-block">
               <h3>Published evidence</h3>
               <ul>
+                <li>H20 identity, memory, topology, and compute references come from NVIDIA documentation and engineering material; the 4.0 TB/s HBM value is a commonly published specification because a complete current English product table was not located.</li>
                 <li>B300, GB200, and GB300 values come from current NVIDIA product pages and system/reference-architecture guides.</li>
                 <li>GB deployment consequences come from official SGLang Team articles and their linked reproduction issues.</li>
                 <li>No B300, GB200, or GB300 cluster access path was used or guessed.</li>
@@ -1155,12 +1236,19 @@
             </div>
           </div>
 
-          <h3>NVIDIA primary references</h3>
+          <h3>Primary and authoritative hardware references</h3>
           <ul class="source-list">
             <li><a href="https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory/latest/components.html">NVIDIA HGX AI Factory components</a>: H200/B200/B300 memory, bandwidth, host, and networking reference.</li>
-            <li><a href="https://www.nvidia.com/en-us/data-center/hgx/">NVIDIA HGX platform specifications</a>: B200/B300 FP8, FP4, memory, NVLink, and relative attention values.</li>
-            <li><a href="https://www.nvidia.com/en-us/data-center/gb200-nvl72/">NVIDIA GB200 NVL72</a>: rack and superchip compute, memory, CPU, and NVLink specifications.</li>
-            <li><a href="https://www.nvidia.com/en-us/data-center/gb300-nvl72/">NVIDIA GB300 NVL72</a>: rack compute, memory, CPU, NVLink, and networking specifications.</li>
+            <li><a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/supported-gpus.html">NVIDIA MIG supported GPUs</a>: H20 Hopper/GH100 identity, compute capability 9.0, and 96 GB capacity.</li>
+            <li><a href="https://developer.nvidia.cn/blog/tensorrt-llm-low-precision-inference-optimization-fp8-int8/">NVIDIA H20 low-precision inference article</a>: 296 TFLOPS FP8 peak used as the dense H20 basis on this page.</li>
+            <li><a href="https://docs.nvidia.com/hgx-platforms/fabric-manager-user-guide/index.html">NVIDIA Fabric Manager guide</a>: HGX H20 uses the same full-NVSwitch NVLink topology class as HGX H100/H200.</li>
+            <li><a href="https://www.nvidia.com/en-sg/data-center/nvlink/">NVIDIA NVLink overview</a>: fourth-generation Hopper NVLink provides 900 GB/s per GPU, used to derive the H20 node total from its observed full topology.</li>
+            <li><a href="https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/">NVIDIA Hopper architecture</a>: structured sparsity doubles standard Tensor Core operation rates, used for the derived H20 sparse FP8 figure.</li>
+            <li><a href="https://www.dell.com/support/manuals/en-au/poweredge-xe9680/xe9680_ism_pub/gpu-specifications?guid=guid-1f91b9fb-b8fd-492e-863f-45febc9355c6&amp;lang=en-us">Dell PowerEdge XE9680 GPU specifications</a>: official system support for an H20 96 GB 500 W configuration, consistent with the observed firmware limit.</li>
+            <li><a href="https://www.nvidia.com/en-us/data-center/h200/">NVIDIA H200 specifications</a>: H200 SXM FP8 peak and its with-sparsity qualifier.</li>
+            <li><a href="https://www.nvidia.com/en-us/data-center/hgx/">NVIDIA HGX platform specifications</a>: B200/B300 FP8, FP4, sparse-to-dense convention, memory, NVLink, and relative attention values.</li>
+            <li><a href="https://www.nvidia.com/en-us/data-center/gb200-nvl72/">NVIDIA GB200 NVL72</a>: rack and superchip sparse/dense compute, memory, CPU, and NVLink specifications.</li>
+            <li><a href="https://www.nvidia.com/en-us/data-center/gb300-nvl72/">NVIDIA GB300 NVL72</a>: rack sparse/dense compute, memory, CPU, NVLink, and networking specifications.</li>
             <li><a href="https://docs.nvidia.com/dgx/dgxgb200-user-guide/hardware.html">NVIDIA DGX GB rack-scale hardware guide</a>: 18 compute trays, 9 switch trays, per-tray components, storage, and rack power.</li>
             <li><a href="https://docs.nvidia.com/enterprise-reference-architectures/nvl72-ai-factory/latest/components.html">NVIDIA GB300 NVL72 Enterprise RA</a>: ConnectX-8 topology, 72-GPU NVLink domain, and 142 kW rack requirement.</li>
             <li><a href="https://developer.nvidia.com/cuda/gpus">NVIDIA CUDA GPU table</a>: H200 9.0, B200/GB200 10.0, and B300/GB300 10.3 compute capability.</li>
@@ -1168,6 +1256,7 @@
 
           <h3>Official SGLang references</h3>
           <ul class="source-list">
+            <li><a href="https://docs.sglang.ai/advanced_features/pipeline_parallelism.html">SGLang pipeline parallelism guide</a>: H20 long-context chunk-size and dynamic-chunking case studies for DeepSeek-V3.1 and Qwen3-235B-A22B.</li>
             <li><a href="https://www.lmsys.org/blog/2025-06-16-gb200-part-1/">SGLang GB200 Part I</a>: PD disaggregation, large-scale EP, NVLink-aware kernels and communication, and the 2-tray prefill / 12-tray decode experiment.</li>
             <li><a href="https://www.lmsys.org/blog/2025-09-25-gb200-part-2/">SGLang GB200 Part II</a>: FP8 KV, NVFP4, Grace-memory offload, fine-grained overlap, and 2/4-rank prefill versus 48-rank decode configurations.</li>
             <li><a href="https://github.com/sgl-project/sglang/issues/7227">SGLang GB200 reproduction issue #7227</a>: exact historical P/D shapes and launch arguments.</li>
@@ -1180,7 +1269,7 @@
 
         <footer>
           Public URL: <a href="https://tomyoung903.github.io/maas_docs/h200-vs-b200-node/">https://tomyoung903.github.io/maas_docs/h200-vs-b200-node/</a><br>
-          H200/B200 are observed samples. B300/GB200/GB300 are published references. SGLang configurations are source-specific deployment evidence, not generic defaults.
+          H20/H200/B200 are observed samples. B300/GB200/GB300 are published references. SGLang configurations are source-specific deployment evidence, not generic defaults.
         </footer>
       </article>
     </main>
