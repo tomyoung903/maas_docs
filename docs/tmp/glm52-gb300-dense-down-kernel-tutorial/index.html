@@ -48,7 +48,7 @@
         <div class="hero-copy">
           <p class="eyebrow">GLM-5.2 · dense down projection · one TP8 rank · NVIDIA GB300</p>
           <h1>One linear kernel,<br><em>completely understood.</em></h1>
-          <p class="hero-deck">A hand-held path from “what is a CTA?” to predicting why runtime stays near <strong>7–8 µs</strong> from <i>M</i> = 1 through 200, then reaches <strong>10.50 µs</strong> at <i>M</i> = 500.</p>
+          <p class="hero-deck">A hand-held path from “what is a CTA?” to explaining a new <strong>259-point</strong> GB300 sweep: a <strong>6.96 µs</strong> floor at <i>M</i> = 1, <strong>10.46 µs</strong> at <i>M</i> = 500, and <strong>67.81 µs</strong> at <i>M</i> = 10,000.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="#vocabulary">Begin with the nouns</a>
             <a class="button button-quiet" href="#curve">Jump to the evidence</a>
@@ -81,7 +81,7 @@
 
         <div class="hero-facts" aria-label="Tutorial outcomes">
           <div><strong>4</strong><span>overloaded “block” meanings separated</span></div>
-          <div><strong>6</strong><span>measured batch sizes explained</span></div>
+          <div><strong>259</strong><span>measured <i>M</i> values from 1 to 10,000</span></div>
           <div><strong>1</strong><span>reusable prediction worksheet</span></div>
         </div>
       </section>
@@ -198,7 +198,7 @@
                 <h3>Online quantize</h3>
                 <p>Read <b>X</b> in BF16, form FP8 activation values and scale metadata for this invocation.</p>
               </div>
-              <span class="stage-chip chip-quant">≈ 1.75–1.95 µs</span>
+              <span class="stage-chip chip-quant">≈ 1.57–9.73 µs</span>
             </div>
             <div class="operation-connector" aria-hidden="true"><i></i></div>
             <div class="operation-stage">
@@ -207,7 +207,7 @@
                 <h3>FP8 GEMM</h3>
                 <p>Multiply the quantized rows by the resident FP8 weight matrix and accumulate the output.</p>
               </div>
-              <span class="stage-chip chip-gemm">≈ 5.35–8.55 µs</span>
+              <span class="stage-chip chip-gemm">≈ 5.27–58.79 µs</span>
             </div>
             <div class="operation-connector" aria-hidden="true"><i></i></div>
             <div class="operation-stage">
@@ -476,9 +476,9 @@
             <p>Each CTA requests roughly 211–230 KB of dynamic shared memory. Against the heuristic’s 232,448-B (227-KiB) budget, this is a deliberate one-resident-CTA-per-SM design.</p>
           </article>
           <article>
-            <span class="mechanic-mark">12 → 7</span>
+            <span class="mechanic-mark">12 → 6</span>
             <h3>Pipeline depth adapts</h3>
-            <p>As <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> grows, each stage costs more storage. The JIT reduces pipeline stages from 12 to 7 to remain within the shared-memory budget.</p>
+            <p>As <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> grows, each stage costs more storage. Across the extended sweep, the JIT reduces pipeline depth from 12 stages at the smallest tiles to 6 stages at large <i>M</i>.</p>
           </article>
         </div>
       </section>
@@ -488,15 +488,85 @@
           <span class="section-number">04</span>
           <div>
             <p class="section-kicker">The measured fact pattern</p>
-            <h2>Five hundred rows do not take five hundred times longer.</h2>
-            <p class="section-intro">Select a measured point. The chart, output-tile grid, and 152-SM map move together so that “batch size” becomes concrete scheduler geometry. Each point is the median of 30 synchronized iterations after five warmups.</p>
+            <h2>The floor, the waves, and every schedule change are now visible.</h2>
+            <p class="section-intro">The complete run covers 259 unique <i>M</i> values from 1 through 10,000. First read the full measured curve; then use the one-wave explorer to connect six small-<i>M</i> anchors to their output tiles and 152-SM geometry.</p>
           </div>
         </header>
+
+        <div class="sweep-evidence">
+          <div class="sweep-summary">
+            <div class="sweep-summary-copy">
+              <p class="mini-kicker">New two-node GB300 rerun · 19 August 2026</p>
+              <h3>259 shapes, 8,070 measured composites, 16,140 owned kernel launches.</h3>
+              <p>The sweep uses the same online BF16→FP8 quantization plus DeepGEMM down projection as the original six-point study. Ten shared anchors were repeated on both nodes; at the 2,000, 5,000, and 10,000-row anchors, node medians differ by only 1.08–1.84%.</p>
+            </div>
+            <div class="sweep-kpis" aria-label="Full-sweep headline measurements">
+              <div><span>fixed floor</span><strong>6.960 µs</strong><small><i>M</i> = 1</small></div>
+              <div><span>one-wave anchor</span><strong>10.464 µs</strong><small><i>M</i> = 500</small></div>
+              <div><span>large input</span><strong>67.808 µs</strong><small><i>M</i> = 10,000</small></div>
+            </div>
+          </div>
+
+          <div class="full-sweep-panel">
+            <div class="sweep-chart-heading">
+              <div>
+                <p class="mini-kicker">Warm GPU-resident execution</p>
+                <h3>Composite and component time across the complete sweep</h3>
+              </div>
+              <div class="sweep-legend" aria-label="Chart legend">
+                <span><i class="legend-total"></i>active union</span>
+                <span><i class="legend-gemm"></i>GEMM mean</span>
+                <span><i class="legend-quant"></i>quant mean</span>
+              </div>
+            </div>
+            <svg id="full-sweep-chart" class="curve-chart full-sweep-chart" viewBox="0 0 920 390" role="img" aria-label="Measured dense-down active-union, GEMM, and quantization time from M equals 1 through 10000"></svg>
+            <div class="sweep-live-readout" aria-live="polite">
+              <span><i>M</i><strong id="sweep-selected-m">500</strong></span>
+              <span>active union<strong id="sweep-selected-total">10.464 µs</strong></span>
+              <span>GEMM mean<strong id="sweep-selected-gemm">8.567 µs</strong></span>
+              <span>quant mean<strong id="sweep-selected-quant">1.958 µs</strong></span>
+              <span><span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span><strong id="sweep-selected-bm">176</strong></span>
+              <span>stages<strong id="sweep-selected-stages">7</strong></span>
+            </div>
+            <p class="sweep-chart-note">Move across the chart to inspect the nearest measured shape. Both axes preserve the measured values; only the <i>M</i> axis is logarithmic.</p>
+          </div>
+
+          <div class="sweep-findings">
+            <article>
+              <span>01 · floor-dominated</span>
+              <h3>256× more rows, only 1.23× the time</h3>
+              <p>From <i>M</i> = 1 to 256, active union moves from 6.960 to 8.576 µs. Launch, scheduling, pipeline fill/drain, and the weight path dominate while idle SM slots absorb much of the added work.</p>
+            </article>
+            <article>
+              <span>02 · wave growth</span>
+              <h3>The curve rises once parallel slack is gone</h3>
+              <p>At <i>M</i> = 500 the GEMM has 144 logical output tiles; at <i>M</i> = 1,000 it has 288. More tiles now require additional scheduling waves, so elapsed time begins tracking useful work more strongly.</p>
+            </article>
+            <article>
+              <span>03 · schedule fingerprints</span>
+              <h3>Local drops are real—not chart noise</h3>
+              <p>The JIT changes <span class="math"><span class="code-var">BLOCK</span><sub>M</sub></span> and pipeline depth at region boundaries. A larger <i>M</i> can therefore be faster than its neighbor when it receives a better tile schedule.</p>
+            </article>
+          </div>
+
+          <div class="sweep-method-strip">
+            <strong>Measurement contract</strong>
+            <span>2 GB300 nodes</span>
+            <span>3 warmups + 30 samples per node-case</span>
+            <span>fixed CUDA-resident tensors</span>
+            <span>no H2D or checkpoint loading</span>
+            <span>no L2 flush</span>
+            <span>active union of exactly 2 correlation-owned kernels</span>
+          </div>
+          <div class="sweep-provenance-note">
+            <strong>Provenance.</strong> The production image, exact benchmark harness, and three implementation-critical source files match the retained experiment hashes. The mounted repository HEAD itself differed, so this is deliberately not labeled strict whole-tree identity.
+          </div>
+        </div>
 
         <div class="explorer" id="measured-explorer">
           <div class="explorer-toolbar">
             <div>
-              <p class="mini-kicker">Measured point</p>
+              <p class="mini-kicker">One-wave geometry anchor</p>
               <div class="point-buttons" id="point-buttons" aria-label="Choose a measured M value"></div>
             </div>
             <div class="explorer-key">
@@ -511,8 +581,8 @@
             <div class="chart-panel">
               <div class="panel-heading">
                 <div>
-                  <p class="mini-kicker">Composite kernel time</p>
-                  <h3>Active union versus <i>M</i></h3>
+                  <p class="mini-kicker">Small-<i>M</i> zoom</p>
+                  <h3>One-wave active union versus <i>M</i></h3>
                 </div>
                 <span class="chart-note">logarithmic <i>M</i> axis</span>
               </div>
@@ -521,11 +591,11 @@
 
             <div class="selected-panel">
               <p class="selected-overline">Selected · <i>M</i> = <strong id="selected-m">100</strong></p>
-              <div class="selected-time"><strong id="selected-time">8.032</strong><span>µs</span></div>
+              <div class="selected-time"><strong id="selected-time">7.936</strong><span>µs</span></div>
               <p class="selected-label">median active union</p>
               <div class="component-bars">
-                <div><span>quant mean</span><i><b id="quant-bar"></b></i><strong id="selected-quant">1.772 µs</strong></div>
-                <div><span>GEMM mean</span><i><b id="gemm-bar"></b></i><strong id="selected-gemm">6.214 µs</strong></div>
+                <div><span>quant mean</span><i><b id="quant-bar"></b></i><strong id="selected-quant">1.766 µs</strong></div>
+                <div><span>GEMM mean</span><i><b id="gemm-bar"></b></i><strong id="selected-gemm">6.164 µs</strong></div>
               </div>
               <p class="stats-caveat">Component means need not sum exactly to the median composite: they use different summary statistics.</p>
             </div>
@@ -571,7 +641,7 @@
 
         <div class="table-wrap">
           <table class="evidence-table">
-            <caption>Measured timing joined with exact JIT launch geometry</caption>
+            <caption>Two-node consensus anchors joined with exact JIT launch geometry</caption>
             <thead>
               <tr>
                 <th scope="col"><i>M</i></th>
@@ -585,12 +655,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>1</td><td>16</td><td>1</td><td>48</td><td>48</td><td>31.6%</td><td>12</td><td>6.976 µs</td></tr>
-              <tr><td>10</td><td>16</td><td>1</td><td>48</td><td>48</td><td>31.6%</td><td>12</td><td>7.264 µs</td></tr>
-              <tr><td>20</td><td>16</td><td>2</td><td>48</td><td>96</td><td>63.2%</td><td>12</td><td>7.904 µs</td></tr>
-              <tr class="highlight-row"><td>100</td><td>48</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>10</td><td>8.032 µs</td></tr>
-              <tr><td>200</td><td>80</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>9</td><td>8.064 µs</td></tr>
-              <tr><td>500</td><td>176</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>7</td><td>10.496 µs</td></tr>
+              <tr><td>1</td><td>16</td><td>1</td><td>48</td><td>48</td><td>31.6%</td><td>12</td><td>6.960 µs</td></tr>
+              <tr><td>10</td><td>16</td><td>1</td><td>48</td><td>48</td><td>31.6%</td><td>12</td><td>7.072 µs</td></tr>
+              <tr><td>20</td><td>16</td><td>2</td><td>48</td><td>96</td><td>63.2%</td><td>12</td><td>7.456 µs</td></tr>
+              <tr class="highlight-row"><td>100</td><td>48</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>10</td><td>7.936 µs</td></tr>
+              <tr><td>200</td><td>80</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>9</td><td>8.352 µs</td></tr>
+              <tr><td>500</td><td>176</td><td>3</td><td>48</td><td>144</td><td>94.7%</td><td>7</td><td>10.464 µs</td></tr>
             </tbody>
           </table>
         </div>
@@ -645,7 +715,7 @@
               <div class="display-equation small">
                 ⌈useful CTAs / 152 SMs⌉
               </div>
-              <span class="proof-result">=<br><strong>1</strong> for all six measurements</span>
+              <span class="proof-result">=<br><strong>1</strong> for all six geometry anchors</span>
             </div>
           </div>
           <div class="proof-example">
@@ -661,7 +731,7 @@
 
         <div class="why-500">
           <div class="why-500-copy">
-            <p class="mini-kicker">Then why does <i>M</i> = 500 rise to 10.50 µs?</p>
+            <p class="mini-kicker">Then why does <i>M</i> = 500 rise to 10.46 µs?</p>
             <h3>One wave is not the same as constant work per CTA.</h3>
             <p>The wave count stays one, but each useful CTA owns a much taller output tile: 176 rows instead of 16. It moves more activation data, performs more UMMA work, and has only seven pipeline stages instead of twelve. Online quantization also has more rows to process.</p>
             <p>The resulting prediction is qualitative but strong: <strong>a long plateau, then a gentle within-wave rise—not a 500× line.</strong></p>
@@ -758,7 +828,7 @@
           <div>
             <p class="section-kicker">Touch the geometry</p>
             <h2>Prediction lab: move <i>M</i> before running Nsight.</h2>
-            <p class="section-intro">The first tool follows a source-level emulation of the DeepGEMM v0.1.3 heuristic for this exact 6144 × 1536 shape, anchored by the six emitted kernels above. The second is a generic tile-and-wave calculator you can carry to another linear layer.</p>
+            <p class="section-intro">The first tool follows a source-level emulation of the DeepGEMM v0.1.3 heuristic for this exact 6144 × 1536 shape. Its one-wave region is anchored by the six emitted kernels above and checked against the complete 259-point curve. The second is a generic tile-and-wave calculator you can carry to another linear layer.</p>
           </div>
         </header>
 
@@ -767,7 +837,7 @@
             <div>
               <span class="predictor-tag">Shape-specific teaching model</span>
               <h3>Where does the one-wave plateau end?</h3>
-              <p>Drag through <i>M</i> = 1…960. The selected tile shape follows source-emulated v0.1.3 heuristic regions for this fixed <i>N</i> and <i>K</i>; the six measured points are its anchors.</p>
+              <p>Drag through <i>M</i> = 1…960. The selected tile shape follows source-emulated v0.1.3 heuristic regions for this fixed <i>N</i> and <i>K</i>; the six interactive points are the one-wave geometry anchors.</p>
             </div>
             <div class="m-readout"><span><i>M</i></span><strong id="forecast-m">500</strong></div>
           </div>
@@ -800,7 +870,7 @@
           </div>
 
           <div class="model-note">
-            <strong>Time model:</strong> a fitted fixed quantization floor plus a tile-height cost, multiplied by wave count. It teaches the curve’s shape; it is not a replacement for measurement and can miss by roughly 0.7 µs in the measured range.
+            <strong>Time model:</strong> a fitted fixed quantization floor plus a tile-height cost, multiplied by wave count. It teaches the one-wave region’s shape; it is not a replacement for the 259-point measurement above.
           </div>
         </div>
 
@@ -955,7 +1025,7 @@
           <div>
             <p class="mini-kicker">Evidence and next reading</p>
             <h3>This page is a model tied to trace evidence—not a generic cartoon.</h3>
-            <p>Measurements come from the GB300 kernel-efficiency sweep. Tile geometry was recovered from the emitted DeepGEMM kernels and checked against the v0.1.3 SM100 heuristic and persistent scheduler.</p>
+            <p>Measurements now include the retained two-node 259-point rerun. Tile geometry was recovered from the emitted DeepGEMM kernels and checked against the v0.1.3 SM100 heuristic and persistent scheduler.</p>
           </div>
           <div class="source-links">
             <a href="../glm52-gb300-kernel-efficiency-sweep/"><span>Measured parent report</span><b>Open ↗</b></a>
@@ -974,12 +1044,13 @@
       </section>
 
       <footer class="page-footer">
-        <span>MaaS performance note · generated from the retained GB300 trace pack</span>
+        <span>MaaS performance note · retained two-node GB300 sweep · 259 shapes</span>
         <span>DeepGEMM v0.1.3 · NVIDIA GB300 · CC 10.3</span>
       </footer>
     </main>
   </div>
 
+  <script src="sweep-data.js"></script>
   <script src="tutorial.js"></script>
 </body>
 </html>

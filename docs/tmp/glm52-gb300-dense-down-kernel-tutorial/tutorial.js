@@ -4,6 +4,19 @@
   const byId = (id) => document.getElementById(id);
   const svgNamespace = "http://www.w3.org/2000/svg";
 
+  const sweepRows = ((window.DENSE_DOWN_SWEEP && window.DENSE_DOWN_SWEEP.rows) || []).map((row) => ({
+    m: row[0],
+    total: row[1],
+    quant: row[2],
+    gemm: row[3],
+    blockM: row[4],
+    stages: row[5],
+    mTiles: row[6],
+    ctas: row[7],
+    nodeCount: row[8],
+    sampleCount: row[9]
+  }));
+
   const measured = [
     {
       m: 1,
@@ -12,9 +25,9 @@
       ctas: 48,
       coverage: 31.6,
       stages: 12,
-      total: 6.976,
-      quant: 1.8219,
-      gemm: 5.3483,
+      total: 6.960,
+      quant: 1.6944,
+      gemm: 5.3141,
       explanation: "<strong>At <i>M</i> = 1:</strong> the minimum 16-row tile is mostly padding. One row tile times 48 column tiles creates only 48 useful CTAs, so roughly two thirds of the SM wave has no output tile to claim."
     },
     {
@@ -24,9 +37,9 @@
       ctas: 48,
       coverage: 31.6,
       stages: 12,
-      total: 7.264,
-      quant: 1.7536,
-      gemm: 5.4944,
+      total: 7.072,
+      quant: 1.7467,
+      gemm: 5.3867,
       explanation: "<strong>At <i>M</i> = 10:</strong> the launch geometry is identical to <i>M</i> = 1—one row tile and 48 useful CTAs. More of each 16-row tile is useful, but the same fixed launch and pipeline floor remains."
     },
     {
@@ -36,9 +49,9 @@
       ctas: 96,
       coverage: 63.2,
       stages: 12,
-      total: 7.904,
-      quant: 1.7877,
-      gemm: 5.7813,
+      total: 7.456,
+      quant: 1.7584,
+      gemm: 5.7536,
       explanation: "<strong>At <i>M</i> = 20:</strong> a second 16-row tile is required. Useful CTA count doubles from 48 to 96, but those tasks mostly occupy SMs that were idle; the work still fits in one wave."
     },
     {
@@ -48,9 +61,9 @@
       ctas: 144,
       coverage: 94.7,
       stages: 10,
-      total: 8.032,
-      quant: 1.7717,
-      gemm: 6.2144,
+      total: 7.936,
+      quant: 1.7664,
+      gemm: 6.1643,
       explanation: "<strong>At <i>M</i> = 100:</strong> the JIT selects 48 rows per tile. Three tile rows times 48 tile columns produce 144 useful CTAs—94.7% of one GB300 wave."
     },
     {
@@ -60,9 +73,9 @@
       ctas: 144,
       coverage: 94.7,
       stages: 9,
-      total: 8.064,
-      quant: 1.7675,
-      gemm: 6.5643,
+      total: 8.352,
+      quant: 1.8256,
+      gemm: 6.5419,
       explanation: "<strong>At <i>M</i> = 200:</strong> the JIT raises the tile height to 80. That preserves three row tiles and therefore the same 144 useful CTAs; each CTA is heavier, but no second wave appears."
     },
     {
@@ -72,9 +85,9 @@
       ctas: 144,
       coverage: 94.7,
       stages: 7,
-      total: 10.496,
-      quant: 1.9477,
-      gemm: 8.5451,
+      total: 10.464,
+      quant: 1.9579,
+      gemm: 8.5675,
       explanation: "<strong>At <i>M</i> = 500:</strong> a 176-row tile still holds the grid to 144 useful CTAs and one wave. Runtime rises because every CTA now performs much more work with a shallower seven-stage pipeline."
     }
   ];
@@ -146,6 +159,133 @@
       button.addEventListener("click", () => activateStep(Number(button.dataset.step)));
     });
     activateStep(0);
+  }
+
+  function renderFullSweepChart() {
+    const svg = byId("full-sweep-chart");
+    if (!svg || sweepRows.length === 0) return;
+
+    const width = 920;
+    const height = 390;
+    const left = 66;
+    const right = 24;
+    const top = 24;
+    const bottom = 54;
+    const plotWidth = width - left - right;
+    const plotHeight = height - top - bottom;
+    const yMax = 70;
+    const x = (m) => left + (Math.log10(m) / 4) * plotWidth;
+    const y = (time) => top + ((yMax - time) / yMax) * plotHeight;
+    const svgElement = (name, attributes, className) => {
+      const element = document.createElementNS(svgNamespace, name);
+      Object.entries(attributes || {}).forEach(([key, value]) => element.setAttribute(key, String(value)));
+      if (className) element.setAttribute("class", className);
+      return element;
+    };
+
+    svg.innerHTML = "";
+    const definitions = svgElement("defs");
+    const gradient = svgElement("linearGradient", { id: "full-sweep-fill", x1: 0, y1: 0, x2: 0, y2: 1 });
+    gradient.append(
+      svgElement("stop", { offset: "0%", "stop-color": "#3568b5", "stop-opacity": ".18" }),
+      svgElement("stop", { offset: "100%", "stop-color": "#3568b5", "stop-opacity": "0" })
+    );
+    definitions.appendChild(gradient);
+    svg.appendChild(definitions);
+
+    for (let tick = 0; tick <= yMax; tick += 10) {
+      svg.appendChild(svgElement("line", { x1: left, x2: width - right, y1: y(tick), y2: y(tick) }, "grid-line"));
+      const label = svgElement("text", { x: left - 12, y: y(tick) + 4, "text-anchor": "end" }, "axis-text");
+      label.textContent = String(tick);
+      svg.appendChild(label);
+    }
+
+    [1, 10, 100, 1000, 10000].forEach((tick) => {
+      const tickX = x(tick);
+      svg.appendChild(svgElement("line", { x1: tickX, x2: tickX, y1: top, y2: height - bottom }, "sweep-x-grid"));
+      const label = svgElement("text", { x: tickX, y: height - bottom + 21, "text-anchor": "middle" }, "axis-text");
+      label.textContent = tick.toLocaleString();
+      svg.appendChild(label);
+    });
+
+    svg.appendChild(svgElement("line", { x1: left, x2: width - right, y1: height - bottom, y2: height - bottom }, "axis-line"));
+    svg.appendChild(svgElement("line", { x1: left, x2: left, y1: top, y2: height - bottom }, "axis-line"));
+
+    const yTitle = svgElement("text", {
+      x: 15,
+      y: top + plotHeight / 2,
+      "text-anchor": "middle",
+      transform: "rotate(-90 15 " + (top + plotHeight / 2) + ")"
+    }, "axis-title");
+    yTitle.textContent = "kernel time (µs)";
+    svg.appendChild(yTitle);
+
+    const xTitle = svgElement("text", { x: left + plotWidth / 2, y: height - 8, "text-anchor": "middle" }, "axis-title");
+    xTitle.textContent = "M rows (log scale)";
+    svg.appendChild(xTitle);
+
+    const pathFor = (field) => "M " + sweepRows.map((point) => x(point.m) + " " + y(point[field])).join(" L ");
+    const baseline = y(0);
+    const totalPath = sweepRows.map((point) => x(point.m) + " " + y(point.total)).join(" L ");
+    const area = svgElement("path", {
+      d: "M " + x(sweepRows[0].m) + " " + baseline + " L " + totalPath + " L " + x(sweepRows[sweepRows.length - 1].m) + " " + baseline + " Z"
+    }, "full-sweep-area");
+    svg.appendChild(area);
+    svg.appendChild(svgElement("path", { d: pathFor("quant") }, "sweep-line sweep-quant-line"));
+    svg.appendChild(svgElement("path", { d: pathFor("gemm") }, "sweep-line sweep-gemm-line"));
+    svg.appendChild(svgElement("path", { d: pathFor("total") }, "sweep-line sweep-total-line"));
+
+    sweepRows.forEach((point) => {
+      svg.appendChild(svgElement("circle", { cx: x(point.m), cy: y(point.total), r: 1.35 }, "sweep-sample-dot"));
+    });
+
+    [1, 100, 500, 1000, 2000, 5000, 10000].forEach((anchorM) => {
+      const point = sweepRows.find((candidate) => candidate.m === anchorM);
+      if (!point) return;
+      svg.appendChild(svgElement("circle", { cx: x(point.m), cy: y(point.total), r: 4.2 }, "sweep-anchor-dot"));
+    });
+
+    const guide = svgElement("g", {}, "sweep-guide");
+    const guideLine = svgElement("line", { x1: 0, x2: 0, y1: top, y2: height - bottom }, "sweep-guide-line");
+    const totalDot = svgElement("circle", { r: 5 }, "sweep-guide-dot guide-total");
+    const gemmDot = svgElement("circle", { r: 4 }, "sweep-guide-dot guide-gemm");
+    const quantDot = svgElement("circle", { r: 4 }, "sweep-guide-dot guide-quant");
+    guide.append(guideLine, totalDot, gemmDot, quantDot);
+    svg.appendChild(guide);
+
+    function selectSweepPoint(point) {
+      const selectedX = x(point.m);
+      guideLine.setAttribute("x1", selectedX);
+      guideLine.setAttribute("x2", selectedX);
+      [[totalDot, point.total], [gemmDot, point.gemm], [quantDot, point.quant]].forEach(([dot, value]) => {
+        dot.setAttribute("cx", selectedX);
+        dot.setAttribute("cy", y(value));
+      });
+      byId("sweep-selected-m").textContent = point.m.toLocaleString();
+      byId("sweep-selected-total").textContent = point.total.toFixed(3) + " µs";
+      byId("sweep-selected-gemm").textContent = point.gemm.toFixed(3) + " µs";
+      byId("sweep-selected-quant").textContent = point.quant.toFixed(3) + " µs";
+      byId("sweep-selected-bm").textContent = String(point.blockM);
+      byId("sweep-selected-stages").textContent = String(point.stages);
+    }
+
+    svg.addEventListener("pointermove", (event) => {
+      const bounds = svg.getBoundingClientRect();
+      const pointerX = (event.clientX - bounds.left) / bounds.width * width;
+      const targetLogM = Math.max(0, Math.min(4, (pointerX - left) / plotWidth * 4));
+      let nearest = sweepRows[0];
+      let nearestDistance = Infinity;
+      sweepRows.forEach((point) => {
+        const distance = Math.abs(Math.log10(point.m) - targetLogM);
+        if (distance < nearestDistance) {
+          nearest = point;
+          nearestDistance = distance;
+        }
+      });
+      selectSweepPoint(nearest);
+    });
+
+    selectSweepPoint(sweepRows.find((point) => point.m === 500) || sweepRows[0]);
   }
 
   function renderCurveChart() {
@@ -539,6 +679,7 @@
   }
 
   initializeCtaLab();
+  renderFullSweepChart();
   initializeMeasuredExplorer();
   initializeShapePredictor();
   initializeCalculator();
