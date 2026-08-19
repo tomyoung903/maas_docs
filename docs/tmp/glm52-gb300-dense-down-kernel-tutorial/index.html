@@ -28,6 +28,7 @@
           <a class="toc-link" href="#vocabulary"><span>01</span> Vocabulary</a>
           <a class="toc-link" href="#contract"><span>02</span> Kernel contract</a>
           <a class="toc-link" href="#cta"><span>03</span> One CTA</a>
+          <a class="toc-link toc-link-sub" href="#cta-thread-roles"><span>03A</span> 256-thread anatomy</a>
           <a class="toc-link" href="#curve"><span>04</span> Measured curve</a>
           <a class="toc-link" href="#explanation"><span>05</span> Why it bends</a>
           <a class="toc-link" href="#bytes"><span>06</span> FLOPs &amp; bytes</a>
@@ -259,8 +260,8 @@
           <span class="section-number">03</span>
           <div>
             <p class="section-kicker">Open one software task</p>
-            <h2>Follow one CTA from empty registers to an output tile.</h2>
-            <p class="section-intro">A GEMM CTA does not compute the whole matrix. It repeatedly loads one reduction slice, performs matrix-multiply-accumulate work, and keeps a partial output tile alive until all 12 slices are consumed.</p>
+            <h2>Follow one CTA from an assigned tile to BF16 output.</h2>
+            <p class="section-intro">A GEMM CTA does not compute the whole matrix. It repeatedly stages one reduction slice, performs matrix-multiply-accumulate work, and keeps FP32 partial sums in Blackwell tensor memory (TMEM) until all 12 slices are consumed.</p>
           </div>
         </header>
 
@@ -289,10 +290,10 @@
                   <i class="buffer buffer-a">A</i><i class="buffer buffer-b">B</i>
                 </div>
                 <div class="tensor-core">
-                  <span>Tensor Core</span>
+                  <span>2-SM UMMA</span>
                   <div class="mma-grid"><i></i><i></i><i></i><i></i></div>
                 </div>
-                <div class="accumulator"><span>accumulator</span><b>+</b></div>
+                <div class="accumulator"><span>FP32 TMEM accumulator</span><b>+</b></div>
               </div>
               <div class="k-counter">
                 <span><i>K</i> progress</span>
@@ -306,27 +307,173 @@
           <div class="cta-controls" role="group" aria-label="CTA pipeline steps">
             <button class="cta-step is-active" type="button" data-step="0"><span>0</span><strong>Reset</strong><small>tile assigned</small></button>
             <button class="cta-step" type="button" data-step="1"><span>1</span><strong>TMA load</strong><small>stage operands</small></button>
-            <button class="cta-step" type="button" data-step="2"><span>2</span><strong>12 slices</strong><small>advance through <i>K</i></small></button>
-            <button class="cta-step" type="button" data-step="3"><span>3</span><strong>UMMA</strong><small>accumulate tile</small></button>
+            <button class="cta-step" type="button" data-step="2"><span>2</span><strong><i>K</i> pipeline</strong><small>12 overlapped slices</small></button>
+            <button class="cta-step" type="button" data-step="3"><span>3</span><strong>UMMA × 4</strong><small>per 128-wide slice</small></button>
             <button class="cta-step" type="button" data-step="4"><span>4</span><strong>Epilogue</strong><small>store BF16</small></button>
           </div>
+        </div>
+
+        <div class="cta-anatomy" id="cta-thread-roles">
+          <header class="anatomy-heading">
+            <div>
+              <p class="mini-kicker">Source-mapped deep dive</p>
+              <h3>What do all 256 threads actually do?</h3>
+              <p>The short answer is <strong>warp specialization</strong>—but not the division suggested by “TMA, quantization, and <span class="math"><span class="code-var">BLOCK</span><sub>K</sub></span> threads.” Quantization is another launch, TMA is submitted by an elected lane, and <span class="math"><span class="code-var">BLOCK</span><sub>K</sub> = 128</span> is the width of a repeated reduction stage.</p>
+            </div>
+            <span class="anatomy-badge">DeepGEMM v0.1.3</span>
+          </header>
+
+          <div class="launch-boundary" aria-label="The measured composite contains a quantization launch followed by a GEMM launch">
+            <article class="launch-card launch-quant">
+              <div class="launch-card-top"><span>Launch 1</span><b>separate kernel</b></div>
+              <h4>Online activation quantization</h4>
+              <p>Reads BF16 <b>X</b>, computes one scale per 128-value group, converts those values to FP8, and writes FP8 data plus scale metadata.</p>
+              <dl>
+                <div><dt>At <i>M</i> = 100</dt><dd>75 CTAs × 128 threads</dd></div>
+                <div><dt>Inside one CTA</dt><dd>16 independent 8-lane teams</dd></div>
+              </dl>
+            </article>
+            <div class="launch-handoff" aria-hidden="true"><span>FP8 <b>X</b></span><i></i><small>+ scales</small></div>
+            <article class="launch-card launch-gemm">
+              <div class="launch-card-top"><span>Launch 2</span><b>the CTA below</b></div>
+              <h4>FP8 DeepGEMM</h4>
+              <p>Consumes already-quantized FP8 activations, resident FP8 weights, and both scale streams; it accumulates FP32 in TMEM and writes BF16 <b>Y</b>.</p>
+              <dl>
+                <div><dt>At <i>M</i> = 100</dt><dd>152 persistent CTAs × 256 threads</dd></div>
+                <div><dt>Cluster shape</dt><dd>2 CTAs on 2 SMs</dd></div>
+              </dl>
+            </article>
+          </div>
+
+          <aside class="anatomy-correction">
+            <span>Correction to the tempting mental model</span>
+            <p><strong>None of the 256 GEMM threads quantizes <b>X</b>.</strong> Warp 2 rearranges already-created scale metadata; that is a layout transform, not numerical quantization. There is no standalone dequantization warp or kernel either: block-scaled UMMA consumes the FP8 operands together with their UE8M0 scales. Likewise, no warp “owns <span class="math"><span class="code-var">BLOCK</span><sub>K</sub></span>”: every pipeline role advances across the same twelve 128-wide <i>K</i> blocks.</p>
+          </aside>
+
+          <section class="cluster-anatomy" aria-labelledby="cluster-anatomy-title">
+            <div class="anatomy-subheading">
+              <div>
+                <p class="mini-kicker">Eight warps per CTA</p>
+                <h4 id="cluster-anatomy-title">A cluster pair computes two neighboring output tiles together.</h4>
+              </div>
+              <p>Each scheduler task still maps to one nominal <span class="math"><span class="code-var">BLOCK</span><sub>M</sub> × 128</span> tile. The pair’s leader submits one two-SM UMMA stream spanning both tasks; both CTAs drain their own TMEM half into their own BF16 tile.</p>
+            </div>
+
+            <div class="cluster-pair">
+              <article class="cta-roster cta-leader">
+                <header><span>CTA 0 · leader</span><strong>tile <i>n</i></strong></header>
+                <div class="warp-band warp-load"><b>W0 · 32 threads</b><span>TMA control</span><small>All lanes prefetch descriptors once; one elected lane submits A, B, and scale loads. Hardware moves the bulk bytes.</small></div>
+                <div class="warp-band warp-mma"><b>W1 · 32 threads</b><span>UMMA issuer</span><small>Initializes barriers; one elected lane copies each fresh scale pack to TMEM and submits four K=32 two-SM UMMAs per K block.</small></div>
+                <div class="warp-band warp-scale"><b>W2 · 32 threads</b><span>scale transpose</span><small>All lanes rearrange packed scale words in shared memory into the layout consumed by UTCCP/UMMA.</small></div>
+                <div class="warp-band warp-reserve"><b>W3 · 32 threads</b><span>no hot-loop branch</span><small>No steady-state role branch in this specialization; only common setup and CTA/cluster synchronization are source-visible.</small></div>
+                <div class="warp-band warp-store"><b>W4–W7 · 128 threads</b><span>epilogue</span><small>Cooperatively load FP32 TMEM fragments, convert and pack BF16, stage output in shared memory, then let one elected W4 lane submit TMA stores.</small></div>
+              </article>
+
+              <div class="cluster-link" aria-hidden="true"><span>2-SM<br>UMMA</span><i></i></div>
+
+              <article class="cta-roster cta-follower">
+                <header><span>CTA 1 · follower</span><strong>tile <i>n</i> + 1</strong></header>
+                <div class="warp-band warp-load"><b>W0 · 32 threads</b><span>TMA control</span><small>Submits this CTA’s own operand and scale loads. The emitted source uses ordinary TMA loads here—not TMA multicast.</small></div>
+                <div class="warp-band warp-mma warp-muted"><b>W1 · 32 threads</b><span>no MMA issue loop</span><small>Performs common setup, then the leader-only condition excludes it from the steady-state UMMA issue branch.</small></div>
+                <div class="warp-band warp-scale"><b>W2 · 32 threads</b><span>scale transpose</span><small>Reformats this CTA’s packed scales and contributes its arrivals to the cluster-wide readiness barrier.</small></div>
+                <div class="warp-band warp-reserve"><b>W3 · 32 threads</b><span>no hot-loop branch</span><small>As in the leader CTA, only common setup and CTA/cluster synchronization are source-visible for this warp.</small></div>
+                <div class="warp-band warp-store"><b>W4–W7 · 128 threads</b><span>epilogue</span><small>Drain the follower SM’s TMEM half and write the neighboring <span class="math"><span class="code-var">BLOCK</span><sub>M</sub> × 128</span> BF16 tile.</small></div>
+              </article>
+            </div>
+
+            <p class="cluster-footnote"><strong>“Warp role” does not mean 32 lanes manually copy the matrix.</strong> Often the warp supplies descriptors, waits on barriers, or elects a single issuing lane; TMA and UMMA hardware perform the large transfer or matrix operation asynchronously.</p>
+          </section>
+
+          <section class="slice-anatomy" aria-labelledby="slice-anatomy-title">
+            <div class="anatomy-subheading">
+              <div>
+                <p class="mini-kicker">One K=128 block</p>
+                <h4 id="slice-anatomy-title">Load, scale preparation, and Tensor Core work form a ring—not three serialized phases.</h4>
+              </div>
+              <p>For <i>K</i> = 1536 there are 12 logical K blocks. At <i>M</i> = 100, shared memory has 10 physical pipeline slots, so a slot is reused only after the consumer signals that its previous contents are safe to overwrite.</p>
+            </div>
+
+            <ol class="slice-path">
+              <li><span>1</span><div><strong>Wait for an empty slot</strong><small>W0 waits on <code>empty[stage]</code> before reuse.</small></div></li>
+              <li><span>2</span><div><strong>Submit TMA loads</strong><small>One W0 lane requests A and B every block; packed SFA/SFB only on blocks 0, 4, and 8.</small></div></li>
+              <li><span>3</span><div><strong>Prepare or reuse scales</strong><small>W2 waits every block, transposes a fresh four-scale pack on 0/4/8, and always signals ready.</small></div></li>
+              <li><span>4</span><div><strong>Issue 4 UMMAs</strong><small>Leader W1 consumes K=32, 32, 32, 32 and accumulates into FP32 TMEM.</small></div></li>
+              <li><span>5</span><div><strong>Release and advance</strong><small>UMMA signals the slot empty; the ring index advances and eventually wraps.</small></div></li>
+            </ol>
+
+            <div class="overlap-board" role="img" aria-label="An illustrative pipeline showing TMA, scale transpose, and UMMA work overlapped across different K blocks">
+              <div class="overlap-axis"><span>pipeline role</span><b>earlier</b><i></i><b>later</b></div>
+              <div class="overlap-row"><strong>W0 · TMA</strong><span class="cell-load">A/B + SF K0</span><span class="cell-load">A/B K1</span><span class="cell-load">A/B K2</span><span class="cell-load">A/B K3</span><span class="cell-load">A/B + SF K4</span></div>
+              <div class="overlap-row"><strong>W2 · scales</strong><span></span><span class="cell-scale">pack 0</span><span class="cell-ready">ready only</span><span class="cell-ready">ready only</span><span class="cell-ready">ready only</span></div>
+              <div class="overlap-row"><strong>leader W1</strong><span></span><span></span><span class="cell-mma">UMMA K0 ×4</span><span class="cell-mma">UMMA K1 ×4</span><span class="cell-mma">UMMA K2 ×4</span></div>
+            </div>
+            <p class="illustration-note">Illustrative dependency ordering, not a measured cycle timeline. The actual instruction overlap depends on barrier completion and hardware scheduling.</p>
+          </section>
+
+          <section class="tile-ledger" aria-labelledby="tile-ledger-title">
+            <div class="anatomy-subheading">
+              <div>
+                <p class="mini-kicker">Concrete M=100 interior tile</p>
+                <h4 id="tile-ledger-title">One nominal CTA task produces 48 × 128 BF16 values.</h4>
+              </div>
+              <p>For tile coordinates (<i>m</i><sub>b</sub>, <i>n</i><sub>b</sub>), the logical patch is rows 48<i>m</i><sub>b</sub>…48<i>m</i><sub>b</sub>+47 and columns 128<i>n</i><sub>b</sub>…128<i>n</i><sub>b</sub>+127, clipped at matrix edges.</p>
+            </div>
+
+            <div class="tile-facts">
+              <div><strong>6,144</strong><span>BF16 outputs per full tile</span><small>48 × 128</small></div>
+              <div><strong>12,288 B</strong><span>output payload</span><small>6,144 × 2 bytes</small></div>
+              <div><strong>12 × 128</strong><span>reduction coverage</span><small>exactly K = 1536</small></div>
+              <div><strong>48</strong><span>shared 2-SM UMMA issues</span><small>one leader stream serves the tile pair</small></div>
+              <div><strong>18.874 M</strong><span>useful FLOP per full tile</span><small>2 × 48 × 128 × 1536</small></div>
+            </div>
+
+            <div class="resource-proof">
+              <div class="resource-copy">
+                <p class="mini-kicker">Why only one CTA fits an SM</p>
+                <h5>The 10-slot operand ring consumes 204,800 bytes of shared memory.</h5>
+                <p>Each slot reserves 20,480 bytes: 3,072 B for this CTA’s activation half, 16,384 B for its weight tile, and two padded 512-B scale regions. Add double-buffered BF16 output staging, barriers, and the TMEM pointer to reach the exact emitted allocation.</p>
+              </div>
+              <div class="resource-stack" role="img" aria-label="Shared-memory allocation totaling 213,804 bytes">
+                <span class="resource-operands" style="--share:95.79%"><b>204,800 B</b><small>10 operand/scale stages</small></span>
+                <span class="resource-output" style="--share:3.83%"><b>8,192 B</b><small>2 output stages</small></span>
+                <span class="resource-control" style="--share:.38%"><b>812 B</b><small>barriers + TMEM pointer</small></span>
+              </div>
+              <div class="resource-total"><span>dynamic shared memory</span><strong>213,804 B</strong><small>208.8 KiB · trace-confirmed</small></div>
+            </div>
+
+            <div class="traffic-ledger">
+              <div><span>ordinary K block</span><strong>19,456 B</strong><small>3,072 B A + 16,384 B B</small></div>
+              <div><span>K blocks 0, 4, 8</span><strong>20,160 B</strong><small>adds 192 B SFA + 512 B SFB</small></div>
+              <div><span>all 12 inputs</span><strong>235,584 B</strong><small>TMA-request bytes per CTA task</small></div>
+              <div><span>final output</span><strong>12,288 B</strong><small>three 16 × 128 chunks · six TMA stores</small></div>
+            </div>
+            <p class="traffic-caveat">These are source-geometry request bytes, not a DRAM-counter claim. L1/L2 service, reuse, and the two-CTA execution protocol determine how much traffic reaches HBM.</p>
+          </section>
+
+          <div class="anatomy-source-line">
+            <span>Code proof</span>
+            <a href="https://github.com/sgl-project/DeepGEMM/blob/b4296edce3cd07e3b6392c8eb390cee9c41a6b70/deep_gemm/include/deep_gemm/impls/sm100_fp8_fp4_gemm_1d1d.cuh#L203-L497">warp dispatch and pipeline ↗</a>
+            <a href="https://github.com/sgl-project/DeepGEMM/blob/b4296edce3cd07e3b6392c8eb390cee9c41a6b70/deep_gemm/include/deep_gemm/epilogue/sm100_store_cd_swap_ab.cuh#L49-L140">TMEM-to-BF16 epilogue ↗</a>
+            <a href="https://github.com/sgl-project/DeepGEMM/blob/b4296edce3cd07e3b6392c8eb390cee9c41a6b70/csrc/jit_kernels/heuristics/sm100.hpp#L219-L225">256-thread launch config ↗</a>
+          </div>
+          <p class="anatomy-evidence-boundary"><strong>Evidence boundary.</strong> The retained Nsight pack contains the exact demangled specialization and launch geometry, which match this v0.1.3 template. It did not retain a cubin hash or SASS dump, so this is a source-specialization audit—not an assembly audit.</p>
         </div>
 
         <div class="mechanics-grid">
           <article>
             <span class="mechanic-mark">256</span>
-            <h3>Threads cooperate</h3>
-            <p>Eight warps belong to the CTA. DeepGEMM specializes warp roles around loading, matrix math, scheduling, and the epilogue; they are not 256 independent copies of the GEMM.</p>
+            <h3>Threads specialize</h3>
+            <p>Three non-epilogue warps have source-visible hot-loop roles in transfer control, UMMA issue, and scale layout; warp 3 has no hot-loop branch. Four epilogue warps cooperatively drain TMEM into BF16 output.</p>
           </article>
           <article>
             <span class="mechanic-mark">2</span>
             <h3>CTAs form a cluster</h3>
-            <p>The JIT uses two-CTA clusters. Cluster launch and TMA multicast let a pair coordinate operand movement, so useful CTA counts occur in pairs.</p>
+            <p>The JIT uses two-CTA clusters. Each CTA issues its own TMA loads; a leader-issued two-SM UMMA computes the pair of neighboring output tiles, so useful CTA counts occur in pairs.</p>
           </article>
           <article>
             <span class="mechanic-mark">207–225 KiB</span>
             <h3>Shared memory limits residency</h3>
-            <p>Each CTA requests roughly 211–230 KB of dynamic shared memory. Against 228 KiB per SM, this is a deliberate one-resident-CTA-per-SM design.</p>
+            <p>Each CTA requests roughly 211–230 KB of dynamic shared memory. Against the heuristic’s 232,448-B (227-KiB) budget, this is a deliberate one-resident-CTA-per-SM design.</p>
           </article>
           <article>
             <span class="mechanic-mark">12 → 7</span>

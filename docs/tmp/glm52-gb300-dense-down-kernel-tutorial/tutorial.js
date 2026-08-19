@@ -98,11 +98,11 @@
     }
 
     const captions = [
-      "<strong>Tile assigned.</strong> The persistent scheduler gives this CTA one output tile; its accumulators start empty.",
-      "<strong>TMA load.</strong> A producer role stages the next activation and weight fragments in shared memory while barriers protect reuse.",
-      "<strong>Twelve reduction slices.</strong> Since 1536 ÷ 128 = 12, the pipeline advances through twelve <i>K</i> chunks; after fill, load and compute overlap.",
-      "<strong>UMMA accumulation.</strong> Tensor Core instructions multiply each staged pair and add the result into the CTA-owned output accumulators.",
-      "<strong>BF16 epilogue.</strong> After all twelve slices, the complete accumulator tile is converted and stored as its patch of <b>Y</b>."
+      "<strong>Tile assigned.</strong> The persistent scheduler gives this CTA one logical output tile; its FP32 accumulator region in tensor memory (TMEM) starts empty.",
+      "<strong>TMA submitted.</strong> One elected lane of warp 0 describes the upcoming FP8 activation, weight, and scale transfers; TMA hardware moves the bulk data while barriers protect stage reuse.",
+      "<strong>Twelve-block ring.</strong> Since 1536 ÷ 128 = 12, twelve logical <i>K</i> blocks flow through the pipeline. Different blocks can be in TMA load, scale preparation, and UMMA at the same time.",
+      "<strong>Four UMMAs per block.</strong> For each 128-wide <i>K</i> block, an elected lane in the cluster leader issues four K=32 two-SM UMMAs and accumulates FP32 partial sums in TMEM.",
+      "<strong>BF16 epilogue.</strong> Warps 4–7 load completed FP32 fragments from TMEM, convert and stage BF16, then one elected epilogue lane submits each TMA output store."
     ];
 
     function paintSlices(count) {
