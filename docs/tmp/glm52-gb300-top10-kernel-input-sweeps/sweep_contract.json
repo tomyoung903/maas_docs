@@ -1,0 +1,179 @@
+{
+  "schema_version": "glm52-gb300-top10-input-sweep-contract-v1",
+  "experiment_id": "glm52-gb300-top10-input-sweeps-20260820",
+  "source_report": "https://tomyoung903.github.io/maas_docs/tmp/basic-kernel-understanding-taiguo-gb300-tp8-decode-b100-10x10-top10-exact-pair-reproduction/",
+  "source_report_data_sha256": "1c0db6920b450cafab724fe6f998ab9a78f3e8e26784c93516a29dfe8a0a1fcb",
+  "reference_shape": {
+    "global_batch": 100,
+    "context_tokens": 4096,
+    "tensor_parallel_size": 8,
+    "data_parallel_size": 1,
+    "expert_parallel_size": 1,
+    "speculative_decoding": false
+  },
+  "live_configuration": {
+    "source_revision": "ccdb354eda0cb2761f39407ad5c6f50f30bc8ebf",
+    "tensor_parallel_size": 8,
+    "data_parallel_size": 8,
+    "expert_parallel_size": 8,
+    "max_running_requests": 256,
+    "cuda_graph_max_batch_size_decode": 32,
+    "speculative_algorithm": "EAGLE",
+    "speculative_num_steps": 5,
+    "speculative_num_draft_tokens": 6,
+    "maximum_context_tokens": 1048576,
+    "interpretation": "The target verification pass has request_batch * draft_tokens model rows before DP/EP padding; the live local upper anchor is 32 * 6 = 192 rows. Larger row points represent larger draft trees or future graph buckets."
+  },
+  "common_local_rows": [
+    1,
+    2,
+    3,
+    4,
+    6,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48,
+    64,
+    96,
+    100,
+    128,
+    160,
+    192,
+    256,
+    384,
+    512
+  ],
+  "kernels": [
+    {
+      "label": "K1",
+      "family": "routed_moe_fused_core",
+      "selector": "bmm_E4m3_E4m3E4m3_Fp32_",
+      "exact_name_sha256": "7f58a6866ebd893bdaa209a643db7ac815a36c3805456becc0165fad97ea4fc9",
+      "axes": ["local_rows", "active_experts"],
+      "axis_values": {"active_experts": [8, 32, 128, 256]},
+      "reference_case": {"local_rows": 100, "active_experts": 256},
+      "reference_launch": {"grid": [4, 324, 1], "block": [512, 1, 1], "dynamic_shared_bytes": 148400},
+      "measurement_boundary": "production fused-MoE wrapper; select the exact first routed GEMM leaf from each sample"
+    },
+    {
+      "label": "K2",
+      "family": "sparse_mla_trtllm_decode",
+      "selector": "fmhaSm100fKernel_QkvE4m3OBfloat16HQk576HV512PagedKvDenseStaticTokenSparse",
+      "exact_name_sha256": "3063f580acff500b11ba113fdd2827259af0b37de5248f2cc9fe93cfc2c48f0a",
+      "axes": ["local_rows", "selected_tokens", "context_tokens"],
+      "axis_values": {"selected_tokens": [512, 1024, 2048, 4096], "context_tokens": [4096, 65536, 1048576]},
+      "reference_case": {"local_rows": 100, "selected_tokens": 2048, "context_tokens": 4096},
+      "reference_launch": {"grid": [1, 1, 100], "block": [512, 1, 1], "dynamic_shared_bytes": 168912},
+      "measurement_boundary": "FlashInfer TRT-LLM sparse-MLA API; select the FMHA leaf"
+    },
+    {
+      "label": "K3",
+      "family": "routed_moe_fused_core",
+      "selector": "bmm_Bfloat16_E4m3E4m3_Fp32_",
+      "exact_name_sha256": "19ddff52570895f1ab1b4db89b3c0073fa944709248ffa846e4ec751205a78cb",
+      "axes": ["local_rows", "active_experts"],
+      "axis_values": {"active_experts": [8, 32, 128, 256]},
+      "reference_case": {"local_rows": 100, "active_experts": 256},
+      "reference_launch": {"grid": [48, 324, 1], "block": [512, 1, 1], "dynamic_shared_bytes": 148400},
+      "measurement_boundary": "production fused-MoE wrapper; select the exact second routed GEMM leaf from each sample"
+    },
+    {
+      "label": "K4",
+      "family": "shared_expert_gate_up_projection",
+      "selector": "deep_gemm::sm100_fp8_fp4_gemm_1d1d_impl<",
+      "exact_name_sha256": "5c43c5b555bf71cc001181725232257d812f342382afe137d76f506df1c55e4a",
+      "axes": ["local_rows", "tensor_parallel_size"],
+      "axis_values": {"tensor_parallel_size": [1, 2, 4, 8]},
+      "derived_shapes": "M=local_rows, N=4096/TP, K=6144",
+      "reference_case": {"local_rows": 100, "tensor_parallel_size": 8},
+      "reference_launch": {"grid": [152, 1, 1], "block": [256, 1, 1], "dynamic_shared_bytes": 230188},
+      "measurement_boundary": "production BF16-to-FP8 composite linear; select its DeepGEMM leaf"
+    },
+    {
+      "label": "K5",
+      "family": "per_token_group_quant",
+      "selector": "per_token_group_quant_8bit_v2_kernel<",
+      "exact_name_sha256": "1c93cf9c602443dc51d7458f0017879b7e578220e772a49e41b436ca5b13a0d5",
+      "axes": ["local_rows", "width"],
+      "axis_values": {"width": [256, 512, 2048, 4096, 6144], "group_size": [128]},
+      "reference_cases": [
+        {"local_rows": 100, "width": 256, "group_size": 128},
+        {"local_rows": 100, "width": 6144, "group_size": 128}
+      ],
+      "reference_launches": [
+        {"when": {"width": 256}, "grid": [25, 1, 1], "block": [64, 1, 1], "dynamic_shared_bytes": 0},
+        {"when": {"width": 6144}, "grid": [300, 1, 1], "block": [128, 1, 1], "dynamic_shared_bytes": 0}
+      ],
+      "measurement_boundary": "direct production per-token group quantizer"
+    },
+    {
+      "label": "K6",
+      "family": "fused_qkv_a_projection",
+      "selector": "deep_gemm::sm100_fp8_fp4_gemm_1d1d_impl<",
+      "exact_name_sha256": "e967470f5918630f5495ac1d61894691e4895f68f75c63ca6cfc6aca561f18a0",
+      "axes": ["local_rows"],
+      "fixed_shape": "M=local_rows, N=2624, K=6144",
+      "reference_case": {"local_rows": 100},
+      "reference_launch": {"grid": [152, 1, 1], "block": [256, 1, 1], "dynamic_shared_bytes": 223020},
+      "measurement_boundary": "production BF16-to-FP8 composite linear; select its DeepGEMM leaf"
+    },
+    {
+      "label": "K7",
+      "family": "shared_expert_down_projection",
+      "selector": "deep_gemm::sm100_fp8_fp4_gemm_1d1d_impl<",
+      "exact_name_sha256": "498deb1f781e1e4231c1eb05c8c241802ced711c2ca2d7148eeeb7be8ef9e5df",
+      "axes": ["local_rows", "tensor_parallel_size"],
+      "axis_values": {"tensor_parallel_size": [1, 2, 4, 8]},
+      "derived_shapes": "M=local_rows, N=6144, K=2048/TP",
+      "reference_case": {"local_rows": 100, "tensor_parallel_size": 8},
+      "reference_launch": {"grid": [152, 1, 1], "block": [256, 1, 1], "dynamic_shared_bytes": 213804},
+      "measurement_boundary": "production BF16-to-FP8 composite linear; select its DeepGEMM leaf"
+    },
+    {
+      "label": "K8",
+      "family": "decode_page_table_gather",
+      "selector": "_scatter_gather_elementwise_kernel<",
+      "exact_name_sha256": "615e4300d32313dc090baa66bd2f11d13079d52127c93b4da7bb80a4a74167f4",
+      "axes": ["local_rows", "selected_tokens", "context_tokens", "index_pattern"],
+      "axis_values": {"selected_tokens": [512, 1024, 2048, 4096], "context_tokens": [4096, 65536, 1048576], "index_pattern": ["contiguous", "random"]},
+      "reference_case": {"local_rows": 100, "selected_tokens": 2048, "context_tokens": 4096, "index_pattern": "random"},
+      "reference_launch": {"grid": [200, 1, 1], "block": [128, 1, 1], "dynamic_shared_bytes": 0},
+      "measurement_boundary": "production reference page-table transform; select torch.gather's scatter/gather leaf"
+    },
+    {
+      "label": "K9",
+      "family": "mnnvl_twoshot_allreduce",
+      "selector": "trtllm_mnnvl_allreduce::twoshotAllreduceKernel<",
+      "exact_name_sha256": "71280b806dae9791ab38d93a1e0a84278f9c9a59fe86285e4043a29f8690a400",
+      "axes": ["local_rows", "tensor_parallel_size"],
+      "axis_values": {"tensor_parallel_size": [4, 8]},
+      "fixed_shape": "BF16 [local_rows, 6144]",
+      "reference_case": {"local_rows": 100, "tensor_parallel_size": 8},
+      "reference_launch": {"grid": [100, 6, 1], "block": [128, 1, 1], "dynamic_shared_bytes": 0},
+      "measurement_boundary": "FlashInfer MNNVL fused allreduce+residual+RMSNorm, forced two-shot; select allreduce leaf"
+    },
+    {
+      "label": "K10",
+      "family": "mnnvl_rmsnorm_lamport",
+      "selector": "trtllm_mnnvl_allreduce::rmsNormLamport<",
+      "exact_name_sha256": "643292da10aab8962cd9d3041671aa2fd0ea9f08a2e5d012ef7a9af308e52c90",
+      "axes": ["local_rows", "tensor_parallel_size"],
+      "axis_values": {"tensor_parallel_size": [4, 8]},
+      "fixed_shape": "BF16 [local_rows, 6144]",
+      "reference_case": {"local_rows": 100, "tensor_parallel_size": 8},
+      "reference_launch": {"grid": [100, 1, 1], "block": [768, 1, 1], "dynamic_shared_bytes": 36864},
+      "measurement_boundary": "FlashInfer MNNVL fused allreduce+residual+RMSNorm, forced two-shot; select RMSNorm/Lamport leaf"
+    }
+  ],
+  "safety": {
+    "ordinary_workers_only": true,
+    "exclude_control_plane_nodes": true,
+    "require_zero_kubernetes_gpu_requests_before_reservation": true,
+    "require_zero_node_local_compute_processes_after_reservation": true,
+    "fail_closed_on_contract_mismatch": true,
+    "delete_all_experiment_resources_after_collection": true
+  }
+}

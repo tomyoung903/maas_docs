@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ten exact-pair GLM-5.2 decode kernel input sweeps on eight NVIDIA GB300 GPUs, with configuration implications for DP, TP, DSA top-k, and EAGLE verification size.">
+  <meta name="theme-color" content="#202725">
+  <title>Ten Kernel Curves · GLM-5.2 Decode on GB300</title>
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-top10-kernel-input-sweeps/">
+  <link rel="stylesheet" href="report.css">
+</head>
+<body>
+  <div class="accent-rule" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="../../">MaaS Docs</a>
+    <span class="header-separator"></span>
+    <span class="header-context">GLM-5.2 · decode kernel study</span>
+    <a class="source-link" href="../basic-kernel-understanding-taiguo-gb300-tp8-decode-b100-10x10-top10-exact-pair-reproduction/">Exact-pair source report</a>
+  </header>
+
+  <div class="page-grid">
+    <aside class="contents" aria-label="Contents">
+      <div class="contents-inner">
+        <p class="toc-kicker">Analysis map</p>
+        <nav>
+          <a href="#overview" class="is-active"><span>00</span>Overview</a>
+          <a href="#translator"><span>01</span>Load translator</a>
+          <a href="#method"><span>02</span>Measurement</a>
+          <a href="#k1"><span>K1</span>Routed MoE first GEMM</a>
+<a href="#k2"><span>K2</span>Sparse MLA attention</a>
+<a href="#k3"><span>K3</span>Routed MoE second GEMM</a>
+<a href="#k4"><span>K4</span>Shared-expert gate/up projection</a>
+<a href="#k5"><span>K5</span>Per-token group quantization</a>
+<a href="#k6"><span>K6</span>Fused QKV-A projection</a>
+<a href="#k7"><span>K7</span>Shared-expert down projection</a>
+<a href="#k8"><span>K8</span>Decode page-table gather</a>
+<a href="#k9"><span>K9</span>MNNVL two-shot allreduce</a>
+<a href="#k10"><span>K10</span>MNNVL RMSNorm / Lamport</a>
+          <a href="#decisions"><span>→</span>Decision map</a>
+          <a href="#evidence"><span>✓</span>Evidence</a>
+        </nav>
+        <div class="rail-status"><i></i><p><strong>GPU work released</strong><br>131 and 136 have zero experiment GPU requests.</p></div>
+      </div>
+    </aside>
+
+    <main>
+      <section class="hero" id="overview">
+        <p class="eyebrow">Taiguo · 20 August 2026 · eight NVIDIA GB300s</p>
+        <h1>Ten kernels.<br><em>One decode configuration map.</em></h1>
+        <p class="hero-deck">The original top-ten trace fixed one TP8, batch-100 shape. This follow-up changes the inputs that DP, TP, EAGLE, DSA top-k, routing diversity, and context shape can move, then measures each exact production leaf with Nsight Systems.</p>
+        <div class="hero-strip">
+          <div><strong>620</strong><span>single-GPU cases</span></div>
+          <div><strong>18,600</strong><span>correlation-owned samples</span></div>
+          <div><strong>3 × 20</strong><span>TP4/TP8 MNNVL points</span></div>
+          <div><strong>11 / 11</strong><span>exact-pair gates passed</span></div>
+        </div>
+      </section>
+
+      <section class="summary-band" aria-label="Executive findings">
+        <article><span>Strongest knob</span><strong>DSA selected tokens</strong><p>S 2048 → 1024 cuts K2 by 45.9% at M=192.</p></article>
+        <article><span>Best batching response</span><strong>QKV-A projection</strong><p>Modeled MFU rises 12.9% → 31.9% for only 8.0% more leaf time.</p></article>
+        <article><span>Topology verdict</span><strong>TP4 is not proven</strong><p>K9 improves, K10 offsets it; combined MNNVL differs by only 0.8% at M=192.</p></article>
+      </section>
+
+      <section class="document-section" id="translator">
+        <header class="section-heading"><span>01</span><div><p>Translate a scheduler shape</p><h2>From global load to the local M on every curve</h2></div></header>
+        <div class="translator-layout">
+          <div class="translator-controls">
+            <label><span>Global active requests <b>B</b></span><input id="global-batch" type="number" min="1" max="4096" step="1" value="256"></label>
+            <fieldset><legend>DP lanes <b>P</b></legend><div class="segmented" id="dp-control"><button type="button" data-value="1">1</button><button type="button" data-value="2">2</button><button type="button" data-value="4">4</button><button type="button" data-value="8" class="is-active">8</button></div></fieldset>
+            <fieldset><legend>Draft tokens <b>D</b></legend><div class="segmented" id="draft-control"><button type="button" data-value="1">1</button><button type="button" data-value="2">2</button><button type="button" data-value="4">4</button><button type="button" data-value="6" class="is-active">6</button><button type="button" data-value="8">8</button></div></fieldset>
+          </div>
+          <div class="translator-result">
+            <p class="math-line"><i>M</i><sub>estimate</sub> = ⌈<i>B</i> / <i>P</i>⌉ × <i>D</i></p>
+            <strong id="estimated-m">192</strong><span>local target-verification rows</span>
+            <p id="nearest-point">Exact measured point: M=192</p>
+          </div>
+        </div>
+        <p class="scope-line">This is a balanced-load estimate. The live graph anchor is 32 local requests × 6 draft tokens = 192 rows; scheduler imbalance and accepted-token pruning can change the realized M.</p>
+      </section>
+
+      <section class="document-section" id="method">
+        <header class="section-heading"><span>02</span><div><p>Measurement boundary</p><h2>Exact leaf first, callable boundary second</h2></div></header>
+        <div class="method-grid">
+          <article><strong>Exact leaf residency</strong><p>Nsight kernels are assigned to one sample by CUDA runtime correlation inside its NVTX range. The chart median is one target symbol's active interval, never aggregate GPU-ms.</p></article>
+          <article><strong>Operator boundary</strong><p>CUDA events bracket the production SGLang/FlashInfer callable. It includes auxiliary GPU work and output preparation, so it is intentionally broader than one leaf.</p></article>
+          <article><strong>Warm fixed inputs</strong><p>Tensors are resident before five warmups and 30 single-GPU samples. MNNVL uses ten warmups and 50 samples. Cold compilation and checkpoint I/O are excluded.</p></article>
+          <article><strong>Dispatch is data</strong><p>K2's original exact symbol is absent below M × S = 24,576 because FlashInfer selects another implementation. Those points are marked “alternate leaf,” not zero.</p></article>
+        </div>
+        <div class="formula-row">
+          <div><span>GEMM work model</span><strong>F = 2MNK</strong><small>Useful model FLOPs only</small></div>
+          <div><span>MFU denominator</span><strong>5,000 TFLOP/s</strong><small>Per-GB300 FP8 model peak</small></div>
+          <div><span>Quant MBU denominator</span><strong>8,000 GB/s</strong><small>Per-GB300 HBM model peak</small></div>
+        </div>
+      </section>
+
+
+      <section class="kernel-section" id="k1" data-kernel="K1">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K1</div>
+          <div class="kernel-title">
+            <p>FP8 activation × FP8 gate/up weights</p>
+            <h2>Routed MoE first GEMM</h2>
+          </div>
+          <div class="kernel-anchor"><strong>63.65 µs</strong><span>M=192 · 8 active experts</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>M rows · top-k 8 · K 6144 · local N 512</code></div>
+        <div class="kernel-reading">
+          <p>Routing diversity dominates the middle of the curve. At M=192, the exact first GEMM takes 63.65 µs with 8 active experts and 123.60 µs with 256. By M=512, all four lines converge near 141–146 µs because token work, rather than sparse expert occupancy, owns the launch.</p>
+          <aside><strong>Configuration reading</strong>Active-expert count is an observed load property, not a direct server flag. Treat this as evidence for DP/EP routing-locality experiments, then validate the resulting expert histogram under real traffic.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="routing" class="is-active">Active experts</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="Routed MoE first GEMM measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k2" data-kernel="K2">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K2</div>
+          <div class="kernel-title">
+            <p>TRT-LLM FP8 selected-token attention</p>
+            <h2>Sparse MLA attention</h2>
+          </div>
+          <div class="kernel-anchor"><strong>−45.9%</strong><span>S 2048 → 1024 at M=192</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>M rows · selected tokens S · 8 local heads · head width 576</code></div>
+        <div class="kernel-reading">
+          <p>Selected-token count is the strongest measured runtime knob. At M=192, lowering S from 2048 to 1024 reduces exact-leaf residency from 58.00 to 31.39 µs. Holding S=2048, context lengths from 4K to 1M remain within 0.08 µs because the sparse kernel scans the selected table, not the full context.</p>
+          <aside><strong>Configuration reading</strong>S=1024 is the highest-value candidate, but it changes model semantics and requires accuracy testing. The exact top-ten leaf dispatches when M × S reaches 24,576; smaller products select another implementation.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="selected" class="is-active">Selected tokens</button><button type="button" data-view="context">Context length</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="Sparse MLA attention measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k3" data-kernel="K3">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K3</div>
+          <div class="kernel-title">
+            <p>FP8 expert output × FP8 down weights</p>
+            <h2>Routed MoE second GEMM</h2>
+          </div>
+          <div class="kernel-anchor"><strong>46.48 µs</strong><span>M=192 · 8 active experts</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>M rows · top-k 8 · K 256 · N 6144</code></div>
+        <div class="kernel-reading">
+          <p>The second fused MoE GEMM follows the same occupancy pattern as K1, but with half the logical FLOPs. At M=192 it rises from 46.48 µs at 8 active experts to 68.10 µs at 256; at M=512 the spread shrinks to roughly 102–105 µs.</p>
+          <aside><strong>Configuration reading</strong>K1 and K3 should be evaluated together. A routing change that helps only one leaf can still lose at the fused operator boundary through sorting, routing, or imbalance overhead.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="routing" class="is-active">Active experts</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="Routed MoE second GEMM measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k4" data-kernel="K4">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K4</div>
+          <div class="kernel-title">
+            <p>DeepGEMM BF16-to-FP8 composite linear</p>
+            <h2>Shared-expert gate/up projection</h2>
+          </div>
+          <div class="kernel-anchor"><strong>−1.3%</strong><span>TP4 → TP8 at M=192</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>M rows · K 6144 · N = 4096 / TP</code></div>
+        <div class="kernel-reading">
+          <p>Shrinking N with more TP barely moves the leaf near the live anchor: TP4 is 8.77 µs and TP8 is 8.66 µs at M=192. Every line sits near the persistent 152-CTA launch floor until larger M makes the TP1 matrix visibly heavier.</p>
+          <aside><strong>Configuration reading</strong>This kernel does not justify a topology change by itself. TP8 is modestly favorable at M≥100, but the gain must be weighed against MNNVL, attention partitioning, memory capacity, and whole-layer synchronization.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="tp" class="is-active">Tensor parallel size</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="Shared-expert gate/up projection measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k5" data-kernel="K5">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K5</div>
+          <div class="kernel-title">
+            <p>DeepGEMM UE8M0 activation scales</p>
+            <h2>Per-token group quantization</h2>
+          </div>
+          <div class="kernel-anchor"><strong>2.05 µs</strong><span>M=192 · W=6144</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>M rows · width W · group size 128</code></div>
+        <div class="kernel-reading">
+          <p>The exact UE8M0 quantizer has a strong launch floor: all five widths remain near 1.6–2.1 µs at M=192. At M=512, W=6144 reaches 3.18 µs and about 3.0 TB/s of modeled useful traffic, still far below the attention and routed-MoE leaves.</p>
+          <aside><strong>Configuration reading</strong>Width is architectural rather than a runtime knob. Keep K5 in the cost model, but prioritize K2, K8, and fused MoE before investing in quantizer-specific tuning for this load shape.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="width" class="is-active">Activation width</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="Per-token group quantization measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k6" data-kernel="K6">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K6</div>
+          <div class="kernel-title">
+            <p>DeepGEMM FP8 projection with fixed N and K</p>
+            <h2>Fused QKV-A projection</h2>
+          </div>
+          <div class="kernel-anchor"><strong>12.9% → 31.9%</strong><span>modeled MFU · M 192 → 512</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>M rows · N 2624 · K 6144</code></div>
+        <div class="kernel-reading">
+          <p>This is the clearest batching win. Exact-leaf latency rises only 8.0%, from 9.57 µs at M=192 to 10.34 µs at M=512, while modeled useful FP8 MFU rises from 12.9% to 31.9%. The non-monotonic bends come from DeepGEMM template changes, not measurement gaps.</p>
+          <aside><strong>Configuration reading</strong>Larger verification groups amortize this projection well. The limiting question is whether the faster QKV-A work offsets the much steeper K2, K8, and communication growth at the same M.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="rows" class="is-active">Local rows</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="Fused QKV-A projection measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k7" data-kernel="K7">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K7</div>
+          <div class="kernel-title">
+            <p>DeepGEMM with TP-dependent reduction width</p>
+            <h2>Shared-expert down projection</h2>
+          </div>
+          <div class="kernel-anchor"><strong>−5.5%</strong><span>TP4 → TP8 at M=192</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>M rows · N 6144 · K = 2048 / TP</code></div>
+        <div class="kernel-reading">
+          <p>TP8 lowers the local reduction width to 256 and trims the leaf from 5.25 µs at TP4 to 4.96 µs at M=192. The speedup is useful but far from linear because launch and output costs remain while K shrinks.</p>
+          <aside><strong>Configuration reading</strong>TP8 consistently wins this isolated leaf, but only by sub-microsecond margins near production M. Use it as supporting evidence, not as a standalone reason to reject TP4.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="tp" class="is-active">Tensor parallel size</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="Shared-expert down projection measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k8" data-kernel="K8">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K8</div>
+          <div class="kernel-title">
+            <p>Selected-token index transformation</p>
+            <h2>Decode page-table gather</h2>
+          </div>
+          <div class="kernel-anchor"><strong>−66.4%</strong><span>S 2048 → 1024 at M=512</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>M rows · selected tokens S · context C · locality</code></div>
+        <div class="kernel-reading">
+          <p>The gather stays near a 5 µs floor at small M, then selected-token count and locality take over. At M=512, random S=2048 costs 26.40 µs while S=1024 costs 8.86 µs. At M=192, contiguous S=2048 is 5.06 µs versus 6.75 µs for random indices.</p>
+          <aside><strong>Configuration reading</strong>Reducing DSA top-k benefits both K2 and K8. Reordering indices for locality is a separate implementation candidate only if semantic order can be restored cheaply and the full attention path preserves correctness.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="selected" class="is-active">Selected tokens</button><button type="button" data-view="context">Context length</button><button type="button" data-view="locality">Index locality</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="Decode page-table gather measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k9" data-kernel="K9">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K9</div>
+          <div class="kernel-title">
+            <p>Fused allreduce + residual + RMSNorm path</p>
+            <h2>MNNVL two-shot allreduce</h2>
+          </div>
+          <div class="kernel-anchor"><strong>8.35 vs 8.90 µs</strong><span>TP4 vs TP8 at M=192</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>BF16 [M, 6144] · TP4 or TP8 · two-shot forced</code></div>
+        <div class="kernel-reading">
+          <p>The two-shot communication leaf is 6.1% faster at TP4 near M=192, using the median TP4 replica. The two TP4 nodes agree within 0.8% across all K9 points, making this the cleanest topology comparison.</p>
+          <aside><strong>Configuration reading</strong>TP4 improves K9, but K9 is only one half of the fused communication pair. At M=192 the combined K9+K10 active interval is effectively neutral between TP4 and TP8.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="topology" class="is-active">TP and node</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="MNNVL two-shot allreduce measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="kernel-section" id="k10" data-kernel="K10">
+        <header class="kernel-heading">
+          <div class="kernel-rank">K10</div>
+          <div class="kernel-title">
+            <p>Normalization and completion protocol leaf</p>
+            <h2>MNNVL RMSNorm / Lamport</h2>
+          </div>
+          <div class="kernel-anchor"><strong>3.84–3.90 µs</strong><span>TP4/TP8 band at M=192</span></div>
+        </header>
+        <div class="kernel-contract"><span>Measured contract</span><code>BF16 [M, 6144] · TP4 or TP8 · FP32 accumulation off</code></div>
+        <div class="kernel-reading">
+          <p>K10 is nearly topology-neutral at the live anchor. It stays near 3–4 µs through M=192 and rises at larger rows; at M=512 TP8 is 7.98 µs while the TP4 replicas are about 8.75 µs.</p>
+          <aside><strong>Configuration reading</strong>There is no consistent K10 basis for changing TP. The M=384 TP4 replica spread also shows why a whole-path, multi-node confirmation is required before a topology rollout.</aside>
+        </div>
+        <div class="chart-toolbar">
+          <div class="segmented view-switch" aria-label="Curve family"><button type="button" data-view="topology" class="is-active">TP and node</button></div>
+          <div class="segmented metric-switch" aria-label="Metric"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="kernel-chart" viewBox="0 0 960 430" role="img" aria-label="MNNVL RMSNorm / Lamport measured curves"></svg>
+          <div class="chart-tooltip" hidden></div>
+        </div>
+        <div class="chart-caption">
+          <span><i class="marker marker-reference"></i>M=100 exact-pair anchor</span>
+          <span><i class="marker marker-production"></i>M=192 live EAGLE estimate</span>
+          <span class="dispatch-note"></span>
+        </div>
+        <div class="table-scroll"><table class="anchor-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+
+      <section class="document-section decision-section" id="decisions">
+        <header class="section-heading"><span>→</span><div><p>Configuration shortlist</p><h2>What the curves support testing next</h2></div></header>
+        <div class="decision-table-wrap"><table class="decision-table">
+          <thead><tr><th>Candidate</th><th>Kernel evidence</th><th>Risk / constraint</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr><td><strong>DSA top-k 2048 → 1024</strong></td><td>K2 −45.9% at M=192; K8 −66.4% at M=512.</td><td>Changes selected context and therefore model accuracy.</td><td><span class="verdict test">Test first</span></td></tr>
+            <tr><td><strong>EAGLE rows 192 → 256</strong></td><td>K6 batching efficiency rises while staying inside the measured range.</td><td>K2, K8, and MNNVL scale faster than K6; TPOT can regress.</td><td><span class="verdict test">End-to-end A/B</span></td></tr>
+            <tr><td><strong>Jump directly to M=512</strong></td><td>K6 reaches 31.9% modeled MFU.</td><td>K2 nearly doubles from M=192; random K8 grows about 4×.</td><td><span class="verdict hold">Do not jump</span></td></tr>
+            <tr><td><strong>TP8 → TP4</strong></td><td>K9 improves; shared-expert K4/K7 favor TP8.</td><td>Combined MNNVL is neutral at M=192; model fit and attention topology remain untested.</td><td><span class="verdict hold">No kernel case yet</span></td></tr>
+            <tr><td><strong>Increase DP</strong></td><td>Lowers local M and can reduce latency per invocation.</td><td>May lose batching efficiency and cross K2's M × S dispatch boundary; total GPUs are fixed.</td><td><span class="verdict test">Model local M first</span></td></tr>
+          </tbody>
+        </table></div>
+        <aside class="decision-callout"><strong>Recommended next experiment</strong><p>Keep TP8 and the current M≈192 shape. Compare DSA top-k 2048 versus 1024 under the full decode server with accuracy, acceptance rate, TPOT, and output throughput captured together. Only after that, sweep EAGLE toward M≈256.</p></aside>
+      </section>
+
+      <section class="document-section" id="evidence">
+        <header class="section-heading"><span>✓</span><div><p>Reproducibility</p><h2>What was proven and retained</h2></div></header>
+        <div class="evidence-grid">
+          <dl><div><dt>Source commit</dt><dd><code>733a45484ab70ca24ec2f028f970fb852be85df5</code></dd></div><div><dt>Runtime image</dt><dd><code>sha256:2e14df84…2267aff</code></dd></div><div><dt>Profiler</dt><dd>Nsight Systems 2025.3.2</dd></div></dl>
+          <dl><div><dt>Nodes</dt><dd>gpu-worker-gb300-131, 136</dd></div><div><dt>Initial GPU state</dt><dd>8/8 at 0 MiB, 0%, no compute PID</dd></div><div><dt>Final allocation state</dt><dd>No experiment GPU requests</dd></div></dl>
+          <dl><div><dt>Single cases</dt><dd>620 complete; 18,600 measured ranges</dd></div><div><dt>Distributed</dt><dd>2× TP4 + 1× TP8; 3,000 ranges</dd></div><div><dt>Exact gates</dt><dd>11 passed; 0 failed</dd></div></dl>
+        </div>
+        <p class="artifact-note">The published <a href="report_data.json">compact report data</a> contains every curve point, launch configuration, validation gate, and retained trace hash. Raw Nsight reports remain on the two node-local experiment paths identified by those hashes.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="report_data.js"></script>
+  <script src="report.js"></script>
+</body>
+</html>
