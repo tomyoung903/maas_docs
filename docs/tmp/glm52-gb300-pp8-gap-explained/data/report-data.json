@@ -1,190 +1,180 @@
 {
-  "schema_version": 1,
-  "generated_for": "GLM-5.2 GB300 PP8 fixed-8K prefill throughput-gap study",
+  "schema_version": 2,
+  "generated_at": "2026-08-23T01:55:00+08:00",
+  "generated_for": "GLM-5.2 GB300 fixed-8K prefill PP4-to-PP8 strong-scaling study",
   "comparison": {
-    "pp4_median_duration_s": 318.469990019,
-    "pp4_median_uncached_tpm": 3396940,
-    "two_pp4_target_duration_s": 159.2349950095,
-    "two_pp4_target_uncached_tpm": 6793880,
-    "assumption": "The requested two-PP4 reference is exactly twice one measured PP4; no concurrent second replica is inferred from another run."
-  },
-  "short_runs": [
-    {
-      "id": "pp8_baseline",
-      "label": "Original PP8",
-      "treatment": "1 tokenizer · synchronous PP output path",
-      "duration_s": 196.08030997,
-      "uncached_tokens": 17884917,
-      "uncached_tpm": 5472732.16859042
-    },
-    {
-      "id": "output_skip",
-      "label": "Safe output skip",
-      "treatment": "Skip pure middle-chunk output circulation",
-      "duration_s": 186.35848281,
-      "uncached_tokens": 17833461,
-      "uncached_tpm": 5741663.292520556
-    },
-    {
-      "id": "two_frontends_a",
-      "label": "Two frontends · A",
-      "treatment": "Output skip + 2 tokenizer/HTTP workers",
-      "duration_s": 167.287813405,
-      "uncached_tokens": 17919733,
-      "uncached_tpm": 6427150.657992067
-    },
-    {
-      "id": "two_frontends_b",
-      "label": "Two frontends · B",
-      "treatment": "Output skip + 2 tokenizer/HTTP workers",
-      "duration_s": 164.295056473,
-      "uncached_tokens": 17945205,
-      "uncached_tpm": 6553528.286938721
-    },
-    {
-      "id": "aligned_a",
-      "label": "Aligned PP8 · A",
-      "treatment": "2 frontends + output skip + async depth 1",
-      "duration_s": 160.245823923,
-      "uncached_tokens": 17991477,
-      "uncached_tpm": 6736453.990331174
-    },
-    {
-      "id": "aligned_b",
-      "label": "Aligned PP8 · B",
-      "treatment": "2 frontends + output skip + async depth 1",
-      "duration_s": 159.99074689,
-      "uncached_tokens": 17956021,
-      "uncached_tpm": 6733897.309328324
-    },
-    {
-      "id": "aligned_cap20_control",
-      "label": "Aligned · cap 20",
-      "treatment": "Post-profile control; observability disabled",
-      "duration_s": 159.720637549,
-      "uncached_tokens": 17970101,
-      "uncached_tpm": 6750574.481454983
-    },
-    {
-      "id": "aligned_cap10_control",
-      "label": "Aligned · default cap 10",
-      "treatment": "Post-profile control; observability disabled",
-      "duration_s": 160.177107821,
-      "uncached_tokens": 17956021,
-      "uncached_tpm": 6726062.635641824
-    }
-  ],
-  "long_runs": {
-    "baseline": {
-      "requests": 8194,
-      "duration_s": 798.569191202,
-      "uncached_tokens": 65226806,
-      "uncached_tpm": 4900775.540951271
-    },
-    "aligned_no_observability": {
-      "requests": 8194,
-      "duration_s": 594.380011075,
-      "uncached_tokens": 65913270,
-      "uncached_tpm": 6653649.3931673905
-    },
-    "aligned": {
-      "requests": 8194,
-      "duration_s": 597.71384621,
-      "prompt_tokens": 364023606,
-      "cached_tokens": 298139712,
-      "uncached_tokens": 65883894,
-      "uncached_tpm": 6613588.868763041,
-      "token_weighted_cache_hit_ratio": 0.8190120285770698,
-      "http_200": 8194,
-      "exact_one_token": 8194,
-      "request_logging": true,
-      "prometheus": true,
-      "pp0_batches": 8077,
-      "full_batches": 8069,
-      "underfilled_batches": 8,
-      "mean_tokens_per_batch": 8188.83843011019,
-      "central_cadence_ms": 73.24360008709805
-    }
-  },
-  "batching": {
-    "baseline": {
-      "pp0_batches": 2349,
-      "mean_tokens_per_batch": 7629.37760749255,
-      "central_cadence_ms": 83.05166368292183,
-      "full_batches": 2107,
-      "underfilled_batches": 242,
-      "underfilled_fraction": 0.10302256279267774
-    },
-    "aligned": {
-      "pp0_batches": 2205,
-      "mean_tokens_per_batch": 8186.630385487529,
-      "central_cadence_ms": 72.42306368537554,
-      "full_batches": 2202,
-      "underfilled_batches": 3,
-      "underfilled_fraction": 0.0013605442176870747
-    }
-  },
-  "profile": {
-    "baseline_microbatches": 318,
-    "aligned_microbatches": 319,
-    "pp4_half_reference": {
-      "cycle_ms": 74.15412488836478,
-      "active_ms": 66.57603022327044,
-      "idle_ms": 7.57809466509434,
-      "non_nccl_ms": 64.95473153301886,
-      "derivation": "One measured PP4 rank-3 cycle and unions divided by exactly two."
-    },
-    "rank7": {
-      "baseline": {
-        "cycle_ms": 84.34753856918239,
-        "active_ms": 65.39432150628932,
-        "idle_ms": 18.95321706289308,
-        "non_nccl_ms": 63.02243152515724,
-        "nccl_ms": 1.9091701163522012,
-        "overlap_ms": 0.00016623899371069183
+    "reference_definition": "The strict target is exactly two times the median measured throughput of one PP4. No concurrent two-PP4 run is required or implied.",
+    "pp4_runs": [
+      {
+        "id": "pp4_a",
+        "requests": 2048,
+        "http_200": 2048,
+        "exact_one_output_token": 2048,
+        "duration_s": 308.153100582,
+        "uncached_tokens": 18084789,
+        "uncached_tpm": 3521260.497,
+        "central_full_batch_cadence_ms": 138.331835
       },
-      "aligned": {
-        "cycle_ms": 80.52261754858935,
-        "active_ms": 72.09881232288402,
-        "idle_ms": 8.42380522570533,
-        "non_nccl_ms": 68.9463535862069,
-        "nccl_ms": 50.93339857366771,
-        "overlap_ms": 47.85860389655172
+      {
+        "id": "pp4_b",
+        "requests": 2048,
+        "http_200": 2048,
+        "exact_one_output_token": 2048,
+        "duration_s": 307.909753925,
+        "uncached_tokens": 18097013,
+        "uncached_tpm": 3526425.409,
+        "central_full_batch_cadence_ms": 138.125131
+      }
+    ],
+    "pp4_median_uncached_tpm": 3523842.953,
+    "pp4_median_central_cadence_ms": 138.228483,
+    "strict_two_pp4_target_uncached_tpm": 7047685.906,
+    "strict_ideal_half_cadence_ms": 69.114241,
+    "pp8_depth2_runs": [
+      {
+        "id": "pp8_depth2_a",
+        "requests": 2048,
+        "http_200": 2048,
+        "exact_one_output_token": 2048,
+        "uncached_tpm": 6770923.321,
+        "central_full_batch_cadence_ms": 71.495819
+      },
+      {
+        "id": "pp8_depth2_b",
+        "requests": 2048,
+        "http_200": 2048,
+        "exact_one_output_token": 2048,
+        "uncached_tpm": 6871442.347,
+        "central_full_batch_cadence_ms": 70.988389
+      },
+      {
+        "id": "pp8_depth2_c",
+        "requests": 2048,
+        "http_200": 2048,
+        "exact_one_output_token": 2048,
+        "uncached_tpm": 6855357.883,
+        "central_full_batch_cadence_ms": 71.014402
+      }
+    ],
+    "pp8_median_uncached_tpm": 6855357.883,
+    "pp8_median_central_cadence_ms": 71.014402,
+    "pp8_over_pp4_speedup": 1.945420943678474,
+    "target_attainment": 0.972710471839237,
+    "target_gap_uncached_tpm": 192328.023,
+    "target_gap_fraction": 0.027289528160763
+  },
+  "cadence_model": {
+    "model": "T_stage(n) = n * L + C",
+    "pp4_equation": "20 * L + C = 138.228483 ms",
+    "pp8_equation": "10 * L + C = 71.014402 ms",
+    "effective_per_layer_ms": 6.7214081,
+    "effective_fixed_per_batch_stage_floor_ms": 3.800321,
+    "pp8_residual_above_strict_half_ms": 1.900161,
+    "predicted_target_attainment_from_cadence": 0.9732425966214572,
+    "interpretation": "PP8 halves the layer-dependent stage work, but a once-per-batch stage floor remains. C is an effective exposed floor, not one sequential kernel or function."
+  },
+  "phase_timing": {
+    "method": "Exclusive host wall-time regions measured with opt-in perf_counter_ns instrumentation.",
+    "window": "Second 1,000 active batches, after pipeline fill.",
+    "comparison_scope": "Last PP stage compared with last PP stage.",
+    "pp4_rank3_20_layers_ms": {
+      "request_recv": 0.744950,
+      "request_send": 0.001563,
+      "schedule": 5.889332,
+      "proxy_recv": 19.646803,
+      "output_prepare": 24.409755,
+      "proxy_send_commit": 0.001785,
+      "forward_submission": 55.857940,
+      "result_wait_process": 29.061389,
+      "proxy_send_start": 0.002284,
+      "unattributed": 0.005294,
+      "total": 135.621096
+    },
+    "pp8_rank7_10_layers_ms": {
+      "request_recv": 0.759912,
+      "request_send": 0.001542,
+      "schedule": 3.451658,
+      "proxy_recv": 5.338293,
+      "output_prepare": 2.472416,
+      "proxy_send_commit": 0.001643,
+      "forward_submission": 28.500088,
+      "result_wait_process": 29.641374,
+      "proxy_send_start": 0.001773,
+      "unattributed": 0.007100,
+      "total": 70.175800
+    },
+    "residual_decomposition_ms": {
+      "pp4_half_total": 67.810548,
+      "pp8_total": 70.175800,
+      "total_residual": 2.365252,
+      "forward_submission_residual": 0.571118,
+      "forward_submission_share": 0.24146179772810678,
+      "combined_non_forward_residual": 1.794134,
+      "combined_non_forward_share": 0.7585382022718932
+    },
+    "caveat": "Asynchronous GPU work can execute underneath these exclusive host wall-time regions. Result wait is not pure CPU compute, and host regions must not be added to Nsight kernel residency."
+  },
+  "corrected_nsight_control": {
+    "comparison": "PP8 safe-output async depth 1 versus async depth 2",
+    "use": "Matched kernel means only; absolute profiled cycle times were distorted by profiler stalls.",
+    "kernel_mean_us": {
+      "attention_fmha": {
+        "depth1": 1623.112,
+        "depth2": 1634.343,
+        "change_fraction": 0.0069
+      },
+      "moe_up": {
+        "depth1": 1198.699,
+        "depth2": 1204.678,
+        "change_fraction": 0.0050
+      },
+      "moe_down": {
+        "depth1": 630.064,
+        "depth2": 632.460,
+        "change_fraction": 0.0038
+      },
+      "rope_quantize": {
+        "depth1": 205.027,
+        "depth2": 205.839,
+        "change_fraction": 0.0040
       }
     },
-    "kernel_mean_change_percent": {
-      "attention_fmha": 8.287011614389538,
-      "moe_up": 6.700683134886298,
-      "moe_down": 5.669426302410918,
-      "rope_quantize": 5.857391148266622
+    "conclusion": "The winning overlap depth did not create a 2.7% per-kernel efficiency regression."
+  },
+  "controls": {
+    "pp8_batch_fill": {
+      "full_pp0_batches": 2207,
+      "total_pp0_batches": 2208,
+      "note": "Each accepted PP8 run had only one underfilled batch."
     },
-    "aligned_rank0_cycle_ms": 80.29460452037618,
-    "aligned_rank7_cycle_ms": 80.52261754858935
+    "async_depth_target_attainment": {
+      "depth1": 0.9552,
+      "depth2": 0.972710471839237,
+      "depth3": 0.9684
+    },
+    "metadata_cache_median_uncached_tpm": 6797908,
+    "observability_disabled_median_uncached_tpm": 6844460,
+    "fast_gloo_400gbe_median_uncached_tpm": 6837769,
+    "static_partition_9_10_10_10_10_10_10_9_median_uncached_tpm": 6834234,
+    "node169_pp4_central_cadence_ms": 138.58825,
+    "node169_cadence_slowdown_fraction": 0.0026
   },
   "settings": {
-    "hardware": "1 GB300 NVL72 tray · 8 GPUs across nodes 136 + 169",
-    "model": "GLM-5.2 NVFP4 weights · FP8 E4M3 KV cache",
-    "topology": "TP1 · DP1 · PP8 · EP1",
-    "chunking": "8,192-token fixed chunk and max-prefill budget",
-    "load": "Verified Liaoze real trace · bounded backlog · concurrency 80",
-    "output": "Exactly one output token per request",
-    "cache": "Flush before replay · HiCache write-through",
-    "aligned_controls": "2 tokenizer workers · safe output skip · PP async depth 1",
-    "default_microbatch_cap": 10,
+    "hardware": "One GB300 NVL72 tray; nodes gpu-worker-gb300-136 and gpu-worker-gb300-169; eight GPUs for PP8",
+    "model": "GLM-5.2 NVFP4 weights; FP8 E4M3 KV cache",
+    "parallelism": "TP1, DP1, PP4 or PP8, EP1",
+    "chunked_prefill_tokens": 8192,
+    "max_prefill_tokens": 8192,
+    "traffic": "Verified Liaoze real trace, ordered first 2,048 requests",
+    "client_concurrency": 80,
+    "max_output_tokens": 1,
+    "cache": "Flush before replay; HiCache write-through",
+    "dataset_sha256_short": "9cb067…8c77acb",
+    "winning_pp8": "Two tokenizer workers, corrected safe output skip, PP async depth 2",
     "source_commit": "d0f290a8"
   },
-  "production_observability_validation": {
-    "requests": 2048,
-    "duration_s": 160.892269973,
-    "prompt_tokens": 90542773,
-    "cached_tokens": 72555776,
-    "uncached_tokens": 17986997,
-    "uncached_tpm": 6707717.034392693,
-    "token_weighted_cache_hit_ratio": 0.8013425433745,
-    "http_200": 2048,
-    "exact_one_token": 2048,
-    "request_logging": true,
-    "prometheus": true,
-    "pp_max_micro_batch_size": 10
+  "safety": {
+    "included": "Corrected scheduler always waits for forward completion and conditionally skips only output payload circulation.",
+    "excluded": "Earlier runs that skipped both payload and the last-rank forward-completion event, plus the ptrace run that ended in an FMHA illegal address."
   }
 }

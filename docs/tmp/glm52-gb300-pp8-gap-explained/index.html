@@ -3,234 +3,213 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Measured explanation and kernel evidence for the GLM-5.2 GB300 PP8 versus two-PP4 prefill throughput gap.">
+  <meta name="description" content="Measured explanation for why one GLM-5.2 PP8 reaches 1.945× one PP4 rather than exactly 2× on GB300.">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-pp8-gap-explained/">
   <link rel="icon" href="data:,">
-  <title>Why PP8 was not 2× PP4 · GB300 kernel proof</title>
+  <title>Why one PP8 is 1.945× one PP4 · GB300</title>
   <style>
     :root {
-      color-scheme: light;
-      --ink:#152033; --muted:#5d687a; --line:#dfe6ef; --paper:#fff;
-      --ground:#f3f6fa; --blue:#356fe5; --green:#16846b; --orange:#d8894d;
-      --red:#d96572; --violet:#7c63d9; --nccl:#8b6be8; --idle:#dce3ec;
+      color-scheme:light;
+      --ink:#172033; --muted:#5f6b7d; --line:#dfe6ef; --ground:#f3f6fa;
+      --paper:#fff; --blue:#356fe5; --cyan:#2c91a5; --green:#16846b;
+      --orange:#d8894d; --violet:#7c63d9; --red:#d96572; --soft:#eef2f7;
     }
     * { box-sizing:border-box; }
     html { scroll-behavior:smooth; }
     body { margin:0; padding:clamp(12px,2.2vw,32px); background:var(--ground); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
-    main { width:min(1320px,100%); margin:0 auto; }
+    main { width:min(1240px,100%); margin:auto; }
     .panel { padding:clamp(20px,3vw,38px); border:1px solid #e0e6ee; border-radius:20px; background:var(--paper); box-shadow:0 15px 50px rgb(27 39 64 / 7%); }
     .panel + .panel { margin-top:18px; }
-    .hero { overflow:hidden; background:linear-gradient(135deg,#111a2b 0%,#172d4c 58%,#164b49 100%); color:#fff; }
-    .eyebrow { display:block; margin-bottom:8px; color:#13725e; font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
-    .hero .eyebrow,.trace-summary .eyebrow { color:#72d6c0; }
-    h1 { max-width:900px; margin:0; font-size:clamp(31px,5.2vw,66px); line-height:1.01; letter-spacing:-.048em; }
-    h2 { margin:0; font-size:clamp(23px,2.8vw,34px); letter-spacing:-.03em; }
-    h3 { margin:0; font-size:17px; }
+    .hero { position:relative; overflow:hidden; color:#fff; background:linear-gradient(135deg,#111a2b,#18365a 58%,#16524b); }
+    .hero::after { position:absolute; right:-90px; bottom:-140px; width:420px; height:420px; border:1px solid rgb(255 255 255 / 12%); border-radius:50%; box-shadow:0 0 0 58px rgb(255 255 255 / 3%),0 0 0 116px rgb(255 255 255 / 2%); content:""; }
+    .eyebrow { display:block; margin-bottom:8px; color:#13725e; font-size:11px; font-weight:850; letter-spacing:.14em; text-transform:uppercase; }
+    .hero .eyebrow { color:#7ce0c9; }
+    h1 { position:relative; z-index:1; max-width:950px; margin:0; font-size:clamp(32px,5.3vw,68px); line-height:1.01; letter-spacing:-.05em; }
+    h2 { margin:0; font-size:clamp(24px,3vw,36px); line-height:1.1; letter-spacing:-.035em; }
+    h3 { margin:0; font-size:17px; letter-spacing:-.01em; }
     p { margin:0; line-height:1.62; }
-    .lede { max-width:900px; margin-top:18px; color:#dbe8f4; font-size:clamp(15px,1.7vw,19px); }
-    .verdict-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:28px; }
-    .verdict { padding:16px; border:1px solid rgb(255 255 255 / 16%); border-radius:14px; background:rgb(255 255 255 / 7%); backdrop-filter:blur(8px); }
-    .verdict strong { display:block; font-size:clamp(24px,3vw,38px); letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
-    .verdict span { display:block; margin-top:4px; color:#b9cadb; font-size:12px; line-height:1.4; }
-    .status { margin-top:14px; padding:10px 13px; border-radius:10px; font-size:12px; font-weight:650; }
-    .status.pending { background:#fff7dc; color:#735c0f; } .status.pass { background:#dcf7ef; color:#146854; }
-    .head { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:22px; }
-    .head p { max-width:590px; color:var(--muted); font-size:13px; text-align:right; }
-    .cause-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
-    .cause { position:relative; min-height:225px; padding:19px; overflow:hidden; border:1px solid var(--line); border-radius:15px; background:#fafbfd; }
-    .cause-num { display:grid; width:30px; height:30px; place-items:center; margin-bottom:15px; border-radius:9px; background:#e8efff; color:#285cc4; font-size:12px; font-weight:850; }
-    .cause p { margin-top:9px; color:var(--muted); font-size:13px; }
-    .mini { margin-top:16px; }
-    .feeders { display:flex; gap:7px; align-items:center; }
-    .feeder { flex:1; height:28px; border-radius:8px; background:#dce8ff; color:#285cc4; font-size:10px; font-weight:800; text-align:center; line-height:28px; }
-    .arrow { color:#59677b; font-weight:900; }
-    .feeder[style] { color:#44546b!important; }
-    .pipeline { position:relative; display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin-top:10px; }
-    .stage { height:30px; border-radius:7px; background:#dfe8f5; color:#56657a; font-size:9px; font-weight:800; text-align:center; line-height:30px; }
-    .pulse { position:absolute; top:8px; left:2%; width:8px; height:8px; border-radius:50%; background:#2ea88b; box-shadow:0 0 0 4px rgb(46 168 139 / 18%); animation:travel 2.8s linear infinite; }
-    @keyframes travel { from { left:2%; } to { left:97%; } }
-    .theory { display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center; margin-top:14px; padding:17px 19px; border:1px solid #d9e3f2; border-radius:14px; background:#f4f8ff; }
-    .formula { white-space:nowrap; color:#285cc4; font-family:Georgia,"Times New Roman",serif; font-size:20px; }
-    .theory p { color:var(--muted); font-size:12px; }
-    .treatments { display:grid; gap:14px; }
-    .treatment-row { display:grid; grid-template-columns:minmax(210px,1.25fr) minmax(260px,2fr) 125px; gap:16px; align-items:center; }
-    .treatment-copy strong,.treatment-copy span,.treatment-value strong,.treatment-value span { display:block; }
-    .treatment-copy strong { font-size:13px; } .treatment-copy span,.treatment-value span { margin-top:3px; color:var(--muted); font-size:11px; }
-    .treatment-value { text-align:right; font-variant-numeric:tabular-nums; } .treatment-value strong { font-size:18px; }
-    .bar-track { position:relative; height:16px; overflow:hidden; border-radius:999px; background:#edf1f6; }
-    .bar-fill { display:block; height:100%; border-radius:inherit; background:var(--bar); }
-    .target-line { position:absolute; top:0; right:0; width:2px; height:100%; background:#192337; }
-    .axis-note { margin:15px 0 0; color:var(--muted); font-size:11px; text-align:right; }
-    .batch-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .batch-card { padding:20px; border:1px solid var(--line); border-radius:15px; background:#fafbfd; }
-    .batch-card .tag { color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
-    .fill-track { height:24px; margin:17px 0 11px; padding:3px; border-radius:8px; background:#e6ebf1; }
-    .fill { height:100%; border-radius:5px; background:linear-gradient(90deg,#537fe8,#2eb08f); }
-    .batch-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; }
-    .stat strong,.stat span { display:block; } .stat strong { font-size:20px; font-variant-numeric:tabular-nums; } .stat span { margin-top:4px; color:var(--muted); font-size:10px; line-height:1.35; }
-    .trace-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:20px; }
-    .cycle { padding:18px; border:1px solid var(--line); border-radius:15px; background:#fafbfd; }
-    .cycle + .cycle { margin-top:12px; }
-    .cycle-head { display:flex; justify-content:space-between; gap:12px; margin-bottom:10px; }
-    .cycle-head strong { font-size:13px; } .cycle-head span { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
-    .cycle-bar { display:flex; height:30px; overflow:hidden; border-radius:8px; background:#eef2f6; }
-    .active { display:grid; place-items:center; background:#2f63cb; color:white; font-size:10px; font-weight:800; }
-    .reference-active { display:grid; place-items:center; background:#13725e; color:white; font-size:10px; font-weight:800; }
-    .idle { display:grid; place-items:center; background:var(--idle); color:#3e4d64; font-size:10px; font-weight:800; }
-    .overlap-viz { position:relative; height:48px; margin-top:12px; border-radius:9px; background:#eef2f6; overflow:hidden; }
-    .model-band,.nccl-band { position:absolute; height:16px; border-radius:5px; }
-    .model-band { top:7px; left:0; background:#4779e7; } .nccl-band { top:25px; right:0; background:var(--nccl); opacity:.88; }
-    .overlap-label { position:absolute; top:50%; left:50%; padding:3px 7px; transform:translate(-50%,-50%); border:1px solid #d8e0eb; border-radius:6px; background:rgb(255 255 255 / 94%); color:#172033; font-size:10px; font-weight:850; white-space:nowrap; pointer-events:none; }
-    .trace-summary { padding:20px; border-radius:15px; background:#101b2d; color:#fff; }
-    .trace-summary strong.big { display:block; color:#72d6c0; font-size:42px; letter-spacing:-.05em; }
-    .trace-summary p { margin-top:9px; color:#c9d6e3; font-size:13px; }
-    .equation { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:9px; align-items:center; margin-top:19px; color:#dce8f4; font-size:12px; text-align:center; }
-    .equation strong { display:block; color:#fff; font-size:20px; font-variant-numeric:tabular-nums; }
-    .kernel-list { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:16px; }
-    .kernel { padding:10px; border:1px solid rgb(255 255 255 / 13%); border-radius:10px; background:rgb(255 255 255 / 5%); }
-    .kernel strong,.kernel span { display:block; } .kernel strong { color:#ffcf8b; font-size:17px; } .kernel span { margin-top:2px; color:#b9cadb; font-size:10px; }
-    .long-grid { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:18px; }
-    .long-card { padding:22px; border:1px solid var(--line); border-radius:15px; background:#fafbfd; text-align:center; }
-    .long-card strong { display:block; font-size:clamp(30px,4vw,48px); letter-spacing:-.05em; font-variant-numeric:tabular-nums; }
-    .long-card span { display:block; margin-top:5px; color:var(--muted); font-size:12px; }
-    .long-arrow { color:var(--green); font-size:28px; font-weight:900; }
-    .settings { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+    .lede { position:relative; z-index:1; max-width:900px; margin-top:18px; color:#dbe8f4; font-size:clamp(15px,1.7vw,19px); }
+    .metrics { position:relative; z-index:1; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:28px; }
+    .metric { padding:16px; border:1px solid rgb(255 255 255 / 16%); border-radius:14px; background:rgb(255 255 255 / 7%); backdrop-filter:blur(8px); }
+    .metric strong,.metric span { display:block; }
+    .metric strong { font-size:clamp(24px,3vw,38px); letter-spacing:-.045em; font-variant-numeric:tabular-nums; }
+    .metric span { margin-top:4px; color:#bdd0e1; font-size:11px; line-height:1.4; }
+    .verdict { position:relative; z-index:1; margin-top:14px; padding:11px 14px; border-radius:11px; color:#d9fff5; background:rgb(17 113 91 / 48%); font-size:13px; font-weight:700; }
+    .head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:24px; }
+    .head p { max-width:610px; color:var(--muted); font-size:13px; text-align:right; }
+    .compare { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .run { padding:20px; border:1px solid var(--line); border-radius:15px; background:#fafbfd; }
+    .run-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .run-top strong { font-size:24px; font-variant-numeric:tabular-nums; }
+    .run-top span { color:var(--muted); font-size:11px; text-align:right; }
+    .track { position:relative; height:26px; margin-top:17px; overflow:hidden; border-radius:8px; background:#e8edf3; }
+    .fill { height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--blue),var(--cyan)); }
+    .target { position:absolute; top:0; right:0; width:2px; height:100%; background:#131d30; }
+    .run small { display:block; margin-top:9px; color:var(--muted); line-height:1.45; }
+    .formula-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .formula-card { padding:20px; border:1px solid #d6e2f4; border-radius:15px; background:#f5f8ff; }
+    .formula-card.wide { grid-column:1/-1; }
+    .formula { margin-top:10px; color:#285cc4; font-family:Georgia,"Times New Roman",serif; font-size:clamp(19px,2.4vw,28px); line-height:1.45; }
+    .formula-card p { margin-top:9px; color:var(--muted); font-size:13px; }
+    .ladder { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
+    .step { padding:14px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+    .step strong,.step span { display:block; }
+    .step strong { color:#285cc4; font-size:21px; font-variant-numeric:tabular-nums; }
+    .step span { margin-top:4px; color:var(--muted); font-size:10px; line-height:1.4; }
+    .phase-card { padding:20px; border:1px solid var(--line); border-radius:15px; background:#fafbfd; }
+    .phase-card + .phase-card { margin-top:12px; }
+    .phase-title { display:flex; justify-content:space-between; gap:14px; margin-bottom:11px; font-size:13px; font-weight:800; }
+    .phase-title span { color:var(--muted); font-weight:650; font-variant-numeric:tabular-nums; }
+    .phasebar { display:flex; height:40px; overflow:hidden; border-radius:9px; background:var(--soft); }
+    .phasebar i { display:grid; min-width:2px; place-items:center; overflow:hidden; color:#fff; font-style:normal; font-size:9px; font-weight:850; white-space:nowrap; }
+    .sched { background:#537fe8; } .recv { background:#2c91a5; } .output { background:#7c63d9; } .forward { background:#16846b; } .result { background:#d8894d; } .other { background:#aab4c2; }
+    .legend { display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:14px; color:var(--muted); font-size:10px; }
+    .legend span::before { display:inline-block; width:8px; height:8px; margin-right:5px; border-radius:2px; background:var(--dot); content:""; }
+    .decompose { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; }
+    .delta { padding:16px; border:1px solid var(--line); border-radius:13px; background:#fff; }
+    .delta strong,.delta span { display:block; }
+    .delta strong { font-size:26px; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+    .delta span { margin-top:5px; color:var(--muted); font-size:11px; line-height:1.45; }
+    .caution { margin-top:14px; padding:13px 15px; border-left:4px solid var(--orange); border-radius:8px; color:#6d5437; background:#fff7ec; font-size:12px; line-height:1.55; }
+    .kernel-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .kernel { padding:17px; border:1px solid var(--line); border-radius:13px; background:#fafbfd; }
+    .kernel strong,.kernel span { display:block; }
+    .kernel strong { color:var(--green); font-size:25px; font-variant-numeric:tabular-nums; }
+    .kernel span { margin-top:4px; color:var(--muted); font-size:11px; }
+    .controls { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .control { padding:16px; border:1px solid var(--line); border-radius:13px; background:#fafbfd; }
+    .control b,.control strong,.control span { display:block; }
+    .control b { color:#34445d; font-size:12px; }
+    .control strong { margin-top:7px; font-size:19px; font-variant-numeric:tabular-nums; }
+    .control span { margin-top:4px; color:var(--muted); font-size:10px; line-height:1.45; }
+    .conclusion { display:grid; grid-template-columns:1.2fr .8fr; gap:18px; }
+    .answer { padding:22px; border-radius:15px; color:#fff; background:#111c2f; }
+    .answer h3 { color:#7ce0c9; font-size:23px; }
+    .answer p { margin-top:11px; color:#d0dce8; font-size:13px; }
+    .next { padding:22px; border:1px solid var(--line); border-radius:15px; background:#fafbfd; }
+    .next ol { margin:12px 0 0; padding-left:20px; color:var(--muted); font-size:13px; line-height:1.65; }
+    .settings { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
     .setting { padding:13px 14px; border:1px solid var(--line); border-radius:11px; background:#fafbfd; }
-    .setting span,.setting strong { display:block; } .setting span { color:var(--muted); font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; } .setting strong { margin-top:5px; font-size:12px; line-height:1.45; }
-    .foot { margin-top:16px; color:var(--muted); font-size:11px; line-height:1.55; }
-    .foot a { display:inline-flex; min-height:44px; padding:0 4px; align-items:center; color:#234fa8; } code { padding:.12em .35em; border-radius:5px; background:#edf1f6; color:#44546b; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92em; }
-    @media (max-width:900px) { .verdict-grid,.cause-grid,.settings { grid-template-columns:1fr 1fr; } .trace-grid { grid-template-columns:1fr; } .treatment-row { grid-template-columns:1fr; gap:7px; } .treatment-value { text-align:left; } }
-    @media (max-width:620px) { .verdict-grid,.cause-grid,.batch-grid,.settings,.theory { grid-template-columns:1fr; } .formula { white-space:normal; } .head { align-items:flex-start; flex-direction:column; } .head p { text-align:left; } .long-grid { grid-template-columns:1fr; } .long-arrow { transform:rotate(90deg); text-align:center; } .batch-stats { grid-template-columns:1fr 1fr; } }
-    @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; animation:none!important; } }
+    .setting span,.setting strong { display:block; }
+    .setting span { color:var(--muted); font-size:9px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+    .setting strong { margin-top:5px; font-size:12px; line-height:1.45; }
+    .foot { margin-top:16px; color:var(--muted); font-size:11px; line-height:1.6; }
+    .foot a { display:inline-flex; min-height:44px; padding:0 4px; align-items:center; color:#234fa8; }
+    code { padding:.12em .35em; border-radius:5px; color:#44546b; background:#edf1f6; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92em; }
+    @media (max-width:900px) { .metrics,.ladder,.kernel-grid { grid-template-columns:1fr 1fr; } .controls,.settings { grid-template-columns:1fr 1fr; } .conclusion { grid-template-columns:1fr; } }
+    @media (max-width:620px) { .metrics,.compare,.formula-grid,.ladder,.decompose,.kernel-grid,.controls,.settings { grid-template-columns:1fr; } .formula-card.wide { grid-column:auto; } .head { align-items:flex-start; flex-direction:column; } .head p { text-align:left; } .phasebar i { font-size:0; } }
+    @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; } }
   </style>
 </head>
 <body>
 <main>
   <section class="panel hero" id="verdict">
     <span class="eyebrow">GB300 · GLM-5.2 NVFP4 · fixed 8K prefill</span>
-    <h1>PP8 was not compute-slow.<br>It was being starved and synchronized.</h1>
-    <p class="lede">One original PP8 reached only 80.6% of the defined 2×PP4 target. Three control-path changes bring the same PP8 to 99.0% on the controlled 2,048-request slice and 97.3% over 8,194 requests.</p>
-    <div class="verdict-grid">
-      <div class="verdict"><strong>6.794M</strong><span>defined target: exactly 2 × one PP4</span></div>
-      <div class="verdict"><strong>6.726M</strong><span>aligned PP8 · default microbatch cap</span></div>
-      <div class="verdict"><strong>99.00%</strong><span>short-run target attainment</span></div>
-      <div class="verdict"><strong>+34.9%</strong><span>long-run gain over original PP8</span></div>
+    <h1>One PP8 is 1.945× one PP4.<br>The last 2.73% is a stage floor.</h1>
+    <p class="lede">At identical full 8K batches, PP8 halves the model layers per stage—from 20 to 10—but does not halve scheduling, stream coordination, result processing, or pipeline handoff. The strict 2× target incorrectly halves both.</p>
+    <div class="metrics">
+      <div class="metric"><strong>3.524M</strong><span>median uncached TPM · one PP4</span></div>
+      <div class="metric"><strong>7.048M</strong><span>strict target · exactly 2 × PP4</span></div>
+      <div class="metric"><strong>6.855M</strong><span>median uncached TPM · one PP8</span></div>
+      <div class="metric"><strong>97.27%</strong><span>PP8 attainment of strict target</span></div>
     </div>
-    <div class="status pass">Normal logging + Prometheus: 160.892 s, 6.708M uncached TPM, 98.73% of target.</div>
+    <div class="verdict">Conclusion: kernel shapes and 8K batch fill are healthy. The 192K TPM residual comes from an effective fixed per-stage cost, not a 2.7% GEMM regression.</div>
   </section>
 
-  <section class="panel" id="causes">
-    <div class="head"><div><span class="eyebrow">01 · Root cause</span><h2>Three bubbles, not a weak GEMM</h2></div><p>The comparison is one PP8 versus a mathematical 2× of one measured PP4. Two PP4 replicas implicitly include two independent request frontends.</p></div>
-    <div class="cause-grid">
-      <article class="cause"><span class="cause-num">1</span><h3>Frontend starvation</h3><p>One tokenizer/HTTP process could not prepare full 8K work quickly enough for a pipeline advancing nearly twice as fast. Baseline batches averaged only 7,629 tokens.</p><div class="mini feeders"><span class="feeder">HTTP + tokenizer</span><span class="arrow">→</span><span class="feeder" style="background:#edf1f6;color:#708096">PP8</span></div></article>
-      <article class="cause"><span class="cause-num">2</span><h3>Useless output circulation</h3><p>A pure middle prefill chunk cannot emit a client token, yet its result object traversed the PP output ring. A guarded skip removes only this semantically empty path.</p><div class="mini pipeline"><i class="pulse"></i><span class="stage">P0</span><span class="stage">P1</span><span class="stage">P2</span><span class="stage">P3</span><span class="stage">P4</span><span class="stage">P5</span><span class="stage">P6</span><span class="stage">P7</span></div></article>
-      <article class="cause"><span class="cause-num">3</span><h3>Last-rank synchronization</h3><p>With async depth 0, output preparation happens after launching the current batch and becomes exposed control delay. Depth 1 adds one slot so older output processing overlaps current GPU work.</p><div class="mini"><div class="fill-track"><div class="fill" style="width:88%;background:linear-gradient(90deg,#8b6be8 0 56%,#4779e7 56% 100%)"></div></div><small style="color:var(--muted)">CPU/result work overlaps the next forward</small></div></article>
-    </div>
-    <div class="theory"><strong class="formula">Bubble = (P − 1) / (P − 1 + M)</strong><p><strong>Directionally relevant, numerically misapplied here.</strong> This formula assumes a finite train of <em>M</em> equal-duration microbatches followed by a pipeline drain. The inference scheduler continuously interleaves chunks from many requests and does not drain between requests, so “one request has 10 chunks” is not the scheduler’s <em>M</em>. The measured last-rank idle fraction—22.47% before and 10.46% after—is the defensible bubble evidence for this workload.</p></div>
-  </section>
-
-  <section class="panel" id="treatments">
-    <div class="head"><div><span class="eyebrow">02 · Controlled ladder</span><h2>The gap closes step by step</h2></div><p>Bars show uncached TPM as a fraction of 6.794M. Exact uncached work shifts slightly because scheduling changes prefix-cache reuse; duration and TPM are both retained.</p></div>
-    <div class="treatments">
-      <div class="treatment-row">
-        <div class="treatment-copy">
-          <strong>Original PP8</strong>
-          <span>one frontend; synchronous result path</span>
-        </div>
-        <div class="bar-track" role="progressbar" aria-label="Uncached TPM target attainment" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80.55">
-          <span class="bar-fill" style="width:80.554%;--bar:#d96572"></span>
-          <span class="target-line" aria-hidden="true"></span>
-        </div>
-        <div class="treatment-value">
-          <strong>80.6%</strong>
-          <span>5.473M · 196.1 s</span>
-        </div>
-      </div>
-      <div class="treatment-row">
-        <div class="treatment-copy">
-          <strong>Safe middle-chunk output skip</strong>
-          <span>remove output-ring work that cannot produce a token</span>
-        </div>
-        <div class="bar-track" role="progressbar" aria-label="Uncached TPM target attainment" aria-valuemin="0" aria-valuemax="100" aria-valuenow="84.51">
-          <span class="bar-fill" style="width:84.512%;--bar:#d8894d"></span>
-          <span class="target-line" aria-hidden="true"></span>
-        </div>
-        <div class="treatment-value">
-          <strong>84.5%</strong>
-          <span>5.742M · 186.4 s</span>
-        </div>
-      </div>
-      <div class="treatment-row">
-        <div class="treatment-copy">
-          <strong>Two tokenizer / HTTP workers</strong>
-          <span>frontend symmetry with two PP4 replicas</span>
-        </div>
-        <div class="bar-track" role="progressbar" aria-label="Uncached TPM target attainment" aria-valuemin="0" aria-valuemax="100" aria-valuenow="96.46">
-          <span class="bar-fill" style="width:96.462%;--bar:#5b8def"></span>
-          <span class="target-line" aria-hidden="true"></span>
-        </div>
-        <div class="treatment-value">
-          <strong>96.5%</strong>
-          <span>6.554M · 164.3 s</span>
-        </div>
-      </div>
-      <div class="treatment-row">
-        <div class="treatment-copy">
-          <strong>Aligned PP8 · default cap 10</strong>
-          <span>two frontends + output skip + async depth 1</span>
-        </div>
-        <div class="bar-track" role="progressbar" aria-label="Uncached TPM target attainment" aria-valuemin="0" aria-valuemax="100" aria-valuenow="99.00">
-          <span class="bar-fill" style="width:99.002%;--bar:#16846b"></span>
-          <span class="target-line" aria-hidden="true"></span>
-        </div>
-        <div class="treatment-value">
-          <strong>99.0%</strong>
-          <span>6.726M · 160.2 s</span>
-        </div>
-      </div></div>
-    <p class="axis-note">right edge = exactly 2 × median one-PP4 uncached TPM</p>
-  </section>
-
-  <section class="panel" id="batching">
-    <div class="head"><div><span class="eyebrow">03 · Scheduler evidence</span><h2>Two frontends keep PP8 fed</h2></div><p>Increasing client concurrency from 80 to 160 made cadence worse. The missing supply was CPU-side request preparation, not insufficient client backlog.</p></div>
-    <div class="batch-grid">
-      <article class="batch-card"><span class="tag">Original PP8 · one frontend</span><div class="fill-track"><div class="fill" style="width:93.132%;background:linear-gradient(90deg,#d96572,#d8894d)"></div></div><strong>93.13% mean 8K fill</strong><div class="batch-stats"><div class="stat"><strong>7,629</strong><span>tokens / PP0 batch</span></div><div class="stat"><strong>10.30%</strong><span>242 underfilled</span></div><div class="stat"><strong>83.05 ms</strong><span>central cadence</span></div></div></article>
-      <article class="batch-card"><span class="tag">Aligned PP8 · two frontends</span><div class="fill-track"><div class="fill" style="width:99.934%"></div></div><strong>99.93% mean 8K fill</strong><div class="batch-stats"><div class="stat"><strong>8,187</strong><span>tokens / PP0 batch</span></div><div class="stat"><strong>3</strong><span>underfilled of 2,205</span></div><div class="stat"><strong>72.42 ms</strong><span>central cadence</span></div></div></article>
+  <section class="panel" id="comparison">
+    <div class="head"><div><span class="eyebrow">01 · Direct measurement</span><h2>Compare one PP4 with one PP8</h2></div><p>Each point replays the same ordered first 2,048 real requests at bounded backlog 80. Every request returned HTTP 200 and exactly one output token.</p></div>
+    <div class="compare">
+      <article class="run"><div class="run-top"><div><h3>Arithmetic 2 × one PP4</h3><strong>7.048M TPM</strong></div><span>two PP4 runs<br>median = 3.524M</span></div><div class="track"><div class="fill" style="width:100%;background:linear-gradient(90deg,#16846b,#2c91a5)"></div><i class="target"></i></div><small>PP4 A/B: 3.521M and 3.526M. Central full-batch cadence: 138.228 ms.</small></article>
+      <article class="run"><div class="run-top"><div><h3>One PP8 · async depth 2</h3><strong>6.855M TPM</strong></div><span>three PP8 runs<br>median shown</span></div><div class="track"><div class="fill" style="width:97.271%"></div><i class="target"></i></div><small>PP8 A/B/C: 6.771M, 6.871M, 6.855M. Central full-batch cadence: 71.014 ms.</small></article>
     </div>
   </section>
 
-  <section class="panel" id="kernel-proof">
-    <div class="head"><div><span class="eyebrow">04 · Matched Nsight proof</span><h2>Idle falls more than active time rises</h2></div><p>Rank 7, normalized per independently validated microbatch. Baseline: 318 batches. Aligned: 319 batches. All rank anchor checks pass.</p></div>
-    <div class="trace-grid">
-      <div>
-        <div class="cycle"><div class="cycle-head"><strong>2×PP4-derived reference · PP4 rank 3 ÷ 2</strong><span>74.154 ms cycle</span></div><div class="cycle-bar"><span class="reference-active" style="width:89.781%">66.58 active</span><span class="idle" style="width:10.219%">7.58 idle</span></div></div>
-        <div class="cycle"><div class="cycle-head"><strong>Original PP8 · rank 7</strong><span>84.348 ms cycle</span></div><div class="cycle-bar"><span class="active" style="width:77.530%">65.39 active</span><span class="idle" style="width:22.470%">18.95 idle</span></div></div>
-        <div class="cycle"><div class="cycle-head"><strong>Aligned PP8 · rank 7</strong><span>80.523 ms cycle</span></div><div class="cycle-bar"><span class="active" style="width:89.539%">72.10 active</span><span class="idle" style="width:10.461%">8.42 idle</span></div><div class="overlap-viz"><span class="model-band" style="width:85.624%"></span><span class="nccl-band" style="width:63.254%"></span><span class="overlap-label">47.86 ms NCCL ↔ model overlap</span></div></div>
-      </div>
-      <aside class="trace-summary"><span class="eyebrow">What changed in one cycle</span><strong class="big">−3.825 ms</strong><p>Original PP8 active time was already 1.18 ms <em>lower</em> than PP4 ÷ 2; its excess was idle. Async NCCL residency then becomes long-lived and concurrent: sampled model kernels slow, but exposed idle falls much more.</p><div class="equation"><div><strong>−10.53</strong>idle</div><b>+</b><div><strong>+6.70</strong>active</div><b>=</b><div><strong>−3.82</strong>cycle</div></div><div class="kernel-list"><div class="kernel"><strong>+8.29%</strong><span>FMHA mean launch</span></div><div class="kernel"><strong>+6.70%</strong><span>MoE up</span></div><div class="kernel"><strong>+5.67%</strong><span>MoE down</span></div><div class="kernel"><strong>+5.86%</strong><span>RopeQuantize</span></div></div></aside>
+  <section class="panel" id="model">
+    <div class="head"><div><span class="eyebrow">02 · Minimal scaling model</span><h2>The cadence predicts the TPM ratio</h2></div><p>This is a measured effective model, not a claim that every layer takes identical time. It asks how much of a stage scales with layer count and how much repeats once per batch.</p></div>
+    <div class="formula-grid">
+      <article class="formula-card"><h3>Observed stage cadence</h3><div class="formula">PP4: 20L + C = 138.228 ms<br>PP8: 10L + C = 71.014 ms</div><p>Here <em>L</em> is effective per-layer time and <em>C</em> is the effective once-per-batch stage floor.</p></article>
+      <article class="formula-card"><h3>Solved from the two measurements</h3><div class="formula">L = 6.721 ms / layer<br>C = 3.800 ms / batch</div><p>The fixed term includes exposed portions of scheduler work, handoff, stream backpressure, and result processing.</p></article>
+      <article class="formula-card wide"><h3>Why exactly 2× is missed</h3><div class="formula">ideal half of PP4 = 69.114 ms<br>actual PP8 = 69.114 + C/2 = 71.014 ms</div><p>The strict target assumes <em>C</em> also halves. It does not: one PP8 stage still schedules and retires one batch. The predicted cadence attainment is 69.114 ÷ 71.014 = <strong>97.324%</strong>, almost exactly the measured TPM attainment of <strong>97.271%</strong>.</p></article>
     </div>
-    <p class="foot"><strong>Do not add NCCL union to model union.</strong> In the aligned capture, <code>ncclDevKernel_SendRecv</code> overlaps 47.859 ms of non-NCCL work per batch. Residency is not wire latency. Rank-0 and rank-7 cycle spans are 80.295 and 80.523 ms—only 0.228 ms apart.</p>
+    <div class="ladder">
+      <div class="step"><strong>138.228</strong><span>ms · measured PP4 cadence</span></div>
+      <div class="step"><strong>69.114</strong><span>ms · strict ideal half</span></div>
+      <div class="step"><strong>+1.900</strong><span>ms · exposed C/2 residual</span></div>
+      <div class="step"><strong>71.014</strong><span>ms · measured PP8 cadence</span></div>
+    </div>
   </section>
 
-  <section class="panel" id="long-run">
-    <div class="head"><div><span class="eyebrow">05 · Longer trace</span><h2>The gain survives cache variability</h2></div><p>Same ordered first 8,194 requests, all HTTP 200, exactly one output token. Prefix reuse changes uncached-token totals slightly, so the comparison uses uncached TPM.</p></div>
-    <div class="long-grid"><div class="long-card"><strong>4.901M</strong><span>original PP8 · 798.6 s</span></div><div class="long-arrow">→</div><div class="long-card"><strong>6.614M</strong><span>aligned PP8 · 597.7 s · 97.35% of target</span></div></div>
+  <section class="panel" id="phases">
+    <div class="head"><div><span class="eyebrow">03 · Matched host-phase timing</span><h2>The residual is mostly outside forward submission</h2></div><p>Opt-in <code>perf_counter_ns</code> accounting over the second 1,000 active batches. Last stage is compared with last stage; the PP8 ranks were lockstep within 0.04 ms.</p></div>
+    <article class="phase-card">
+      <div class="phase-title"><strong>PP4 rank 3 · 20 layers</strong><span>135.621 ms / active batch</span></div>
+      <div class="phasebar" aria-label="PP4 host-phase wall time">
+        <i class="sched" style="width:4.89%">6.64</i><i class="recv" style="width:14.49%">19.65</i><i class="output" style="width:18.00%">24.41</i><i class="forward" style="width:41.19%">55.86</i><i class="result" style="width:21.43%">29.06</i>
+      </div>
+    </article>
+    <article class="phase-card">
+      <div class="phase-title"><strong>PP8 rank 7 · 10 layers</strong><span>70.176 ms / active batch</span></div>
+      <div class="phasebar" aria-label="PP8 host-phase wall time">
+        <i class="sched" style="width:6.00%">4.21</i><i class="recv" style="width:7.61%">5.34</i><i class="output" style="width:3.52%">2.47</i><i class="forward" style="width:40.61%">28.50</i><i class="result" style="width:42.24%">29.64</i>
+      </div>
+    </article>
+    <div class="legend"><span style="--dot:#537fe8">request + schedule</span><span style="--dot:#2c91a5">activation receive</span><span style="--dot:#7c63d9">output preparation</span><span style="--dot:#16846b">forward submission</span><span style="--dot:#d8894d">result wait + process</span></div>
+    <div class="decompose">
+      <div class="delta"><strong>2.365 ms</strong><span>instrumented PP8 residual above half of instrumented PP4</span></div>
+      <div class="delta"><strong>0.571 ms · 24%</strong><span>forward-submission region above ideal half</span></div>
+      <div class="delta"><strong>1.794 ms · 76%</strong><span>combined non-forward regions above ideal half</span></div>
+    </div>
+    <p class="caution"><strong>Reading rule:</strong> these are exclusive host wall-time regions, but asynchronous GPU work can run underneath them. “Result wait” is not a 29.6 ms CPU algorithm, and the regions must not be added to Nsight kernel residency. Their value is the matched scaling comparison.</p>
+  </section>
+
+  <section class="panel" id="kernels">
+    <div class="head"><div><span class="eyebrow">04 · Corrected Nsight control</span><h2>The kernels did not become 2.7% worse</h2></div><p>Corrected safe-output runs compare PP8 async depth 1 with the winning depth 2. Absolute profile cycles were profiler-stalled, so only matched kernel means are used.</p></div>
+    <div class="kernel-grid">
+      <div class="kernel"><strong>+0.69%</strong><span>FMHA mean</span></div>
+      <div class="kernel"><strong>+0.50%</strong><span>MoE up mean</span></div>
+      <div class="kernel"><strong>+0.38%</strong><span>MoE down mean</span></div>
+      <div class="kernel"><strong>+0.40%</strong><span>RopeQuantize mean</span></div>
+    </div>
+    <p class="foot">At fixed 8K, every layer sees the same token dimension and launches the same kernel shapes. PP8 changes how many layers each stage owns; it does not make the per-layer GEMM smaller. Depth 2 improves overlap while leaving selected kernel means effectively unchanged.</p>
+  </section>
+
+  <section class="panel" id="controls">
+    <div class="head"><div><span class="eyebrow">05 · Negative controls</span><h2>What did not explain or close the gap</h2></div><p>Each control changed one plausible mechanism. None moved PP8 toward the strict target beyond ordinary run variance.</p></div>
+    <div class="controls">
+      <article class="control"><b>8K batch fill</b><strong>2,207 / 2,208 full</strong><span>Each accepted PP8 run had only one underfilled PP0 batch. Starvation is not the residual.</span></article>
+      <article class="control"><b>Async depth</b><strong>95.52 → 97.27 → 96.84%</strong><span>Depth 1, 2, 3 target attainment. Two slots is the overlap optimum.</span></article>
+      <article class="control"><b>Tensor metadata cache</b><strong>6.798M median</strong><span>0.84% below the unchanged depth-2 median; schema serialization is hidden or too small.</span></article>
+      <article class="control"><b>Logging + metrics off</b><strong>6.844M median</strong><span>No gain over 6.855M. Production observability is not the critical path.</span></article>
+      <article class="control"><b>400 GbE for Gloo</b><strong>6.838M median</strong><span>Tiny TCP RTT improved from 66 to 55 µs, but end-to-end throughput did not.</span></article>
+      <article class="control"><b>Layer placement</b><strong>6.834M median</strong><span>Moving a 9-layer stage to the last rank did not help; six stages must still carry 10 layers.</span></article>
+      <article class="control"><b>Node 169 PP4</b><strong>138.588 ms</strong><span>Only 0.26% slower cadence than node 136’s 138.228 ms; node asymmetry is minor.</span></article>
+      <article class="control"><b>Corrected output skip</b><strong>stable repeated runs</strong><span>Forward completion is always preserved. The earlier payload-and-event skip was unsafe and is excluded.</span></article>
+      <article class="control"><b>Kernel efficiency</b><strong>within 0.4–0.7%</strong><span>Selected attention/MoE kernel means stay stable across the overlap treatment.</span></article>
+    </div>
+  </section>
+
+  <section class="panel" id="answer">
+    <div class="head"><div><span class="eyebrow">06 · Interpretation</span><h2>Why one PP8 is not exactly two PP4s</h2></div><p>The arithmetic target is useful, but it is deliberately stricter than what pipeline strong scaling guarantees.</p></div>
+    <div class="conclusion">
+      <article class="answer"><h3>PP8 halves layer work, not batch machinery.</h3><p>Two independent PP4 replicas each process a 20-layer stage every ~138 ms. One PP8 processes a 10-layer stage every ~71 ms. The layer-dependent portion nearly halves; a once-per-batch floor remains. That floor costs about 1.90 ms relative to the ideal half-cadence and quantitatively predicts the observed 97.27% TPM ratio.</p><p>So the remaining gap is best described as <strong>pipeline strong-scaling overhead</strong>: repeated Python scheduling, stream/backpressure boundaries, activation/output handoff, and result retirement. It is not cache-token arithmetic and not one blocking NCCL kernel.</p></article>
+      <aside class="next"><h3>If exact 2× matters</h3><ol><li>Reduce or move per-rank scheduler work out of Python.</li><li>Batch/control-plane handoffs rather than only caching tensor schema.</li><li>Decouple result retirement from the next stage-service interval.</li><li>Re-profile after each change; tuning GEMM tiles is not the first lever.</li></ol></aside>
+    </div>
   </section>
 
   <section class="panel" id="reproduce">
-    <div class="head"><div><span class="eyebrow">06 · Reproduce</span><h2>Exact experiment envelope</h2></div><p>The only inferred quantity is the user-defined 2×PP4 target. Every PP8 point is directly measured.</p></div>
+    <div class="head"><div><span class="eyebrow">07 · Reproduce</span><h2>Experiment envelope</h2></div><p>The reference is exactly <code>2 × median(one PP4)</code>; no concurrent two-PP4 run is required or implied.</p></div>
     <div class="settings">
-      <div class="setting"><span>Hardware</span><strong>1 GB300 NVL72 tray · 8 GPUs across nodes 136 + 169</strong></div>
-      <div class="setting"><span>Model format</span><strong>GLM-5.2 NVFP4 weights · FP8 E4M3 KV cache</strong></div>
-      <div class="setting"><span>Topology</span><strong>TP1 · DP1 · PP8 · EP1</strong></div>
-      <div class="setting"><span>Chunking</span><strong>8,192-token fixed chunk and max-prefill budget</strong></div>
-      <div class="setting"><span>Traffic</span><strong>Verified Liaoze real trace · bounded backlog · concurrency 80</strong></div>
-      <div class="setting"><span>Output</span><strong>Exactly one output token per request</strong></div>
+      <div class="setting"><span>Hardware</span><strong>GB300 tray · nodes 136 + 169 · 8 GPUs for PP8</strong></div>
+      <div class="setting"><span>Model</span><strong>GLM-5.2 NVFP4 weights · FP8 E4M3 KV</strong></div>
+      <div class="setting"><span>Topology</span><strong>TP1 · DP1 · PP4 or PP8 · EP1</strong></div>
+      <div class="setting"><span>Chunking</span><strong>8,192 chunk and max-prefill tokens</strong></div>
+      <div class="setting"><span>Traffic</span><strong>Liaoze real trace · first 2,048 · concurrency 80</strong></div>
+      <div class="setting"><span>Dataset SHA-256</span><strong><code>9cb067…8c77acb</code></strong></div>
+      <div class="setting"><span>Output</span><strong>One token · 2,048/2,048 HTTP 200</strong></div>
       <div class="setting"><span>Cache</span><strong>Flush before replay · HiCache write-through</strong></div>
-      <div class="setting"><span>Aligned controls</span><strong>2 tokenizer workers · safe output skip · PP async depth 1</strong></div>
-      <div class="setting"><span>Runtime source</span><strong>SGLang <code>d0f290a8</code> · auto PP microbatch cap 10</strong></div>
+      <div class="setting"><span>Winning PP8</span><strong>2 tokenizer workers · safe skip · async depth 2</strong></div>
     </div>
-    <p class="foot">Machine-readable evidence: <a href="data/report-data.json">run data</a> · <a href="data/profile-comparison.json">per-rank profile comparison</a> · production <a href="data/production-short-summary.json">short</a>/<a href="data/production-long-summary.json">long</a> summaries · cadence <a href="data/baseline-short-cadence.json">before</a>/<a href="data/production-short-cadence.json">after</a>. The output-skip guard applies only to EXTEND batches with one request, no last prefill chunk, and no logprob return. Async depth 1 changes the PP loop from 8 to 9 slots.</p>
+    <p class="foot">Machine-readable values: <a href="data/report-data.json">report-data.json</a>. Cadence uses the central 80% of reconstructed full-batch intervals. TPM uses each run’s observed uncached prompt tokens divided by client wall time. Phase timing uses the second 1,000 active batches to exclude pipeline fill.</p>
   </section>
 </main>
 </body>
