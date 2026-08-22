@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Controlled GB300 evidence for why GLM-5.2 dual CUDA-stream overlap reduces decode latency, including SM resource exclusion and a serialized A/B control.">
+  <title>GLM-5.2 GB300 Stream Overlap Causality</title>
+  <style>
+:root {
+  --bg: #f4f7f8;
+  --paper: #ffffff;
+  --ink: #17212b;
+  --muted: #5c6975;
+  --line: #cdd8de;
+  --soft: #edf3f5;
+  --teal: #0f766e;
+  --teal-soft: #dcefeb;
+  --rust: #a04432;
+  --rust-soft: #f5e5e0;
+  --blue: #2762a5;
+  --blue-soft: #e2ecf7;
+  --violet: #74518f;
+  --violet-soft: #ede5f2;
+  --green: #25734d;
+  --amber: #946200;
+  --shadow: 0 8px 22px rgba(23, 33, 43, 0.07);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.58;
+}
+a { color: #15599b; text-underline-offset: 3px; }
+a:hover { color: #0b3f73; }
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 16px;
+  z-index: 20;
+  border-radius: 6px;
+  background: var(--ink);
+  color: #fff;
+  padding: 8px 12px;
+}
+.skip-link:focus { top: 12px; }
+.topbar {
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.97);
+}
+.topbar-inner {
+  width: min(1420px, calc(100% - 40px));
+  min-height: 52px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.brand { color: var(--ink); font-weight: 820; text-decoration: none; }
+.toplinks { display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; }
+header { background: var(--paper); border-bottom: 1px solid var(--line); }
+.header-inner { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 42px 0 36px; }
+.eyebrow { color: var(--teal); font-size: 12px; font-weight: 850; text-transform: uppercase; }
+h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: 0; }
+h1 { max-width: 920px; margin-top: 9px; font-size: 42px; }
+h2 { margin-bottom: 16px; font-size: 27px; }
+h3 { font-size: 19px; }
+p { margin: 10px 0 0; }
+.lede { max-width: 880px; color: var(--muted); font-size: 18px; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 19px; }
+.pill {
+  display: inline-flex;
+  min-height: 29px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--soft);
+  padding: 4px 9px;
+  font-size: 13px;
+  font-weight: 750;
+}
+.layout {
+  width: min(1420px, calc(100% - 40px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 38px;
+  padding: 34px 0 70px;
+}
+.toc { position: sticky; top: 18px; align-self: start; border-left: 3px solid var(--line); padding-left: 15px; }
+.toc-title { margin: 0 0 9px; color: var(--muted); font-size: 12px; font-weight: 850; text-transform: uppercase; }
+.toc a { display: block; padding: 5px 0; color: #475663; font-size: 14px; text-decoration: none; }
+.toc a:hover { color: var(--teal); }
+article { min-width: 0; }
+section { scroll-margin-top: 18px; }
+section + section { margin-top: 52px; }
+.section-intro { max-width: 900px; color: var(--muted); }
+.verdict-band {
+  border-top: 4px solid var(--teal);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  padding: 22px 24px;
+}
+.verdict-band strong { color: var(--teal); }
+.metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.metric {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.metric-value { color: var(--teal); font-size: 29px; font-weight: 850; line-height: 1.1; }
+.metric-label { margin-top: 5px; color: var(--ink); font-weight: 760; }
+.metric-note { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.ab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 22px; }
+.ab-panel { border: 1px solid var(--line); border-radius: 7px; background: var(--paper); padding: 18px; }
+.ab-panel.control { border-top: 4px solid var(--rust); }
+.ab-panel.baseline { border-top: 4px solid var(--teal); }
+.queue { display: grid; grid-template-columns: 84px 1fr; gap: 8px; align-items: center; margin-top: 12px; }
+.queue-label { color: var(--muted); font: 700 12px/1.2 "SFMono-Regular", Consolas, monospace; }
+.queue-track { position: relative; height: 23px; border: 1px solid var(--line); background: var(--soft); overflow: hidden; }
+.queue-work { position: absolute; top: 3px; bottom: 3px; border-radius: 3px; }
+.main-work { left: 2%; width: 70%; background: var(--blue); }
+.alt-work { left: 30%; width: 66%; background: var(--violet); }
+.control .alt-work { left: 51%; width: 46%; }
+.join { margin-top: 10px; color: var(--muted); font-size: 13px; }
+.evidence-table-wrap { margin-top: 20px; overflow-x: auto; border: 1px solid var(--line); background: var(--paper); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { background: var(--soft); color: #43515d; font-size: 12px; text-transform: uppercase; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+.good { color: var(--green); font-weight: 800; }
+.warn { color: var(--amber); font-weight: 800; }
+.delta-bars { margin-top: 22px; border-top: 1px solid var(--line); }
+.delta-row { display: grid; grid-template-columns: minmax(155px, 230px) minmax(220px, 1fr) 96px; gap: 12px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.delta-track { height: 18px; background: #dce4e8; overflow: hidden; }
+.delta-fill { height: 100%; min-width: 2px; background: var(--teal); }
+.delta-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 780; }
+.region-list { display: grid; gap: 18px; margin-top: 22px; }
+.region {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+.region-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: baseline; }
+.region-result { color: var(--teal); font-weight: 850; font-variant-numeric: tabular-nums; }
+.timeline-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 17px; }
+.timeline-variant { min-width: 0; }
+.timeline-title { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; font-size: 13px; font-weight: 800; }
+.timeline-frame { position: relative; border: 1px solid var(--line); background: #f8fafb; padding: 9px 8px 8px 76px; overflow: hidden; }
+.timeline-axis { position: absolute; inset: 0 8px 0 76px; pointer-events: none; }
+.timeline-axis span { position: absolute; top: 0; bottom: 0; border-left: 1px solid rgba(80, 99, 111, .18); }
+.timeline-axis span:nth-child(1) { left: 25%; }
+.timeline-axis span:nth-child(2) { left: 50%; }
+.timeline-axis span:nth-child(3) { left: 75%; }
+.lane { position: relative; height: 29px; }
+.lane + .lane { border-top: 1px solid #e3e9ec; }
+.lane-label { position: absolute; left: -69px; top: 7px; width: 62px; overflow: hidden; color: var(--muted); font: 700 11px/1.2 "SFMono-Regular", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.event { position: absolute; top: 6px; height: 17px; min-width: 2px; border: 1px solid rgba(23, 33, 43, .28); border-radius: 2px; }
+.event.main { background: var(--blue); }
+.event.alternate { background: var(--violet); }
+.axis-labels { display: flex; justify-content: space-between; margin: 4px 8px 0 76px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 9px; color: var(--muted); font-size: 12px; }
+.swatch { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 2px; }
+.swatch.main { background: var(--blue); }
+.swatch.alternate { background: var(--violet); }
+.proof-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
+.proof { border-top: 3px solid var(--rust); background: var(--paper); padding: 18px 0 0; }
+.proof.possible { border-top-color: var(--green); }
+.capacity { margin-top: 14px; }
+.capacity-label { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; }
+.capacity-track { height: 22px; margin-top: 5px; border: 1px solid var(--line); background: var(--soft); overflow: hidden; }
+.capacity-fill { height: 100%; min-width: 2px; }
+.capacity-fill.q { background: var(--blue); }
+.capacity-fill.k { background: var(--violet); }
+.capacity-fill.routed { background: var(--rust); }
+.capacity-fill.small { background: var(--green); }
+.equation {
+  margin-top: 15px;
+  border-left: 3px solid var(--teal);
+  background: var(--soft);
+  padding: 12px 14px;
+  font-family: Cambria, Georgia, serif;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.mechanism-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; margin-top: 22px; }
+.flow-step { border: 1px solid var(--line); background: var(--paper); padding: 16px; }
+.flow-value { font-size: 25px; font-weight: 850; font-variant-numeric: tabular-nums; }
+.flow-step.gain .flow-value { color: var(--teal); }
+.flow-step.cost .flow-value { color: var(--rust); }
+.flow-arrow { align-self: center; color: var(--muted); font-size: 23px; }
+.callout { margin-top: 20px; border-left: 4px solid var(--rust); background: var(--rust-soft); padding: 15px 17px; }
+.method-list, .limits-list { margin: 16px 0 0; padding-left: 22px; }
+.method-list li + li, .limits-list li + li { margin-top: 8px; }
+.source-list { margin: 16px 0 0; padding-left: 22px; }
+.source-list li + li { margin-top: 8px; }
+.mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .94em; overflow-wrap: anywhere; }
+footer { border-top: 1px solid var(--line); background: var(--paper); }
+.footer-inner { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 25px 0 34px; color: var(--muted); font-size: 13px; }
+@media (max-width: 980px) {
+  .layout { grid-template-columns: 1fr; }
+  .toc { position: static; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); padding: 13px 15px; }
+  .toc a { display: inline-block; margin-right: 15px; }
+  .metric-grid, .proof-grid { grid-template-columns: 1fr 1fr; }
+  .timeline-pair { grid-template-columns: 1fr; }
+}
+@media (max-width: 680px) {
+  .topbar-inner, .header-inner, .layout, .footer-inner { width: min(100% - 24px, 1420px); }
+  .topbar-inner { align-items: flex-start; flex-direction: column; padding: 10px 0; }
+  h1 { font-size: 34px; }
+  .lede { font-size: 16px; }
+  .metric-grid, .ab-grid, .proof-grid { grid-template-columns: 1fr; }
+  .metric-value { font-size: 25px; }
+  .delta-row { grid-template-columns: 1fr; gap: 6px; }
+  .delta-value { text-align: left; }
+  .mechanism-flow { grid-template-columns: 1fr; }
+  .flow-arrow { transform: rotate(90deg); justify-self: center; }
+  .region { padding: 15px; }
+  .timeline-frame { padding-left: 64px; }
+  .timeline-axis { left: 64px; }
+  .lane-label { left: -57px; width: 51px; }
+  .axis-labels { margin-left: 64px; }
+}
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to report</a>
+  <nav class="topbar" aria-label="Pack navigation">
+    <div class="topbar-inner">
+      <a class="brand" href="../">MaaS Docs</a>
+      <div class="toplinks">
+        <a href="../glm52-gb300-cuda-graph-dependency-atlas/">CUDA Graph dependency atlas</a>
+        <a href="evidence.json">Evidence JSON</a>
+      </div>
+    </div>
+  </nav>
+  <header>
+    <div class="header-inner">
+      <div class="eyebrow">GLM-5.2 · GB300 · TP8 decode · controlled scheduling experiment</div>
+      <h1>Why the four CUDA-stream overlaps help</h1>
+      <p class="lede">The heavy Q/K and MoE pairs do execute concurrently on different SMs because their blocks cannot fit together on one SM. The two small DSA pairs may co-reside on one SM. The real performance mechanism is broader: independent grids expose enough ready blocks to fill otherwise unused GPU capacity, and the recovered overlap exceeds the contention cost.</p>
+      <div class="meta-row">
+        <span class="pill">800 paired rank-steps</span>
+        <span class="pill">152 SMs / GB110</span>
+        <span class="pill">nodes 134 + 137</span>
+        <span class="pill">published 2026-08-22 CST</span>
+      </div>
+    </div>
+  </header>
+  <main id="main" class="layout">
+    <aside class="toc" aria-label="On this page">
+      <p class="toc-title">On this page</p>
+      <a href="#verdict">Verdict</a>
+      <a href="#experiment">A/B design</a>
+      <a href="#end-to-end">End-to-end result</a>
+      <a href="#four-forks">Four forks</a>
+      <a href="#sm-proof">SM proof</a>
+      <a href="#mechanism">Actual mechanism</a>
+      <a href="#limits">Proof boundary</a>
+      <a href="#sources">Sources</a>
+    </aside>
+    <article>
+      <section id="verdict">
+        <div class="verdict-band">
+          <h2>Verdict</h2>
+          <p><strong>Yes for the heavy pairs, but “different streams use different SMs” is not the general rule.</strong> CUDA schedules thread blocks, not whole streams, onto available SMs. In this trace, resource limits force concurrently active heavy Q/K and MoE blocks onto different SMs. Small DSA blocks can share an SM. Removing all four source-level forks made the graph slower.</p>
+        </div>
+        <div class="metric-grid">
+          <div class="metric"><div class="metric-value">+1.372 ms</div><div class="metric-label">All-step median penalty</div><div class="metric-note">serialized control minus native dual stream</div></div>
+          <div class="metric"><div class="metric-value">92.2%</div><div class="metric-label">All 800 rank-steps</div><div class="metric-note">serialization increased wall span in 738 observations</div></div>
+          <div class="metric"><div class="metric-value">96.7%</div><div class="metric-label">Steady steps 2–10</div><div class="metric-note">696 of 720; median +1.372 ms</div></div>
+        </div>
+      </section>
+
+      <section id="experiment">
+        <h2>The causal A/B</h2>
+        <p class="section-intro">Both variants ran the same GLM-5.2 FP8 model, TP8 placement, B=100 request, 4,096-token prompt, ten decode tokens, seed, CUDA Graph, image, source revision, and compiler caches. The control inserted one additional alternate-stream wait after each main branch and before each alternate branch. Kernel signatures remained identical; only dependency ordering changed.</p>
+        <div class="ab-grid">
+          <div class="ab-panel baseline">
+            <h3>Baseline · native dual stream</h3>
+            <div class="queue"><span class="queue-label">main</span><span class="queue-track"><span class="queue-work main-work"></span></span></div>
+            <div class="queue"><span class="queue-label">alternate</span><span class="queue-track"><span class="queue-work alt-work"></span></span></div>
+            <p class="join">Both branches become eligible before the join.</p>
+          </div>
+          <div class="ab-panel control">
+            <h3>Control · dependency serialized</h3>
+            <div class="queue"><span class="queue-label">main</span><span class="queue-track"><span class="queue-work main-work"></span></span></div>
+            <div class="queue"><span class="queue-label">alternate</span><span class="queue-track"><span class="queue-work alt-work"></span></span></div>
+            <p class="join">The alternate branch waits for prior main work.</p>
+          </div>
+        </div>
+        <ul class="method-list">
+          <li>Kubernetes-idle and then node-local-idle: <span class="mono">gpu-worker-gb300-134</span> and <span class="mono">gpu-worker-gb300-137</span>, with no GPU processes before authorization.</li>
+          <li>Exactly 3,202 kernel signatures and 75 memcpy signatures matched the audited production-graph reference in both variants.</li>
+          <li>All 1,000 requests per variant succeeded; input-ID and output-ID hashes matched across baseline and control.</li>
+          <li>Artifacts: 53 leader files plus 9 worker files, zero copy-hash mismatches, 800/800 ledger records.</li>
+        </ul>
+      </section>
+
+      <section id="end-to-end">
+        <h2>End-to-end result</h2>
+        <p class="section-intro">Across all observations, the native graph’s median kernel wall span was <strong>17.744 ms</strong>; the serialized control was <strong>19.117 ms</strong>. Step 1 retains the post-prefill transition noise and remains in the primary 800-observation result. Steps 2–10 are shown as a sensitivity slice.</p>
+        <div class="evidence-table-wrap">
+          <table>
+            <thead><tr><th>Population</th><th class="num">Paired median</th><th class="num">Paired mean</th><th class="num">p05</th><th class="num">p95</th><th class="num">Positive</th></tr></thead>
+            <tbody>
+              <tr><td>All graph replays</td><td class="num">+1.372 ms</td><td class="num">+0.741 ms</td><td class="num">-2.202</td><td class="num">+3.622</td><td class="num">738 / 800</td></tr>
+              <tr><td>Steady decode steps 2–10</td><td class="num">+1.372 ms</td><td class="num">+1.336 ms</td><td class="num">+0.956</td><td class="num">+1.588</td><td class="num">696 / 720</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="delta-bars">
+            <div class="delta-row">
+              <div><strong>Decode step 1</strong><br><span class="metric-note">42 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 1 paired median wall-time delta 0.990 milliseconds"><div class="delta-fill" style="width:71.0997%"></div></div>
+              <div class="delta-value">+0.990 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 2</strong><br><span class="metric-note">80 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 2 paired median wall-time delta 1.358 milliseconds"><div class="delta-fill" style="width:97.5181%"></div></div>
+              <div class="delta-value">+1.358 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 3</strong><br><span class="metric-note">80 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 3 paired median wall-time delta 1.366 milliseconds"><div class="delta-fill" style="width:98.0639%"></div></div>
+              <div class="delta-value">+1.366 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 4</strong><br><span class="metric-note">80 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 4 paired median wall-time delta 1.364 milliseconds"><div class="delta-fill" style="width:97.9593%"></div></div>
+              <div class="delta-value">+1.364 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 5</strong><br><span class="metric-note">80 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 5 paired median wall-time delta 1.373 milliseconds"><div class="delta-fill" style="width:98.6085%"></div></div>
+              <div class="delta-value">+1.373 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 6</strong><br><span class="metric-note">72 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 6 paired median wall-time delta 1.392 milliseconds"><div class="delta-fill" style="width:100.0000%"></div></div>
+              <div class="delta-value">+1.392 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 7</strong><br><span class="metric-note">80 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 7 paired median wall-time delta 1.381 milliseconds"><div class="delta-fill" style="width:99.1623%"></div></div>
+              <div class="delta-value">+1.381 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 8</strong><br><span class="metric-note">80 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 8 paired median wall-time delta 1.360 milliseconds"><div class="delta-fill" style="width:97.6985%"></div></div>
+              <div class="delta-value">+1.360 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 9</strong><br><span class="metric-note">72 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 9 paired median wall-time delta 1.376 milliseconds"><div class="delta-fill" style="width:98.8360%"></div></div>
+              <div class="delta-value">+1.376 ms</div>
+            </div>
+            
+            <div class="delta-row">
+              <div><strong>Decode step 10</strong><br><span class="metric-note">72 / 80 slower when serialized</span></div>
+              <div class="delta-track" role="img" aria-label="Step 10 paired median wall-time delta 1.377 milliseconds"><div class="delta-fill" style="width:98.9096%"></div></div>
+              <div class="delta-value">+1.377 ms</div>
+            </div>
+            </div>
+      </section>
+
+      <section id="four-forks">
+        <h2>The four Layer 6 forks</h2>
+        <p class="section-intro">These timelines use raw CUPTI kernel intervals for representative run 1, decode step 2, rank 0. Each baseline/control pair shares one horizontal scale. Hover a bar for ordinal, duration, and CUPTI stream ID.</p>
+        <div class="evidence-table-wrap">
+          <table>
+            <thead><tr><th>Fork</th><th class="num">Native overlap (us)</th><th class="num">Control overlap (us)</th><th class="num">Local span penalty (us)</th><th>Different-SM proof</th></tr></thead>
+            <tbody>
+            <tr>
+              <td>DSA Q/K projection</td>
+              <td class="num">7.584</td>
+              <td class="num">0.000</td>
+              <td class="num">+7.840</td>
+              <td><span class="good">Yes for 1 observed pair(s)</span></td>
+            </tr>
+            
+            <tr>
+              <td>DSA Q/K rotate</td>
+              <td class="num">2.432</td>
+              <td class="num">0.000</td>
+              <td class="num">+1.728</td>
+              <td><span class="warn">Not required</span></td>
+            </tr>
+            
+            <tr>
+              <td>DSA query quant / K-cache store</td>
+              <td class="num">1.696</td>
+              <td class="num">0.032</td>
+              <td class="num">+1.632</td>
+              <td><span class="warn">Not required</span></td>
+            </tr>
+            
+            <tr>
+              <td>MoE shared/routed fork</td>
+              <td class="num">32.608</td>
+              <td class="num">0.000</td>
+              <td class="num">+16.768</td>
+              <td><span class="good">Yes for 6 observed pair(s)</span></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="legend"><span><span class="swatch main"></span>main/current branch</span><span><span class="swatch alternate"></span>alternate branch</span></div>
+        <div class="region-list">
+            <section class="region" aria-labelledby="region-dsa_qk_projection">
+              <div class="region-head">
+                <h3 id="region-dsa_qk_projection">DSA Q/K projection</h3>
+                <span class="region-result">+7.840 us when serialized</span>
+              </div>
+              <p>Layer 6 median cross-branch overlap fell from <strong>7.584 us</strong> to <strong>0.000 us</strong>. The local fork/join span increased in 800 of 800 paired observations. Control-minus-baseline selected-kernel residency was -0.768 us, exposing the contention cost that native overlap pays.</p>
+              <div class="timeline-pair">
+      <div class="timeline-variant">
+        <div class="timeline-title"><span>Native dual stream</span><span>14.432 us span</span></div>
+        <div class="timeline-frame">
+          <div class="timeline-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="lane"><span class="lane-label">main</span><span class="event main" role="img" style="left:0.00000%;width:max(2px,7.75862%)" title="activation quant; ordinal 260; start 0.000 us; duration 1.728 us; CUPTI stream 163" aria-label="activation quant; ordinal 260; start 0.000 us; duration 1.728 us; CUPTI stream 163"></span><span class="event main" role="img" style="left:9.77011%;width:max(2px,34.05172%)" title="DeepGEMM; ordinal 261; start 2.176 us; duration 7.584 us; CUPTI stream 163" aria-label="DeepGEMM; ordinal 261; start 2.176 us; duration 7.584 us; CUPTI stream 163"></span></div><div class="lane"><span class="lane-label">alternate</span><span class="event alternate" role="img" style="left:4.45402%;width:max(2px,7.90230%)" title="activation quant; ordinal 262; start 0.992 us; duration 1.760 us; CUPTI stream 161" aria-label="activation quant; ordinal 262; start 0.992 us; duration 1.760 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:14.36782%;width:max(2px,40.66092%)" title="DeepGEMM; ordinal 263; start 3.200 us; duration 9.056 us; CUPTI stream 161" aria-label="DeepGEMM; ordinal 263; start 3.200 us; duration 9.056 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:56.60920%;width:max(2px,8.18966%)" title="K norm; ordinal 264; start 12.608 us; duration 1.824 us; CUPTI stream 161" aria-label="K norm; ordinal 264; start 12.608 us; duration 1.824 us; CUPTI stream 161"></span></div>
+        </div>
+        <div class="axis-labels"><span>0</span><span>11.1 us</span><span>22.3 us</span></div>
+      </div>
+    
+      <div class="timeline-variant">
+        <div class="timeline-title"><span>Serialized control</span><span>22.272 us span</span></div>
+        <div class="timeline-frame">
+          <div class="timeline-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="lane"><span class="lane-label">main</span><span class="event main" role="img" style="left:0.00000%;width:max(2px,7.32759%)" title="activation quant; ordinal 260; start 0.000 us; duration 1.632 us; CUPTI stream 163" aria-label="activation quant; ordinal 260; start 0.000 us; duration 1.632 us; CUPTI stream 163"></span><span class="event main" role="img" style="left:8.76437%;width:max(2px,31.32184%)" title="DeepGEMM; ordinal 261; start 1.952 us; duration 6.976 us; CUPTI stream 163" aria-label="DeepGEMM; ordinal 261; start 1.952 us; duration 6.976 us; CUPTI stream 163"></span></div><div class="lane"><span class="lane-label">alternate</span><span class="event alternate" role="img" style="left:41.52299%;width:max(2px,7.75862%)" title="activation quant; ordinal 262; start 9.248 us; duration 1.728 us; CUPTI stream 161" aria-label="activation quant; ordinal 262; start 9.248 us; duration 1.728 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:50.86207%;width:max(2px,38.21839%)" title="DeepGEMM; ordinal 263; start 11.328 us; duration 8.512 us; CUPTI stream 161" aria-label="DeepGEMM; ordinal 263; start 11.328 us; duration 8.512 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:90.51724%;width:max(2px,9.48276%)" title="K norm; ordinal 264; start 20.160 us; duration 2.112 us; CUPTI stream 161" aria-label="K norm; ordinal 264; start 20.160 us; duration 2.112 us; CUPTI stream 161"></span></div>
+        </div>
+        <div class="axis-labels"><span>0</span><span>11.1 us</span><span>22.3 us</span></div>
+      </div>
+    </div>
+            </section>
+            
+            <section class="region" aria-labelledby="region-dsa_qk_rotate">
+              <div class="region-head">
+                <h3 id="region-dsa_qk_rotate">DSA Q/K rotate</h3>
+                <span class="region-result">+1.728 us when serialized</span>
+              </div>
+              <p>Layer 6 median cross-branch overlap fell from <strong>2.432 us</strong> to <strong>0.000 us</strong>. The local fork/join span increased in 799 of 800 paired observations. Control-minus-baseline selected-kernel residency was -1.056 us, exposing the contention cost that native overlap pays.</p>
+              <div class="timeline-pair">
+      <div class="timeline-variant">
+        <div class="timeline-title"><span>Native dual stream</span><span>2.880 us span</span></div>
+        <div class="timeline-frame">
+          <div class="timeline-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="lane"><span class="lane-label">main</span><span class="event main" role="img" style="left:0.00000%;width:max(2px,59.21053%)" title="Hadamard rotate; ordinal 266; start 0.000 us; duration 2.880 us; CUPTI stream 163" aria-label="Hadamard rotate; ordinal 266; start 0.000 us; duration 2.880 us; CUPTI stream 163"></span></div><div class="lane"><span class="lane-label">alternate</span><span class="event alternate" role="img" style="left:9.21053%;width:max(2px,50.00000%)" title="Hadamard rotate; ordinal 267; start 0.448 us; duration 2.432 us; CUPTI stream 161" aria-label="Hadamard rotate; ordinal 267; start 0.448 us; duration 2.432 us; CUPTI stream 161"></span></div>
+        </div>
+        <div class="axis-labels"><span>0</span><span>2.4 us</span><span>4.9 us</span></div>
+      </div>
+    
+      <div class="timeline-variant">
+        <div class="timeline-title"><span>Serialized control</span><span>4.864 us span</span></div>
+        <div class="timeline-frame">
+          <div class="timeline-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="lane"><span class="lane-label">main</span><span class="event main" role="img" style="left:0.00000%;width:max(2px,61.84211%)" title="Hadamard rotate; ordinal 266; start 0.000 us; duration 3.008 us; CUPTI stream 163" aria-label="Hadamard rotate; ordinal 266; start 0.000 us; duration 3.008 us; CUPTI stream 163"></span></div><div class="lane"><span class="lane-label">alternate</span><span class="event alternate" role="img" style="left:68.42105%;width:max(2px,31.57895%)" title="Hadamard rotate; ordinal 267; start 3.328 us; duration 1.536 us; CUPTI stream 161" aria-label="Hadamard rotate; ordinal 267; start 3.328 us; duration 1.536 us; CUPTI stream 161"></span></div>
+        </div>
+        <div class="axis-labels"><span>0</span><span>2.4 us</span><span>4.9 us</span></div>
+      </div>
+    </div>
+            </section>
+            
+            <section class="region" aria-labelledby="region-dsa_query_quant_k_store">
+              <div class="region-head">
+                <h3 id="region-dsa_query_quant_k_store">DSA query quant / K-cache store</h3>
+                <span class="region-result">+1.632 us when serialized</span>
+              </div>
+              <p>Layer 6 median cross-branch overlap fell from <strong>1.696 us</strong> to <strong>0.032 us</strong>. The local fork/join span increased in 800 of 800 paired observations. Control-minus-baseline selected-kernel residency was -0.032 us, exposing the contention cost that native overlap pays.</p>
+              <div class="timeline-pair">
+      <div class="timeline-variant">
+        <div class="timeline-title"><span>Native dual stream</span><span>2.816 us span</span></div>
+        <div class="timeline-frame">
+          <div class="timeline-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="lane"><span class="lane-label">main</span><span class="event main" role="img" style="left:5.51181%;width:max(2px,63.77953%)" title="activation quant; ordinal 268; start 0.224 us; duration 2.592 us; CUPTI stream 163" aria-label="activation quant; ordinal 268; start 0.224 us; duration 2.592 us; CUPTI stream 163"></span></div><div class="lane"><span class="lane-label">alternate</span><span class="event alternate" role="img" style="left:0.00000%;width:max(2px,62.99213%)" title="K-cache store; ordinal 269; start 0.000 us; duration 2.560 us; CUPTI stream 161" aria-label="K-cache store; ordinal 269; start 0.000 us; duration 2.560 us; CUPTI stream 161"></span></div>
+        </div>
+        <div class="axis-labels"><span>0</span><span>2.0 us</span><span>4.1 us</span></div>
+      </div>
+    
+      <div class="timeline-variant">
+        <div class="timeline-title"><span>Serialized control</span><span>4.064 us span</span></div>
+        <div class="timeline-frame">
+          <div class="timeline-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="lane"><span class="lane-label">main</span><span class="event main" role="img" style="left:0.00000%;width:max(2px,53.54331%)" title="activation quant; ordinal 268; start 0.000 us; duration 2.176 us; CUPTI stream 163" aria-label="activation quant; ordinal 268; start 0.000 us; duration 2.176 us; CUPTI stream 163"></span></div><div class="lane"><span class="lane-label">alternate</span><span class="event alternate" role="img" style="left:52.75591%;width:max(2px,47.24409%)" title="K-cache store; ordinal 269; start 2.144 us; duration 1.920 us; CUPTI stream 161" aria-label="K-cache store; ordinal 269; start 2.144 us; duration 1.920 us; CUPTI stream 161"></span></div>
+        </div>
+        <div class="axis-labels"><span>0</span><span>2.0 us</span><span>4.1 us</span></div>
+      </div>
+    </div>
+            </section>
+            
+            <section class="region" aria-labelledby="region-moe_shared_routed">
+              <div class="region-head">
+                <h3 id="region-moe_shared_routed">MoE shared/routed fork</h3>
+                <span class="region-result">+16.768 us when serialized</span>
+              </div>
+              <p>Layer 6 median cross-branch overlap fell from <strong>32.608 us</strong> to <strong>0.000 us</strong>. The local fork/join span increased in 797 of 800 paired observations. Control-minus-baseline selected-kernel residency was -11.360 us, exposing the contention cost that native overlap pays.</p>
+              <div class="timeline-pair">
+      <div class="timeline-variant">
+        <div class="timeline-title"><span>Native dual stream</span><span>97.216 us span</span></div>
+        <div class="timeline-frame">
+          <div class="timeline-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="lane"><span class="lane-label">main</span><span class="event main" role="img" style="left:0.00000%;width:max(2px,4.67737%)" title="activation quant; ordinal 287; start 0.000 us; duration 5.312 us; CUPTI stream 161" aria-label="activation quant; ordinal 287; start 0.000 us; duration 5.312 us; CUPTI stream 161"></span><span class="event main" role="img" style="left:5.07185%;width:max(2px,10.79177%)" title="DeepGEMM; ordinal 288; start 5.760 us; duration 12.256 us; CUPTI stream 161" aria-label="DeepGEMM; ordinal 288; start 5.760 us; duration 12.256 us; CUPTI stream 161"></span><span class="event main" role="img" style="left:16.22992%;width:max(2px,4.53649%)" title="activation; ordinal 289; start 18.432 us; duration 5.152 us; CUPTI stream 161" aria-label="activation; ordinal 289; start 18.432 us; duration 5.152 us; CUPTI stream 161"></span><span class="event main" role="img" style="left:37.39081%;width:max(2px,3.66300%)" title="activation quant; ordinal 290; start 42.464 us; duration 4.160 us; CUPTI stream 161" aria-label="activation quant; ordinal 290; start 42.464 us; duration 4.160 us; CUPTI stream 161"></span><span class="event main" role="img" style="left:41.56100%;width:max(2px,12.76416%)" title="DeepGEMM; ordinal 291; start 47.200 us; duration 14.496 us; CUPTI stream 161" aria-label="DeepGEMM; ordinal 291; start 47.200 us; duration 14.496 us; CUPTI stream 161"></span></div><div class="lane"><span class="lane-label">alternate</span><span class="event alternate" role="img" style="left:3.83207%;width:max(2px,5.63539%)" title="NVJet GEMM; ordinal 292; start 4.352 us; duration 6.400 us; CUPTI stream 164" aria-label="NVJet GEMM; ordinal 292; start 4.352 us; duration 6.400 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:9.18569%;width:max(2px,2.16963%)" title="void cublasLt::splitKreduce_kernel; ordinal 293; start 10.432 us; duration 2.464 us; CUPTI stream 164" aria-label="void cublasLt::splitKreduce_kernel; ordinal 293; start 10.432 us; duration 2.464 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:10.17188%;width:max(2px,3.46577%)" title="activation quant; ordinal 294; start 11.552 us; duration 3.936 us; CUPTI stream 164" aria-label="activation quant; ordinal 294; start 11.552 us; duration 3.936 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:13.52494%;width:max(2px,2.87405%)" title="routing; ordinal 295; start 15.360 us; duration 3.264 us; CUPTI stream 164" aria-label="routing; ordinal 295; start 15.360 us; duration 3.264 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:15.86362%;width:max(2px,3.55030%)" title="routing; ordinal 296; start 18.016 us; duration 4.032 us; CUPTI stream 164" aria-label="routing; ordinal 296; start 18.016 us; duration 4.032 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:19.38574%;width:max(2px,31.36095%)" title="routed GEMM; ordinal 297; start 22.016 us; duration 35.616 us; CUPTI stream 164" aria-label="routed GEMM; ordinal 297; start 22.016 us; duration 35.616 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:50.21133%;width:max(2px,3.38123%)" title="activation; ordinal 298; start 57.024 us; duration 3.840 us; CUPTI stream 164" aria-label="activation; ordinal 298; start 57.024 us; duration 3.840 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:51.36658%;width:max(2px,27.07805%)" title="routed GEMM; ordinal 299; start 58.336 us; duration 30.752 us; CUPTI stream 164" aria-label="routed GEMM; ordinal 299; start 58.336 us; duration 30.752 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:78.67005%;width:max(2px,4.95914%)" title="finalize; ordinal 300; start 89.344 us; duration 5.632 us; CUPTI stream 164" aria-label="finalize; ordinal 300; start 89.344 us; duration 5.632 us; CUPTI stream 164"></span><span class="event alternate" role="img" style="left:83.91096%;width:max(2px,1.69062%)" title="memcpy; ordinal 301; start 95.296 us; duration 1.920 us; CUPTI stream 164" aria-label="memcpy; ordinal 301; start 95.296 us; duration 1.920 us; CUPTI stream 164"></span></div>
+        </div>
+        <div class="axis-labels"><span>0</span><span>56.8 us</span><span>113.6 us</span></div>
+      </div>
+    
+      <div class="timeline-variant">
+        <div class="timeline-title"><span>Serialized control</span><span>113.568 us span</span></div>
+        <div class="timeline-frame">
+          <div class="timeline-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="lane"><span class="lane-label">main</span><span class="event main" role="img" style="left:0.00000%;width:max(2px,5.86081%)" title="activation quant; ordinal 287; start 0.000 us; duration 6.656 us; CUPTI stream 161" aria-label="activation quant; ordinal 287; start 0.000 us; duration 6.656 us; CUPTI stream 161"></span><span class="event main" role="img" style="left:6.39617%;width:max(2px,7.97408%)" title="DeepGEMM; ordinal 288; start 7.264 us; duration 9.056 us; CUPTI stream 161" aria-label="DeepGEMM; ordinal 288; start 7.264 us; duration 9.056 us; CUPTI stream 161"></span><span class="event main" role="img" style="left:14.56748%;width:max(2px,2.53593%)" title="activation; ordinal 289; start 16.544 us; duration 2.880 us; CUPTI stream 161" aria-label="activation; ordinal 289; start 16.544 us; duration 2.880 us; CUPTI stream 161"></span><span class="event main" role="img" style="left:16.87799%;width:max(2px,1.63426%)" title="activation quant; ordinal 290; start 19.168 us; duration 1.856 us; CUPTI stream 161" aria-label="activation quant; ordinal 290; start 19.168 us; duration 1.856 us; CUPTI stream 161"></span><span class="event main" role="img" style="left:18.90673%;width:max(2px,4.11383%)" title="DeepGEMM; ordinal 291; start 21.472 us; duration 4.672 us; CUPTI stream 161" aria-label="DeepGEMM; ordinal 291; start 21.472 us; duration 4.672 us; CUPTI stream 161"></span></div><div class="lane"><span class="lane-label">alternate</span><span class="event alternate" role="img" style="left:23.30234%;width:max(2px,5.38180%)" title="NVJet GEMM; ordinal 292; start 26.464 us; duration 6.112 us; CUPTI stream 161" aria-label="NVJet GEMM; ordinal 292; start 26.464 us; duration 6.112 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:27.69794%;width:max(2px,2.70499%)" title="void cublasLt::splitKreduce_kernel; ordinal 293; start 31.456 us; duration 3.072 us; CUPTI stream 161" aria-label="void cublasLt::splitKreduce_kernel; ordinal 293; start 31.456 us; duration 3.072 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:29.47309%;width:max(2px,2.33869%)" title="activation quant; ordinal 294; start 33.472 us; duration 2.656 us; CUPTI stream 161" aria-label="activation quant; ordinal 294; start 33.472 us; duration 2.656 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:31.47365%;width:max(2px,2.42234%)" title="routing; ordinal 295; start 35.744 us; duration 2.751 us; CUPTI stream 161" aria-label="routing; ordinal 295; start 35.744 us; duration 2.751 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:33.89687%;width:max(2px,3.63483%)" title="routing; ordinal 296; start 38.496 us; duration 4.128 us; CUPTI stream 161" aria-label="routing; ordinal 296; start 38.496 us; duration 4.128 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:37.39081%;width:max(2px,30.68470%)" title="routed GEMM; ordinal 297; start 42.464 us; duration 34.848 us; CUPTI stream 161" aria-label="routed GEMM; ordinal 297; start 42.464 us; duration 34.848 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:63.93350%;width:max(2px,6.84700%)" title="activation; ordinal 298; start 72.608 us; duration 7.776 us; CUPTI stream 161" aria-label="activation; ordinal 298; start 72.608 us; duration 7.776 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:68.27275%;width:max(2px,26.03550%)" title="routed GEMM; ordinal 299; start 77.536 us; duration 29.568 us; CUPTI stream 161" aria-label="routed GEMM; ordinal 299; start 77.536 us; duration 29.568 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:93.88560%;width:max(2px,4.48014%)" title="finalize; ordinal 300; start 106.624 us; duration 5.088 us; CUPTI stream 161" aria-label="finalize; ordinal 300; start 106.624 us; duration 5.088 us; CUPTI stream 161"></span><span class="event alternate" role="img" style="left:98.64751%;width:max(2px,1.35249%)" title="memcpy; ordinal 301; start 112.032 us; duration 1.536 us; CUPTI stream 161" aria-label="memcpy; ordinal 301; start 112.032 us; duration 1.536 us; CUPTI stream 161"></span></div>
+        </div>
+        <div class="axis-labels"><span>0</span><span>56.8 us</span><span>113.6 us</span></div>
+      </div>
+    </div>
+            </section>
+            </div>
+      </section>
+
+      <section id="sm-proof">
+        <h2>What can be proved about SM use</h2>
+        <p class="section-intro">GB110 exposes 152 SMs, 233,472 B shared memory per SM, and 65,536 registers per SM in the captured target record. A resource sum above either limit is a hard same-SM exclusion for one block from each kernel.</p>
+        <div class="proof-grid">
+          <div class="proof">
+            <h3>Q/K projection · different SMs required</h3>
+            <div class="capacity"><div class="capacity-label"><span>Q projection block</span><span>224,044 B</span></div><div class="capacity-track"><div class="capacity-fill q" style="width:95.962%"></div></div></div>
+            <div class="capacity"><div class="capacity-label"><span>K projection block</span><span>223,020 B</span></div><div class="capacity-track"><div class="capacity-fill k" style="width:95.523%"></div></div></div>
+            <div class="equation"><i>S</i><sub>Q</sub> + <i>S</i><sub>K</sub> = 224,044 B + 223,020 B = 447,064 B &gt; <i>S</i><sub>SM</sub> = 233,472 B</div>
+          </div>
+          <div class="proof">
+            <h3>MoE routed GEMM · different SMs required</h3>
+            <div class="capacity"><div class="capacity-label"><span>Routed block register floor</span><span>65,536</span></div><div class="capacity-track"><div class="capacity-fill routed" style="width:100%"></div></div></div>
+            <p>A 512-thread block at 128 registers per thread consumes the entire per-SM register file before any shared-expert block is added.</p>
+            <div class="equation"><i>R</i><sub>routed</sub> = 512 × 128 = 65,536 = <i>R</i><sub>SM</sub></div>
+          </div>
+          <div class="proof possible">
+            <h3>Small DSA pairs · same SM is possible</h3>
+            <div class="capacity"><div class="capacity-label"><span>Rotate pair shared memory</span><span>1,024 B total</span></div><div class="capacity-track"><div class="capacity-fill small" style="width:0.439%"></div></div></div>
+            <div class="capacity"><div class="capacity-label"><span>Quant/store register floor</span><span>6,528 total</span></div><div class="capacity-track"><div class="capacity-fill small" style="width:9.961%"></div></div></div>
+            <p>Their blocks can co-reside if warp, block, and other allocation limits also permit it. Separate SMs are not required.</p>
+          </div>
+        </div>
+        <div class="callout"><strong>Important:</strong> a CUDA stream does not own an SM set. Streams provide independent dependency queues. The GPU work distributor places eligible blocks on any SM with sufficient registers, shared memory, warp slots, and block slots.</div>
+      </section>
+
+      <section id="mechanism">
+        <h2>The actual reason it helps</h2>
+        <p class="section-intro">Native concurrency is not free: overlapping heavy kernels slow one another. The steady-step paired means expose the full tradeoff and preserve an exact per-observation accounting identity.</p>
+        <div class="mechanism-flow">
+          <div class="flow-step gain"><div class="flow-value">2.300 ms</div><strong>additional overlap discount</strong><p>More simultaneously resident kernel time is hidden from the active union.</p></div>
+          <div class="flow-arrow" aria-hidden="true">−</div>
+          <div class="flow-step cost"><div class="flow-value">1.098 ms</div><strong>contention cost</strong><p>Summed kernel residency is longer in the native graph.</p></div>
+          <div class="flow-arrow" aria-hidden="true">=</div>
+          <div class="flow-step gain"><div class="flow-value">1.203 ms</div><strong>net active-union gain</strong><p>The recovered concurrency remains larger than the slowdown.</p></div>
+        </div>
+        <div class="equation">2.300 ms recovered overlap − 1.098 ms contention = 1.203 ms less GPU-active time; adding 0.134 ms fewer inactive gaps gives 1.336 ms mean wall-time benefit.</div>
+        <p>So “uses multiple SMs” is only part of the answer. Heavy pairs must occupy different SMs while concurrent; small pairs may share an SM. In both cases, the useful mechanism is exposing independent blocks so the scheduler can consume capacity that one branch cannot use at that instant. The A/B proves that this scheduling opportunity is net-positive for this graph shape.</p>
+      </section>
+
+      <section id="limits">
+        <h2>Proof boundary</h2>
+        <ul class="limits-list">
+          <li>CUPTI kernel intervals are grid-lifetime timestamps, not a per-CTA log of physical SM IDs. The report does not claim an exact SM-number assignment.</li>
+          <li>For resource-excluded overlapping pairs, same-SM co-residency is impossible; therefore simultaneously resident blocks from those pairs must use different SMs.</li>
+          <li>For the small pairs, resource arithmetic proves only that same-SM co-residency is possible, not that it happened in every cycle.</li>
+          <li>The serialized control adds graph dependency nodes. Its latency delta is the net cost of removing these concurrency opportunities, including changed contention and dependency gaps.</li>
+          <li>The conclusion is scoped to GLM-5.2 FP8, TP8, B=100 decode on this GB300 image and graph. It is not a universal promise for every batch shape.</li>
+        </ul>
+      </section>
+
+      <section id="sources">
+        <h2>Evidence and primary references</h2>
+        <ul class="source-list">
+          <li><a href="../glm52-gb300-cuda-graph-dependency-atlas/">GLM-5.2 GB300 CUDA Graph dependency atlas</a> for the representative graph and source-derived queue structure.</li>
+          <li><a href="evidence.json">Sanitized experiment evidence</a> for all summaries, representative events, resource pairs, hashes, and experiment metadata.</li>
+          <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html">NVIDIA CUDA Programming Guide · programming model</a> for thread blocks and SM assignment.</li>
+          <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/03-advanced/advanced-kernel-programming.html">NVIDIA CUDA Programming Guide · advanced kernel programming</a> for resource-limited block residency.</li>
+          <li><a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html?highlight=local+memory">NVIDIA CUDA C++ Best Practices Guide</a> for concurrent kernel execution.</li>
+          <li><a href="https://docs.nvidia.com/cupti/api/structCUpti__ActivityKernel8.html">NVIDIA CUPTI ActivityKernel8 reference</a> for captured kernel interval and launch-resource fields.</li>
+        </ul>
+        <p class="metric-note">Source revision <span class="mono">ff7b9effd409791944f58b003a83bd22a7e8274a</span>; control patch SHA-256 <span class="mono">16bd8c61ef72a1d53ff509133907cc3c40ccead44e2794b87c54cc0fb261da4c</span>; exact image <span class="mono">image.hpc-ai.com/platform/dynamo-sglang-runtime@sha256:2e14df84c35a4a27263c0f4d4131436e3bdf7a677e38f71c16f775afa2267aff</span>.</p>
+      </section>
+    </article>
+  </main>
+  <footer><div class="footer-inner">MaaS Docs · controlled experiment on prod-maas-gb300-taiguo · both nodes returned to zero Kubernetes GPU requests after release.</div></footer>
+</body>
+</html>
