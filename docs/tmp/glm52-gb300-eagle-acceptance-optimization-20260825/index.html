@@ -1,0 +1,1382 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Paired GLM-5.2 EAGLE acceptance and throughput optimization on NVIDIA GB300 using natural-output real-trace replay.">
+  <meta name="experiment" content="glm52-gb300-eagle-acceptance-optimization-20260825">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-eagle-acceptance-optimization-20260825/">
+  <link rel="icon" href="data:,">
+  <title>GLM-5.2 EAGLE acceptance optimization · GB300</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #64748b;
+      --soft: #f5f7fb;
+      --paper: #ffffff;
+      --border: #dce4ef;
+      --blue: #2563eb;
+      --blue-deep: #1d4ed8;
+      --blue-soft: #eaf1ff;
+      --green: #13795b;
+      --green-soft: #e8f7f1;
+      --amber: #a15c00;
+      --amber-soft: #fff4dd;
+      --red: #c93851;
+      --red-soft: #fff0f3;
+      --purple: #7357c8;
+      --purple-soft: #f1edff;
+      --shadow: 0 18px 52px rgb(25 40 70 / 8%);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% -10%, rgb(37 99 235 / 9%), transparent 30rem),
+        linear-gradient(180deg, #f7f9fc 0, #f2f5f9 100%);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.58;
+    }
+
+    a { color: var(--blue-deep); text-underline-offset: 3px; }
+    code {
+      padding: .13em .38em;
+      border: 1px solid #dbe4f0;
+      border-radius: 5px;
+      background: #f4f7fb;
+      color: #334155;
+      font: .88em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+
+    .topbar {
+      position: sticky;
+      z-index: 20;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 52px;
+      padding: 9px clamp(16px, 3vw, 44px);
+      border-bottom: 1px solid rgb(220 228 239 / 90%);
+      background: rgb(255 255 255 / 91%);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 790;
+      letter-spacing: .02em;
+      text-decoration: none;
+    }
+
+    .topmeta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .page {
+      width: min(1580px, 100%);
+      margin: 0 auto;
+      padding: clamp(18px, 2.7vw, 42px);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(26px, 4.2vw, 60px);
+      border: 1px solid #dce5f0;
+      border-radius: 24px;
+      background: linear-gradient(132deg, #fff 0%, #f8fbff 57%, #edf4ff 100%);
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      position: absolute;
+      right: -80px;
+      bottom: -130px;
+      width: 390px;
+      height: 390px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgb(37 99 235 / 16%), transparent 68%);
+      content: "";
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--blue-deep);
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 1020px;
+      margin: 0;
+      font-size: clamp(31px, 5vw, 62px);
+      font-weight: 780;
+      letter-spacing: -.045em;
+      line-height: 1.02;
+    }
+
+    .dek {
+      max-width: 940px;
+      margin: 18px 0 0;
+      color: #42526a;
+      font-size: clamp(16px, 1.7vw, 21px);
+      line-height: 1.55;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 22px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 29px;
+      padding: 5px 10px;
+      border: 1px solid #d9e3f1;
+      border-radius: 999px;
+      background: rgb(255 255 255 / 78%);
+      color: #45566e;
+      font-size: 12px;
+      font-weight: 680;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 208px minmax(0, 1fr);
+      gap: 22px;
+      margin-top: 22px;
+      align-items: start;
+    }
+
+    .toc {
+      position: sticky;
+      top: 73px;
+      padding: 15px 12px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: rgb(255 255 255 / 82%);
+      box-shadow: 0 10px 35px rgb(34 51 84 / 5%);
+    }
+
+    .toc-title {
+      display: block;
+      margin: 1px 8px 9px;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 820;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .toc a {
+      display: block;
+      padding: 6px 8px;
+      border-radius: 7px;
+      color: #607089;
+      font-size: 12px;
+      font-weight: 630;
+      line-height: 1.3;
+      text-decoration: none;
+    }
+
+    .toc a:hover,
+    .toc a.active {
+      background: var(--blue-soft);
+      color: var(--blue-deep);
+    }
+
+    article { min-width: 0; }
+
+    .panel {
+      padding: clamp(20px, 2.9vw, 38px);
+      border: 1px solid var(--border);
+      border-radius: 19px;
+      background: var(--paper);
+      box-shadow: 0 13px 42px rgb(30 46 77 / 6%);
+    }
+
+    .panel + .panel { margin-top: 20px; }
+    section { scroll-margin-top: 75px; }
+
+    .section-kicker {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--blue-deep);
+      font-size: 11px;
+      font-weight: 820;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0 0 13px;
+      font-size: clamp(23px, 2.6vw, 34px);
+      letter-spacing: -.03em;
+      line-height: 1.18;
+    }
+
+    h3 {
+      margin: 25px 0 9px;
+      font-size: 18px;
+      letter-spacing: -.015em;
+      line-height: 1.3;
+    }
+
+    p { margin: 9px 0; }
+    .muted { color: var(--muted); }
+
+    .verdict {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(280px, .8fr);
+      gap: 18px;
+    }
+
+    .verdict-main {
+      padding: 20px 22px;
+      border: 1px solid #bfe6d8;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #f2fbf7, #e8f7f1);
+    }
+
+    .verdict-main strong {
+      color: var(--green);
+      font-size: 17px;
+    }
+
+    .verdict-side {
+      padding: 20px 22px;
+      border: 1px solid #f0d9a7;
+      border-radius: 15px;
+      background: var(--amber-soft);
+    }
+
+    .verdict-side strong { color: #8a5104; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 15px 16px;
+      border: 1px solid #e1e8f1;
+      border-radius: 12px;
+      background: #f9fbfd;
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 770;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      display: block;
+      font-size: clamp(21px, 2vw, 29px);
+      font-weight: 780;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.025em;
+      line-height: 1.15;
+    }
+
+    .metric-note {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .warning { color: var(--amber); }
+
+    .callout {
+      margin: 17px 0 0;
+      padding: 14px 16px;
+      border-left: 4px solid var(--blue);
+      border-radius: 8px;
+      background: var(--blue-soft);
+      color: #344968;
+    }
+
+    .callout.warn {
+      border-left-color: #d08a1d;
+      background: var(--amber-soft);
+    }
+
+    .callout.danger {
+      border-left-color: var(--red);
+      background: var(--red-soft);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 15px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th {
+      padding: 10px 11px;
+      border-bottom: 1px solid var(--border);
+      background: #f6f8fb;
+      color: #627087;
+      font-size: 10px;
+      font-weight: 790;
+      letter-spacing: .055em;
+      text-align: right;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    th:first-child,
+    td:first-child { text-align: left; }
+
+    td {
+      padding: 11px;
+      border-bottom: 1px solid #e8edf4;
+      text-align: right;
+      vertical-align: top;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #fbfcfe; }
+    tbody tr.winner { background: #f0faf6; }
+
+    .run-name {
+      display: block;
+      color: var(--ink);
+      font-weight: 760;
+    }
+
+    .run-sub {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 560;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 810;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .pill-exact { background: var(--blue-soft); color: var(--blue-deep); }
+    .pill-approx { background: var(--purple-soft); color: #6547b8; }
+    .pill-pass { background: var(--green-soft); color: var(--green); }
+
+    .plots {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .plot-card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid #e1e7ef;
+      border-radius: 13px;
+      background: #fbfcfe;
+    }
+
+    .plot-title {
+      margin: 0 0 2px;
+      font-size: 14px;
+      font-weight: 760;
+    }
+
+    .plot-note {
+      margin: 0 0 13px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 104px minmax(0, 1fr) 60px;
+      gap: 8px;
+      align-items: center;
+      margin: 9px 0;
+    }
+
+    .bar-label {
+      overflow: hidden;
+      color: #4b5b73;
+      font-size: 10px;
+      font-weight: 680;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      position: relative;
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e9eef5;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--blue);
+    }
+
+    .bar-fill.approx { background: var(--purple); }
+    .bar-fill.winner { background: var(--green); }
+
+    .target-line {
+      position: absolute;
+      z-index: 2;
+      top: -3px;
+      bottom: -3px;
+      width: 2px;
+      background: #9b620e;
+      box-shadow: 0 0 0 1px rgb(255 255 255 / 70%);
+    }
+
+    .bar-value {
+      color: #36465e;
+      font-size: 10px;
+      font-weight: 740;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 17px;
+    }
+
+    .mini-card {
+      padding: 16px 17px;
+      border: 1px solid #e2e8f1;
+      border-radius: 12px;
+      background: #fafbfd;
+    }
+
+    .mini-card h3 { margin-top: 0; }
+
+    .clean-list {
+      margin: 9px 0 0;
+      padding-left: 20px;
+    }
+
+    .clean-list li { margin: 7px 0; }
+
+    .equation {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr);
+      gap: 10px;
+      align-items: baseline;
+      margin: 13px 0;
+      padding: 13px 15px;
+      border: 1px solid #dde5ef;
+      border-radius: 10px;
+      background: #f8fafc;
+      font-family: Cambria, "Times New Roman", serif;
+      font-size: 17px;
+    }
+
+    .math-var { font-style: italic; }
+    .math-op { font-style: normal; }
+    .math-note {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .flow-step {
+      position: relative;
+      padding: 14px;
+      border: 1px solid #dfe7f1;
+      border-radius: 11px;
+      background: #fafbfd;
+    }
+
+    .flow-step::after {
+      position: absolute;
+      top: 50%;
+      right: -9px;
+      color: #9aa7b8;
+      content: "→";
+      transform: translateY(-50%);
+    }
+
+    .flow-step:last-child::after { content: ""; }
+
+    .flow-step b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--blue-deep);
+      font-size: 12px;
+    }
+
+    .flow-step span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    details {
+      margin-top: 13px;
+      border: 1px solid #dfe6ef;
+      border-radius: 11px;
+      background: #fbfcfe;
+    }
+
+    summary {
+      padding: 12px 14px;
+      cursor: pointer;
+      color: #3d4d65;
+      font-size: 12px;
+      font-weight: 740;
+    }
+
+    details > div { padding: 0 14px 14px; }
+
+    .source-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 11px;
+      margin-top: 14px;
+    }
+
+    .source-card {
+      display: block;
+      padding: 14px 15px;
+      border: 1px solid #dfe6ef;
+      border-radius: 11px;
+      background: #fafbfd;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .source-card:hover {
+      border-color: #b9c9e1;
+      background: #f6f9fd;
+    }
+
+    .source-card b {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--blue-deep);
+      font-size: 12px;
+    }
+
+    .source-card span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .footer {
+      padding: 24px 10px 8px;
+      color: #7b8799;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .loading {
+      padding: 30px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 1120px) {
+      .layout { grid-template-columns: 178px minmax(0, 1fr); }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .verdict { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow-step:nth-child(2)::after { content: ""; }
+    }
+
+    @media (max-width: 780px) {
+      .topbar { position: static; }
+      .topmeta { display: none; }
+      .page { padding: 12px; }
+      .hero { border-radius: 17px; }
+      .layout { display: block; }
+      .toc {
+        position: static;
+        display: flex;
+        overflow-x: auto;
+        gap: 3px;
+        margin-bottom: 14px;
+        padding: 8px;
+      }
+      .toc-title { display: none; }
+      .toc a { flex: 0 0 auto; white-space: nowrap; }
+      .panel { border-radius: 15px; }
+      .plots,
+      .two-col,
+      .source-grid { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .flow-step::after { content: ""; }
+      .bar-row { grid-template-columns: 86px minmax(120px, 1fr) 54px; }
+    }
+
+    @media (max-width: 490px) {
+      .metrics { grid-template-columns: 1fr; }
+      .equation {
+        grid-template-columns: auto auto;
+      }
+      .math-note { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../">MaaS Docs</a>
+    <div class="topmeta">GLM-5.2 · NVIDIA GB300 · paired natural-output replay · 2026-08-25</div>
+  </header>
+
+  <main class="page">
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">Speculative decoding experiment</p>
+      <h1 id="page-title">EAGLE acceptance can reach 70%—but the win is narrow</h1>
+      <p class="dek">
+        Six paired, uncapped real-trace runs separate draft acceptance, saturated output capacity,
+        client TPOT, and long-tail completion. A <strong>2-1-3</strong> EAGLE chain with accumulated
+        threshold <strong>0.97</strong> is the only tested point that clears both requested gates,
+        but it uses approximate acceptance semantics and is not yet a production-safe default.
+      </p>
+      <div class="hero-badges">
+        <span class="badge">PP4 prefill + 3 × TP4 decode</span>
+        <span class="badge">First 4,000 trace requests</span>
+        <span class="badge">Original output limits</span>
+        <span class="badge">100 in flight</span>
+        <span class="badge">No retries</span>
+        <span class="badge">Four GB300 nodes only</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <nav class="toc" aria-label="On this page">
+        <span class="toc-title">On this page</span>
+        <a href="#verdict">Verdict</a>
+        <a href="#comparison">Paired results</a>
+        <a href="#metrics">Metric meaning</a>
+        <a href="#frontier">Exact frontier</a>
+        <a href="#screening">Screening funnel</a>
+        <a href="#setup">Experiment setup</a>
+        <a href="#risks">Risks</a>
+        <a href="#recommendation">Recommendation</a>
+        <a href="#sources">Sources</a>
+        <a href="#reproducibility">Reproducibility</a>
+      </nav>
+
+      <article>
+        <section class="panel" id="verdict">
+          <span class="section-kicker">01 · outcome</span>
+          <h2>Joint gate passed, with important caveats</h2>
+          <div class="verdict">
+            <div class="verdict-main">
+              <strong>2-1-3 with accumulated threshold 0.97 passes the measured joint gate.</strong>
+              <p>
+                Strict draft acceptance reached <strong>70.60%</strong>, while saturated
+                issue-window output accounting reached <strong>310.1k tokens/min</strong>,
+                <strong>1.28%</strong> above the paired 5-1-6 baseline. Mean client TPOT improved
+                by <strong>12.0%</strong>.
+              </p>
+            </div>
+            <div class="verdict-side">
+              <strong>Do not read this as a draft-quality fix.</strong>
+              <p>
+                The threshold relaxes acceptance and can change generated trajectories. The gain is
+                small, HTTP 529 failures increased, and full-cohort RPM fell because of the uncapped tail.
+              </p>
+            </div>
+          </div>
+
+          <div class="metrics" id="hero-metrics">
+            <div class="loading">Loading measured results…</div>
+          </div>
+
+          <div class="callout warn">
+            <strong>Recommended interpretation:</strong> this is a candidate for a guarded online A/B,
+            not an unconditional rollout. The exact 2-1-3 configuration remains the cleaner semantic
+            option and delivers the largest saturated throughput gain, but it misses the 70% acceptance
+            target by 1.16 percentage points.
+          </div>
+        </section>
+
+        <section class="panel" id="comparison">
+          <span class="section-kicker">02 · paired evidence</span>
+          <h2>One workload, six formal runs</h2>
+          <p class="muted">
+            Every row uses the same source file, first 4,000 records in source order, natural request
+            output limits, maximum concurrency 100, and zero retries. Green highlights the only
+            measured point that clears acceptance and saturated output-rate gates together.
+          </p>
+
+          <div class="table-wrap">
+            <table aria-label="Paired formal run comparison">
+              <thead>
+                <tr>
+                  <th>Run</th>
+                  <th>Strict accept</th>
+                  <th>Accept length</th>
+                  <th>Issue RPM</th>
+                  <th>Δ issue RPM</th>
+                  <th>Full RPM</th>
+                  <th>Mean TPOT</th>
+                  <th>P90 / P99</th>
+                  <th>HTTP 529</th>
+                  <th>Issue / drain</th>
+                </tr>
+              </thead>
+              <tbody id="formal-table">
+                <tr><td colspan="10" class="loading">Loading report-data.json…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="plots">
+            <div class="plot-card">
+              <p class="plot-title">Strict draft acceptance</p>
+              <p class="plot-note">The vertical marker is the 70% target.</p>
+              <div id="acceptance-plot"></div>
+            </div>
+            <div class="plot-card">
+              <p class="plot-title">Saturated issue-window output rate</p>
+              <p class="plot-note">Completed output tokens per minute; baseline is 306.1k.</p>
+              <div id="rpm-plot"></div>
+            </div>
+          </div>
+
+          <div class="callout">
+            <strong>The full-cohort column answers a different question.</strong> It includes the
+            low-concurrency drain after request 4,000 is issued. Because original output limits were
+            preserved and generated paths diverged, a few long responses dominate this number.
+            Issue-window RPM is the closer capacity signal; full-cohort RPM is still shown so the tail
+            cannot be hidden.
+          </div>
+        </section>
+
+        <section class="panel" id="metrics">
+          <span class="section-kicker">03 · definitions</span>
+          <h2>What acceptance and RPM mean here</h2>
+          <div class="two-col">
+            <div class="mini-card">
+              <h3>Strict draft acceptance</h3>
+              <div class="equation">
+                <span><span class="math-var">A</span><sub>strict</sub></span>
+                <span>=</span>
+                <span>
+                  (<span class="math-var">N</span><sub>generated</sub> −
+                  <span class="math-var">N</span><sub>verify</sub>) /
+                  (<span class="math-var">s</span> · <span class="math-var">N</span><sub>verify</sub>)
+                </span>
+                <span class="math-note">
+                  <span class="math-var">s</span> is the configured speculative step count.
+                  The bonus target token is excluded from accepted drafts.
+                </span>
+              </div>
+              <p>
+                Engine counters are differenced across all three decode replicas. This is a
+                token-weighted aggregate over the full run, not the median of request-level ratios.
+              </p>
+            </div>
+
+            <div class="mini-card">
+              <h3>Acceptance length, including bonus</h3>
+              <div class="equation">
+                <span><span class="math-var">L</span><sub>accept</sub></span>
+                <span>=</span>
+                <span>
+                  <span class="math-var">N</span><sub>generated</sub> /
+                  <span class="math-var">N</span><sub>verify</sub>
+                </span>
+                <span class="math-note">
+                  This includes the one target-generated bonus token per verification.
+                  It is not the same quantity as strict draft acceptance.
+                </span>
+              </div>
+              <p>
+                A 5-step run can have a larger acceptance length but lower strict acceptance because
+                it proposes more draft tokens per verification.
+              </p>
+            </div>
+          </div>
+
+          <h3>Two output-rate denominators</h3>
+          <div class="flow" aria-label="Output rate accounting flow">
+            <div class="flow-step">
+              <b>Issue starts</b>
+              <span>The bounded backlog fills toward 100 in flight.</span>
+            </div>
+            <div class="flow-step">
+              <b>Saturated window</b>
+              <span>Count valid output tokens completed before the final request is issued.</span>
+            </div>
+            <div class="flow-step">
+              <b>Issue ends</b>
+              <span>Request 4,000 has been issued; issue-window RPM is now fixed.</span>
+            </div>
+            <div class="flow-step">
+              <b>Natural drain</b>
+              <span>All remaining uncapped requests finish; full-cohort RPM includes this tail.</span>
+            </div>
+          </div>
+          <p>
+            The issue-window rate is completion accounting, not a raw kernel counter. The full-cohort
+            rate uses decode-engine generation-token deltas divided by total wall time. Both are valid,
+            but they answer different operational questions.
+          </p>
+        </section>
+
+        <section class="panel" id="frontier">
+          <span class="section-kicker">04 · interpretation</span>
+          <h2>The exact and approximate frontiers are different</h2>
+          <div class="two-col">
+            <div class="mini-card">
+              <h3>Exact semantics</h3>
+              <ul class="clean-list">
+                <li><strong>1-1-2:</strong> 83.01% acceptance, but issue-window RPM falls 4.12%.</li>
+                <li><strong>2-1-3:</strong> issue-window RPM rises 6.32%, but acceptance is 68.84%.</li>
+                <li><strong>Conclusion:</strong> no tested exact point clears both requested gates.</li>
+              </ul>
+            </div>
+            <div class="mini-card">
+              <h3>Approximate semantics</h3>
+              <ul class="clean-list">
+                <li><strong>0.98:</strong> 73.25% acceptance, but issue-window RPM falls 1.89%.</li>
+                <li><strong>0.97:</strong> 70.60% acceptance and issue-window RPM rises 1.28%.</li>
+                <li><strong>0.95:</strong> issue-window RPM rises 2.97%, but acceptance is 68.69%.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="callout warn">
+            <strong>Why is aggregate acceptance not perfectly monotonic with the threshold?</strong>
+            Relaxing a token-level decision changes which tokens enter the sequence, which changes later
+            draft and target probabilities, stop/tool-call timing, output length, routing, and the
+            token-weighted mix seen by the counter. These runs preserve request settings, not identical
+            generated trajectories. The threshold is locally more permissive; the run-level aggregate
+            need not interpolate smoothly.
+          </div>
+
+          <details>
+            <summary>What the 0.97 threshold changes</summary>
+            <div>
+              <p>
+                The accumulated threshold is part of acceptance policy. Lowering it can accept a draft
+                token in cases where exact rejection would not. That is an approximation to target
+                sampling, so a higher measured acceptance rate does not establish a better draft model,
+                better weights, or higher target–draft agreement.
+              </p>
+              <p>
+                This distinction is central: a draft-model improvement should raise acceptance under the
+                same exact policy. The 0.97 result instead trades semantic fidelity for fewer rejected
+                speculative branches.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel" id="screening">
+          <span class="section-kicker">05 · search funnel</span>
+          <h2>Small screens narrowed the expensive paired search</h2>
+          <p class="muted">
+            These 128-request standalone runs are directional only. Their traffic shape and measurement
+            window differ from the six formal paired runs, so their RPM must not be compared directly
+            with formal issue-window RPM.
+          </p>
+          <div class="table-wrap">
+            <table aria-label="Standalone screening runs">
+              <thead>
+                <tr>
+                  <th>Variant</th>
+                  <th>Strict accept</th>
+                  <th>Screen RPM</th>
+                  <th>Use</th>
+                </tr>
+              </thead>
+              <tbody id="screen-table">
+                <tr><td colspan="4" class="loading">Loading screening data…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Ruled out or deprioritized</h3>
+          <ul class="clean-list">
+            <li>
+              <strong>Long 5-1-6 chain:</strong> poor exact acceptance in the paired baseline and no
+              convincing standalone precision/backend fix.
+            </li>
+            <li>
+              <strong>FP8 draft replacement:</strong> did not improve the short screen; mixed FP4 target
+              plus FP8 draft reached only 58.69% strict acceptance.
+            </li>
+            <li>
+              <strong>Draft backend switches and BF16 KV:</strong> small acceptance changes did not
+              establish a throughput-quality win.
+            </li>
+            <li>
+              <strong>DSA/MLA EAGLE top-k greater than one:</strong> unsupported by the current chain path,
+              so it was not forced into the formal run.
+            </li>
+            <li>
+              <strong>Missing draft DSA transfer hypothesis:</strong> current runtime inspection showed
+              the draft indexer state participates in the PD transfer path; that known failure mode did
+              not explain this deployment’s low acceptance.
+            </li>
+          </ul>
+        </section>
+
+        <section class="panel" id="setup">
+          <span class="section-kicker">06 · controlled setup</span>
+          <h2>Experiment contract</h2>
+          <div class="two-col">
+            <div class="mini-card">
+              <h3>Serving topology</h3>
+              <ul class="clean-list">
+                <li>GLM-5.2 target: NVFP4.</li>
+                <li>Draft quantization: <code>modelopt_fp4</code>.</li>
+                <li>Prefill: PP4 on node 136.</li>
+                <li>Decode: three independent TP4 replicas on nodes 129, 132, and 169.</li>
+                <li>DP, EP, and decode PP disabled for each TP4 replica.</li>
+              </ul>
+            </div>
+            <div class="mini-card">
+              <h3>Replay contract</h3>
+              <ul class="clean-list">
+                <li>Verified filtered Liaoze Europe six-hour dataset.</li>
+                <li>First 4,000 rows in source order.</li>
+                <li>Original request fields and output limits preserved.</li>
+                <li>Bounded backlog, maximum 100 in flight.</li>
+                <li>No retries; every terminal HTTP outcome retained.</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>Admission-control repair applied to every formal run</h3>
+          <p>
+            The inherited frontend default used an active-prefill token fraction of 64, which produced
+            overload near 524,288 active prefill tokens. Formal paired runs explicitly disabled that
+            hidden fraction limit, retained a 300,000 ms prefill overload threshold, and set prefill
+            maximum running requests to 100. A 100-request synthetic test completed before formal replay.
+          </p>
+
+          <div class="callout">
+            This repair is not counted as an EAGLE candidate improvement because it was held constant
+            across the promoted baseline and every paired candidate.
+          </div>
+        </section>
+
+        <section class="panel" id="risks">
+          <span class="section-kicker">07 · limitations</span>
+          <h2>Why the measured pass is not yet a deployment decision</h2>
+          <ul class="clean-list">
+            <li>
+              <strong>Approximate output semantics:</strong> accumulated threshold 0.97 can change sampled
+              output. Acceptance is raised partly by policy, not solely by target–draft agreement.
+            </li>
+            <li>
+              <strong>Narrow throughput margin:</strong> +1.28% issue-window RPM is too small to treat as
+              durable without repeated runs or an online randomized A/B.
+            </li>
+            <li>
+              <strong>Failure regression:</strong> HTTP 529 outcomes rose from 15 to 22 even though the
+              burst remained bounded and every row was accounted.
+            </li>
+            <li>
+              <strong>TTFT trade-off:</strong> candidate P50 TTFT rose from 3.70 s to 4.43 s.
+            </li>
+            <li>
+              <strong>Long-tail regression:</strong> candidate full-cohort RPM was 222.3k, 8.06% below
+              baseline, because its uncapped drain lasted 704.9 s.
+            </li>
+            <li>
+              <strong>Trace scope:</strong> the full unfiltered dataset was unavailable on the four
+              authorized nodes, so this uses the verified prompt-token-less-than-300k file.
+            </li>
+            <li>
+              <strong>Generated paths differ:</strong> source requests are paired, but sampling and
+              approximate acceptance do not guarantee identical outputs or output lengths.
+            </li>
+          </ul>
+        </section>
+
+        <section class="panel" id="recommendation">
+          <span class="section-kicker">08 · next decision</span>
+          <h2>Use 0.97 only in a guarded A/B; keep improving exact acceptance</h2>
+          <div class="two-col">
+            <div class="mini-card">
+              <h3>Short-term validation</h3>
+              <ol class="clean-list">
+                <li>Repeat baseline and 0.97 at least three times with shuffled, fixed request cohorts.</li>
+                <li>Run semantic regression checks on tool calls, stop behavior, and answer quality.</li>
+                <li>Gate on issue RPM, TTFT, HTTP 529 rate, and full-cohort drain—not acceptance alone.</li>
+                <li>Use a small online canary before any broad rollout.</li>
+              </ol>
+            </div>
+            <div class="mini-card">
+              <h3>Long-term fix</h3>
+              <ol class="clean-list">
+                <li>Improve or retrain the GLM-5.2 EAGLE draft weights for this target checkpoint.</li>
+                <li>Re-test exact 2-1-3 under the same workload after each draft change.</li>
+                <li>Investigate the bounded early 529 burst independently of EAGLE acceptance.</li>
+                <li>Prefer an exact-policy point that clears 70% and preserves the 2-1-3 throughput gain.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="callout danger">
+            <strong>Production bar:</strong> do not promote solely because this one run crosses 70%.
+            The experiment proves a plausible operating point, not a stable quality-preserving production
+            improvement.
+          </div>
+        </section>
+
+        <section class="panel" id="sources">
+          <span class="section-kicker">09 · primary references</span>
+          <h2>Official source evidence</h2>
+          <div class="source-grid">
+            <a class="source-card" href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/autoregressive/GLM/GLM-5.2.mdx">
+              <b>SGLang GLM-5.2 cookbook</b>
+              <span>Official deployment and optimization guidance for GLM-5.2.</span>
+            </a>
+            <a class="source-card" href="https://github.com/sgl-project/sglang/blob/main/docs/src/snippets/configs/zai-org/glm-5.2.jsx">
+              <b>Official GLM-5.2 launch recipes</b>
+              <span>Shows short EAGLE chains, including 1-1-2 for FP8 and 2-1-3 for NVFP4.</span>
+            </a>
+            <a class="source-card" href="https://github.com/sgl-project/sglang/blob/main/docs/src/snippets/configs/zai-org/glm-5.2-benchmarks.jsx">
+              <b>Official benchmark snippet</b>
+              <span>Important caveat: published throughput examples can simulate acceptance length.</span>
+            </a>
+            <a class="source-card" href="https://github.com/sgl-project/sglang/issues/32176">
+              <b>SGLang issue 32176</b>
+              <span>HiCache/speculative-decoding context used to audit known failure modes.</span>
+            </a>
+            <a class="source-card" href="https://github.com/sgl-project/sglang/issues/31600">
+              <b>SGLang issue 31600</b>
+              <span>Additional speculative-decoding implementation context.</span>
+            </a>
+            <a class="source-card" href="report-data.json">
+              <b>Machine-readable report data</b>
+              <span>Formal run metrics, screening results, topology, checksum, and verdict.</span>
+            </a>
+          </div>
+
+          <div class="callout warn">
+            Published benchmark values that set <code>SGLANG_SIMULATE_ACC_LEN</code> are not evidence of
+            real model acceptance. This report uses actual decode-engine generation and verification
+            counters throughout.
+          </div>
+        </section>
+
+        <section class="panel" id="reproducibility">
+          <span class="section-kicker">10 · audit trail</span>
+          <h2>Reproducibility and resource closure</h2>
+          <div class="two-col">
+            <div class="mini-card">
+              <h3>Dataset identity</h3>
+              <p><code>requests_last6h_raw.prompt_tokens_lt_300000.jsonl</code></p>
+              <p class="muted">
+                35,744 source rows; SHA-256
+                <code>9cb06790675e6cd3b3cf1fcca8232f82f36d5002a86351c6510c1c3bb8c77acb</code>.
+              </p>
+            </div>
+            <div class="mini-card">
+              <h3>Accounting guarantees</h3>
+              <p>
+                Each formal run issued and accounted for exactly 4,000 rows, reached zero final in-flight
+                requests, used no retries, and had no drain cancellations or non-HTTP failures.
+              </p>
+            </div>
+          </div>
+
+          <h3>Run identifiers</h3>
+          <div class="table-wrap">
+            <table aria-label="Formal run identifiers">
+              <thead>
+                <tr><th>Run</th><th>Identifier</th><th>Rows</th><th>Terminal outcomes</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>5-1-6 exact baseline</td><td><code>paired-baseline-promoted-full516</code></td><td>4,000</td><td>3,985 success · 15 HTTP 529</td></tr>
+                <tr><td>1-1-2 exact</td><td><code>paired-candidate-exact-short112</code></td><td>4,000</td><td>3,984 success · 16 HTTP 529</td></tr>
+                <tr><td>2-1-3 exact</td><td><code>paired-candidate-exact-short213</code></td><td>4,000</td><td>3,987 success · 13 HTTP 529</td></tr>
+                <tr><td>2-1-3 accumulated 0.98</td><td><code>paired-candidate-short213-acc098-cold-c100-first4000-20260825</code></td><td>4,000</td><td>3,983 success · 17 HTTP 529</td></tr>
+                <tr><td>2-1-3 accumulated 0.97</td><td><code>paired-candidate-short213-acc097-cold-c100-first4000-20260825</code></td><td>4,000</td><td>3,978 success · 22 HTTP 529</td></tr>
+                <tr><td>2-1-3 accumulated 0.95</td><td><code>paired-candidate-short213-acc095-cold-c100-first4000-20260825</code></td><td>4,000</td><td>3,975 success · 25 HTTP 529</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="muted">
+            After artifact copy, the experiment DGD, Mooncake release, replay/control/data helpers,
+            copied ConfigMaps, and API secret were deleted. Kubernetes reported zero requested GPUs on
+            nodes 129, 132, 136, and 169. The cluster does not expose direct host SSH, so host-side
+            process absence cannot be independently asserted beyond the Kubernetes allocation boundary.
+          </p>
+        </section>
+
+        <footer class="footer">
+          Generated from paired run artifacts on 2026-08-25 · Asia/Shanghai · GLM-5.2 on NVIDIA GB300
+        </footer>
+      </article>
+    </div>
+  </main>
+
+  <noscript>
+    <div class="page"><div class="panel">JavaScript is required to render the data-backed tables and plots. The complete measurements remain available in <a href="report-data.json">report-data.json</a>.</div></div>
+  </noscript>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var labels = {
+        "baseline": "5-1-6 baseline",
+        "exact-112": "1-1-2 exact",
+        "exact-213": "2-1-3 exact",
+        "approx-098": "2-1-3 · 0.98",
+        "approx-097": "2-1-3 · 0.97",
+        "approx-095": "2-1-3 · 0.95"
+      };
+
+      function number(value, digits) {
+        return Number(value).toLocaleString("en-US", {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits
+        });
+      }
+
+      function signed(value, digits, suffix) {
+        var prefix = value > 0 ? "+" : "";
+        return prefix + number(value, digits) + suffix;
+      }
+
+      function deltaClass(value) {
+        if (value > 0) return "positive";
+        if (value < 0) return "negative";
+        return "";
+      }
+
+      function metricCard(label, value, note, cls) {
+        var card = document.createElement("div");
+        card.className = "metric";
+        card.innerHTML =
+          '<span class="metric-label">' + label + '</span>' +
+          '<span class="metric-value ' + (cls || "") + '">' + value + '</span>' +
+          '<span class="metric-note">' + note + '</span>';
+        return card;
+      }
+
+      function renderHero(data) {
+        var target = data.formal_runs.find(function (run) { return run.key === "approx-097"; });
+        var baseline = data.formal_runs.find(function (run) { return run.key === "baseline"; });
+        var host = document.getElementById("hero-metrics");
+        host.innerHTML = "";
+        host.appendChild(metricCard(
+          "Strict acceptance",
+          number(target.strict_acceptance_pct, 2) + "%",
+          "Target 70% · +" + number(target.strict_acceptance_pct - baseline.strict_acceptance_pct, 2) + " pp vs baseline",
+          "positive"
+        ));
+        host.appendChild(metricCard(
+          "Issue-window rate",
+          number(target.issue_window_output_tokens_per_min / 1000, 1) + "k/min",
+          signed(target.issue_window_delta_pct, 2, "%") + " vs baseline",
+          deltaClass(target.issue_window_delta_pct)
+        ));
+        host.appendChild(metricCard(
+          "Mean TPOT",
+          number(target.tpot_ms.mean, 2) + " ms",
+          signed((target.tpot_ms.mean / baseline.tpot_ms.mean - 1) * 100, 1, "%") + " vs baseline",
+          "positive"
+        ));
+        host.appendChild(metricCard(
+          "HTTP 529",
+          target.failed_http_529 + " / 4,000",
+          "Baseline " + baseline.failed_http_529 + " · regression to guard",
+          "warning"
+        ));
+      }
+
+      function renderFormalTable(data) {
+        var body = document.getElementById("formal-table");
+        body.innerHTML = "";
+        data.formal_runs.forEach(function (run) {
+          var tr = document.createElement("tr");
+          if (run.key === "approx-097") tr.className = "winner";
+          var semanticsClass = run.semantics === "exact" ? "pill-exact" : "pill-approx";
+          var pass = run.key === "approx-097" ? ' <span class="pill pill-pass">joint pass</span>' : "";
+          tr.innerHTML =
+            '<td><span class="run-name">' + labels[run.key] + pass + '</span>' +
+            '<span class="run-sub"><span class="pill ' + semanticsClass + '">' + run.semantics + '</span>' +
+            " · single " + number(run.accept_threshold_single, 2) +
+            " · accumulated " + number(run.accept_threshold_acc, 2) + '</span></td>' +
+            '<td>' + number(run.strict_acceptance_pct, 2) + '%</td>' +
+            '<td>' + number(run.acceptance_length_including_bonus, 3) + '</td>' +
+            '<td>' + number(run.issue_window_output_tokens_per_min / 1000, 1) + 'k</td>' +
+            '<td class="' + deltaClass(run.issue_window_delta_pct) + '">' + signed(run.issue_window_delta_pct, 2, "%") + '</td>' +
+            '<td>' + number(run.full_cohort_output_tokens_per_min / 1000, 1) + 'k' +
+            '<span class="run-sub ' + deltaClass(run.full_cohort_delta_pct) + '">' + signed(run.full_cohort_delta_pct, 2, "%") + '</span></td>' +
+            '<td>' + number(run.tpot_ms.mean, 2) + ' ms</td>' +
+            '<td>' + number(run.tpot_ms.p90, 2) + ' / ' + number(run.tpot_ms.p99, 2) + '</td>' +
+            '<td>' + run.failed_http_529 + '</td>' +
+            '<td>' + number(run.issue_duration_s, 1) + ' / ' + number(run.drain_duration_s, 1) + ' s</td>';
+          body.appendChild(tr);
+        });
+      }
+
+      function renderBarPlot(hostId, runs, accessor, maxValue, formatter, targetValue) {
+        var host = document.getElementById(hostId);
+        host.innerHTML = "";
+        runs.forEach(function (run) {
+          var value = accessor(run);
+          var row = document.createElement("div");
+          row.className = "bar-row";
+
+          var label = document.createElement("div");
+          label.className = "bar-label";
+          label.textContent = labels[run.key];
+          label.title = labels[run.key];
+
+          var track = document.createElement("div");
+          track.className = "bar-track";
+          var fill = document.createElement("div");
+          fill.className = "bar-fill";
+          if (run.semantics === "approximate") fill.classList.add("approx");
+          if (run.key === "approx-097") fill.classList.add("winner");
+          fill.style.width = Math.max(0, Math.min(100, value / maxValue * 100)) + "%";
+          track.appendChild(fill);
+
+          if (targetValue !== undefined) {
+            var line = document.createElement("span");
+            line.className = "target-line";
+            line.style.left = Math.min(100, targetValue / maxValue * 100) + "%";
+            track.appendChild(line);
+          }
+
+          var shown = document.createElement("div");
+          shown.className = "bar-value";
+          shown.textContent = formatter(value);
+
+          row.appendChild(label);
+          row.appendChild(track);
+          row.appendChild(shown);
+          host.appendChild(row);
+        });
+      }
+
+      function renderScreenTable(data) {
+        var body = document.getElementById("screen-table");
+        body.innerHTML = "";
+        data.screening_runs.forEach(function (run) {
+          var tr = document.createElement("tr");
+          tr.innerHTML =
+            '<td><span class="run-name">' + run.variant + '</span></td>' +
+            '<td>' + number(run.strict_acceptance_pct, 2) + '%</td>' +
+            '<td>' + number(run.output_tokens_per_min / 1000, 1) + 'k</td>' +
+            '<td class="muted">' + run.note + '</td>';
+          body.appendChild(tr);
+        });
+      }
+
+      function render(data) {
+        renderHero(data);
+        renderFormalTable(data);
+        renderBarPlot(
+          "acceptance-plot",
+          data.formal_runs,
+          function (run) { return run.strict_acceptance_pct; },
+          90,
+          function (value) { return number(value, 1) + "%"; },
+          70
+        );
+        renderBarPlot(
+          "rpm-plot",
+          data.formal_runs,
+          function (run) { return run.issue_window_output_tokens_per_min; },
+          340000,
+          function (value) { return number(value / 1000, 1) + "k"; }
+        );
+        renderScreenTable(data);
+      }
+
+      fetch("report-data.json", {cache: "no-store"})
+        .then(function (response) {
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          return response.json();
+        })
+        .then(render)
+        .catch(function (error) {
+          document.querySelectorAll(".loading").forEach(function (node) {
+            node.textContent = "Could not load report-data.json: " + error.message;
+          });
+        });
+
+      var links = Array.from(document.querySelectorAll(".toc a"));
+      var sections = links
+        .map(function (link) { return document.querySelector(link.getAttribute("href")); })
+        .filter(Boolean);
+      if ("IntersectionObserver" in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            links.forEach(function (link) {
+              link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id);
+            });
+          });
+        }, {rootMargin: "-18% 0px -72% 0px"});
+        sections.forEach(function (section) { observer.observe(section); });
+      }
+    }());
+  </script>
+</body>
+</html>
