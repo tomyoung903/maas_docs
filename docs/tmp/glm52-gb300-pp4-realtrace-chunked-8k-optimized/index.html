@@ -1,0 +1,1210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Accepted 3.631M uncached-TPM GLM-5.2 PP4 NVFP4 fixed-8K real-trace prefill run on one four-GPU GB300 node, with a same-node async-depth sweep.">
+  <meta name="experiment" content="glm52-gb300-pp4-optimized-132-20260824-depth3-b">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-pp4-realtrace-chunked-8k-optimized/">
+  <link rel="icon" href="data:,">
+  <title>GB300 PP4 NVFP4 · 8K chunked prefill · 3.631M TPM</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #667085;
+      --border: #dce3ec;
+      --grid: #e8edf4;
+      --blue: #2563eb;
+      --blue-deep: #1d4ed8;
+      --purple: #7c3aed;
+      --red: #dc4c64;
+      --green: #11745e;
+      --orange: #c56a24;
+      --paper: #ffffff;
+      --ground: #f4f7fb;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      padding: clamp(12px, 2.4vw, 34px);
+      background: var(--ground);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: var(--blue-deep); }
+
+    main {
+      width: min(1480px, 100%);
+      margin: 0 auto;
+    }
+
+    .panel {
+      margin: 0;
+      padding: clamp(18px, 2.4vw, 32px);
+      border: 1px solid #e1e7ef;
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: 0 16px 50px rgb(27 39 64 / 8%);
+    }
+
+    .panel + .panel { margin-top: 20px; }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .section-number {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--blue-deep);
+      font-size: 11px;
+      font-weight: 780;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    h1, h2 {
+      margin: 0;
+      font-size: clamp(21px, 2.2vw, 30px);
+      font-weight: 720;
+      letter-spacing: -.025em;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 720;
+      letter-spacing: -.015em;
+    }
+
+    .context {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      line-height: 1.45;
+      text-align: right;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 16px;
+      margin: -1px 2px 9px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .legend span::before {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: var(--legend);
+      content: "";
+    }
+
+    .plot {
+      position: relative;
+      width: 100%;
+      min-height: 0;
+    }
+
+    .minute-plot { height: clamp(370px, 50vh, 490px); }
+    .scatter-plot { height: clamp(460px, 70vh, 720px); }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: pan-y;
+    }
+
+    .tooltip {
+      position: absolute;
+      z-index: 3;
+      display: none;
+      min-width: 184px;
+      padding: 9px 11px;
+      border: 1px solid #d7dfeb;
+      border-radius: 9px;
+      background: rgb(255 255 255 / 97%);
+      box-shadow: 0 10px 28px rgb(20 31 51 / 16%);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      pointer-events: none;
+    }
+
+    .tooltip strong { color: var(--ink); font-weight: 690; }
+    .tooltip .blue { color: var(--blue-deep); }
+    .tooltip .purple { color: var(--purple); }
+    .tooltip .red { color: var(--red); }
+
+    .focus-dot {
+      position: absolute;
+      display: none;
+      width: 9px;
+      height: 9px;
+      margin: -4.5px 0 0 -4.5px;
+      border: 2px solid white;
+      border-radius: 50%;
+      background: var(--blue-deep);
+      box-shadow: 0 0 0 2px var(--blue-deep);
+      pointer-events: none;
+    }
+
+    .minute-guide {
+      position: absolute;
+      display: none;
+      width: 1px;
+      background: #98a2b3;
+      opacity: .65;
+      pointer-events: none;
+    }
+
+    .chart-status {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .chart-status.error { color: var(--red); font-weight: 680; }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: .8fr .7fr 1.1fr 1.5fr;
+      gap: 10px;
+    }
+
+    .setting {
+      min-width: 0;
+      padding: 14px 16px;
+      border: 1px solid #e3e9f1;
+      border-radius: 12px;
+      background: #f9fbfd;
+    }
+
+    .setting-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 720;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .setting-value {
+      display: block;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      font-size: clamp(18px, 1.8vw, 25px);
+      font-variant-numeric: tabular-nums;
+      font-weight: 740;
+      letter-spacing: -.02em;
+      line-height: 1.2;
+    }
+
+    .setting-note, .metric-note {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .setting-definition { grid-column: span 2; }
+    .setting-definition .setting-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(12px, 1.2vw, 16px);
+      letter-spacing: -.025em;
+    }
+
+    .summary-note {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      border-left: 3px solid var(--blue);
+      border-radius: 0 8px 8px 0;
+      background: #eff6ff;
+      color: #344c6a;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .summary-note strong { color: var(--ink); }
+
+    .accounting-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 15px 16px;
+      border: 1px solid #e3e9f1;
+      border-radius: 12px;
+      background: #f9fbfd;
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 720;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: clamp(20px, 2vw, 27px);
+      font-variant-numeric: tabular-nums;
+      font-weight: 740;
+      letter-spacing: -.025em;
+    }
+
+    .equations {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+      padding: 15px 17px;
+      border: 1px solid #dbe5ef;
+      border-radius: 12px;
+      background: #f7fafc;
+      font-size: clamp(13px, 1.5vw, 17px);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.55;
+    }
+
+    .equation-row {
+      display: grid;
+      grid-template-columns: minmax(150px, .8fr) 24px minmax(0, 2.3fr);
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .equation-row .lhs { color: var(--muted); font-weight: 650; }
+    .equation-row .equals { color: #98a2b3; text-align: center; }
+    .equation-row .rhs { color: var(--ink); }
+    .equation-row strong { color: var(--green); font-weight: 760; }
+
+    .change-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .change-card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid #e3e9f1;
+      border-radius: 12px;
+      background: #f9fbfd;
+    }
+
+    .change-number {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--blue-deep);
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .before-after {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin: 10px 0;
+    }
+
+    .state {
+      padding: 8px 9px;
+      border-radius: 7px;
+      background: #eef2f6;
+      color: #475467;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .state.good { background: #e7f6f1; color: #126653; }
+
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    code:not(pre code) {
+      padding: .1em .35em;
+      border-radius: 4px;
+      background: #eef3f8;
+      color: #26354d;
+      font-size: .92em;
+      overflow-wrap: anywhere;
+    }
+
+    .flag {
+      display: block;
+      padding: 8px 9px;
+      overflow-wrap: anywhere;
+      border: 1px solid #dce4ee;
+      border-radius: 7px;
+      background: #fff;
+      color: #26354d;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .change-card p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .safety {
+      margin: 14px 0 0;
+      padding: 11px 13px;
+      border-left: 3px solid var(--orange);
+      border-radius: 0 8px 8px 0;
+      background: #fff7ed;
+      color: #6b4e2f;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .flow-grid, .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .flow-card, .comparison-card {
+      min-width: 0;
+      padding: 15px 16px;
+      border: 1px solid #e3e9f1;
+      border-radius: 12px;
+      background: #f9fbfd;
+    }
+
+    .flow-card.old { border-color: #f0ded2; background: #fffaf7; }
+    .flow-card.new { border-color: #d7e9e3; background: #f7fcfa; }
+
+    .flow-line {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .flow-line + .flow-line { margin-top: 8px; }
+
+    .flow-node {
+      min-width: 0;
+      padding: 9px;
+      border: 1px solid #e4eaf1;
+      border-radius: 7px;
+      background: #fff;
+      color: #344054;
+      font-size: 10px;
+      font-weight: 650;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .flow-arrow { color: #98a2b3; }
+
+    .subhead {
+      margin: 20px 0 9px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .comparison-card > strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: clamp(22px, 2.1vw, 28px);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.025em;
+    }
+
+    .comparison-card > span {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .comparison-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 8px 0;
+      border-top: 1px solid #e5eaf1;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .comparison-row b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+    .factor {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid #d6e9e3;
+      border-radius: 10px;
+      background: #effaf6;
+      color: #1f6655;
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.6;
+    }
+
+    .foot {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .repro-intro {
+      max-width: 1000px;
+      margin: -2px 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .repro-facts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .repro-fact {
+      min-width: 0;
+      padding: 13px 14px;
+      border: 1px solid #dce6f0;
+      border-radius: 11px;
+      background: #f7fafc;
+    }
+
+    .repro-fact span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .repro-fact strong {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.45;
+    }
+
+    .repro-stack { display: grid; gap: 10px; }
+
+    .repro-details {
+      overflow: hidden;
+      border: 1px solid #dce4ee;
+      border-radius: 12px;
+      background: #fbfcfe;
+    }
+
+    .repro-details[open] { background: #fff; }
+
+    .repro-details summary {
+      position: relative;
+      padding: 14px 44px 14px 16px;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 720;
+      line-height: 1.4;
+      list-style: none;
+    }
+
+    .repro-details summary::-webkit-details-marker { display: none; }
+
+    .repro-details summary::after {
+      position: absolute;
+      top: 50%;
+      right: 17px;
+      color: var(--blue-deep);
+      font-size: 18px;
+      font-weight: 500;
+      content: "+";
+      transform: translateY(-52%);
+    }
+
+    .repro-details[open] summary::after { content: "−"; }
+
+    .repro-details[open] summary {
+      border-bottom: 1px solid #e5eaf1;
+      background: #f7faff;
+    }
+
+    .repro-body {
+      padding: 16px;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .repro-body > :first-child { margin-top: 0; }
+    .repro-body > :last-child { margin-bottom: 0; }
+    .repro-body p { margin: 9px 0; }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 10px 0;
+      border: 1px solid #e1e7ef;
+      border-radius: 10px;
+    }
+
+    .repro-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .repro-table th, .repro-table td {
+      padding: 9px 11px;
+      border-bottom: 1px solid #e7ecf2;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .repro-table tr:last-child th, .repro-table tr:last-child td { border-bottom: 0; }
+    .repro-table th { width: 28%; color: #475467; background: #f8fafc; font-weight: 680; }
+    .repro-table td { overflow-wrap: anywhere; }
+
+    .code-caption {
+      margin: 14px 0 0;
+      padding: 8px 12px;
+      border: 1px solid #263750;
+      border-bottom: 0;
+      border-radius: 9px 9px 0 0;
+      background: #1d2a3d;
+      color: #cbd5e1;
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .code-block {
+      overflow-x: auto;
+      margin: 0 0 14px;
+      padding: 14px 15px;
+      border-radius: 0 0 9px 9px;
+      background: #111827;
+      color: #e5edf8;
+      font-size: 11px;
+      line-height: 1.58;
+      tab-size: 2;
+      white-space: pre;
+    }
+
+    .code-block .required { color: #8be3c8; font-weight: 760; }
+
+    .run-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .run {
+      padding: 13px 14px;
+      border: 1px solid #dce6f0;
+      border-radius: 11px;
+      background: #f7fafc;
+    }
+
+    .run strong, .run span { display: block; }
+    .run strong { color: var(--green); font-size: 22px; font-variant-numeric: tabular-nums; }
+    .run span { margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+
+    .link-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .link-row a {
+      display: inline-flex;
+      min-height: 38px;
+      align-items: center;
+      padding: 0 12px;
+      border: 1px solid #dce4ee;
+      border-radius: 8px;
+      background: #f9fbfd;
+      font-size: 12px;
+      font-weight: 680;
+      text-decoration: none;
+    }
+
+    .pass { color: var(--green); font-weight: 740; }
+
+    @media (max-width: 980px) {
+      .settings-grid, .accounting-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .change-grid, .repro-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric:last-child { grid-column: 1 / -1; }
+      .change-card:last-child { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 680px) {
+      body { padding: 8px; }
+      .panel { padding: 16px 10px 13px; border-radius: 12px; }
+      .panel + .panel { margin-top: 10px; }
+      .panel-head { display: block; padding: 0 6px; }
+      .context { margin-top: 5px; text-align: left; }
+      .settings-grid, .accounting-grid, .change-grid, .flow-grid, .comparison-grid, .repro-facts, .run-grid { grid-template-columns: 1fr; }
+      .metric:last-child, .change-card:last-child { grid-column: auto; }
+      .setting-definition { grid-column: auto; }
+      .legend { justify-content: flex-start; margin-left: 6px; }
+      .minute-plot { height: 390px; }
+      .scatter-plot { height: min(68vh, 590px); min-height: 430px; }
+      .equation-row { grid-template-columns: 1fr; gap: 1px; }
+      .equation-row .equals { display: none; }
+      .equations { padding: 13px; }
+      .flow-line { grid-template-columns: 1fr; }
+      .flow-arrow { text-align: center; transform: rotate(90deg); }
+      .repro-details summary { padding-left: 13px; }
+      .repro-body { padding: 13px; }
+      .repro-table th { width: 38%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="panel" id="settings">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">00 · Settings</span>
+          <h1>Experiment settings</h1>
+        </div>
+      </header>
+      <div class="settings-grid">
+        <div class="setting"><span class="setting-label">Total requests</span><strong class="setting-value">2,048</strong></div>
+        <div class="setting"><span class="setting-label">Pipeline parallelism</span><strong class="setting-value">PP=4</strong></div>
+        <div class="setting"><span class="setting-label">Accelerator</span><strong class="setting-value">4× GB300</strong></div>
+        <div class="setting"><span class="setting-label">Chunked prefill size</span><strong class="setting-value">8,192 tokens (8K)</strong></div>
+        <div class="setting"><span class="setting-label">Tuned async depth</span><strong class="setting-value">3</strong><span class="setting-note">Depth two was independently repeated; depth three was the bounded optimum.</span></div>
+        <div class="setting setting-definition">
+          <span class="setting-label">Internal TTFT</span>
+          <strong class="setting-value">prefill_finished_time − forward_entry_time</strong>
+          <span class="setting-note">Timing starts when a request enters its first PP0 forward and ends at final prefill completion, so API dispatch and scheduler waiting are excluded.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="prefill-batching">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">01 · Prefill batching</span>
+          <h2>How the 8K prefill budget was assembled</h2>
+        </div>
+        <p class="context">PP0 scheduler logs · 2,225 prefill batches</p>
+      </header>
+      <div class="accounting-grid">
+        <div class="metric"><span class="metric-label">Exactly 8,192 tokens</span><span class="metric-value">2,225</span><span class="metric-note">100% filled the logged uncached-token budget</span></div>
+        <div class="metric"><span class="metric-label">Multi-sequence batches</span><span class="metric-value">933</span><span class="metric-note">41.93% of PP0 batches</span></div>
+        <div class="metric"><span class="metric-label">Mean sequences per batch</span><span class="metric-value">1.914</span><span class="metric-note">median 1 · maximum 10</span></div>
+        <div class="metric"><span class="metric-label">Central batch cadence</span><span class="metric-value">133.761 ms</span><span class="metric-note">central-80 mean reconstructed from PP0 intervals</span></div>
+        <div class="metric"><span class="metric-label">Successful outputs</span><span class="metric-value">2,048</span><span class="metric-note">2,048 / 2,048 HTTP 200 · exactly one token each</span></div>
+      </div>
+    </section>
+
+    <section class="panel" id="accounting">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">02 · Accounting</span>
+          <h2>Token, experiment-time, and uncached-TPM accounting</h2>
+        </div>
+        <p class="context">First request start → final client completion</p>
+      </header>
+      <div class="accounting-grid">
+        <div class="metric"><span class="metric-label">Uncached TPM</span><span class="metric-value">3.631M</span><span class="metric-note">accepted depth-three run B</span></div>
+        <div class="metric"><span class="metric-label">Uncached tokens</span><span class="metric-value">18,162,677</span><span class="metric-note">new model work</span></div>
+        <div class="metric"><span class="metric-label">Experiment span</span><span class="metric-value">300.165 s</span><span class="metric-note">client wall time</span></div>
+        <div class="metric"><span class="metric-label">Cached tokens</span><span class="metric-value">72,380,096</span><span class="metric-note">79.940% of prompt tokens</span></div>
+        <div class="metric"><span class="metric-label">Prompt tokens</span><span class="metric-value">90,542,773</span><span class="metric-note">cached + uncached</span></div>
+      </div>
+      <div class="equations" aria-label="Token and throughput reconciliation">
+        <div class="equation-row"><span class="lhs">Overall uncached TPM</span><span class="equals">=</span><span class="rhs">18,162,677 ÷ 300.165 s × 60 s/min = <strong>3,630,541 uncached tokens/min</strong></span></div>
+        <div class="equation-row"><span class="lhs">Prompt-token reconciliation</span><span class="equals">=</span><span class="rhs">72,380,096 cached + 18,162,677 uncached = <strong>90,542,773 prompt tokens</strong></span></div>
+      </div>
+    </section>
+
+    <section class="panel" id="latency">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">03 · Minute view</span>
+          <h2>Queue-free internal TTFT by minute</h2>
+        </div>
+        <p class="context">P50, P90, P99 · 2,048 successful requests · UTC-aligned 60-second bins<br>First and last bins are partial.</p>
+      </header>
+      <div class="accounting-grid" aria-label="Internal TTFT summary">
+        <div class="metric"><span class="metric-label">Internal TTFT P50</span><span class="metric-value">0.952 s</span><span class="metric-note">scheduler queue excluded</span></div>
+        <div class="metric"><span class="metric-label">Internal TTFT P90</span><span class="metric-value">1.253 s</span><span class="metric-note">first PP0 forward → prefill finish</span></div>
+        <div class="metric"><span class="metric-label">Internal TTFT P99</span><span class="metric-value">2.580 s</span><span class="metric-note">all 2,048 accepted requests</span></div>
+        <div class="metric"><span class="metric-label">Internal TTFT mean</span><span class="metric-value">1.029 s</span><span class="metric-note">arithmetic mean</span></div>
+        <div class="metric"><span class="metric-label">Internal TTFT maximum</span><span class="metric-value">6.914 s</span><span class="metric-note">largest measured request</span></div>
+      </div>
+      <p class="summary-note"><strong>Do not confuse internal and client TTFT.</strong> Client-observed TTFT includes API dispatch and scheduler waiting: P50 10.641 s, P90 15.484 s, and P99 32.290 s. Scheduler wait alone was P50 9.386 s, P90 14.234 s, and P99 29.414 s. The plot below isolates model-side prefill after the request enters PP0.</p>
+      <div class="legend" aria-label="Latency percentile legend"><span style="--legend:var(--blue)">P50</span><span style="--legend:var(--purple)">P90</span><span style="--legend:var(--red)">P99</span></div>
+      <div class="plot minute-plot" id="minute-plot"><canvas id="minute-canvas" role="img" aria-label="Queue-free internal TTFT P50, P90, and P99 by server completion minute"></canvas><div class="minute-guide" id="minute-guide"></div><div class="tooltip" id="minute-tooltip"></div></div>
+      <p class="chart-status" id="minute-status">Loading measured TTFT bins…</p>
+    </section>
+
+    <section class="panel" id="scatter">
+      <header class="panel-head">
+        <div><span class="section-number">04 · Request view</span><h2>Uncached tokens vs internal TTFT</h2></div>
+        <p class="context">2,048 requests · 4× GB300 · PP4 · NVFP4 · 8K chunks · async depth 3</p>
+      </header>
+      <div class="plot scatter-plot" id="scatter-plot"><canvas id="scatter-canvas" role="img" aria-label="Scatter plot of uncached tokens against queue-free internal TTFT for 2,048 requests"></canvas><div class="focus-dot" id="scatter-focus-dot"></div><div class="tooltip" id="scatter-tooltip"></div></div>
+      <p class="chart-status" id="scatter-status">Loading 2,048 measured request points…</p>
+    </section>
+
+    <section class="panel" id="reproduction">
+      <header class="panel-head">
+        <div><span class="section-number">05 · Reproduction record</span><h2>Exact run contract and replay procedure</h2></div>
+        <p class="context">Accepted depth-three run B · expand each block for the complete record</p>
+      </header>
+      <p class="repro-intro">This appendix records the accepted run identity, the exact PP8-matched software image and commit, the requested launch controls, the same-node async-depth sweep, rejected-run evidence, and measurement semantics.</p>
+      <div class="repro-facts" aria-label="Reproduction identity">
+        <div class="repro-fact"><span>Treatment</span><strong>8,192-token prefill budget</strong></div>
+        <div class="repro-fact"><span>Run ID</span><strong>glm52-gb300-pp4-optimized-132-20260824-depth3-b</strong></div>
+        <div class="repro-fact"><span>Topology</span><strong>TP1 · DP1 · PP4 · EP1</strong></div>
+        <div class="repro-fact"><span>Validation</span><strong class="pass">2,048 / 2,048 valid</strong></div>
+      </div>
+      <div class="repro-stack">
+        <details class="repro-details" open>
+          <summary>1. Run identity, hardware, and runtime state</summary>
+          <div class="repro-body"><div class="table-wrap"><table class="repro-table"><tbody>
+            <tr><th>Hardware</th><td>4 × GB300 on the single Kubernetes node <code>gpu-master-gb300-132</code></td></tr>
+            <tr><th>Container image</th><td><code>image.hpc-ai.com/platform/dynamo-sglang-runtime:1c7123fa-commit-d0f290a8-arm64-0814-1847@sha256:0d0914f5f57e3f02a766e53ff3006ff7d9e6c59f4d50a7496d43509f516efe7a</code></td></tr>
+            <tr><th>Model</th><td>GLM-5.2 NVFP4 weights; FP8 E4M3 KV cache</td></tr>
+            <tr><th>Parallel topology</th><td>TP=1, DP=1, PP=4, EP=1</td></tr>
+            <tr><th>Chunking</th><td><code>--chunked-prefill-size 8192</code> and <code>--max-prefill-tokens 8192</code></td></tr>
+            <tr><th>Load</th><td>First 2,048 records from the verified ordered real trace; bounded backlog; maximum 80 in flight</td></tr>
+            <tr><th>Cache</th><td>Flush before every replay; HiCache write-through; natural prefix reuse emerged from request order</td></tr>
+            <tr><th>Output</th><td>Streaming chat completion; exactly one token per request; no retries</td></tr>
+            <tr><th>Base source</th><td><code>d0f290a8e68aef679f28d0a453c9dea5eb0ebcdf</code> plus the corrected output-skip implementation</td></tr>
+          </tbody></table></div></div>
+        </details>
+        <details class="repro-details">
+          <summary>2. Exact SGLang server environment and accepted launch command</summary>
+          <div class="repro-body"><p>The accepted run used one four-GPU node. Depth three is the measured tuned value; the strict requested depth-two treatment was repeated twice without changing any other argument.</p>
+            <div class="code-caption">Environment and command</div>
+            <pre class="code-block"><code>export PYTHONUNBUFFERED=1
+export NCCL_DEBUG=WARN
+export NCCL_IB_DISABLE=1
+export NCCL_CUMEM_ENABLE=1
+export NCCL_MNNVL_ENABLE=1
+export NCCL_NVLS_ENABLE=1
+export NCCL_SOCKET_IFNAME=eno1
+export GLOO_SOCKET_IFNAME=eno1
+export NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME=eno1
+export SGLANG_TRACE_LEVEL=1
+export SGLANG_FORCE_SHUTDOWN=1
+<span class="required">export SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM=1</span>
+export SGLANG_PP_TENSOR_METADATA_CACHE=0
+
+numactl --interleave=0,1 python3 -m sglang.launch_server   --model-path /mnt/disk0/models/nvidia/GLM-5.2-NVFP4   --served-model-name zai-org/glm-5.2   --host 127.0.0.1 --port 30000   --dist-init-addr 10.255.243.132:29500   --nnodes 1 --node-rank 0   --tp-size 1 --dp-size 1 --pp-size 4   <span class="required">--pp-async-batch-depth 3 \</span>
+  --nccl-port 29501   --trust-remote-code   --tool-call-parser glm47 --reasoning-parser glm45   --mem-fraction-static 0.80   --context-length 1048576   --chunked-prefill-size 8192 --max-prefill-tokens 8192   --max-running-requests 80   <span class="required">--tokenizer-worker-num 2 \</span>
+  --quantization modelopt_fp4 --kv-cache-dtype fp8_e4m3   --page-size 64 --moe-runner-backend flashinfer_trtllm_routed   --watchdog-timeout 3600 --disable-decode-cuda-graph   --json-model-override-args '{"index_share_for_mtp_iteration":false}'   --enable-cache-report --log-level info --decode-log-interval 1   --enable-metrics --enable-request-time-stats-logging   --log-requests --log-requests-level 0   --log-requests-format json --log-requests-target stdout   --enable-hierarchical-cache --hicache-io-backend direct   --hicache-mem-layout page_first_direct   --hicache-write-policy write_through --hicache-ratio 1.2   --hicache-storage-prefetch-policy wait_complete   --crash-dump-folder /debug</code></pre>
+          </div>
+        </details>
+        <details class="repro-details">
+          <summary>3. Required controls and correctness prerequisite</summary>
+          <div class="repro-body"><div class="table-wrap"><table class="repro-table"><tbody>
+            <tr><th>Tokenizer workers</th><td><code>--tokenizer-worker-num 2</code> launched two HTTP/tokenizer worker processes.</td></tr>
+            <tr><th>Output skip</th><td><code>SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM=1</code> skipped only semantically empty middle-chunk payloads.</td></tr>
+            <tr><th>Strict requested depth</th><td><code>--pp-async-batch-depth 2</code> was repeated twice: 3.578M mean uncached TPM.</td></tr>
+            <tr><th>Tuned depth</th><td><code>--pp-async-batch-depth 3</code> sets the PP4 loop to 4 + 3 = 7 slots and measured 3.619M across two runs, 1.15% above depth two.</td></tr>
+            <tr><th>Correctness</th><td>The scheduler waits for <code>q_event</code> before request or KV state can be recycled; only the empty payload is omitted.</td></tr>
+            <tr><th>Corrected scheduler</th><td><code>scheduler_pp_mixin.py</code> SHA-256: <code>e706eb1c3b80e015c5dd3093c6f1cfce8ce45774930a9a8a11dd42fb62331875</code></td></tr>
+          </tbody></table></div></div>
+        </details>
+        <details class="repro-details">
+          <summary>4. Async-depth sweep and repeated measurements</summary>
+          <div class="repro-body"><p>All accepted runs used the same node, image, source, 0.80 static fraction, request order, 80-request backlog, cache flush, request logging, and Prometheus metrics. Depth three is the bounded optimum: its two-run mean is 3.619M; depth four is 0.27% lower and retains one additional loop slot.</p>
+            <div class="run-grid">
+              <div class="run"><strong>3.547M</strong><span>depth-one run A · 2,048 / 2,048 successful</span></div>
+              <div class="run"><strong>3.579M</strong><span>depth-two run A · 2,048 / 2,048 successful</span></div>
+              <div class="run"><strong>3.576M</strong><span>depth-two run B · 2,048 / 2,048 successful</span></div>
+              <div class="run"><strong>3.607M</strong><span>depth-three run A · 2,048 / 2,048 successful</span></div>
+              <div class="run"><strong>3.631M</strong><span>depth-three run B · 2,048 / 2,048 successful</span></div>
+              <div class="run"><strong>3.609M</strong><span>depth-four run A · 2,048 / 2,048 successful</span></div>
+            </div>
+          </div>
+        </details>
+        <details class="repro-details">
+          <summary>5. Memory sensitivity and rejected-run record</summary>
+          <div class="repro-body"><p>The first strict depth-two attempt copied the PP8 static fraction of 0.85. PP3 exited with code −6 after 733 successful responses while 80 requests remained in flight; allocator failures preceded the abort, but the causal link was not proven. The run was rejected and never used for throughput. At 0.80, two depth-two and two depth-three full runs completed. A 0.75 sensitivity run measured 3.585M TPM and did not eliminate caught allocator probes, so 0.80 was retained as the closest stable PP4 contract.</p></div>
+        </details>
+        <details class="repro-details">
+          <summary>6. Data, related reports, and measurement semantics</summary>
+          <div class="repro-body"><p>TPM is uncached prompt tokens divided by client wall time. Internal TTFT is <code>prefill_finished_time − forward_entry_time</code>; the 12,734,204-byte primary server-log segment contained 2,048 unique request-finished records and zero malformed records. The generic replay wrapper exits 2 for this planned 2,048-row prefix because the source contains 35,744 records; request-level acceptance is instead proven by 2,048 accounted rows, 2,048 HTTP 200 responses, one output token each, zero RID mismatches, zero client failures, zero decode batches, and zero fatal server events.</p>
+            <div class="link-row"><a href="data/report-data.json">Machine-readable report data</a><a href="data/ttft-data.json">Request-level TTFT data</a><a href="../glm52-gb300-pp8-realtrace-chunked-8k/">Matched optimized PP8 report</a><a href="../glm52-gb300-pp4-realtrace-chunked-8k/">Original PP4 report</a></div>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+  <script>
+    "use strict";
+
+    const COLORS = {p50: "#2563eb", p90: "#7c3aed", p99: "#dc4c64"};
+    let MINUTES = [];
+    let POINTS = [];
+
+    function prepareCanvas(canvas, host) {
+      const width = Math.max(280, host.clientWidth);
+      const height = Math.max(340, host.clientHeight);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+      const context = canvas.getContext("2d");
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      context.clearRect(0, 0, width, height);
+      return {context, width, height};
+    }
+
+    function placeTooltip(tooltip, hostWidth, hostHeight, x, y) {
+      tooltip.style.display = "block";
+      const tooltipWidth = tooltip.offsetWidth;
+      const tooltipHeight = tooltip.offsetHeight;
+      const left = Math.min(hostWidth - tooltipWidth - 8, Math.max(8, x + 13));
+      const top = y + 13 + tooltipHeight < hostHeight ? y + 13 : y - tooltipHeight - 13;
+      tooltip.style.left = left + "px";
+      tooltip.style.top = Math.max(8, top) + "px";
+    }
+
+    const minuteHost = document.getElementById("minute-plot");
+    const minuteCanvas = document.getElementById("minute-canvas");
+    const minuteTooltip = document.getElementById("minute-tooltip");
+    const minuteGuide = document.getElementById("minute-guide");
+    const minuteStatus = document.getElementById("minute-status");
+    let minuteGeometry = null;
+
+    function hideMinuteFocus() {
+      minuteTooltip.style.display = "none";
+      minuteGuide.style.display = "none";
+    }
+
+    function drawMinuteChart() {
+      if (!MINUTES.length) return;
+      hideMinuteFocus();
+      const prepared = prepareCanvas(minuteCanvas, minuteHost);
+      const ctx = prepared.context;
+      const width = prepared.width;
+      const height = prepared.height;
+      const margin = {top: 12, right: width < 560 ? 10 : 22, bottom: 58, left: width < 560 ? 57 : 70};
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+      const yMax = Math.max(1, Math.ceil(Math.max.apply(null, MINUTES.map(function(row) { return row.p99; }))));
+      const x = function(index) {
+        return margin.left + innerWidth * index / Math.max(1, MINUTES.length - 1);
+      };
+      const y = function(value) {
+        return margin.top + innerHeight * (1 - value / yMax);
+      };
+      minuteGeometry = {width, height, margin, innerWidth, innerHeight, x, y};
+
+      ctx.strokeStyle = "#e8edf4";
+      ctx.fillStyle = "#667085";
+      ctx.lineWidth = 1;
+      ctx.font = (width < 560 ? 11 : 12) + "px Inter, ui-sans-serif, system-ui, sans-serif";
+      const yTicks = 6;
+      for (let index = 0; index <= yTicks; index += 1) {
+        const value = yMax * index / yTicks;
+        const yy = y(value);
+        ctx.beginPath();
+        ctx.moveTo(margin.left, yy + .5);
+        ctx.lineTo(margin.left + innerWidth, yy + .5);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(Number.isInteger(value) ? String(value) : value.toFixed(1), margin.left - 9, yy);
+      }
+
+      MINUTES.forEach(function(row, index) {
+        const xx = x(index);
+        ctx.beginPath();
+        ctx.moveTo(xx + .5, margin.top);
+        ctx.lineTo(xx + .5, margin.top + innerHeight);
+        ctx.stroke();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(row.start, xx, margin.top + innerHeight + 10);
+      });
+
+      ctx.strokeStyle = "#b8c2d0";
+      ctx.beginPath();
+      ctx.moveTo(margin.left + .5, margin.top);
+      ctx.lineTo(margin.left + .5, margin.top + innerHeight + .5);
+      ctx.lineTo(margin.left + innerWidth, margin.top + innerHeight + .5);
+      ctx.stroke();
+
+      ctx.fillStyle = "#344054";
+      ctx.font = "600 " + (width < 560 ? 12 : 13) + "px Inter, ui-sans-serif, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("Server completion minute (UTC)", margin.left + innerWidth / 2, height - 3);
+      ctx.save();
+      ctx.translate(13, margin.top + innerHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("Internal TTFT (s)", 0, 0);
+      ctx.restore();
+
+      ["p99", "p90", "p50"].forEach(function(key) {
+        ctx.strokeStyle = COLORS[key];
+        ctx.fillStyle = COLORS[key];
+        ctx.lineWidth = key === "p50" ? 2.5 : 2;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        MINUTES.forEach(function(row, index) {
+          const xx = x(index);
+          const yy = y(row[key]);
+          if (index === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+        });
+        ctx.stroke();
+        MINUTES.forEach(function(row, index) {
+          ctx.beginPath();
+          ctx.arc(x(index), y(row[key]), width < 560 ? 2.3 : 2.7, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+    }
+
+    function showMinuteFocus(event) {
+      if (!minuteGeometry || !MINUTES.length) return;
+      const rect = minuteCanvas.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const rawIndex = Math.round(
+        (pointerX - minuteGeometry.margin.left) / minuteGeometry.innerWidth * (MINUTES.length - 1)
+      );
+      const index = Math.max(0, Math.min(MINUTES.length - 1, rawIndex));
+      const row = MINUTES[index];
+      const xx = minuteGeometry.x(index);
+      minuteGuide.style.display = "block";
+      minuteGuide.style.left = xx + "px";
+      minuteGuide.style.top = minuteGeometry.margin.top + "px";
+      minuteGuide.style.height = minuteGeometry.innerHeight + "px";
+      minuteTooltip.innerHTML =
+        "<strong>" + row.start + "–" + row.end + " UTC" + (row.partial ? " · partial" : "") + "</strong><br>" +
+        row.requests.toLocaleString() + " completed requests<br>" +
+        '<span class="blue">P50 ' + row.p50.toFixed(3) + " s</span> · " +
+        '<span class="purple">P90 ' + row.p90.toFixed(3) + " s</span><br>" +
+        '<span class="red">P99 ' + row.p99.toFixed(3) + " s</span>";
+      placeTooltip(minuteTooltip, minuteGeometry.width, minuteGeometry.height, xx, minuteGeometry.y(row.p99));
+    }
+
+    const scatterHost = document.getElementById("scatter-plot");
+    const scatterCanvas = document.getElementById("scatter-canvas");
+    const scatterTooltip = document.getElementById("scatter-tooltip");
+    const scatterFocusDot = document.getElementById("scatter-focus-dot");
+    const scatterStatus = document.getElementById("scatter-status");
+    let scatterProjected = [];
+    let scatterGeometry = null;
+
+    function formatTokens(value) {
+      if (value === 0) return "0";
+      return Math.round(value / 1000) + "k";
+    }
+
+    function hideScatterFocus() {
+      scatterTooltip.style.display = "none";
+      scatterFocusDot.style.display = "none";
+    }
+
+    function drawScatterChart() {
+      if (!POINTS.length) return;
+      hideScatterFocus();
+      const prepared = prepareCanvas(scatterCanvas, scatterHost);
+      const ctx = prepared.context;
+      const width = prepared.width;
+      const height = prepared.height;
+      const margin = {top: 14, right: width < 560 ? 10 : 22, bottom: 62, left: width < 560 ? 64 : 78};
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+      const xMax = 300000;
+      const yMax = Math.max(1, Math.ceil(Math.max.apply(null, POINTS.map(function(point) { return point[1]; }))));
+      scatterGeometry = {width, height, margin, innerWidth, innerHeight, xMax, yMax};
+
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#e8edf4";
+      ctx.fillStyle = "#667085";
+      ctx.font = (width < 560 ? 11 : 12) + "px Inter, ui-sans-serif, system-ui, sans-serif";
+      const xTickCount = width < 640 ? 3 : 6;
+      for (let index = 0; index <= xTickCount; index += 1) {
+        const value = xMax * index / xTickCount;
+        const xx = margin.left + innerWidth * index / xTickCount;
+        ctx.beginPath();
+        ctx.moveTo(xx + .5, margin.top);
+        ctx.lineTo(xx + .5, margin.top + innerHeight);
+        ctx.stroke();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(formatTokens(value), xx, margin.top + innerHeight + 11);
+      }
+
+      const yTickCount = width < 560 ? 6 : 8;
+      for (let index = 0; index <= yTickCount; index += 1) {
+        const value = yMax * index / yTickCount;
+        const yy = margin.top + innerHeight * (1 - index / yTickCount);
+        ctx.beginPath();
+        ctx.moveTo(margin.left, yy + .5);
+        ctx.lineTo(margin.left + innerWidth, yy + .5);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(Number.isInteger(value) ? String(value) : value.toFixed(1), margin.left - 10, yy);
+      }
+
+      ctx.strokeStyle = "#b8c2d0";
+      ctx.beginPath();
+      ctx.moveTo(margin.left + .5, margin.top);
+      ctx.lineTo(margin.left + .5, margin.top + innerHeight + .5);
+      ctx.lineTo(margin.left + innerWidth, margin.top + innerHeight + .5);
+      ctx.stroke();
+
+      ctx.fillStyle = "#344054";
+      ctx.font = "600 " + (width < 560 ? 12 : 13) + "px Inter, ui-sans-serif, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("Uncached tokens", margin.left + innerWidth / 2, height - 4);
+      ctx.save();
+      ctx.translate(15, margin.top + innerHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("Internal TTFT (s)", 0, 0);
+      ctx.restore();
+
+      scatterProjected = new Array(POINTS.length);
+      ctx.fillStyle = "#2563eb";
+      ctx.globalAlpha = .24;
+      const radius = width < 560 ? 1.45 : 1.75;
+      POINTS.forEach(function(point, index) {
+        const xx = margin.left + innerWidth * point[0] / xMax;
+        const yy = margin.top + innerHeight * (1 - point[1] / yMax);
+        scatterProjected[index] = [xx, yy];
+        ctx.beginPath();
+        ctx.arc(xx, yy, radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function showScatterFocus(event) {
+      if (!scatterGeometry) return;
+      const rect = scatterCanvas.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
+      let nearestIndex = -1;
+      let nearestDistanceSquared = 144;
+      scatterProjected.forEach(function(position, index) {
+        const dx = position[0] - pointerX;
+        const dy = position[1] - pointerY;
+        const distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared < nearestDistanceSquared) {
+          nearestDistanceSquared = distanceSquared;
+          nearestIndex = index;
+        }
+      });
+      if (nearestIndex < 0) {
+        hideScatterFocus();
+        return;
+      }
+
+      const point = POINTS[nearestIndex];
+      const position = scatterProjected[nearestIndex];
+      scatterFocusDot.style.display = "block";
+      scatterFocusDot.style.left = position[0] + "px";
+      scatterFocusDot.style.top = position[1] + "px";
+      scatterTooltip.innerHTML =
+        "<strong>" + point[0].toLocaleString() + "</strong> uncached tokens<br>" +
+        "<strong>" + point[1].toFixed(3) + " s</strong> internal TTFT";
+      placeTooltip(scatterTooltip, scatterGeometry.width, scatterGeometry.height, position[0], position[1]);
+    }
+
+    async function initializeCharts() {
+      try {
+        const response = await fetch("data/ttft-data.json", {cache: "no-store"});
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const data = await response.json();
+        if (data.unique_finished_requests !== 2048 || data.malformed_finished_lines !== 0) {
+          throw new Error("timing coverage validation failed");
+        }
+        if (!Array.isArray(data.minutes) || !Array.isArray(data.points) || data.points.length !== 2048) {
+          throw new Error("chart data shape validation failed");
+        }
+        const binnedRequests = data.minutes.reduce(function(total, row) { return total + row.requests; }, 0);
+        if (binnedRequests !== 2048) throw new Error("minute bins do not reconcile");
+
+        MINUTES = data.minutes;
+        POINTS = data.points;
+        minuteStatus.textContent = "6 UTC minute bins · 2,048 / 2,048 measured requests · first and last bins partial";
+        scatterStatus.textContent = "2,048 measured requests · 10–299,669 uncached tokens · hover or touch near a point for its values";
+
+        minuteCanvas.addEventListener("pointermove", showMinuteFocus);
+        minuteCanvas.addEventListener("pointerleave", hideMinuteFocus);
+        scatterCanvas.addEventListener("pointermove", showScatterFocus);
+        scatterCanvas.addEventListener("pointerleave", hideScatterFocus);
+        new ResizeObserver(drawMinuteChart).observe(minuteHost);
+        new ResizeObserver(drawScatterChart).observe(scatterHost);
+        drawMinuteChart();
+        drawScatterChart();
+      } catch (error) {
+        minuteStatus.textContent = "Measured TTFT chart data failed to load: " + error.message;
+        scatterStatus.textContent = minuteStatus.textContent;
+        minuteStatus.classList.add("error");
+        scatterStatus.classList.add("error");
+      }
+    }
+
+    initializeCharts();
+  </script>
+</body>
+</html>
