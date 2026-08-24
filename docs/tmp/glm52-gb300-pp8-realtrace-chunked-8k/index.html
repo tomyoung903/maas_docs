@@ -96,6 +96,96 @@
       text-align: right;
     }
 
+    .legend {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 16px;
+      margin: -1px 2px 9px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .legend span::before {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: var(--legend);
+      content: "";
+    }
+
+    .plot {
+      position: relative;
+      width: 100%;
+      min-height: 0;
+    }
+
+    .minute-plot { height: clamp(370px, 50vh, 490px); }
+    .scatter-plot { height: clamp(460px, 70vh, 720px); }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: pan-y;
+    }
+
+    .tooltip {
+      position: absolute;
+      z-index: 3;
+      display: none;
+      min-width: 184px;
+      padding: 9px 11px;
+      border: 1px solid #d7dfeb;
+      border-radius: 9px;
+      background: rgb(255 255 255 / 97%);
+      box-shadow: 0 10px 28px rgb(20 31 51 / 16%);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      pointer-events: none;
+    }
+
+    .tooltip strong { color: var(--ink); font-weight: 690; }
+    .tooltip .blue { color: var(--blue-deep); }
+    .tooltip .purple { color: var(--purple); }
+    .tooltip .red { color: var(--red); }
+
+    .focus-dot {
+      position: absolute;
+      display: none;
+      width: 9px;
+      height: 9px;
+      margin: -4.5px 0 0 -4.5px;
+      border: 2px solid white;
+      border-radius: 50%;
+      background: var(--blue-deep);
+      box-shadow: 0 0 0 2px var(--blue-deep);
+      pointer-events: none;
+    }
+
+    .minute-guide {
+      position: absolute;
+      display: none;
+      width: 1px;
+      background: #98a2b3;
+      opacity: .65;
+      pointer-events: none;
+    }
+
+    .chart-status {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .chart-status.error { color: var(--red); font-weight: 680; }
+
     .settings-grid {
       display: grid;
       grid-template-columns: .8fr .7fr 1.1fr 1.5fr;
@@ -137,6 +227,13 @@
       color: var(--muted);
       font-size: 11px;
       line-height: 1.4;
+    }
+
+    .setting-definition { grid-column: span 2; }
+    .setting-definition .setting-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(12px, 1.2vw, 16px);
+      letter-spacing: -.025em;
     }
 
     .summary-note {
@@ -592,6 +689,10 @@
       .context { margin-top: 5px; text-align: left; }
       .settings-grid, .accounting-grid, .change-grid, .flow-grid, .comparison-grid, .repro-facts, .run-grid { grid-template-columns: 1fr; }
       .metric:last-child, .change-card:last-child { grid-column: auto; }
+      .setting-definition { grid-column: auto; }
+      .legend { justify-content: flex-start; margin-left: 6px; }
+      .minute-plot { height: 390px; }
+      .scatter-plot { height: min(68vh, 590px); min-height: 430px; }
       .equation-row { grid-template-columns: 1fr; gap: 1px; }
       .equation-row .equals { display: none; }
       .equations { padding: 13px; }
@@ -642,6 +743,11 @@
           <strong class="setting-value">1 token/request</strong>
           <span class="setting-note">2,048 / 2,048 HTTP 200 with exactly one output token</span>
         </div>
+        <div class="setting setting-definition">
+          <span class="setting-label">Internal TTFT</span>
+          <strong class="setting-value">prefill_finished_time − forward_entry_time</strong>
+          <span class="setting-note">Timing starts when a request enters its first PP0 forward and ends at final prefill completion, so API dispatch and scheduler waiting are excluded.</span>
+        </div>
       </div>
       <p class="summary-note"><strong>Result: 6.855M uncached TPM.</strong> Full batches, fewer PP bubbles. The accepted configuration uses two tokenizer workers, skips only semantically empty middle-chunk output payloads, and retains two extra PP microbatch slots so result retirement overlaps forward execution. This page replaces the original 4.759M report; the complete old page remains at the <a href="../glm52-gb300-pp8-realtrace-chunked-8k-poor-config/">archived poor-configuration URL</a>.</p>
     </section>
@@ -690,10 +796,55 @@
       </div>
     </section>
 
+    <section class="panel" id="latency">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">03 · Minute view</span>
+          <h2>Queue-free internal TTFT by minute</h2>
+        </div>
+        <p class="context">P50, P90, P99 · 2,048 successful requests · UTC-aligned 60-second bins<br>First and last bins are partial.</p>
+      </header>
+      <div class="accounting-grid" aria-label="Internal TTFT summary">
+        <div class="metric"><span class="metric-label">Internal TTFT P50</span><span class="metric-value">0.725 s</span><span class="metric-note">scheduler queue excluded</span></div>
+        <div class="metric"><span class="metric-label">Internal TTFT P90</span><span class="metric-value">0.919 s</span><span class="metric-note">first PP0 forward → prefill finish</span></div>
+        <div class="metric"><span class="metric-label">Internal TTFT P99</span><span class="metric-value">1.496 s</span><span class="metric-note">all 2,048 accepted requests</span></div>
+        <div class="metric"><span class="metric-label">Internal TTFT mean</span><span class="metric-value">0.769 s</span><span class="metric-note">arithmetic mean</span></div>
+        <div class="metric"><span class="metric-label">Internal TTFT maximum</span><span class="metric-value">3.852 s</span><span class="metric-note">largest measured request</span></div>
+      </div>
+      <p class="summary-note"><strong>Do not confuse internal and client TTFT.</strong> Client-observed TTFT includes API dispatch and scheduler waiting: P50 5.534 s, P90 8.288 s, and P99 16.359 s. Scheduler wait alone was P50 4.314 s, P90 6.840 s, and P99 14.429 s. The plot below isolates model-side prefill after the request enters PP0.</p>
+      <div class="legend" aria-label="Latency percentile legend">
+        <span style="--legend:var(--blue)">P50</span>
+        <span style="--legend:var(--purple)">P90</span>
+        <span style="--legend:var(--red)">P99</span>
+      </div>
+      <div class="plot minute-plot" id="minute-plot">
+        <canvas id="minute-canvas" role="img" aria-label="Queue-free internal TTFT P50, P90, and P99 by server completion minute"></canvas>
+        <div class="minute-guide" id="minute-guide"></div>
+        <div class="tooltip" id="minute-tooltip"></div>
+      </div>
+      <p class="chart-status" id="minute-status">Loading measured TTFT bins…</p>
+    </section>
+
+    <section class="panel" id="scatter">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">04 · Request view</span>
+          <h2>Uncached tokens vs internal TTFT</h2>
+        </div>
+        <p class="context">2,048 requests · 8× GB300 · PP8 · NVFP4 · 8K chunks</p>
+      </header>
+      <div class="plot scatter-plot" id="scatter-plot">
+        <canvas id="scatter-canvas" role="img" aria-label="Scatter plot of uncached tokens against queue-free internal TTFT for 2,048 requests"></canvas>
+        <div class="focus-dot" id="scatter-focus-dot"></div>
+        <div class="tooltip" id="scatter-tooltip"></div>
+      </div>
+      <p class="chart-status" id="scatter-status">Loading 2,048 measured request points…</p>
+    </section>
+
     <section class="panel" id="changes">
       <header class="panel-head">
         <div>
-          <span class="section-number">03 · Required configuration</span>
+          <span class="section-number">05 · Required configuration</span>
           <h2>The three changes</h2>
         </div>
         <p class="context">Two command-line arguments · one environment switch</p>
@@ -727,7 +878,7 @@
     <section class="panel" id="effect">
       <header class="panel-head">
         <div>
-          <span class="section-number">04 · Measured effect</span>
+          <span class="section-number">06 · Measured effect</span>
           <h2>Fuller batches and faster cadence</h2>
         </div>
         <p class="context">Matched first 2,048 requests · same prompt-token total</p>
@@ -771,7 +922,7 @@
     <section class="panel" id="reproduction">
       <header class="panel-head">
         <div>
-          <span class="section-number">05 · Reproduction record</span>
+          <span class="section-number">07 · Reproduction record</span>
           <h2>Exact run contract and replay procedure</h2>
         </div>
         <p class="context">Accepted run C · expand each block for the complete record</p>
@@ -796,6 +947,7 @@
                   <tr><th>Model</th><td>GLM-5.2 NVFP4 weights; FP8 E4M3 KV cache</td></tr>
                   <tr><th>Parallel topology</th><td>TP=1, DP=1, PP=8, EP=1</td></tr>
                   <tr><th>Chunking</th><td><code>--chunked-prefill-size 8192</code> and <code>--max-prefill-tokens 8192</code></td></tr>
+                  <tr><th>Internal TTFT</th><td><code>prefill_finished_time − forward_entry_time</code> from PP0 structured request timing; exact for all 2,048 requests and exclusive of scheduler waiting</td></tr>
                   <tr><th>Load</th><td>Original ordered real trace; bounded backlog; concurrency 80</td></tr>
                   <tr><th>Cache</th><td>Flush before replay; HiCache write-through; natural prefix reuse then emerged from the ordered stream</td></tr>
                   <tr><th>Output</th><td>Exactly one token per request</td></tr>
@@ -907,9 +1059,10 @@ numactl --interleave=0,1 python3 -m sglang.launch_server \
         <details class="repro-details">
           <summary>5. Data, related reports, and measurement semantics</summary>
           <div class="repro-body">
-            <p>Cadence is the central-80 mean reconstructed from PP0 prefill log intervals. TPM is uncached prompt tokens divided by client wall time. The cache was flushed before every replay; natural prefix reuse then emerged from the original ordered request stream.</p>
+            <p>Cadence is the central-80 mean reconstructed from PP0 prefill log intervals. TPM is uncached prompt tokens divided by client wall time. Internal TTFT is <code>prefill_finished_time − forward_entry_time</code>; the 13,019,893-byte server-log segment contained 2,048 unique request-finished records and zero malformed records. The cache was flushed before every replay; natural prefix reuse then emerged from the original ordered request stream.</p>
             <div class="link-row">
               <a href="data/report-data.json">Machine-readable report data</a>
+              <a href="data/ttft-data.json">Request-level TTFT data</a>
               <a href="../glm52-gb300-pp8-gap-explained/">PP4 versus PP8 scaling proof</a>
               <a href="../glm52-gb300-pp8-realtrace-chunked-8k-poor-config/">Archived 4.759M report</a>
             </div>
@@ -918,5 +1071,325 @@ numactl --interleave=0,1 python3 -m sglang.launch_server \
       </div>
     </section>
   </main>
+  <script>
+    "use strict";
+
+    const COLORS = {p50: "#2563eb", p90: "#7c3aed", p99: "#dc4c64"};
+    let MINUTES = [];
+    let POINTS = [];
+
+    function prepareCanvas(canvas, host) {
+      const width = Math.max(280, host.clientWidth);
+      const height = Math.max(340, host.clientHeight);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+      const context = canvas.getContext("2d");
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      context.clearRect(0, 0, width, height);
+      return {context, width, height};
+    }
+
+    function placeTooltip(tooltip, hostWidth, hostHeight, x, y) {
+      tooltip.style.display = "block";
+      const tooltipWidth = tooltip.offsetWidth;
+      const tooltipHeight = tooltip.offsetHeight;
+      const left = Math.min(hostWidth - tooltipWidth - 8, Math.max(8, x + 13));
+      const top = y + 13 + tooltipHeight < hostHeight ? y + 13 : y - tooltipHeight - 13;
+      tooltip.style.left = left + "px";
+      tooltip.style.top = Math.max(8, top) + "px";
+    }
+
+    const minuteHost = document.getElementById("minute-plot");
+    const minuteCanvas = document.getElementById("minute-canvas");
+    const minuteTooltip = document.getElementById("minute-tooltip");
+    const minuteGuide = document.getElementById("minute-guide");
+    const minuteStatus = document.getElementById("minute-status");
+    let minuteGeometry = null;
+
+    function hideMinuteFocus() {
+      minuteTooltip.style.display = "none";
+      minuteGuide.style.display = "none";
+    }
+
+    function drawMinuteChart() {
+      if (!MINUTES.length) return;
+      hideMinuteFocus();
+      const prepared = prepareCanvas(minuteCanvas, minuteHost);
+      const ctx = prepared.context;
+      const width = prepared.width;
+      const height = prepared.height;
+      const margin = {top: 12, right: width < 560 ? 10 : 22, bottom: 58, left: width < 560 ? 57 : 70};
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+      const yMax = Math.max(1, Math.ceil(Math.max.apply(null, MINUTES.map(function(row) { return row.p99; }))));
+      const x = function(index) {
+        return margin.left + innerWidth * index / Math.max(1, MINUTES.length - 1);
+      };
+      const y = function(value) {
+        return margin.top + innerHeight * (1 - value / yMax);
+      };
+      minuteGeometry = {width, height, margin, innerWidth, innerHeight, x, y};
+
+      ctx.strokeStyle = "#e8edf4";
+      ctx.fillStyle = "#667085";
+      ctx.lineWidth = 1;
+      ctx.font = (width < 560 ? 11 : 12) + "px Inter, ui-sans-serif, system-ui, sans-serif";
+      const yTicks = 6;
+      for (let index = 0; index <= yTicks; index += 1) {
+        const value = yMax * index / yTicks;
+        const yy = y(value);
+        ctx.beginPath();
+        ctx.moveTo(margin.left, yy + .5);
+        ctx.lineTo(margin.left + innerWidth, yy + .5);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(Number.isInteger(value) ? String(value) : value.toFixed(1), margin.left - 9, yy);
+      }
+
+      MINUTES.forEach(function(row, index) {
+        const xx = x(index);
+        ctx.beginPath();
+        ctx.moveTo(xx + .5, margin.top);
+        ctx.lineTo(xx + .5, margin.top + innerHeight);
+        ctx.stroke();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(row.start, xx, margin.top + innerHeight + 10);
+      });
+
+      ctx.strokeStyle = "#b8c2d0";
+      ctx.beginPath();
+      ctx.moveTo(margin.left + .5, margin.top);
+      ctx.lineTo(margin.left + .5, margin.top + innerHeight + .5);
+      ctx.lineTo(margin.left + innerWidth, margin.top + innerHeight + .5);
+      ctx.stroke();
+
+      ctx.fillStyle = "#344054";
+      ctx.font = "600 " + (width < 560 ? 12 : 13) + "px Inter, ui-sans-serif, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("Server completion minute (UTC)", margin.left + innerWidth / 2, height - 3);
+      ctx.save();
+      ctx.translate(13, margin.top + innerHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("Internal TTFT (s)", 0, 0);
+      ctx.restore();
+
+      ["p99", "p90", "p50"].forEach(function(key) {
+        ctx.strokeStyle = COLORS[key];
+        ctx.fillStyle = COLORS[key];
+        ctx.lineWidth = key === "p50" ? 2.5 : 2;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        MINUTES.forEach(function(row, index) {
+          const xx = x(index);
+          const yy = y(row[key]);
+          if (index === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+        });
+        ctx.stroke();
+        MINUTES.forEach(function(row, index) {
+          ctx.beginPath();
+          ctx.arc(x(index), y(row[key]), width < 560 ? 2.3 : 2.7, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+    }
+
+    function showMinuteFocus(event) {
+      if (!minuteGeometry || !MINUTES.length) return;
+      const rect = minuteCanvas.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const rawIndex = Math.round(
+        (pointerX - minuteGeometry.margin.left) / minuteGeometry.innerWidth * (MINUTES.length - 1)
+      );
+      const index = Math.max(0, Math.min(MINUTES.length - 1, rawIndex));
+      const row = MINUTES[index];
+      const xx = minuteGeometry.x(index);
+      minuteGuide.style.display = "block";
+      minuteGuide.style.left = xx + "px";
+      minuteGuide.style.top = minuteGeometry.margin.top + "px";
+      minuteGuide.style.height = minuteGeometry.innerHeight + "px";
+      minuteTooltip.innerHTML =
+        "<strong>" + row.start + "–" + row.end + " UTC" + (row.partial ? " · partial" : "") + "</strong><br>" +
+        row.requests.toLocaleString() + " completed requests<br>" +
+        '<span class="blue">P50 ' + row.p50.toFixed(3) + " s</span> · " +
+        '<span class="purple">P90 ' + row.p90.toFixed(3) + " s</span><br>" +
+        '<span class="red">P99 ' + row.p99.toFixed(3) + " s</span>";
+      placeTooltip(minuteTooltip, minuteGeometry.width, minuteGeometry.height, xx, minuteGeometry.y(row.p99));
+    }
+
+    const scatterHost = document.getElementById("scatter-plot");
+    const scatterCanvas = document.getElementById("scatter-canvas");
+    const scatterTooltip = document.getElementById("scatter-tooltip");
+    const scatterFocusDot = document.getElementById("scatter-focus-dot");
+    const scatterStatus = document.getElementById("scatter-status");
+    let scatterProjected = [];
+    let scatterGeometry = null;
+
+    function formatTokens(value) {
+      if (value === 0) return "0";
+      return Math.round(value / 1000) + "k";
+    }
+
+    function hideScatterFocus() {
+      scatterTooltip.style.display = "none";
+      scatterFocusDot.style.display = "none";
+    }
+
+    function drawScatterChart() {
+      if (!POINTS.length) return;
+      hideScatterFocus();
+      const prepared = prepareCanvas(scatterCanvas, scatterHost);
+      const ctx = prepared.context;
+      const width = prepared.width;
+      const height = prepared.height;
+      const margin = {top: 14, right: width < 560 ? 10 : 22, bottom: 62, left: width < 560 ? 64 : 78};
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+      const xMax = 300000;
+      const yMax = Math.max(1, Math.ceil(Math.max.apply(null, POINTS.map(function(point) { return point[1]; }))));
+      scatterGeometry = {width, height, margin, innerWidth, innerHeight, xMax, yMax};
+
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#e8edf4";
+      ctx.fillStyle = "#667085";
+      ctx.font = (width < 560 ? 11 : 12) + "px Inter, ui-sans-serif, system-ui, sans-serif";
+      const xTickCount = width < 640 ? 3 : 6;
+      for (let index = 0; index <= xTickCount; index += 1) {
+        const value = xMax * index / xTickCount;
+        const xx = margin.left + innerWidth * index / xTickCount;
+        ctx.beginPath();
+        ctx.moveTo(xx + .5, margin.top);
+        ctx.lineTo(xx + .5, margin.top + innerHeight);
+        ctx.stroke();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(formatTokens(value), xx, margin.top + innerHeight + 11);
+      }
+
+      const yTickCount = width < 560 ? 6 : 8;
+      for (let index = 0; index <= yTickCount; index += 1) {
+        const value = yMax * index / yTickCount;
+        const yy = margin.top + innerHeight * (1 - index / yTickCount);
+        ctx.beginPath();
+        ctx.moveTo(margin.left, yy + .5);
+        ctx.lineTo(margin.left + innerWidth, yy + .5);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(Number.isInteger(value) ? String(value) : value.toFixed(1), margin.left - 10, yy);
+      }
+
+      ctx.strokeStyle = "#b8c2d0";
+      ctx.beginPath();
+      ctx.moveTo(margin.left + .5, margin.top);
+      ctx.lineTo(margin.left + .5, margin.top + innerHeight + .5);
+      ctx.lineTo(margin.left + innerWidth, margin.top + innerHeight + .5);
+      ctx.stroke();
+
+      ctx.fillStyle = "#344054";
+      ctx.font = "600 " + (width < 560 ? 12 : 13) + "px Inter, ui-sans-serif, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("Uncached tokens", margin.left + innerWidth / 2, height - 4);
+      ctx.save();
+      ctx.translate(15, margin.top + innerHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("Internal TTFT (s)", 0, 0);
+      ctx.restore();
+
+      scatterProjected = new Array(POINTS.length);
+      ctx.fillStyle = "#2563eb";
+      ctx.globalAlpha = .24;
+      const radius = width < 560 ? 1.45 : 1.75;
+      POINTS.forEach(function(point, index) {
+        const xx = margin.left + innerWidth * point[0] / xMax;
+        const yy = margin.top + innerHeight * (1 - point[1] / yMax);
+        scatterProjected[index] = [xx, yy];
+        ctx.beginPath();
+        ctx.arc(xx, yy, radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function showScatterFocus(event) {
+      if (!scatterGeometry) return;
+      const rect = scatterCanvas.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
+      let nearestIndex = -1;
+      let nearestDistanceSquared = 144;
+      scatterProjected.forEach(function(position, index) {
+        const dx = position[0] - pointerX;
+        const dy = position[1] - pointerY;
+        const distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared < nearestDistanceSquared) {
+          nearestDistanceSquared = distanceSquared;
+          nearestIndex = index;
+        }
+      });
+      if (nearestIndex < 0) {
+        hideScatterFocus();
+        return;
+      }
+
+      const point = POINTS[nearestIndex];
+      const position = scatterProjected[nearestIndex];
+      scatterFocusDot.style.display = "block";
+      scatterFocusDot.style.left = position[0] + "px";
+      scatterFocusDot.style.top = position[1] + "px";
+      scatterTooltip.innerHTML =
+        "<strong>" + point[0].toLocaleString() + "</strong> uncached tokens<br>" +
+        "<strong>" + point[1].toFixed(3) + " s</strong> internal TTFT";
+      placeTooltip(scatterTooltip, scatterGeometry.width, scatterGeometry.height, position[0], position[1]);
+    }
+
+    async function initializeCharts() {
+      try {
+        const response = await fetch("data/ttft-data.json", {cache: "no-store"});
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const data = await response.json();
+        if (data.unique_finished_requests !== 2048 || data.malformed_finished_lines !== 0) {
+          throw new Error("timing coverage validation failed");
+        }
+        if (!Array.isArray(data.minutes) || !Array.isArray(data.points) || data.points.length !== 2048) {
+          throw new Error("chart data shape validation failed");
+        }
+        const binnedRequests = data.minutes.reduce(function(total, row) { return total + row.requests; }, 0);
+        if (binnedRequests !== 2048) throw new Error("minute bins do not reconcile");
+
+        MINUTES = data.minutes;
+        POINTS = data.points;
+        minuteStatus.textContent = "4 UTC minute bins · 2,048 / 2,048 measured requests · first and last bins partial";
+        scatterStatus.textContent = "2,048 measured requests · 8–299,669 uncached tokens · hover or touch near a point for its values";
+
+        minuteCanvas.addEventListener("pointermove", showMinuteFocus);
+        minuteCanvas.addEventListener("pointerleave", hideMinuteFocus);
+        scatterCanvas.addEventListener("pointermove", showScatterFocus);
+        scatterCanvas.addEventListener("pointerleave", hideScatterFocus);
+        new ResizeObserver(drawMinuteChart).observe(minuteHost);
+        new ResizeObserver(drawScatterChart).observe(scatterHost);
+        drawMinuteChart();
+        drawScatterChart();
+      } catch (error) {
+        minuteStatus.textContent = "Measured TTFT chart data failed to load: " + error.message;
+        scatterStatus.textContent = minuteStatus.textContent;
+        minuteStatus.classList.add("error");
+        scatterStatus.classList.add("error");
+      }
+    }
+
+    initializeCharts();
+  </script>
 </body>
 </html>
