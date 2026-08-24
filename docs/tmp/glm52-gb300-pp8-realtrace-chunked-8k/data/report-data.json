@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-24T09:46:09+08:00",
+  "title": "GLM-5.2 GB300 PP8 optimized fixed-8K real-trace prefill",
+  "primary_run": {
+    "run_id": "glm52-gb300-gapopt-pp8-fixed8k-correctedskip-prodobs-async2-auto-136-169-20260822-depth2-c",
+    "requests": 2048,
+    "http_200": 2048,
+    "exact_one_output_token": 2048,
+    "duration_s": 157.724080698,
+    "prompt_tokens": 90542773,
+    "cached_tokens": 72521856,
+    "uncached_prompt_tokens": 18020917,
+    "token_weighted_cache_hit_ratio": 0.8009679138057766,
+    "uncached_tpm": 6855357.883304567
+  },
+  "batching": {
+    "pp0_batches": 2208,
+    "full_8192_token_batches": 2207,
+    "underfilled_batches": 1,
+    "full_batch_fraction": 0.9995471014492754,
+    "mean_sequences_per_batch": 1.9189311594202898,
+    "mean_tokens_per_batch": 8190.869565217391,
+    "mean_token_fill_fraction": 0.9998615406576087,
+    "central_80_cadence_ms": 71.01440196027048
+  },
+  "accepted_repetitions": [
+    {
+      "id": "depth2-a",
+      "duration_s": 159.63478078,
+      "uncached_tokens": 18014581,
+      "uncached_tpm": 6770923.320836974,
+      "central_80_cadence_ms": 71.49581890248113
+    },
+    {
+      "id": "depth2-b",
+      "duration_s": 157.359914465,
+      "uncached_tokens": 18021493,
+      "uncached_tpm": 6871442.347158243,
+      "central_80_cadence_ms": 70.98838869003166
+    },
+    {
+      "id": "depth2-c",
+      "duration_s": 157.724080698,
+      "uncached_tokens": 18020917,
+      "uncached_tpm": 6855357.883304567,
+      "central_80_cadence_ms": 71.01440196027048
+    }
+  ],
+  "median_uncached_tpm": 6855357.883304567,
+  "three_changes": {
+    "tokenizer_workers": {
+      "old": 1,
+      "new": 2,
+      "argument": "--tokenizer-worker-num 2"
+    },
+    "pure_middle_chunk_output_payload": {
+      "old": "circulated around the PP ring",
+      "new": "skipped after preserving forward completion",
+      "environment": "SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM=1",
+      "corrected_scheduler_sha256": "e706eb1c3b80e015c5dd3093c6f1cfce8ce45774930a9a8a11dd42fb62331875"
+    },
+    "pp_async_batch_depth": {
+      "old": 0,
+      "new": 2,
+      "argument": "--pp-async-batch-depth 2",
+      "pp_loop_slots_old": 8,
+      "pp_loop_slots_new": 10
+    }
+  },
+  "matched_first_2048_baseline": {
+    "configuration": "one tokenizer, output circulation enabled, PP async depth 0",
+    "duration_s": 196.08030997,
+    "prompt_tokens": 90542773,
+    "cached_tokens": 72657856,
+    "uncached_prompt_tokens": 17884917,
+    "token_weighted_cache_hit_ratio": 0.8024699663218842,
+    "uncached_tpm": 5472732.16859042,
+    "mean_tokens_per_batch": 7629.37760749255,
+    "central_80_cadence_ms": 83.05166368292183
+  },
+  "archived_20_minute_run": {
+    "url": "https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-pp8-realtrace-chunked-8k-poor-config/",
+    "requests": 12214,
+    "accounting_span_s": 1201.746,
+    "prompt_tokens": 567161479,
+    "cached_tokens": 471833408,
+    "uncached_prompt_tokens": 95328071,
+    "token_weighted_cache_hit_ratio": 0.8319207588497032,
+    "uncached_tpm": 4759479.744183108,
+    "pp0_batches": 13410,
+    "full_8192_token_batches": 10821,
+    "full_batch_fraction": 0.8069351230425056,
+    "derived_mean_tokens_per_batch": 7108.730126771066
+  },
+  "settings": {
+    "hardware": "8 NVIDIA GB300 GPUs across nodes gpu-worker-gb300-136 and gpu-worker-gb300-169",
+    "model": "GLM-5.2 NVFP4 weights",
+    "kv_cache_dtype": "FP8 E4M3",
+    "parallelism": "TP1, DP1, PP8, EP1",
+    "chunked_prefill_tokens": 8192,
+    "max_prefill_tokens": 8192,
+    "max_running_requests": 80,
+    "client_max_inflight": 80,
+    "output_tokens": 1,
+    "request_logging": true,
+    "prometheus_metrics": true,
+    "cache_initial_condition": "flush before replay; HiCache write-through",
+    "dataset_sha256": "9cb06790675e6cd3b3cf1fcca8232f82f36d5002a86351c6510c1c3bb8c77acb",
+    "base_source_commit": "d0f290a8"
+  },
+  "comparison_caveat": "The archived 4.759M run covered a 20-minute, 12,214-request window. The accepted 6.855M primary run covers the ordered first 2,048 requests. Use the matched first-2,048 baseline for a strict treatment comparison."
+}
