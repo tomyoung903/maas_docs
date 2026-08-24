@@ -7,435 +7,812 @@
   <meta name="experiment" content="glm52-gb300-gapopt-pp8-fixed8k-correctedskip-prodobs-async2-auto-136-169-20260822-depth2-c">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-pp8-realtrace-chunked-8k/">
   <link rel="icon" href="data:,">
-  <title>GB300 PP8 NVFP4 · optimized 8K chunked prefill · 6.855M TPM</title>
+  <title>GB300 PP8 NVFP4 · 8K chunked prefill · 6.855M TPM</title>
   <style>
     :root {
       color-scheme: light;
-      --ink:#172033; --muted:#647084; --line:#dfe6ef; --ground:#f2f5f9;
-      --paper:#fff; --navy:#111c30; --blue:#356fe5; --cyan:#268da5;
-      --green:#16846b; --orange:#d88743; --violet:#765ed2; --red:#cf5b68;
-      --soft-blue:#f2f6ff; --soft-green:#edf9f5; --soft-orange:#fff7ec;
+      --ink: #172033;
+      --muted: #667085;
+      --border: #dce3ec;
+      --grid: #e8edf4;
+      --blue: #2563eb;
+      --blue-deep: #1d4ed8;
+      --purple: #7c3aed;
+      --red: #dc4c64;
+      --green: #11745e;
+      --orange: #c56a24;
+      --paper: #ffffff;
+      --ground: #f4f7fb;
     }
-    * { box-sizing:border-box; }
-    html { scroll-behavior:smooth; }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    html { scroll-behavior: smooth; }
+
     body {
-      margin:0;
-      padding:clamp(12px,2vw,30px);
-      color:var(--ink);
-      background:var(--ground);
-      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+      margin: 0;
+      padding: clamp(12px, 2.4vw, 34px);
+      background: var(--ground);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    a { color:#2759bc; }
-    code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
-    code { padding:.12em .35em; border-radius:5px; color:#3d4d65; background:#edf1f6; }
-    .layout {
-      display:grid;
-      grid-template-columns:200px minmax(0,1120px);
-      gap:18px;
-      width:min(1340px,100%);
-      margin:auto;
-      align-items:start;
+
+    a { color: var(--blue-deep); }
+
+    main {
+      width: min(1480px, 100%);
+      margin: 0 auto;
     }
-    .rail {
-      position:sticky;
-      top:18px;
-      padding:16px;
-      border:1px solid var(--line);
-      border-radius:16px;
-      background:rgb(255 255 255 / 92%);
-      box-shadow:0 12px 34px rgb(25 39 66 / 6%);
-    }
-    .rail strong {
-      display:block;
-      margin-bottom:10px;
-      color:#657086;
-      font-size:10px;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-    }
-    .rail a {
-      display:block;
-      min-height:38px;
-      padding:9px 10px;
-      border-radius:8px;
-      color:#47546a;
-      font-size:12px;
-      font-weight:700;
-      line-height:1.35;
-      text-decoration:none;
-    }
-    .rail a:hover,.rail a:focus-visible { color:#234fa8; background:#edf3ff; outline:none; }
-    main { min-width:0; }
+
     .panel {
-      padding:clamp(20px,3vw,36px);
-      border:1px solid #e0e6ee;
-      border-radius:20px;
-      background:var(--paper);
-      box-shadow:0 15px 48px rgb(27 39 64 / 7%);
+      margin: 0;
+      padding: clamp(18px, 2.4vw, 32px);
+      border: 1px solid #e1e7ef;
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: 0 16px 50px rgb(27 39 64 / 8%);
     }
-    .panel + .panel { margin-top:18px; }
-    .hero {
-      position:relative;
-      overflow:hidden;
-      color:#fff;
-      background:linear-gradient(135deg,#101a2c,#183a60 58%,#135148);
+
+    .panel + .panel { margin-top: 20px; }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
     }
-    .hero::after {
-      position:absolute;
-      right:-110px;
-      bottom:-155px;
-      width:440px;
-      height:440px;
-      border:1px solid rgb(255 255 255 / 12%);
-      border-radius:50%;
-      box-shadow:0 0 0 58px rgb(255 255 255 / 3%),0 0 0 116px rgb(255 255 255 / 2%);
-      content:"";
+
+    .section-number {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--blue-deep);
+      font-size: 11px;
+      font-weight: 780;
+      letter-spacing: .13em;
+      text-transform: uppercase;
     }
-    .eyebrow {
-      display:block;
-      margin-bottom:8px;
-      color:#13715d;
-      font-size:10px;
-      font-weight:850;
-      letter-spacing:.14em;
-      text-transform:uppercase;
+
+    h1, h2 {
+      margin: 0;
+      font-size: clamp(21px, 2.2vw, 30px);
+      font-weight: 720;
+      letter-spacing: -.025em;
     }
-    .hero .eyebrow { color:#77dec6; }
-    h1,h2,h3,p { margin-top:0; }
-    h1 {
-      position:relative;
-      z-index:1;
-      max-width:900px;
-      margin-bottom:0;
-      font-size:clamp(34px,5.4vw,68px);
-      line-height:1.01;
-      letter-spacing:-.05em;
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 720;
+      letter-spacing: -.015em;
     }
-    h2 { margin-bottom:0; font-size:clamp(24px,3vw,36px); line-height:1.08; letter-spacing:-.035em; }
-    h3 { margin-bottom:0; font-size:17px; letter-spacing:-.015em; }
-    p { margin-bottom:0; line-height:1.62; }
-    .lede {
-      position:relative;
-      z-index:1;
-      max-width:900px;
-      margin-top:18px;
-      color:#dce8f4;
-      font-size:clamp(15px,1.6vw,19px);
+
+    .context {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 560;
+      line-height: 1.45;
+      text-align: right;
     }
-    .hero-metrics {
-      position:relative;
-      z-index:1;
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:10px;
-      margin-top:26px;
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: .8fr .7fr 1.1fr 1.5fr;
+      gap: 10px;
     }
-    .hero-metric {
-      padding:15px;
-      border:1px solid rgb(255 255 255 / 16%);
-      border-radius:13px;
-      background:rgb(255 255 255 / 7%);
+
+    .setting {
+      min-width: 0;
+      padding: 14px 16px;
+      border: 1px solid #e3e9f1;
+      border-radius: 12px;
+      background: #f9fbfd;
     }
-    .hero-metric strong,.hero-metric span { display:block; }
-    .hero-metric strong { font-size:clamp(24px,3vw,38px); letter-spacing:-.045em; font-variant-numeric:tabular-nums; }
-    .hero-metric span { margin-top:4px; color:#bfd0e1; font-size:10px; line-height:1.4; }
-    .hero-note {
-      position:relative;
-      z-index:1;
-      margin-top:13px;
-      padding:11px 14px;
-      border-radius:10px;
-      color:#d9fff5;
-      background:rgb(16 111 88 / 52%);
-      font-size:12px;
-      font-weight:700;
+
+    .setting-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 720;
+      letter-spacing: .06em;
+      text-transform: uppercase;
     }
-    .hero-note a { color:#fff; }
-    .head {
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:24px;
-      margin-bottom:22px;
+
+    .setting-value {
+      display: block;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      font-size: clamp(18px, 1.8vw, 25px);
+      font-variant-numeric: tabular-nums;
+      font-weight: 740;
+      letter-spacing: -.02em;
+      line-height: 1.2;
     }
-    .head p { max-width:570px; color:var(--muted); font-size:12px; text-align:right; }
-    .accounting { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-    .fact {
-      padding:16px;
-      border:1px solid var(--line);
-      border-radius:13px;
-      background:#fafbfd;
+
+    .setting-note, .metric-note {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
     }
-    .fact strong,.fact span { display:block; }
-    .fact strong { font-size:24px; letter-spacing:-.035em; font-variant-numeric:tabular-nums; }
-    .fact span { margin-top:4px; color:var(--muted); font-size:10px; line-height:1.45; }
-    .equation {
-      display:grid;
-      grid-template-columns:auto auto 1fr;
-      gap:12px;
-      margin-top:14px;
-      padding:16px 18px;
-      border:1px solid #d7e2f5;
-      border-radius:13px;
-      color:#2e5fc3;
-      background:var(--soft-blue);
-      font-family:Georgia,"Times New Roman",serif;
-      font-size:clamp(17px,2vw,23px);
-      align-items:baseline;
+
+    .summary-note {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      border-left: 3px solid var(--blue);
+      border-radius: 0 8px 8px 0;
+      background: #eff6ff;
+      color: #344c6a;
+      font-size: 13px;
+      line-height: 1.6;
     }
-    .equation .lhs { color:#506078; font-family:Inter,ui-sans-serif,system-ui,sans-serif; font-size:11px; font-weight:800; text-transform:uppercase; }
-    .changes { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
-    .change {
-      position:relative;
-      overflow:hidden;
-      padding:20px;
-      border:1px solid var(--line);
-      border-radius:15px;
-      background:#fafbfd;
+
+    .summary-note strong { color: var(--ink); }
+
+    .accounting-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
     }
-    .change::before { position:absolute; inset:0 auto 0 0; width:4px; background:var(--accent); content:""; }
-    .change-number { display:block; color:var(--accent); font-size:11px; font-weight:900; letter-spacing:.12em; }
-    .change h3 { margin-top:7px; font-size:20px; }
-    .change p { margin-top:10px; color:var(--muted); font-size:12px; }
+
+    .metric {
+      min-width: 0;
+      padding: 15px 16px;
+      border: 1px solid #e3e9f1;
+      border-radius: 12px;
+      background: #f9fbfd;
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 720;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: clamp(20px, 2vw, 27px);
+      font-variant-numeric: tabular-nums;
+      font-weight: 740;
+      letter-spacing: -.025em;
+    }
+
+    .equations {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+      padding: 15px 17px;
+      border: 1px solid #dbe5ef;
+      border-radius: 12px;
+      background: #f7fafc;
+      font-size: clamp(13px, 1.5vw, 17px);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.55;
+    }
+
+    .equation-row {
+      display: grid;
+      grid-template-columns: minmax(150px, .8fr) 24px minmax(0, 2.3fr);
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .equation-row .lhs { color: var(--muted); font-weight: 650; }
+    .equation-row .equals { color: #98a2b3; text-align: center; }
+    .equation-row .rhs { color: var(--ink); }
+    .equation-row strong { color: var(--green); font-weight: 760; }
+
+    .change-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .change-card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid #e3e9f1;
+      border-radius: 12px;
+      background: #f9fbfd;
+    }
+
+    .change-number {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--blue-deep);
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .before-after {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin: 10px 0;
+    }
+
+    .state {
+      padding: 8px 9px;
+      border-radius: 7px;
+      background: #eef2f6;
+      color: #475467;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .state.good { background: #e7f6f1; color: #126653; }
+
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    code:not(pre code) {
+      padding: .1em .35em;
+      border-radius: 4px;
+      background: #eef3f8;
+      color: #26354d;
+      font-size: .92em;
+      overflow-wrap: anywhere;
+    }
+
     .flag {
-      display:block;
-      margin-top:13px;
-      padding:9px 10px;
-      overflow-wrap:anywhere;
-      border:1px solid #dce3ed;
-      border-radius:8px;
-      color:#233a64;
-      background:#fff;
-      font-size:11px;
-      font-weight:750;
+      display: block;
+      padding: 8px 9px;
+      overflow-wrap: anywhere;
+      border: 1px solid #dce4ee;
+      border-radius: 7px;
+      background: #fff;
+      color: #26354d;
+      font-size: 11px;
+      font-weight: 700;
     }
-    .before-after { display:flex; gap:8px; margin-top:12px; }
-    .state { flex:1; padding:9px; border-radius:8px; background:#edf1f6; font-size:10px; line-height:1.4; }
-    .state.good { color:#126653; background:#e6f6f1; }
+
+    .change-card p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
     .safety {
-      margin-top:14px;
-      padding:14px 16px;
-      border-left:4px solid var(--orange);
-      border-radius:9px;
-      color:#6b4e2f;
-      background:var(--soft-orange);
-      font-size:12px;
-      line-height:1.58;
+      margin: 14px 0 0;
+      padding: 11px 13px;
+      border-left: 3px solid var(--orange);
+      border-radius: 0 8px 8px 0;
+      background: #fff7ed;
+      color: #6b4e2f;
+      font-size: 12px;
+      line-height: 1.65;
     }
-    .flow-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .flow {
-      padding:18px;
-      border:1px solid var(--line);
-      border-radius:15px;
-      background:#fafbfd;
+
+    .flow-grid, .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
     }
-    .flow.bad { border-color:#f0d2c3; background:#fff9f6; }
-    .flow.good { border-color:#cde8de; background:#f5fcf9; }
-    .flow h3 { color:#394961; }
-    .flow-line { display:flex; align-items:stretch; gap:6px; margin-top:14px; }
-    .node {
-      display:grid;
-      min-width:0;
-      flex:1;
-      min-height:62px;
-      padding:9px;
-      place-items:center;
-      border-radius:9px;
-      color:#425168;
-      background:#fff;
-      font-size:9px;
-      font-weight:800;
-      line-height:1.35;
-      text-align:center;
+
+    .flow-card, .comparison-card {
+      min-width: 0;
+      padding: 15px 16px;
+      border: 1px solid #e3e9f1;
+      border-radius: 12px;
+      background: #f9fbfd;
     }
-    .arrow { display:grid; color:#94a0b2; place-items:center; font-weight:900; }
-    .compare { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .compare-card { padding:20px; border:1px solid var(--line); border-radius:15px; background:#fafbfd; }
-    .compare-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-    .compare-top strong { display:block; margin-top:4px; font-size:26px; font-variant-numeric:tabular-nums; }
-    .compare-top span { color:var(--muted); font-size:10px; text-align:right; }
-    .bar-row { margin-top:15px; }
-    .bar-label { display:flex; justify-content:space-between; gap:10px; color:#526078; font-size:10px; font-weight:750; }
-    .bar { height:13px; margin-top:5px; overflow:hidden; border-radius:999px; background:#e8edf3; }
-    .bar i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--blue),var(--cyan)); }
+
+    .flow-card.old { border-color: #f0ded2; background: #fffaf7; }
+    .flow-card.new { border-color: #d7e9e3; background: #f7fcfa; }
+
+    .flow-line {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .flow-line + .flow-line { margin-top: 8px; }
+
+    .flow-node {
+      min-width: 0;
+      padding: 9px;
+      border: 1px solid #e4eaf1;
+      border-radius: 7px;
+      background: #fff;
+      color: #344054;
+      font-size: 10px;
+      font-weight: 650;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .flow-arrow { color: #98a2b3; }
+
+    .subhead {
+      margin: 20px 0 9px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .comparison-card > strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: clamp(22px, 2.1vw, 28px);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.025em;
+    }
+
+    .comparison-card > span {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .comparison-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 8px 0;
+      border-top: 1px solid #e5eaf1;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .comparison-row b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
     .factor {
-      margin-top:14px;
-      padding:13px 15px;
-      border-radius:11px;
-      color:#0f5e4c;
-      background:var(--soft-green);
-      font-size:12px;
-      font-weight:750;
-      line-height:1.55;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid #d6e9e3;
+      border-radius: 10px;
+      background: #effaf6;
+      color: #1f6655;
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.6;
     }
-    .code-caption { margin:17px 0 7px; color:#5e6b7e; font-size:10px; font-weight:850; letter-spacing:.1em; text-transform:uppercase; }
-    pre {
-      margin:0;
-      padding:18px;
-      overflow:auto;
-      border:1px solid #263753;
-      border-radius:13px;
-      color:#dfe9f5;
-      background:#101a2b;
-      font-size:11px;
-      line-height:1.58;
-      tab-size:2;
+
+    .foot {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
     }
-    pre code { padding:0; border-radius:0; color:#dce7f7; background:transparent; }
-    pre .required { color:#79e0c8; font-weight:850; }
-    .launch-notes { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
-    .launch-note { padding:13px; border:1px solid var(--line); border-radius:11px; color:var(--muted); background:#fafbfd; font-size:10px; line-height:1.5; }
-    .runs { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-    .run { padding:17px; border:1px solid var(--line); border-radius:13px; background:#fafbfd; }
-    .run strong,.run span { display:block; }
-    .run strong { color:var(--green); font-size:24px; font-variant-numeric:tabular-nums; }
-    .run span { margin-top:4px; color:var(--muted); font-size:10px; line-height:1.45; }
-    .settings { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:16px; }
-    .setting { padding:13px; border:1px solid var(--line); border-radius:10px; background:#fafbfd; }
-    .setting span,.setting strong { display:block; }
-    .setting span { color:#536072; font-size:8px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
-    .setting strong { margin-top:5px; font-size:11px; line-height:1.45; }
-    .links { display:flex; flex-wrap:wrap; gap:10px; margin-top:17px; }
-    .links a {
-      display:inline-flex;
-      min-height:44px;
-      padding:0 14px;
-      align-items:center;
-      border:1px solid #cfdbef;
-      border-radius:10px;
-      color:#2854a7;
-      background:#f7f9fd;
-      font-size:11px;
-      font-weight:800;
-      text-decoration:none;
+
+    .repro-intro {
+      max-width: 1000px;
+      margin: -2px 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
     }
-    .foot { margin-top:14px; color:var(--muted); font-size:10px; line-height:1.6; }
-    @media (max-width:980px) {
-      .layout { grid-template-columns:1fr; }
-      .rail { position:static; display:flex; flex-wrap:wrap; gap:4px; }
-      .rail strong { width:100%; margin-bottom:4px; }
-      .rail a { min-height:34px; padding:8px; }
-      .hero-metrics,.changes { grid-template-columns:1fr 1fr; }
-      .changes .change:last-child { grid-column:1/-1; }
+
+    .repro-facts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
     }
-    @media (max-width:660px) {
-      .hero-metrics,.accounting,.changes,.flow-grid,.compare,.launch-notes,.runs,.settings { grid-template-columns:1fr; }
-      .changes .change:last-child { grid-column:auto; }
-      .head { align-items:flex-start; flex-direction:column; }
-      .head p { text-align:left; }
-      .equation { grid-template-columns:1fr; gap:4px; }
-      .flow-line { flex-direction:column; }
-      .arrow { transform:rotate(90deg); }
+
+    .repro-fact {
+      min-width: 0;
+      padding: 13px 14px;
+      border: 1px solid #dce6f0;
+      border-radius: 11px;
+      background: #f7fafc;
     }
-    @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; } }
+
+    .repro-fact span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .repro-fact strong {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.45;
+    }
+
+    .repro-stack { display: grid; gap: 10px; }
+
+    .repro-details {
+      overflow: hidden;
+      border: 1px solid #dce4ee;
+      border-radius: 12px;
+      background: #fbfcfe;
+    }
+
+    .repro-details[open] { background: #fff; }
+
+    .repro-details summary {
+      position: relative;
+      padding: 14px 44px 14px 16px;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 720;
+      line-height: 1.4;
+      list-style: none;
+    }
+
+    .repro-details summary::-webkit-details-marker { display: none; }
+
+    .repro-details summary::after {
+      position: absolute;
+      top: 50%;
+      right: 17px;
+      color: var(--blue-deep);
+      font-size: 18px;
+      font-weight: 500;
+      content: "+";
+      transform: translateY(-52%);
+    }
+
+    .repro-details[open] summary::after { content: "−"; }
+
+    .repro-details[open] summary {
+      border-bottom: 1px solid #e5eaf1;
+      background: #f7faff;
+    }
+
+    .repro-body {
+      padding: 16px;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .repro-body > :first-child { margin-top: 0; }
+    .repro-body > :last-child { margin-bottom: 0; }
+    .repro-body p { margin: 9px 0; }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 10px 0;
+      border: 1px solid #e1e7ef;
+      border-radius: 10px;
+    }
+
+    .repro-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .repro-table th, .repro-table td {
+      padding: 9px 11px;
+      border-bottom: 1px solid #e7ecf2;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .repro-table tr:last-child th, .repro-table tr:last-child td { border-bottom: 0; }
+    .repro-table th { width: 28%; color: #475467; background: #f8fafc; font-weight: 680; }
+    .repro-table td { overflow-wrap: anywhere; }
+
+    .code-caption {
+      margin: 14px 0 0;
+      padding: 8px 12px;
+      border: 1px solid #263750;
+      border-bottom: 0;
+      border-radius: 9px 9px 0 0;
+      background: #1d2a3d;
+      color: #cbd5e1;
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .code-block {
+      overflow-x: auto;
+      margin: 0 0 14px;
+      padding: 14px 15px;
+      border-radius: 0 0 9px 9px;
+      background: #111827;
+      color: #e5edf8;
+      font-size: 11px;
+      line-height: 1.58;
+      tab-size: 2;
+      white-space: pre;
+    }
+
+    .code-block .required { color: #8be3c8; font-weight: 760; }
+
+    .run-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .run {
+      padding: 13px 14px;
+      border: 1px solid #dce6f0;
+      border-radius: 11px;
+      background: #f7fafc;
+    }
+
+    .run strong, .run span { display: block; }
+    .run strong { color: var(--green); font-size: 22px; font-variant-numeric: tabular-nums; }
+    .run span { margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+
+    .link-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .link-row a {
+      display: inline-flex;
+      min-height: 38px;
+      align-items: center;
+      padding: 0 12px;
+      border: 1px solid #dce4ee;
+      border-radius: 8px;
+      background: #f9fbfd;
+      font-size: 12px;
+      font-weight: 680;
+      text-decoration: none;
+    }
+
+    .pass { color: var(--green); font-weight: 740; }
+
+    @media (max-width: 980px) {
+      .settings-grid, .accounting-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .change-grid, .repro-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric:last-child { grid-column: 1 / -1; }
+      .change-card:last-child { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 680px) {
+      body { padding: 8px; }
+      .panel { padding: 16px 10px 13px; border-radius: 12px; }
+      .panel + .panel { margin-top: 10px; }
+      .panel-head { display: block; padding: 0 6px; }
+      .context { margin-top: 5px; text-align: left; }
+      .settings-grid, .accounting-grid, .change-grid, .flow-grid, .comparison-grid, .repro-facts, .run-grid { grid-template-columns: 1fr; }
+      .metric:last-child, .change-card:last-child { grid-column: auto; }
+      .equation-row { grid-template-columns: 1fr; gap: 1px; }
+      .equation-row .equals { display: none; }
+      .equations { padding: 13px; }
+      .flow-line { grid-template-columns: 1fr; }
+      .flow-arrow { text-align: center; transform: rotate(90deg); }
+      .repro-details summary { padding-left: 13px; }
+      .repro-body { padding: 13px; }
+      .repro-table th { width: 38%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
   </style>
 </head>
 <body>
-  <div class="layout">
-    <nav class="rail" aria-label="Page contents">
-      <strong>On this page</strong>
-      <a href="#result">Result</a>
-      <a href="#accounting">Accounting</a>
-      <a href="#changes">Three changes</a>
-      <a href="#mechanism">Mechanism</a>
-      <a href="#comparison">Measured effect</a>
-      <a href="#launch">Exact launch</a>
-      <a href="#validation">Validation</a>
-    </nav>
-
-    <main>
-      <section class="panel hero" id="result">
-        <span class="eyebrow">GB300 · GLM-5.2 NVFP4 · PP8 · fixed 8K prefill</span>
-        <h1>6.855M uncached TPM.<br>Full batches, fewer PP bubbles.</h1>
-        <p class="lede">The accepted configuration uses two tokenizer workers, skips only semantically empty middle-chunk output payloads, and retains two extra PP microbatch slots so result retirement overlaps forward execution.</p>
-        <div class="hero-metrics">
-          <div class="hero-metric"><strong>6.855M</strong><span>uncached TPM · selected median run C</span></div>
-          <div class="hero-metric"><strong>99.95%</strong><span>full 8,192-token PP0 batches</span></div>
-          <div class="hero-metric"><strong>71.014 ms</strong><span>central full-batch cadence</span></div>
-          <div class="hero-metric"><strong>2,048/2,048</strong><span>HTTP 200 · exactly one output token</span></div>
+  <main>
+    <section class="panel" id="settings">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">00 · Settings</span>
+          <h1>Experiment settings</h1>
         </div>
-        <div class="hero-note">This page replaces the original 4.759M report. The complete old page is preserved at the <a href="../glm52-gb300-pp8-realtrace-chunked-8k-poor-config/">archived poor-configuration URL</a>.</div>
-      </section>
-
-      <section class="panel" id="accounting">
-        <div class="head"><div><span class="eyebrow">01 · Accounting</span><h2>Accepted depth-two run</h2></div><p>Run C is both a real measured run and the median TPM point across three corrected repetitions.</p></div>
-        <div class="accounting">
-          <div class="fact"><strong>18,020,917</strong><span>uncached prompt tokens · new model work</span></div>
-          <div class="fact"><strong>72,521,856</strong><span>cached prompt tokens</span></div>
-          <div class="fact"><strong>90,542,773</strong><span>total prompt tokens</span></div>
-          <div class="fact"><strong>157.724 s</strong><span>first request start to final client completion</span></div>
-          <div class="fact"><strong>80.097%</strong><span>token-weighted prefix-cache hit ratio</span></div>
-          <div class="fact"><strong>2,208</strong><span>PP0 prefill batches · only one underfilled</span></div>
+      </header>
+      <div class="settings-grid">
+        <div class="setting">
+          <span class="setting-label">Total requests</span>
+          <strong class="setting-value">2,048</strong>
         </div>
-        <div class="equation" aria-label="Uncached throughput calculation"><span class="lhs">Uncached TPM</span><span>=</span><span>18,020,917 ÷ 157.724 s × 60 s/min = <strong>6,855,358 tokens/min</strong></span></div>
-      </section>
-
-      <section class="panel" id="changes">
-        <div class="head"><div><span class="eyebrow">02 · Required configuration</span><h2>The three changes</h2></div><p>Two are command-line arguments. The output-payload optimization is an environment switch and requires the corrected scheduler implementation described below.</p></div>
-        <div class="changes">
-          <article class="change" style="--accent:var(--blue)">
-            <span class="change-number">CHANGE 01</span>
-            <h3>Two tokenizer workers</h3>
-            <div class="before-after"><div class="state">Before<br><strong>1 worker</strong></div><div class="state good">After<br><strong>2 workers</strong></div></div>
-            <span class="flag">--tokenizer-worker-num 2</span>
-            <p>Two HTTP/tokenizer processes parse and tokenize requests concurrently. Their prepared requests are merged into the same scheduler, preventing a fast PP8 pipeline from repeatedly exhausting its ready queue.</p>
-          </article>
-          <article class="change" style="--accent:var(--orange)">
-            <span class="change-number">CHANGE 02</span>
-            <h3>Skip empty middle-chunk payloads</h3>
-            <div class="before-after"><div class="state">Before<br><strong>ring circulation</strong></div><div class="state good">After<br><strong>payload omitted</strong></div></div>
-            <span class="flag">SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM=1</span>
-            <p>A pure non-final chunk has no sampled token or logprob result to consume. The optimized path avoids serializing and circulating that empty output object while retaining the model-forward completion dependency.</p>
-          </article>
-          <article class="change" style="--accent:var(--violet)">
-            <span class="change-number">CHANGE 03</span>
-            <h3>PP async depth two</h3>
-            <div class="before-after"><div class="state">Before<br><strong>8 loop slots</strong></div><div class="state good">After<br><strong>10 loop slots</strong></div></div>
-            <span class="flag">--pp-async-batch-depth 2</span>
-            <p>The scheduler can retire an older result while the current microbatch executes on the GPU. Depth two won over depths zero, one, and three by reducing exposed host and PP-boundary gaps.</p>
-          </article>
+        <div class="setting">
+          <span class="setting-label">Pipeline parallelism</span>
+          <strong class="setting-value">PP=8</strong>
         </div>
-        <p class="safety"><strong>Correctness prerequisite:</strong> do not enable the output-skip environment variable against the earlier experimental implementation that discarded the last-rank completion event. The accepted scheduler always waits for <code>q_event</code> before request or KV state can be recycled, and skips only the payload. Corrected <code>scheduler_pp_mixin.py</code> SHA-256: <code>e706eb1c…31875</code>.</p>
-      </section>
-
-      <section class="panel" id="mechanism">
-        <div class="head"><div><span class="eyebrow">03 · Mechanism</span><h2>What changed in the pipeline</h2></div><p>The gain comes from feeding each GPU batch more reliably and moving batch-level work off the exposed critical path.</p></div>
-        <div class="flow-grid">
-          <article class="flow bad">
-            <h3>Original 4.759M configuration</h3>
-            <div class="flow-line"><div class="node">1 HTTP + tokenizer worker</div><div class="arrow">→</div><div class="node">partly filled 8K batch</div><div class="arrow">→</div><div class="node">8 PP stages</div></div>
-            <div class="flow-line"><div class="node">GPU forward</div><div class="arrow">→</div><div class="node">empty output payload circles ring</div><div class="arrow">→</div><div class="node">synchronous result retirement</div></div>
-          </article>
-          <article class="flow good">
-            <h3>Accepted 6.855M configuration</h3>
-            <div class="flow-line"><div class="node">2 HTTP + tokenizer workers</div><div class="arrow">→</div><div class="node">full 8K batch</div><div class="arrow">→</div><div class="node">8 PP stages</div></div>
-            <div class="flow-line"><div class="node">GPU forward + preserved event</div><div class="arrow">→</div><div class="node">empty payload skipped</div><div class="arrow">→</div><div class="node">older result overlaps next forward</div></div>
-          </article>
+        <div class="setting">
+          <span class="setting-label">Accelerator</span>
+          <strong class="setting-value">8× GB300</strong>
         </div>
-      </section>
-
-      <section class="panel" id="comparison">
-        <div class="head"><div><span class="eyebrow">04 · Measured effect</span><h2>Fuller batches × faster cadence</h2></div><p>The strict treatment comparison is the same ordered first 2,048 requests. The archived 20-minute result is shown separately because its request window is longer.</p></div>
-        <div class="compare">
-          <article class="compare-card">
-            <div class="compare-top"><div><h3>Matched original configuration</h3><strong>5.473M TPM</strong></div><span>same first 2,048<br>same prompt-token total</span></div>
-            <div class="bar-row"><div class="bar-label"><span>mean tokens per PP0 batch</span><b>7,629</b></div><div class="bar"><i style="width:93.13%"></i></div></div>
-            <div class="bar-row"><div class="bar-label"><span>central batch cadence</span><b>83.052 ms</b></div><div class="bar"><i style="width:85.51%;background:linear-gradient(90deg,var(--orange),var(--red))"></i></div></div>
-          </article>
-          <article class="compare-card">
-            <div class="compare-top"><div><h3>Corrected optimized configuration</h3><strong>6.855M TPM</strong></div><span>median of A/B/C<br>run C shown</span></div>
-            <div class="bar-row"><div class="bar-label"><span>mean tokens per PP0 batch</span><b>8,191</b></div><div class="bar"><i style="width:99.99%"></i></div></div>
-            <div class="bar-row"><div class="bar-label"><span>central batch cadence</span><b>71.014 ms</b></div><div class="bar"><i style="width:100%"></i></div></div>
-          </article>
+        <div class="setting">
+          <span class="setting-label">Chunked prefill size</span>
+          <strong class="setting-value">8,192 tokens (8K)</strong>
         </div>
-        <div class="factor">The observed scheduler factors reconstruct the gain: batch fill improves by 1.074× and batch rate improves by 1.170×, giving 1.256× together. Measured uncached TPM improves by 6.855 ÷ 5.473 = 1.253×.</div>
-        <p class="foot">The archived 4.759M run used one tokenizer worker over 12,214 requests. Only 80.69% of its 13,410 PP0 batches were full, and its derived average was approximately 7,109 tokens per batch. Its longer request and cached-prefix mix makes 4.759M → 6.855M useful historical context, not a strict one-variable A/B.</p>
-      </section>
+        <div class="setting">
+          <span class="setting-label">Model and KV cache</span>
+          <strong class="setting-value">NVFP4 · FP8 E4M3</strong>
+        </div>
+        <div class="setting">
+          <span class="setting-label">Output</span>
+          <strong class="setting-value">1 token/request</strong>
+          <span class="setting-note">2,048 / 2,048 HTTP 200 with exactly one output token</span>
+        </div>
+      </div>
+      <p class="summary-note"><strong>Result: 6.855M uncached TPM.</strong> Full batches, fewer PP bubbles. The accepted configuration uses two tokenizer workers, skips only semantically empty middle-chunk output payloads, and retains two extra PP microbatch slots so result retirement overlaps forward execution. This page replaces the original 4.759M report; the complete old page remains at the <a href="../glm52-gb300-pp8-realtrace-chunked-8k-poor-config/">archived poor-configuration URL</a>.</p>
+    </section>
 
-      <section class="panel" id="launch">
-        <div class="head"><div><span class="eyebrow">05 · Reproduction</span><h2>Exact server launch</h2></div><p>Run the same command on both four-GPU nodes with <code>NODE_RANK=0</code> and <code>NODE_RANK=1</code>. The three required changes are highlighted in comments.</p></div>
-        <div class="code-caption">Environment and command</div>
-        <pre><code>export PYTHONUNBUFFERED=1
+    <section class="panel" id="prefill-batching">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">01 · Prefill batching</span>
+          <h2>How the 8K prefill budget was assembled</h2>
+        </div>
+        <p class="context">PP0 scheduler logs · 2,208 prefill batches</p>
+      </header>
+      <div class="accounting-grid">
+        <div class="metric"><span class="metric-label">Exactly 8,192 tokens</span><span class="metric-value">2,207</span><span class="metric-note">99.95% filled the uncached-token budget</span></div>
+        <div class="metric"><span class="metric-label">Underfilled batches</span><span class="metric-value">1</span><span class="metric-note">one of 2,208 PP0 prefill batches</span></div>
+        <div class="metric"><span class="metric-label">Mean tokens per batch</span><span class="metric-value">8,191</span><span class="metric-note">optimized configuration</span></div>
+        <div class="metric"><span class="metric-label">Central batch cadence</span><span class="metric-value">71.014 ms</span><span class="metric-note">central-80 mean reconstructed from PP0 intervals</span></div>
+        <div class="metric"><span class="metric-label">Successful outputs</span><span class="metric-value">2,048</span><span class="metric-note">2,048 / 2,048 HTTP 200</span></div>
+      </div>
+    </section>
+
+    <section class="panel" id="accounting">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">02 · Accounting</span>
+          <h2>Token, experiment-time, and uncached-TPM accounting</h2>
+        </div>
+        <p class="context">First request start → final client completion</p>
+      </header>
+      <div class="accounting-grid">
+        <div class="metric"><span class="metric-label">Uncached TPM</span><span class="metric-value">6.855M</span><span class="metric-note">selected median run C</span></div>
+        <div class="metric"><span class="metric-label">Uncached tokens</span><span class="metric-value">18,020,917</span><span class="metric-note">new model work</span></div>
+        <div class="metric"><span class="metric-label">Experiment span</span><span class="metric-value">157.724 s</span><span class="metric-note">client wall time</span></div>
+        <div class="metric"><span class="metric-label">Cached tokens</span><span class="metric-value">72,521,856</span><span class="metric-note">80.097% of prompt tokens</span></div>
+        <div class="metric"><span class="metric-label">Prompt tokens</span><span class="metric-value">90,542,773</span><span class="metric-note">cached + uncached</span></div>
+      </div>
+      <div class="equations" aria-label="Token and throughput reconciliation">
+        <div class="equation-row">
+          <span class="lhs">Overall uncached TPM</span><span class="equals">=</span>
+          <span class="rhs">18,020,917 ÷ 157.724 s × 60 s/min = <strong>6,855,358 uncached tokens/min</strong></span>
+        </div>
+        <div class="equation-row">
+          <span class="lhs">Prompt-token reconciliation</span><span class="equals">=</span>
+          <span class="rhs">72,521,856 cached + 18,020,917 uncached = <strong>90,542,773 prompt tokens</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="changes">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">03 · Required configuration</span>
+          <h2>The three changes</h2>
+        </div>
+        <p class="context">Two command-line arguments · one environment switch</p>
+      </header>
+      <div class="change-grid">
+        <article class="change-card">
+          <span class="change-number">Change 01</span>
+          <h3>Two tokenizer workers</h3>
+          <div class="before-after"><div class="state">Before<br><strong>1 worker</strong></div><div class="state good">After<br><strong>2 workers</strong></div></div>
+          <span class="flag">--tokenizer-worker-num 2</span>
+          <p>Two HTTP/tokenizer processes parse and tokenize requests concurrently. Their prepared requests are merged into the same scheduler, preventing a fast PP8 pipeline from repeatedly exhausting its ready queue.</p>
+        </article>
+        <article class="change-card">
+          <span class="change-number">Change 02</span>
+          <h3>Skip empty middle-chunk payloads</h3>
+          <div class="before-after"><div class="state">Before<br><strong>ring circulation</strong></div><div class="state good">After<br><strong>payload omitted</strong></div></div>
+          <span class="flag">SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM=1</span>
+          <p>A pure non-final chunk has no sampled token or logprob result to consume. The optimized path avoids serializing and circulating that empty output object while retaining the model-forward completion dependency.</p>
+        </article>
+        <article class="change-card">
+          <span class="change-number">Change 03</span>
+          <h3>PP async depth two</h3>
+          <div class="before-after"><div class="state">Before<br><strong>8 loop slots</strong></div><div class="state good">After<br><strong>10 loop slots</strong></div></div>
+          <span class="flag">--pp-async-batch-depth 2</span>
+          <p>The scheduler can retire an older result while the current microbatch executes on the GPU. Depth two won over depths zero, one, and three by reducing exposed host and PP-boundary gaps.</p>
+        </article>
+      </div>
+      <p class="safety"><strong>Correctness prerequisite:</strong> do not enable the output-skip environment variable against the earlier experimental implementation that discarded the last-rank completion event. The accepted scheduler always waits for <code>q_event</code> before request or KV state can be recycled, and skips only the payload. Corrected <code>scheduler_pp_mixin.py</code> SHA-256: <code>e706eb1c…31875</code>.</p>
+    </section>
+
+    <section class="panel" id="effect">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">04 · Measured effect</span>
+          <h2>Fuller batches and faster cadence</h2>
+        </div>
+        <p class="context">Matched first 2,048 requests · same prompt-token total</p>
+      </header>
+
+      <h3 class="subhead">What changed in the pipeline</h3>
+      <div class="flow-grid">
+        <article class="flow-card old">
+          <h3>Original 4.759M configuration</h3>
+          <div class="flow-line"><div class="flow-node">1 HTTP + tokenizer worker</div><div class="flow-arrow">→</div><div class="flow-node">partly filled 8K batch</div><div class="flow-arrow">→</div><div class="flow-node">8 PP stages</div></div>
+          <div class="flow-line"><div class="flow-node">GPU forward</div><div class="flow-arrow">→</div><div class="flow-node">empty output payload circles ring</div><div class="flow-arrow">→</div><div class="flow-node">synchronous result retirement</div></div>
+        </article>
+        <article class="flow-card new">
+          <h3>Accepted 6.855M configuration</h3>
+          <div class="flow-line"><div class="flow-node">2 HTTP + tokenizer workers</div><div class="flow-arrow">→</div><div class="flow-node">full 8K batch</div><div class="flow-arrow">→</div><div class="flow-node">8 PP stages</div></div>
+          <div class="flow-line"><div class="flow-node">GPU forward + preserved event</div><div class="flow-arrow">→</div><div class="flow-node">empty payload skipped</div><div class="flow-arrow">→</div><div class="flow-node">older result overlaps next forward</div></div>
+        </article>
+      </div>
+
+      <h3 class="subhead">Matched treatment comparison</h3>
+      <div class="comparison-grid">
+        <article class="comparison-card">
+          <h3>Matched original configuration</h3>
+          <strong>5.473M TPM</strong>
+          <span>same first 2,048 requests · same prompt-token total</span>
+          <div class="comparison-row"><span>Mean tokens per PP0 batch</span><b>7,629</b></div>
+          <div class="comparison-row"><span>Central batch cadence</span><b>83.052 ms</b></div>
+        </article>
+        <article class="comparison-card">
+          <h3>Corrected optimized configuration</h3>
+          <strong>6.855M TPM</strong>
+          <span>median of runs A/B/C · run C shown</span>
+          <div class="comparison-row"><span>Mean tokens per PP0 batch</span><b>8,191</b></div>
+          <div class="comparison-row"><span>Central batch cadence</span><b>71.014 ms</b></div>
+        </article>
+      </div>
+      <div class="factor">The observed scheduler factors reconstruct the gain: batch fill improves by 1.074× and batch rate improves by 1.170×, giving 1.256× together. Measured uncached TPM improves by 6.855 ÷ 5.473 = 1.253×.</div>
+      <p class="foot">The strict treatment comparison uses the same ordered first 2,048 requests. The archived 4.759M run used one tokenizer worker over 12,214 requests. Only 80.69% of its 13,410 PP0 batches were full, and its derived average was approximately 7,109 tokens per batch. Its longer request and cached-prefix mix makes 4.759M → 6.855M useful historical context, not a strict one-variable A/B.</p>
+    </section>
+
+    <section class="panel" id="reproduction">
+      <header class="panel-head">
+        <div>
+          <span class="section-number">05 · Reproduction record</span>
+          <h2>Exact run contract and replay procedure</h2>
+        </div>
+        <p class="context">Accepted run C · expand each block for the complete record</p>
+      </header>
+      <p class="repro-intro">This appendix records the accepted run identity, model and hardware settings, exact launch command, corrected output-skip prerequisite, repeated measurements, and measurement semantics retained from the optimized report.</p>
+
+      <div class="repro-facts" aria-label="Reproduction identity">
+        <div class="repro-fact"><span>Treatment</span><strong>8,192-token prefill budget</strong></div>
+        <div class="repro-fact"><span>Run ID</span><strong>glm52-gb300-gapopt-pp8-fixed8k-correctedskip-prodobs-async2-auto-136-169-20260822-depth2-c</strong></div>
+        <div class="repro-fact"><span>Topology</span><strong>TP1 · DP1 · PP8 · EP1</strong></div>
+        <div class="repro-fact"><span>Validation</span><strong class="pass">2,048 / 2,048 valid</strong></div>
+      </div>
+
+      <div class="repro-stack">
+        <details class="repro-details" open>
+          <summary>1. Run identity, hardware, and runtime state</summary>
+          <div class="repro-body">
+            <div class="table-wrap">
+              <table class="repro-table">
+                <tbody>
+                  <tr><th>Hardware</th><td>8 × GB300 across <code>gpu-worker-gb300-136</code> and <code>gpu-worker-gb300-169</code></td></tr>
+                  <tr><th>Model</th><td>GLM-5.2 NVFP4 weights; FP8 E4M3 KV cache</td></tr>
+                  <tr><th>Parallel topology</th><td>TP=1, DP=1, PP=8, EP=1</td></tr>
+                  <tr><th>Chunking</th><td><code>--chunked-prefill-size 8192</code> and <code>--max-prefill-tokens 8192</code></td></tr>
+                  <tr><th>Load</th><td>Original ordered real trace; bounded backlog; concurrency 80</td></tr>
+                  <tr><th>Cache</th><td>Flush before replay; HiCache write-through; natural prefix reuse then emerged from the ordered stream</td></tr>
+                  <tr><th>Output</th><td>Exactly one token per request</td></tr>
+                  <tr><th>Observability</th><td>Request JSON logging and Prometheus metrics enabled</td></tr>
+                  <tr><th>Base source</th><td><code>d0f290a8</code> plus the corrected output-skip wait</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <details class="repro-details">
+          <summary>2. Exact SGLang server environment and launch command</summary>
+          <div class="repro-body">
+            <p>Run the same command on both four-GPU nodes with <code>NODE_RANK=0</code> and <code>NODE_RANK=1</code>. The three required changes are highlighted.</p>
+            <div class="code-caption">Environment and command</div>
+            <pre class="code-block"><code>export PYTHONUNBUFFERED=1
 export NCCL_DEBUG=WARN
 export NCCL_IB_DISABLE=1
 export NCCL_CUMEM_ENABLE=1
@@ -495,39 +872,51 @@ numactl --interleave=0,1 python3 -m sglang.launch_server \
   --hicache-ratio 1.2 \
   --hicache-storage-prefetch-policy wait_complete \
   --crash-dump-folder /debug</code></pre>
-        <div class="launch-notes">
-          <div class="launch-note"><strong>Tokenizer workers:</strong> this is a real server argument and also causes two HTTP worker processes to be launched.</div>
-          <div class="launch-note"><strong>Output skip:</strong> this is currently an environment switch, not an argparse flag. Corrected scheduler code is mandatory.</div>
-          <div class="launch-note"><strong>Async depth:</strong> with PP8, depth two sets the internal PP loop size to 8 + 2 = 10 slots.</div>
-        </div>
-      </section>
+          </div>
+        </details>
 
-      <section class="panel" id="validation">
-        <div class="head"><div><span class="eyebrow">06 · Validation</span><h2>Repeated and production-observable</h2></div><p>All accepted repetitions kept request JSON logging and Prometheus enabled, so 6.855M is not a “turn observability off” result.</p></div>
-        <div class="runs">
-          <div class="run"><strong>6.771M</strong><span>depth-two run A · 2,048/2,048 successful</span></div>
-          <div class="run"><strong>6.871M</strong><span>depth-two run B · 2,048/2,048 successful</span></div>
-          <div class="run"><strong>6.855M</strong><span>depth-two run C · median TPM point</span></div>
-        </div>
-        <div class="settings">
-          <div class="setting"><span>Hardware</span><strong>8 × GB300 · nodes 136 + 169</strong></div>
-          <div class="setting"><span>Model</span><strong>GLM-5.2 NVFP4 · FP8 E4M3 KV</strong></div>
-          <div class="setting"><span>Topology</span><strong>TP1 · DP1 · PP8 · EP1</strong></div>
-          <div class="setting"><span>Chunking</span><strong>8,192 chunk and max-prefill tokens</strong></div>
-          <div class="setting"><span>Load</span><strong>Real trace · bounded backlog · concurrency 80</strong></div>
-          <div class="setting"><span>Cache</span><strong>Flush before replay · HiCache write-through</strong></div>
-          <div class="setting"><span>Output</span><strong>Exactly one token per request</strong></div>
-          <div class="setting"><span>Observability</span><strong>Request logs + metrics enabled</strong></div>
-          <div class="setting"><span>Base source</span><strong><code>d0f290a8</code> plus corrected output-skip wait</strong></div>
-        </div>
-        <div class="links">
-          <a href="data/report-data.json">Machine-readable report data</a>
-          <a href="../glm52-gb300-pp8-gap-explained/">PP4 versus PP8 scaling proof</a>
-          <a href="../glm52-gb300-pp8-realtrace-chunked-8k-poor-config/">Archived 4.759M report</a>
-        </div>
-        <p class="foot">Cadence is the central-80 mean reconstructed from PP0 prefill log intervals. TPM is uncached prompt tokens divided by client wall time. The cache was flushed before every replay; natural prefix reuse then emerged from the original ordered request stream.</p>
-      </section>
-    </main>
-  </div>
+        <details class="repro-details">
+          <summary>3. Required launch deltas and correctness prerequisite</summary>
+          <div class="repro-body">
+            <div class="table-wrap">
+              <table class="repro-table">
+                <tbody>
+                  <tr><th>Tokenizer workers</th><td><code>--tokenizer-worker-num 2</code> is a server argument and causes two HTTP worker processes to launch.</td></tr>
+                  <tr><th>Output skip</th><td><code>SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM=1</code> is an environment switch, not an argparse flag. Corrected scheduler code is mandatory.</td></tr>
+                  <tr><th>Async depth</th><td><code>--pp-async-batch-depth 2</code> sets the PP8 internal loop size to 8 + 2 = 10 slots.</td></tr>
+                  <tr><th>Correctness</th><td>The accepted scheduler always waits for <code>q_event</code> before request or KV state can be recycled and skips only the empty output payload.</td></tr>
+                  <tr><th>Corrected file</th><td><code>scheduler_pp_mixin.py</code> SHA-256: <code>e706eb1c3b80e015c5dd3093c6f1cfce8ce45774930a9a8a11dd42fb62331875</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <details class="repro-details">
+          <summary>4. Repeated measurements and acceptance record</summary>
+          <div class="repro-body">
+            <p>All accepted repetitions kept request JSON logging and Prometheus enabled, so 6.855M is not a “turn observability off” result.</p>
+            <div class="run-grid">
+              <div class="run"><strong>6.771M</strong><span>depth-two run A · 2,048 / 2,048 successful</span></div>
+              <div class="run"><strong>6.871M</strong><span>depth-two run B · 2,048 / 2,048 successful</span></div>
+              <div class="run"><strong>6.855M</strong><span>depth-two run C · median TPM point</span></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="repro-details">
+          <summary>5. Data, related reports, and measurement semantics</summary>
+          <div class="repro-body">
+            <p>Cadence is the central-80 mean reconstructed from PP0 prefill log intervals. TPM is uncached prompt tokens divided by client wall time. The cache was flushed before every replay; natural prefix reuse then emerged from the original ordered request stream.</p>
+            <div class="link-row">
+              <a href="data/report-data.json">Machine-readable report data</a>
+              <a href="../glm52-gb300-pp8-gap-explained/">PP4 versus PP8 scaling proof</a>
+              <a href="../glm52-gb300-pp8-realtrace-chunked-8k-poor-config/">Archived 4.759M report</a>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
