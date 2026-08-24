@@ -734,22 +734,12 @@
           <span class="setting-label">Chunked prefill size</span>
           <strong class="setting-value">8,192 tokens (8K)</strong>
         </div>
-        <div class="setting">
-          <span class="setting-label">Model and KV cache</span>
-          <strong class="setting-value">NVFP4 · FP8 E4M3</strong>
-        </div>
-        <div class="setting">
-          <span class="setting-label">Output</span>
-          <strong class="setting-value">1 token/request</strong>
-          <span class="setting-note">2,048 / 2,048 HTTP 200 with exactly one output token</span>
-        </div>
         <div class="setting setting-definition">
           <span class="setting-label">Internal TTFT</span>
           <strong class="setting-value">prefill_finished_time − forward_entry_time</strong>
           <span class="setting-note">Timing starts when a request enters its first PP0 forward and ends at final prefill completion, so API dispatch and scheduler waiting are excluded.</span>
         </div>
       </div>
-      <p class="summary-note"><strong>Result: 6.855M uncached TPM.</strong> Full batches, fewer PP bubbles. The accepted configuration uses two tokenizer workers, skips only semantically empty middle-chunk output payloads, and retains two extra PP microbatch slots so result retirement overlaps forward execution. This page replaces the original 4.759M report; the complete old page remains at the <a href="../glm52-gb300-pp8-realtrace-chunked-8k-poor-config/">archived poor-configuration URL</a>.</p>
     </section>
 
     <section class="panel" id="prefill-batching">
@@ -841,88 +831,10 @@
       <p class="chart-status" id="scatter-status">Loading 2,048 measured request points…</p>
     </section>
 
-    <section class="panel" id="changes">
-      <header class="panel-head">
-        <div>
-          <span class="section-number">05 · Required configuration</span>
-          <h2>The three changes</h2>
-        </div>
-        <p class="context">Two command-line arguments · one environment switch</p>
-      </header>
-      <div class="change-grid">
-        <article class="change-card">
-          <span class="change-number">Change 01</span>
-          <h3>Two tokenizer workers</h3>
-          <div class="before-after"><div class="state">Before<br><strong>1 worker</strong></div><div class="state good">After<br><strong>2 workers</strong></div></div>
-          <span class="flag">--tokenizer-worker-num 2</span>
-          <p>Two HTTP/tokenizer processes parse and tokenize requests concurrently. Their prepared requests are merged into the same scheduler, preventing a fast PP8 pipeline from repeatedly exhausting its ready queue.</p>
-        </article>
-        <article class="change-card">
-          <span class="change-number">Change 02</span>
-          <h3>Skip empty middle-chunk payloads</h3>
-          <div class="before-after"><div class="state">Before<br><strong>ring circulation</strong></div><div class="state good">After<br><strong>payload omitted</strong></div></div>
-          <span class="flag">SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM=1</span>
-          <p>A pure non-final chunk has no sampled token or logprob result to consume. The optimized path avoids serializing and circulating that empty output object while retaining the model-forward completion dependency.</p>
-        </article>
-        <article class="change-card">
-          <span class="change-number">Change 03</span>
-          <h3>PP async depth two</h3>
-          <div class="before-after"><div class="state">Before<br><strong>8 loop slots</strong></div><div class="state good">After<br><strong>10 loop slots</strong></div></div>
-          <span class="flag">--pp-async-batch-depth 2</span>
-          <p>The scheduler can retire an older result while the current microbatch executes on the GPU. Depth two won over depths zero, one, and three by reducing exposed host and PP-boundary gaps.</p>
-        </article>
-      </div>
-      <p class="safety"><strong>Correctness prerequisite:</strong> do not enable the output-skip environment variable against the earlier experimental implementation that discarded the last-rank completion event. The accepted scheduler always waits for <code>q_event</code> before request or KV state can be recycled, and skips only the payload. Corrected <code>scheduler_pp_mixin.py</code> SHA-256: <code>e706eb1c…31875</code>.</p>
-    </section>
-
-    <section class="panel" id="effect">
-      <header class="panel-head">
-        <div>
-          <span class="section-number">06 · Measured effect</span>
-          <h2>Fuller batches and faster cadence</h2>
-        </div>
-        <p class="context">Matched first 2,048 requests · same prompt-token total</p>
-      </header>
-
-      <h3 class="subhead">What changed in the pipeline</h3>
-      <div class="flow-grid">
-        <article class="flow-card old">
-          <h3>Original 4.759M configuration</h3>
-          <div class="flow-line"><div class="flow-node">1 HTTP + tokenizer worker</div><div class="flow-arrow">→</div><div class="flow-node">partly filled 8K batch</div><div class="flow-arrow">→</div><div class="flow-node">8 PP stages</div></div>
-          <div class="flow-line"><div class="flow-node">GPU forward</div><div class="flow-arrow">→</div><div class="flow-node">empty output payload circles ring</div><div class="flow-arrow">→</div><div class="flow-node">synchronous result retirement</div></div>
-        </article>
-        <article class="flow-card new">
-          <h3>Accepted 6.855M configuration</h3>
-          <div class="flow-line"><div class="flow-node">2 HTTP + tokenizer workers</div><div class="flow-arrow">→</div><div class="flow-node">full 8K batch</div><div class="flow-arrow">→</div><div class="flow-node">8 PP stages</div></div>
-          <div class="flow-line"><div class="flow-node">GPU forward + preserved event</div><div class="flow-arrow">→</div><div class="flow-node">empty payload skipped</div><div class="flow-arrow">→</div><div class="flow-node">older result overlaps next forward</div></div>
-        </article>
-      </div>
-
-      <h3 class="subhead">Matched treatment comparison</h3>
-      <div class="comparison-grid">
-        <article class="comparison-card">
-          <h3>Matched original configuration</h3>
-          <strong>5.473M TPM</strong>
-          <span>same first 2,048 requests · same prompt-token total</span>
-          <div class="comparison-row"><span>Mean tokens per PP0 batch</span><b>7,629</b></div>
-          <div class="comparison-row"><span>Central batch cadence</span><b>83.052 ms</b></div>
-        </article>
-        <article class="comparison-card">
-          <h3>Corrected optimized configuration</h3>
-          <strong>6.855M TPM</strong>
-          <span>median of runs A/B/C · run C shown</span>
-          <div class="comparison-row"><span>Mean tokens per PP0 batch</span><b>8,191</b></div>
-          <div class="comparison-row"><span>Central batch cadence</span><b>71.014 ms</b></div>
-        </article>
-      </div>
-      <div class="factor">The observed scheduler factors reconstruct the gain: batch fill improves by 1.074× and batch rate improves by 1.170×, giving 1.256× together. Measured uncached TPM improves by 6.855 ÷ 5.473 = 1.253×.</div>
-      <p class="foot">The strict treatment comparison uses the same ordered first 2,048 requests. The archived 4.759M run used one tokenizer worker over 12,214 requests. Only 80.69% of its 13,410 PP0 batches were full, and its derived average was approximately 7,109 tokens per batch. Its longer request and cached-prefix mix makes 4.759M → 6.855M useful historical context, not a strict one-variable A/B.</p>
-    </section>
-
     <section class="panel" id="reproduction">
       <header class="panel-head">
         <div>
-          <span class="section-number">07 · Reproduction record</span>
+          <span class="section-number">05 · Reproduction record</span>
           <h2>Exact run contract and replay procedure</h2>
         </div>
         <p class="context">Accepted run C · expand each block for the complete record</p>
