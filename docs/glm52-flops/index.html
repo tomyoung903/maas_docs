@@ -378,13 +378,14 @@ pre {
 </head>
 <body>
 <main>
-<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_100k_prefill_execution_tree.html">100K Prefill Tree</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="glm52_decode_roofline.html">Decode Roofline</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/">Public URL</a></nav>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_nextn_mtp_block.html">NextN / MTP</a><a href="glm52_100k_prefill_execution_tree.html">100K Prefill Tree</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="glm52_decode_roofline.html">Decode Roofline</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/">Public URL</a></nav>
 
 <h1>GLM-5.2 FLOPs Pack</h1>
 <p class="lead">A compact reference for the GLM-5.2 architecture shape, active linear FLOPs per generated token, and attention-scan FLOPs as context grows.</p>
 <div class="grid"><section class="card"><div class="label">architecture</div><div class="value">78 layers, 3 dense + 75 MoE</div></section><section class="card"><div class="label">active linear</div><div class="value">12.588 GFLOP / token / GPU</div></section><section class="card"><div class="label">attention scan</div><div class="value">1.358 MFLOP / context pair / GPU</div></section><section class="card"><div class="label">DSA top-k</div><div class="value">2,048 selected keys</div></section></div>
 <h2>Pages</h2>
 <table><tr><th>Page</th><th>Use it for</th></tr><tr><td><a href="glm52_architecture.html">GLM-5.2 architecture</a></td><td>Layer stack, MLA dimensions, MoE routing, DSA indexer, and built-in MTP.</td></tr>
+<tr><td><a href="glm52_nextn_mtp_block.html">NextN/MTP block</a></td><td>How a token embedding and preceding hidden state are normalized, fused through eh_proj, processed by checkpoint layer 78, and turned into the next draft state.</td></tr>
 <tr><td><a href="glm52_100k_prefill_execution_tree.html">100K prefill execution tree</a></td><td>A logical, calculation-ordered hierarchy with full-model tensor shapes, parameter state, and a reconciled 100K-prefill FLOP ledger.</td></tr>
 <tr><td><a href="glm52_dsa_mla_connection.html">DSA + MLA math</a></td><td>The fundamental GLM-5.2 equations for MLA latent KV, DSA top-k selection, and sparse attention.</td></tr>
 <tr><td><a href="glm52_prefill_cp_advantage.html">Prefill CP advantage</a></td><td>Why DSA long-prefill context parallelism can beat plain TP8 by about 2.4-2.5x without being an 8x whole-model speedup.</td></tr>
@@ -395,7 +396,7 @@ pre {
 <tr><td><a href="glm52_decode_roofline.html">100K decode roofline</a></td><td>Connect the five 100K-prefill FLOP groups to one-query decode traffic, arithmetic intensity, and HBM-versus-compute verdicts.</td></tr></table>
 <div class="note">These pages count core model math per GPU at TP=8. They intentionally separate model FLOPs from wall-clock throughput, batching effects, CUDA graph replay, communication, and kernel efficiency.</div>
 
-<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/">https://tomyoung903.github.io/maas_docs/glm52-flops/</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://github.com/sgl-project/sglang/blob/main/docs_new/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>.</p>
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/">https://tomyoung903.github.io/maas_docs/glm52-flops/</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://docs.sglang.ai/advanced_features/speculative_decoding.html">SGLang speculative-decoding guide</a>.</p>
 </main>
 </body>
 </html>

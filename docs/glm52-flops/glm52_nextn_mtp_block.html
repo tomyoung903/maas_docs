@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Static technical documentation for GLM-5.2 NextN/MTP Block.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_nextn_mtp_block.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_nextn_mtp_block.html">
+  <title>GLM-5.2 NextN/MTP Block</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --soft: #e8f2ef;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.doc-shell {
+  display: grid;
+  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.doc-content {
+  min-width: 0;
+}
+.content-overview {
+  position: sticky;
+  top: 18px;
+  padding: 10px 0 10px 14px;
+  border-left: 4px solid rgba(11, 107, 102, .28);
+  color: var(--muted);
+}
+.content-overview-title {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.content-overview a {
+  display: block;
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.content-overview a:hover,
+.content-overview a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.content-overview a.depth-2 {
+  padding-left: 12px;
+  font-size: .84rem;
+  font-weight: 650;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 900px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 860px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.value code {
+  white-space: normal;
+  word-break: break-word;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: #4c5d59;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.logical-parameter-table .param-col-component { width: 20%; }
+.logical-parameter-table .param-col-shape { width: 27%; }
+.logical-parameter-table .param-col-expansion { width: 39%; }
+.logical-parameter-table .param-col-logical { width: 14%; }
+.tp8-parameter-table .param-col-component { width: 24%; }
+.tp8-parameter-table .param-col-partition { width: 19%; }
+.tp8-parameter-table .param-col-shape { width: 39%; }
+.tp8-parameter-table .param-col-rank { width: 18%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+code {
+  padding: .08rem .22rem;
+  border-radius: 4px;
+  background: #edf3f1;
+  color: #243431;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.math-var, .math-func, .math-space, .shape, .eq-block {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+.math-var { font-style: italic; white-space: nowrap; }
+.math-vec, .math-mat, .math-set, .math-tensor { font-weight: 700; }
+.math-func { font-style: normal; white-space: nowrap; }
+.math-space { white-space: nowrap; color: #253633; }
+.shape {
+  display: inline-block;
+  white-space: nowrap;
+  color: #314541;
+  font-variant-numeric: tabular-nums;
+}
+.sym {
+  padding: 0 .08em;
+  border-bottom: 2px solid transparent;
+}
+.sym-hidden { color: #0b6b66; border-bottom-color: rgba(11, 107, 102, .35); }
+.sym-q { color: #7a3e9d; border-bottom-color: rgba(122, 62, 157, .35); }
+.sym-kv { color: #8f4b16; border-bottom-color: rgba(143, 75, 22, .35); }
+.sym-index { color: #1b5faa; border-bottom-color: rgba(27, 95, 170, .35); }
+.sym-gate { color: #9f3d3d; border-bottom-color: rgba(159, 61, 61, .35); }
+.sym-attn { color: #4f6b18; border-bottom-color: rgba(79, 107, 24, .35); }
+.sym-select { color: #6a4f00; border-bottom-color: rgba(106, 79, 0, .34); }
+.sym-weight { color: #3d5260; border-bottom-color: rgba(61, 82, 96, .28); }
+.eq-block {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  overflow-x: auto;
+}
+.eq-title {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font: 800 .86rem Inter, ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.eq-row {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 26px minmax(260px, 1fr) minmax(140px, max-content);
+  gap: 10px;
+  align-items: baseline;
+  width: max-content;
+  min-width: min(760px, 100%);
+  padding: 5px 0;
+}
+.eq-lhs { text-align: right; }
+.eq-op { text-align: center; color: var(--muted); }
+.eq-rhs { color: #1d2b28; }
+.eq-note { color: var(--muted); white-space: nowrap; }
+.eq-row.single {
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, max-content);
+}
+.eq-comment {
+  margin-top: 8px;
+  color: var(--muted);
+  font: .93rem Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.danger { color: var(--accent-2); font-weight: 800; }
+.footer {
+  margin-top: 42px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+@media (max-width: 980px) {
+  main {
+    max-width: 1160px;
+    padding: 28px 16px 64px;
+  }
+  .doc-shell {
+    display: block;
+  }
+  .content-overview {
+    position: static;
+    margin: 0 0 22px;
+    padding: 12px 14px;
+    border-left: 4px solid rgba(11, 107, 102, .28);
+    background: rgba(255, 255, 255, .72);
+  }
+  .content-overview a {
+    display: inline-block;
+    margin-right: 14px;
+  }
+  .content-overview a.depth-2 {
+    padding-left: 0;
+  }
+  .parameter-table-scroll .logical-parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
+  .parameter-table-scroll .tp8-parameter-table {
+    width: 900px;
+    min-width: 900px;
+  }
+}
+@media (max-width: 600px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .eq-row {
+    grid-template-columns: max-content 24px max-content max-content;
+  }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+  }
+}
+
+.sym-token { color: #9a5a0a; border-bottom-color: rgba(154, 90, 10, .34); }
+.sym-target { color: #245a91; border-bottom-color: rgba(36, 90, 145, .34); }
+.sym-fused { color: #74519a; border-bottom-color: rgba(116, 81, 154, .34); }
+.sym-draft { color: #08777b; border-bottom-color: rgba(8, 119, 123, .34); }
+.mtp-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 24px;
+}
+.key-chip,
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: .82rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.key-chip { padding: 7px 10px; color: #34433f; }
+.key-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.key-token { color: #9a5a0a; }
+.key-target { color: #245a91; }
+.key-fused { color: #74519a; }
+.key-draft { color: #08777b; }
+.key-kv { color: #6a706f; }
+.truth-banner {
+  margin: 22px 0 28px;
+  padding: 20px 22px;
+  border: 1px solid #94b7ae;
+  border-left: 6px solid var(--accent);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f9fdfb, #e6f2ee);
+  color: #1b2d29;
+  font-size: 1.08rem;
+  font-weight: 750;
+}
+.mtp-figure {
+  margin: 22px 0 30px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .82);
+}
+.one-row-circuit {
+  display: grid;
+  grid-template-columns: minmax(190px, .85fr) 34px minmax(160px, .7fr) 34px minmax(380px, 1.4fr);
+  gap: 10px;
+  align-items: center;
+}
+.one-row-circuit > .output-arrow {
+  grid-column: 1 / -1;
+  line-height: 1;
+  transform: rotate(90deg);
+}
+.one-row-circuit > .output-stack {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.input-stack,
+.output-stack { display: grid; gap: 12px; }
+.flow-node {
+  min-width: 0;
+  padding: 14px 15px;
+  border: 2px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  color: #263632;
+}
+.flow-node strong { display: block; margin: 2px 0 5px; color: var(--ink); }
+.flow-node small { display: block; color: var(--muted); line-height: 1.35; }
+.node-kicker {
+  display: block;
+  font-size: .7rem;
+  font-weight: 850;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+.node-token { border-color: #d5aa68; background: #fff8ea; }
+.node-target { border-color: #8fb1d1; background: #eef6fd; }
+.node-fused { border-color: #b09acb; background: #f6f1fb; }
+.node-draft { border-color: #80b9b8; background: #edf9f8; }
+.node-kv { border-color: #b8bfbd; background: #f4f6f5; }
+.flow-arrow {
+  color: #64716e;
+  font-size: 1.65rem;
+  font-weight: 900;
+  text-align: center;
+}
+.decoder-shell {
+  padding: 15px;
+  border: 2px solid #74519a;
+  border-radius: 10px;
+  background: #f8f5fc;
+}
+.decoder-title { color: #4f3470; font-weight: 900; }
+.decoder-sub { margin-top: 4px; color: var(--muted); font-size: .82rem; }
+.decoder-pipeline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 14px;
+}
+.decoder-stage:last-child { grid-column: 1 / -1; }
+.decoder-stage {
+  position: relative;
+  padding: 13px 11px;
+  border: 1px solid #b6a7c7;
+  border-radius: 8px;
+  background: #fff;
+  text-align: center;
+}
+.decoder-stage strong { display: block; font-size: .88rem; }
+.decoder-stage small { display: block; margin-top: 4px; color: var(--muted); line-height: 1.3; }
+.mtp-caption { margin-top: 15px; color: var(--muted); font-size: .9rem; }
+.alignment-scroll {
+  max-width: 100%;
+  margin: 18px 0 8px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+}
+.alignment-table { min-width: 900px; margin: 0; }
+.alignment-table th:first-child,
+.alignment-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 185px;
+  background: #edf4f2;
+  font-weight: 800;
+}
+.alignment-table th { text-align: center; }
+.alignment-table td:not(:first-child) { min-width: 112px; text-align: center; }
+.cell-commit { background: #edf8f1; }
+.cell-seed { background: #edf9f8; }
+.cell-unused { background: #f2f3f3; color: #7b8583; }
+.mobile-hint { margin: 5px 0 18px; color: var(--muted); font-size: .82rem; }
+.rail-grid,
+.layer-map,
+.misconception-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.phase-rail {
+  padding: 18px;
+  border: 2px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+}
+.phase-rail.provisional { border-style: dashed; border-color: #7ca9a9; }
+.phase-rail.authoritative { border-color: #6d9cc5; }
+.phase-rail h3 { margin: 0 0 10px; }
+.rail-step {
+  margin: 8px 0;
+  padding: 9px 11px;
+  border-radius: 7px;
+  background: #f3f7f6;
+  color: #34433f;
+}
+.rail-arrow { color: #73807d; text-align: center; font-weight: 900; }
+.state-badge { padding: 4px 8px; white-space: nowrap; }
+.state-badge::before { font-size: .76rem; }
+.persistent { border-color: #87ae91; background: #edf8f0; color: #29613a; }
+.persistent::before { content: "✓"; }
+.one-cycle { border-color: #c9a864; background: #fff8e9; color: #72520f; }
+.one-cycle::before { content: "↻"; }
+.temporary { border-color: #9da9a7; background: #f2f4f4; color: #52605d; }
+.temporary::before { content: "⌛"; }
+.layer-stack-card,
+.sidecar-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+}
+.target-stack {
+  display: grid;
+  grid-template-columns: .65fr 1.15fr .65fr;
+  gap: 8px;
+  margin: 14px 0;
+}
+.target-layer {
+  padding: 12px 8px;
+  border: 1px solid #7fa4c6;
+  border-radius: 7px;
+  background: #eef6fd;
+  text-align: center;
+  font-weight: 850;
+}
+.sidecar-card { border: 2px solid #8262a3; background: #f7f2fb; }
+.sidecar-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e8dcf4;
+  color: #533573;
+  font-size: .75rem;
+  font-weight: 850;
+}
+.shared-strip {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #edf4f2;
+  color: #334641;
+  font-size: .88rem;
+}
+.myth-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.myth-card strong { display: block; margin-bottom: 5px; color: #8b3f3f; }
+.myth-card p { margin: 0; font-size: .92rem; }
+.source-list li { margin: 8px 0; color: var(--muted); }
+.footer,
+.footer a { overflow-wrap: anywhere; word-break: break-word; }
+.glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.glossary-item {
+  padding: 12px 14px;
+  border-left: 4px solid #9ab8b0;
+  background: rgba(255, 255, 255, .76);
+}
+.glossary-item dt { font-weight: 850; color: var(--ink); }
+.glossary-item dd { margin: 3px 0 0; color: var(--muted); font-size: .9rem; }
+@media (max-width: 760px) {
+  .mtp-figure { padding: 15px; }
+  .one-row-circuit { display: flex; flex-direction: column; align-items: stretch; }
+  .flow-arrow { transform: rotate(90deg); }
+  .one-row-circuit > .output-stack { display: grid; grid-template-columns: 1fr; }
+  .decoder-pipeline { grid-template-columns: 1fr; }
+  .decoder-stage:last-child { grid-column: auto; }
+  .rail-grid,
+  .layer-map,
+  .misconception-grid { grid-template-columns: 1fr; }
+  .target-stack { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_nextn_mtp_block.html">NextN / MTP</a><a href="glm52_100k_prefill_execution_tree.html">100K Prefill Tree</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="glm52_decode_roofline.html">Decode Roofline</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_nextn_mtp_block.html">Public URL</a></nav>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">On this page</div>
+  <a class="depth-1" href="#mental-model">Mental Model</a>
+<a class="depth-1" href="#one-row">One MTP Row</a>
+<a class="depth-2" href="#why-two-inputs">Why Two Inputs</a>
+<a class="depth-1" href="#position-offset">Position Offset</a>
+<a class="depth-1" href="#acceptance-example">Acceptance Example</a>
+<a class="depth-1" href="#state-lifetimes">State Lifetimes</a>
+<a class="depth-1" href="#layer-78">Layer 78 vs 77</a>
+<a class="depth-1" href="#runtime-phases">Runtime Phases</a>
+<a class="depth-1" href="#misconceptions">Misconceptions</a>
+<a class="depth-1" href="#glossary">Glossary</a>
+<a class="depth-1" href="#source-map">Evidence</a>
+</aside>
+<article class="doc-content">
+
+<h1>Inside GLM-5.2's One-Layer MTP Drafter</h1>
+<p class="lead">Why every NextN row needs both a token embedding and the preceding feature, how <code>eh_proj</code> joins them, and what the extra checkpoint layer contributes to EAGLE speculative decoding.</p>
+<div class="grid"><section class="card"><div class="label">target stack</div><div class="value">78 decoder layers, 0-77</div></section><section class="card"><div class="label">MTP sidecar</div><div class="value">checkpoint layer 78</div></section><section class="card"><div class="label">fusion width</div><div class="value">12,288 &rarr; 6,144</div></section><section class="card"><div class="label">one row predicts</div><div class="value">one next-token distribution</div></section></div>
+<div class="mtp-key" aria-label="Diagram color key">
+  <span class="key-chip key-token"><span class="key-dot" aria-hidden="true"></span>token / embedding</span>
+  <span class="key-chip key-target"><span class="key-dot" aria-hidden="true"></span>target-produced feature</span>
+  <span class="key-chip key-fused"><span class="key-dot" aria-hidden="true"></span>fused state</span>
+  <span class="key-chip key-draft"><span class="key-dot" aria-hidden="true"></span>draft-produced feature</span>
+  <span class="key-chip key-kv"><span class="key-dot" aria-hidden="true"></span>KV / metadata</span>
+</div>
+
+<h2 id="mental-model">Mental Model</h2>
+<div class="truth-banner"><strong>The MTP block is not a tiny language model driven by token IDs alone.</strong> For the row at position <span class="math-var">t</span>, it combines the embedding of <span class="sym sym-token math-var">x<sub>t</sub></span> with the feature from position <span class="math-var">t-1</span>, runs one separately trained sparse decoder layer, produces a draft feature for position <span class="math-var">t</span>, and uses the target model's output head to predict <span class="sym sym-token math-var">x<sub>t+1</sub></span>.</div>
+<p>The second input is the important new idea. The token says <em>what symbol occupies this position</em>; the preceding feature carries the target model's contextual summary of everything before it. The same token ID paired with a different preceding feature can therefore create a different fused state, attention KV, hidden output, and next-token distribution.</p>
+<div class="note"><strong>Terminology boundary.</strong> Immediately after target verification, the predecessor feature is the target model's final-RMSNorm output. During the inner recursive <code>draft_forward</code> steps, the target has not run on the new proposals yet, so the predecessor feature is the preceding draft output after the MTP layer's separate <code>shared_head.norm</code>. “Preceding hidden state” is the general rule; “preceding target hidden state” describes the reconditioning boundary.</div>
+
+<h2 id="one-row">One MTP Row</h2>
+<figure class="mtp-figure" aria-labelledby="one-row-caption">
+  <div class="one-row-circuit">
+    <div class="input-stack">
+      <div class="flow-node node-token">
+        <span class="node-kicker">token lane</span>
+        <strong><span class="sym sym-token math-var">x<sub>t</sub></span> &rarr; shared embedding &rarr; <code>enorm</code></strong>
+        <small><span class="sym sym-token math-var math-vec">e<sub>t</sub></span> is a 6,144-coordinate vector.</small>
+      </div>
+      <div class="flow-node node-target">
+        <span class="node-kicker">feature lane</span>
+        <strong><span class="sym sym-target math-var math-vec">h<sub>t-1</sub></span> &rarr; <code>hnorm</code></strong>
+        <small>Target-produced at reconciliation; draft-produced inside recurrence.</small>
+      </div>
+    </div>
+    <div class="flow-arrow" aria-hidden="true">&rarr;</div>
+    <div class="flow-node node-fused">
+      <span class="node-kicker">join</span>
+      <strong>concatenate &rarr; <code>eh_proj</code></strong>
+      <small>6,144 + 6,144 = 12,288, then project back to 6,144.</small>
+    </div>
+    <div class="flow-arrow" aria-hidden="true">&rarr;</div>
+    <div class="decoder-shell">
+      <div class="decoder-title">One NextN decoder layer</div>
+      <div class="decoder-sub">checkpoint <code>model.layers.78.*</code>, loaded as the draft worker's decoder</div>
+      <div class="decoder-pipeline" aria-label="Inside the one-layer NextN decoder">
+        <div class="decoder-stage"><strong>DSA indexer</strong><small>select sparse KV positions</small></div>
+        <div class="decoder-stage"><strong>sparse MLA</strong><small>read/write draft attention state</small></div>
+        <div class="decoder-stage"><strong>residual + norm</strong><small>decoder-layer structure</small></div>
+        <div class="decoder-stage"><strong>sparse MoE</strong><small>8 routed + shared expert path</small></div>
+        <div class="decoder-stage"><strong>shared-head norm</strong><small>prepare draft feature for logits</small></div>
+      </div>
+    </div>
+    <div class="flow-arrow output-arrow" aria-hidden="true">&rarr;</div>
+    <div class="output-stack">
+      <div class="flow-node node-draft">
+        <span class="node-kicker">recurrent output</span>
+        <strong><span class="sym sym-draft math-var math-vec">h&#771;<sup>D</sup><sub>t</sub></span></strong>
+        <small>Passed to the next draft row as its predecessor feature.</small>
+      </div>
+      <div class="flow-node node-kv">
+        <span class="node-kicker">token output</span>
+        <strong>shared target LM head &rarr; distribution for <span class="sym sym-token math-var">x<sub>t+1</sub></span></strong>
+        <small>One row gives one next-token distribution, not an entire five-token chain.</small>
+      </div>
+    </div>
+  </div>
+  <figcaption id="one-row-caption" class="mtp-caption">The two input lanes are normalized separately. <code>eh_proj</code> is a learned information bottleneck: it compresses their concatenation back to the model hidden width before attention and MoE.</figcaption>
+</figure>
+
+<div class="eq-block"><div class="eq-title">One-row dataflow and shapes</div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-token math-var math-vec">e<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">Embed</span>(<span class="sym sym-token math-var">x<sub>t</sub></span>)</div><div class="eq-note"><span class="math-space">&Ropf;<sup>6144</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-token math-var math-vec">e&#772;<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">RMSNorm</span><sub>e</sub>(<span class="sym sym-token math-var math-vec">e<sub>t</sub></span>)</div><div class="eq-note"><span class="math-space">&Ropf;<sup>6144</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-target math-var math-vec">h&#772;<sub>t-1</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">RMSNorm</span><sub>h</sub>(<span class="sym sym-target math-var math-vec">h<sub>t-1</sub></span>)</div><div class="eq-note"><span class="math-space">&Ropf;<sup>6144</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-fused math-var math-vec">u<sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="sym sym-weight math-var math-mat">W<sub>EH</sub></span> [<span class="sym sym-token math-var math-vec">e&#772;<sub>t</sub></span>; <span class="sym sym-target math-var math-vec">h&#772;<sub>t-1</sub></span>]</div><div class="eq-note"><span class="math-space">&Ropf;<sup>6144</sup></span></div></div><div class="eq-row"><div class="eq-lhs"><span class="sym sym-draft math-var math-vec">h&#771;<sup>D</sup><sub>t</sub></span></div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">NextNDecoder</span>(<span class="sym sym-fused math-var math-vec">u<sub>t</sub></span>, <span class="sym sym-kv math-var math-tensor">KV<sup>D</sup><sub>&lt;t</sub></span>)</div><div class="eq-note"><span class="math-space">&Ropf;<sup>6144</sup></span></div></div><div class="eq-row"><div class="eq-lhs">p<sup>D</sup>(<span class="sym sym-token math-var">x<sub>t+1</sub></span>)</div><div class="eq-op">=</div><div class="eq-rhs"><span class="math-func">softmax</span>(<span class="sym sym-weight math-var math-mat">W<sub>head</sub></span> <span class="sym sym-draft math-var math-vec">h&#771;<sup>D</sup><sub>t</sub></span>)</div><div class="eq-note">154,880 vocabulary logits</div></div><div class="eq-comment"><span class="sym sym-target math-var math-vec">h<sub>t-1</sub></span> is <span class="sym sym-target math-var math-vec">h<sup>T</sup><sub>t-1</sub></span> at the reconciliation boundary and the preceding draft feature inside recursive drafting. <span class="sym sym-weight math-var math-mat">W<sub>EH</sub></span> maps <span class="math-space">&Ropf;<sup>12288</sup></span> to <span class="math-space">&Ropf;<sup>6144</sup></span>; equivalently its logical matrix shape is <span class="math-space">&Ropf;<sup>6144 &times; 12288</sup></span>. Superscripts T and D distinguish target-produced and draft-produced features, not tensor precision.</div></div>
+
+<h3 id="why-two-inputs">Why the hidden input changes the KV</h3>
+<table><tr><th>What stays the same</th><th>What changes</th><th>What can therefore change</th></tr><tr><td>token ID <span class="sym sym-token math-var">x<sub>t</sub></span></td><td>preceding feature <span class="sym sym-target math-var math-vec">h<sub>t-1</sub></span></td><td><span class="sym sym-fused math-var math-vec">u<sub>t</sub></span>, DSA scores, draft KV, <span class="sym sym-draft math-var math-vec">h&#771;<sup>D</sup><sub>t</sub></span>, and logits</td></tr>
+<tr><td>embedding lookup row</td><td>the contextual summary before the token</td><td>the token's meaning in context and the continuation proposed by MTP</td></tr></table>
+<p>This is why an already accepted token may still need another MTP pass. Its ID is unchanged, but replacing a recursively predicted predecessor feature with the target-produced predecessor feature changes the input to <code>eh_proj</code> and therefore changes the canonical draft state for that committed row.</p>
+
+<h2 id="position-offset">The One-Position Offset</h2>
+<p>The cleanest indexing rule is: <strong>token at position <span class="math-var">t</span> + feature from position <span class="math-var">t-1</span> &rarr; draft feature at <span class="math-var">t</span> &rarr; logits for position <span class="math-var">t+1</span>.</strong> The pair is deliberately offset; the MTP row does not pair a token with the target feature produced after that same token.</p>
+<figure class="mtp-figure" aria-labelledby="alignment-caption">
+  <div class="alignment-scroll" tabindex="0" role="region" aria-label="Horizontally scrollable token and feature alignment table">
+    <table class="alignment-table">
+      <thead><tr><th>Physical row</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
+      <tbody>
+        <tr><td>Target-verify input</td><td>B<sub>prev</sub></td><td>d<sub>1</sub></td><td>d<sub>2</sub></td><td>d<sub>3</sub></td><td>d<sub>4</sub></td><td>d<sub>5</sub></td></tr>
+        <tr><td>Target feature output</td><td>h<sup>T</sup>(B<sub>prev</sub>)</td><td>h<sup>T</sup>(d<sub>1</sub>)</td><td>h<sup>T</sup>(d<sub>2</sub>)</td><td>h<sup>T</sup>(d<sub>3</sub>)</td><td>h<sup>T</sup>(d<sub>4</sub>)</td><td>h<sup>T</sup>(d<sub>5</sub>)</td></tr>
+        <tr><td><code>draft_extend</code> token</td><td class="cell-commit">d<sub>1</sub></td><td class="cell-commit">d<sub>2</sub></td><td class="cell-commit">d<sub>3</sub></td><td class="cell-seed">B<sub>new</sub></td><td class="cell-unused">padding / ignored</td><td class="cell-unused">padding / ignored</td></tr>
+        <tr><td>Meaningful MTP pair</td><td class="cell-commit">[e(d<sub>1</sub>); h<sup>T</sup>(B<sub>prev</sub>)]</td><td class="cell-commit">[e(d<sub>2</sub>); h<sup>T</sup>(d<sub>1</sub>)]</td><td class="cell-commit">[e(d<sub>3</sub>); h<sup>T</sup>(d<sub>2</sub>)]</td><td class="cell-seed">[e(B<sub>new</sub>); h<sup>T</sup>(d<sub>3</sub>)]</td><td class="cell-unused">output ignored</td><td class="cell-unused">output ignored</td></tr>
+        <tr><td>Role after the pass</td><td class="cell-commit">✓ committed draft KV</td><td class="cell-commit">✓ committed draft KV</td><td class="cell-commit">✓ committed draft KV</td><td class="cell-seed">↻ selected frontier seed</td><td class="cell-unused">discard</td><td class="cell-unused">discard</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mobile-hint">On a narrow screen, swipe or scroll the table horizontally. The first column remains visible.</p>
+  <figcaption id="alignment-caption" class="mtp-caption">Concrete top-k=1 example from the profiled five-proposal configuration: the target accepts d<sub>1</sub> through d<sub>3</sub>, rejects d<sub>4</sub>, and contributes bonus token B<sub>new</sub>. The committed length is four; the selected zero-based row is 3. CUDA Graph execution keeps the physical width at six rows even though only the accepted path and bonus matter logically.</figcaption>
+</figure>
+
+<h2 id="acceptance-example">Why Accepted Tokens Run Again</h2>
+<div class="rail-grid">
+  <section class="phase-rail provisional">
+    <h3>1. <code>draft_forward</code>: provisional recurrence</h3>
+    <div class="rail-step">selected feature for B<sub>prev</sub> + token d<sub>1</sub></div>
+    <div class="rail-arrow" aria-hidden="true">&darr;</div>
+    <div class="rail-step">draft feature h&#771;<sup>D</sup>(d<sub>1</sub>) + token d<sub>2</sub></div>
+    <div class="rail-arrow" aria-hidden="true">&darr;</div>
+    <div class="rail-step">draft feature h&#771;<sup>D</sup>(d<sub>2</sub>) + token d<sub>3</sub> &hellip;</div>
+    <p>Cheap and recursive: the target has not yet produced features for these proposed positions. The resulting draft KV is valid for proposing, but provisional.</p>
+  </section>
+  <section class="phase-rail authoritative">
+    <h3>2. Verify + <code>draft_extend</code>: target reconditioning</h3>
+    <div class="rail-step">target verifies the tree and produces h<sup>T</sup>(B<sub>prev</sub>), h<sup>T</sup>(d<sub>1</sub>), h<sup>T</sup>(d<sub>2</sub>), h<sup>T</sup>(d<sub>3</sub>)</div>
+    <div class="rail-arrow" aria-hidden="true">&darr;</div>
+    <div class="rail-step">one batched NextN pass rebuilds d<sub>1</sub>, d<sub>2</sub>, d<sub>3</sub>, B<sub>new</sub> with those target-produced predecessor features</div>
+    <div class="rail-arrow" aria-hidden="true">&darr;</div>
+    <div class="rail-step">select row 3's draft feature and logits to seed the next proposal chain</div>
+    <p>Target-conditioned does not mean the MTP output equals a target hidden state. It means the MTP row has been conditioned on the target-produced predecessor feature.</p>
+  </section>
+</div>
+<div class="note"><strong>Why rerun d<sub>1</sub>-d<sub>3</sub> if their token IDs already exist?</strong> Their original draft KV was computed from recursively predicted predecessor features. <code>draft_extend</code> supplies target-produced predecessor features, so it must recompute the accepted rows' MTP attention state. B<sub>new</sub> is the only novel token ID, but it is not the only row whose conditioning changes.</div>
+
+<h2 id="state-lifetimes">What State Survives</h2>
+<table><tr><th>State</th><th>Lifetime</th><th>Purpose / boundary</th></tr><tr><td>Committed token IDs d<sub>1</sub>, d<sub>2</sub>, d<sub>3</sub>, B</td><td><span class="state-badge persistent">persistent</span></td><td>Become the request's accepted sequence.</td></tr>
+<tr><td>Target-model KV through the last target-processed token</td><td><span class="state-badge persistent">persistent</span></td><td>After this example's verify it reaches d<sub>3</sub>; bonus B is committed but becomes the unprocessed root of the next verify.</td></tr>
+<tr><td>Target-conditioned draft MLA KV for d<sub>1</sub>, d<sub>2</sub>, d<sub>3</sub>, B</td><td><span class="state-badge persistent">persistent</span></td><td>The one-layer drafter's own attention memory, overwritten/refreshed by <code>draft_extend</code> without modifying target KV.</td></tr>
+<tr><td>Draft DSA indexer key cache for committed rows</td><td><span class="state-badge persistent">persistent</span></td><td>The NextN indexer's cached key state; distinct from the temporary selected-position indices.</td></tr>
+<tr><td>Selected draft feature for B + its next-token logits/top-k</td><td><span class="state-badge one-cycle">one-cycle seed</span></td><td>Starts the next <code>draft_forward</code> recurrence.</td></tr>
+<tr><td>Full target hidden block emitted by verify</td><td><span class="state-badge temporary">temporary</span></td><td>Lives long enough to feed <code>draft_extend</code>; it is not a second historical hidden-state cache.</td></tr>
+<tr><td>Rejected proposal features and draft KV</td><td><span class="state-badge temporary">temporary</span></td><td>Tree-local speculative state; discarded when the target rejects that tail.</td></tr>
+<tr><td>DSA selected-position indices</td><td><span class="state-badge one-cycle">optimization-scoped</span></td><td>Attention metadata, separate from hidden state and KV. Refresh/reuse lifetime depends on the serving configuration.</td></tr></table>
+<p>Hidden state and KV cache are related but not interchangeable. A hidden vector is the row-level feature entering or leaving the MTP block. The MTP decoder derives and stores its own attention KV from the fused input so future draft rows can attend to the committed draft prefix.</p>
+
+<h2 id="layer-78">Layer 78 Is a Sidecar, Not Layer 77 Again</h2>
+<div class="layer-map">
+  <section class="layer-stack-card">
+    <h3>Ordinary target path</h3>
+    <div class="target-stack" aria-label="Target decoder layer stack">
+      <div class="target-layer">layers 0-2<br><small>dense MLP</small></div>
+      <div class="target-layer">layers 3-76<br><small>sparse MoE body</small></div>
+      <div class="target-layer">layer 77<br><small>final target block</small></div>
+    </div>
+    <p>All 78 target layers execute to verify proposals and produce target logits/features.</p>
+  </section>
+  <aside class="sidecar-card">
+    <span class="sidecar-badge">separate trained path</span>
+    <h3>Checkpoint layer 78: NextN/MTP</h3>
+    <p><code>enorm</code> + <code>hnorm</code> + <code>eh_proj</code> + one <code>DeepseekV2DecoderLayer(..., is_nextn=True)</code> + its own shared-head norm.</p>
+    <div class="shared-strip"><strong>Shared storage within each rank:</strong> target token embedding and target LM-head tensors. The MTP decoder weights themselves are separately stored and trained.</div>
+  </aside>
+</div>
+<p>SGLang instantiates the draft decoder container with internal layer ID 0, then the weight loader maps checkpoint <code>model.layers.78.*</code> into <code>model.decoder.*</code>. That implementation remap does not turn it into target layer 0, and sharing the decoder family does not make it a copy of target layer 77.</p>
+
+<h2 id="runtime-phases">How the Block Appears in the Runtime</h2>
+<table><tr><th>Runtime phase</th><th>Does the MTP decoder run?</th><th>Feature source</th><th>Result</th></tr><tr><td><code>draft_extend</code></td><td>Yes: one fixed-width batched pass</td><td>target-produced features from verification</td><td>Refresh committed draft KV; retain the selected frontier feature and logits.</td></tr>
+<tr><td><code>draft_forward</code>, <span class="math-var">i</span> = 0 to 3</td><td>Yes: one recursive row per active top-k=1 request at each step</td><td>selected seed first, then draft-produced features</td><td>Generate the next proposal distribution and provisional draft KV.</td></tr>
+<tr><td><code>draft_forward</code>, <span class="math-var">i</span> = 4</td><td>No: token selection only</td><td>uses logits already produced by <span class="math-var">i</span> = 3</td><td>Choose the fifth proposal without an unnecessary sixth MTP forward.</td></tr>
+<tr><td>target verify</td><td>No: the full 78-layer target runs instead</td><td>target-model execution</td><td>Accept a prefix, produce the bonus token, and expose target features for reconciliation.</td></tr></table>
+<div class="note">Two unrelated “top-k” values appear in this system. EAGLE top-k=1 means one proposal branch per draft step. DSA TopK=2,048 means the attention indexer selects up to 2,048 KV positions. One controls proposal-tree width; the other controls sparse-attention positions.</div>
+<p>In the pinned GLM-5.2 run, <code>index_share_for_mtp_iteration = true</code>. <code>draft_extend</code> computes fresh layer-78 DSA positions. The first recursive MTP forward also computes a fresh set; the next three forwards reuse it, and the worker clears the selection at the end of the round. This reuse applies to the selected integer positions, not to the indexer's cached keys, the draft MLA KV, or the hidden feature.</p>
+
+<h2 id="misconceptions">Misconceptions to Retire</h2>
+<div class="misconception-grid">
+  <section class="myth-card"><strong>“MTP is token-only.”</strong><p>No. Every row fuses a token embedding with a predecessor feature before the decoder.</p></section>
+  <section class="myth-card"><strong>“One MTP forward emits five tokens.”</strong><p>No. One row emits one next-token distribution. Recursive rows create the multi-token proposal chain.</p></section>
+  <section class="myth-card"><strong>“Only the bonus token needs <code>draft_extend</code>.”</strong><p>No. Accepted draft rows need target-feature reconditioning even though their token IDs are unchanged.</p></section>
+  <section class="myth-card"><strong>“Target hidden history must be cached forever.”</strong><p>No. The verify-time hidden block is temporary; target KV and target-conditioned draft KV are the persistent attention memories.</p></section>
+  <section class="myth-card"><strong>“Layer 78 copies layer 77.”</strong><p>No. It is an appended, separately trained MTP block with its own fusion and decoder weights.</p></section>
+  <section class="myth-card"><strong>“Shared means one global tensor across all GPUs.”</strong><p>No. The draft module aliases the target embedding/head storage within each rank's distributed placement.</p></section>
+  <section class="myth-card"><strong>“Five draft steps mean five MTP layers.”</strong><p>No. GLM-5.2 has one extra NextN block. The runtime invokes that same block recurrently to build a deeper proposal chain.</p></section>
+</div>
+
+<h2 id="glossary">Compact Glossary</h2>
+<dl class="glossary-grid">
+  <div class="glossary-item"><dt>target feature</dt><dd>A contextual hidden vector produced by the full 78-layer target.</dd></div>
+  <div class="glossary-item"><dt>draft feature</dt><dd>The one-layer MTP output recursively carried to the next proposal row.</dd></div>
+  <div class="glossary-item"><dt>draft KV</dt><dd>Attention memory written by the MTP decoder, distinct from both target KV and the row feature.</dd></div>
+  <div class="glossary-item"><dt>bonus token</dt><dd>The target-produced token after the accepted draft prefix; it is committed but was not an accepted draft.</dd></div>
+  <div class="glossary-item"><dt><code>draft_forward</code></dt><dd>The cheap recursive proposal phase using draft-produced features after its seed.</dd></div>
+  <div class="glossary-item"><dt><code>draft_extend</code></dt><dd>The reconciliation pass that consumes target-produced features and refreshes committed draft state.</dd></div>
+</dl>
+
+<h2 id="source-map">Evidence and Scope</h2>
+<p>This page describes the exact GLM-5.2 serving path used by the profiled experiment at downstream SGLang commit <code>c8ce314a</code>. The architecture facts come from executable model construction and weight-loading code; the six-row acceptance example comes from the top-k=1, five-proposal runtime configuration. The pinned source links below target the internal Luchen GitLab and may require sign-in.</p>
+<ul class="source-list">
+  <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/configs/model_config.py">Draft architecture dispatch</a>: <code>GlmMoeDsaForCausalLM</code> is remapped to <code>DeepseekV3ForCausalLMNextN</code>.</li>
+  <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/models/deepseek_nextn.py">NextN model construction and forward</a>: shared embedding, <code>enorm</code>, <code>hnorm</code>, <code>eh_proj</code>, one DSA/MLA sparse decoder, shared-head norm, and the target LM head.</li>
+  <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/models/deepseek_common/deepseek_weight_loader.py">NextN weight remap</a>: checkpoint layer 78 becomes the draft decoder while embedding and LM-head weights are shared.</li>
+  <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/eagle_worker_v2.py">EAGLE worker lifecycle</a>: recursive <code>draft_forward</code>, selection-only final step, target verification handoff, fixed-width <code>draft_extend</code>, and selected-row seed.</li>
+  <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/base_spec_worker.py">Draft-extend batch preparation</a>: fixed per-request width and hidden-state capture boundary.</li>
+  <li><a href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-pp4-tp8-realtrace-natural-output-acceptance/?commit=f7b8d0d#eagle-runtime">Runtime companion report</a>: the measured acceptance timeline and phase-level behavior for the profiled GB300 run.</li>
+</ul>
+
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_nextn_mtp_block.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_nextn_mtp_block.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://docs.sglang.ai/advanced_features/speculative_decoding.html">SGLang speculative-decoding guide</a>.</p>
+</article>
+</div>
+</main>
+</body>
+</html>
