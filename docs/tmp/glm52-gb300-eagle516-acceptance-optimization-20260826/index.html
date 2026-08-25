@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Fixed 5-1-6 GLM-5.2 EAGLE acceptance investigation on NVIDIA GB300: model swaps, rejection sampling, unsafe threshold relaxation, natural-output replay, and controlled throughput.">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-eagle516-acceptance-optimization-20260826/">
+  <link rel="icon" href="data:,">
+  <title>GLM-5.2 fixed 5-1-6 EAGLE acceptance · GB300</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink:#172033; --muted:#637188; --paper:#fff; --soft:#f5f7fb;
+      --line:#dce4ef; --blue:#2563eb; --blue-soft:#eaf1ff;
+      --green:#13795b; --green-soft:#e8f7f1; --amber:#9a5b04;
+      --amber-soft:#fff5df; --red:#be334e; --red-soft:#fff0f3;
+      --purple:#6d50bd; --purple-soft:#f1edff;
+      --shadow:0 18px 52px rgb(25 40 70 / 8%);
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0; color:var(--ink); line-height:1.58;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:radial-gradient(circle at 10% -8%,rgb(37 99 235 / 10%),transparent 32rem),#f3f6fa;
+    }
+    a { color:#1d4ed8; text-underline-offset:3px; }
+    code {
+      padding:.12em .38em; border:1px solid #dbe4f0; border-radius:5px;
+      background:#f4f7fb; color:#334155; font:.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      overflow-wrap:anywhere;
+    }
+    .topbar {
+      position:sticky; top:0; z-index:20; display:flex; justify-content:space-between;
+      gap:16px; min-height:52px; padding:9px clamp(16px,3vw,44px);
+      border-bottom:1px solid rgb(220 228 239 / 90%); background:rgb(255 255 255 / 92%);
+      backdrop-filter:blur(14px);
+    }
+    .brand { color:var(--ink); font-size:13px; font-weight:800; text-decoration:none; }
+    .topmeta { color:var(--muted); font-size:12px; font-weight:650; text-align:right; }
+    .page { width:min(1580px,100%); margin:auto; padding:clamp(18px,2.7vw,42px); }
+    .hero {
+      padding:clamp(28px,4.2vw,60px); border:1px solid #dce5f0; border-radius:24px;
+      background:linear-gradient(132deg,#fff 0%,#f8fbff 58%,#edf4ff 100%); box-shadow:var(--shadow);
+    }
+    .eyebrow,.kicker { color:#1d4ed8; font-size:11px; font-weight:850; letter-spacing:.13em; text-transform:uppercase; }
+    h1 { margin:8px 0 0; max-width:1100px; font-size:clamp(32px,5vw,61px); line-height:1.03; letter-spacing:-.045em; }
+    .dek { max-width:1040px; margin:18px 0 0; color:#42526a; font-size:clamp(16px,1.7vw,21px); }
+    .badges { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; }
+    .badge { padding:5px 10px; border:1px solid #d9e3f1; border-radius:999px; background:rgb(255 255 255 / 82%); color:#45566e; font-size:12px; font-weight:700; }
+    .layout { display:grid; grid-template-columns:210px minmax(0,1fr); gap:22px; margin-top:22px; align-items:start; }
+    .toc { position:sticky; top:73px; padding:14px 12px; border:1px solid var(--line); border-radius:15px; background:rgb(255 255 255 / 86%); box-shadow:0 10px 35px rgb(34 51 84 / 5%); }
+    .toc strong { display:block; margin:2px 8px 8px; color:#94a3b8; font-size:10px; letter-spacing:.13em; text-transform:uppercase; }
+    .toc a { display:block; padding:6px 8px; border-radius:7px; color:#607089; font-size:12px; font-weight:650; line-height:1.3; text-decoration:none; }
+    .toc a:hover { background:var(--blue-soft); color:#1d4ed8; }
+    article { min-width:0; }
+    section { scroll-margin-top:74px; }
+    .panel { padding:clamp(20px,2.8vw,38px); border:1px solid var(--line); border-radius:19px; background:var(--paper); box-shadow:0 13px 42px rgb(30 46 77 / 6%); }
+    .panel + .panel { margin-top:20px; }
+    h2 { margin:5px 0 13px; font-size:clamp(23px,2.6vw,34px); line-height:1.18; letter-spacing:-.03em; }
+    h3 { margin:25px 0 9px; font-size:18px; line-height:1.3; }
+    p { margin:9px 0; }
+    .muted { color:var(--muted); }
+    .verdict { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(270px,.7fr); gap:16px; }
+    .callout { padding:20px 22px; border:1px solid; border-radius:15px; }
+    .callout.ok { border-color:#bde2d4; background:var(--green-soft); }
+    .callout.bad { border-color:#efc2cb; background:var(--red-soft); }
+    .callout.warn { border-color:#ecd39e; background:var(--amber-soft); }
+    .callout strong { font-size:18px; }
+    .metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:18px; }
+    .metric { padding:15px; border:1px solid var(--line); border-radius:13px; background:var(--soft); }
+    .metric .value { display:block; font-size:clamp(22px,3vw,34px); font-weight:820; letter-spacing:-.04em; }
+    .metric .label { display:block; margin-top:2px; color:var(--muted); font-size:12px; font-weight:700; }
+    .table-wrap { overflow-x:auto; margin-top:14px; border:1px solid var(--line); border-radius:13px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { padding:10px 11px; border-bottom:1px solid #e7edf4; text-align:left; vertical-align:top; }
+    thead th { position:sticky; top:0; background:#f5f8fc; color:#526176; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+    tbody th { font-weight:750; }
+    tbody tr:last-child th,tbody tr:last-child td { border-bottom:0; }
+    .pill { display:inline-flex; padding:3px 7px; border-radius:999px; font-size:10px; font-weight:800; text-transform:uppercase; }
+    .pill.exact { background:var(--blue-soft); color:#1d4ed8; }
+    .pill.policy { background:var(--purple-soft); color:var(--purple); }
+    .bar-cell { min-width:140px; }
+    .bar-track { display:block; height:5px; margin-top:5px; overflow:hidden; border-radius:999px; background:#e7edf4; }
+    .bar-track > span { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#4f7ee8,#7357c8); }
+    .equation { display:grid; grid-template-columns:max-content 24px minmax(0,1fr); gap:8px; align-items:baseline; margin:14px 0; padding:17px 19px; border:1px solid #dbe5f2; border-radius:13px; background:#f8fbff; font-family:Georgia,"Times New Roman",serif; }
+    .math-var { font-style:italic; }
+    .math-op { font-style:normal; }
+    .cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:14px; }
+    .card { padding:17px 18px; border:1px solid var(--line); border-radius:13px; background:#fbfcfe; }
+    .card h3 { margin:0 0 7px; }
+    ul { padding-left:22px; } li + li { margin-top:6px; }
+    .source-list a { overflow-wrap:anywhere; }
+    footer { margin:24px 0 5px; color:var(--muted); font-size:12px; text-align:center; }
+    @media (max-width:980px) {
+      .layout { grid-template-columns:1fr; } .toc { position:static; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); } .toc strong { grid-column:1/-1; }
+      .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .verdict,.cards { grid-template-columns:1fr; }
+    }
+    @media (max-width:620px) {
+      .topmeta { display:none; } .page { padding:12px; } .hero,.panel { border-radius:14px; }
+      .toc { grid-template-columns:repeat(2,minmax(0,1fr)); } .metric-grid { grid-template-columns:1fr; }
+      th,td { padding:9px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../../">MaaS Docs</a>
+    <div class="topmeta">GLM-5.2 · GB300 · fixed 5-1-6 · 26 Aug 2026</div>
+  </header>
+  <main class="page">
+    <div class="hero">
+      <div class="eyebrow">Speculative decoding investigation</div>
+      <h1>Fixed 5-1-6 did not reach 70% safely</h1>
+      <p class="dek">A model-quality and runtime-policy search on GLM-5.2 NVFP4. The speculation shape never changes: five draft steps, top-k one, six verification tokens. Distribution-preserving candidates stayed below 70%; relaxed gates crossed it only by changing model behavior.</p>
+      <div class="badges">
+        <span class="badge">NVIDIA GB300</span><span class="badge">TP4 · DP1 · EP1 · PP1</span>
+        <span class="badge">EAGLE 5-1-6</span><span class="badge">first 4,000-request baseline</span>
+        <span class="badge">100 max in flight</span><span class="badge">natural output controls preserved</span>
+      </div>
+    </div>
+    <div class="layout">
+      <nav class="toc" aria-label="Page contents">
+        <strong>On this page</strong>
+        <a href="#verdict">Verdict</a><a href="#meaning">Metric meaning</a>
+        <a href="#screens">Screens</a><a href="#natural">Natural replay</a>
+        <a href="#controlled">Controlled rate</a><a href="#model">Model evidence</a>
+        <a href="#stability">Stability</a><a href="#contract">Contract</a>
+        <a href="#next">Recommendation</a>
+      </nav>
+      <article>
+        <section class="panel" id="verdict">
+          <div class="kicker">Outcome</div>
+          <h2>No production candidate met the 70–80% target</h2>
+          <div class="verdict">
+            <div class="callout bad">
+              <strong>Result: keep the current policy; do not promote a threshold hack.</strong>
+              <p>The 4,000-request default-policy baseline measured <strong>55.18%</strong> draft acceptance. Classical rejection sampling—still fixed 5-1-6 and thresholds 1.0—reached only <strong>58.80%</strong> in its 128-request gate, so it failed before a costly 4,000-request promotion run.</p>
+            </div>
+            <div class="callout warn">
+              <strong>70% was reachable only numerically</strong>
+              <p>Lowering <code>single</code> or <code>accumulated</code> acceptance thresholds produced 70%+ counters, but it also changed stopping and output-length behavior. The <code>single=0.05</code> natural run reached <strong>88.69%</strong> before it was stopped as invalid.</p>
+            </div>
+          </div>
+          <div class="metric-grid">
+            <div class="metric"><span class="value">55.2%</span><span class="label">4,000-row default acceptance</span></div>
+            <div class="metric"><span class="value">58.8%</span><span class="label">rejection-sampling gate</span></div>
+            <div class="metric"><span class="value">52.7%</span><span class="label">best exact model-swap screen</span></div>
+            <div class="metric"><span class="value">1</span><span class="label">rejection server restart under load</span></div>
+          </div>
+        </section>
+
+        <section class="panel" id="meaning">
+          <div class="kicker">Definition</div>
+          <h2>Acceptance length includes one non-draft bonus token</h2>
+          <p>For this shape, each verification can accept at most five drafted tokens and then emits one verifier token. SGLang reports their sum as acceptance length. Therefore the draft-only percentage is:</p>
+          <div class="equation" aria-label="Draft acceptance percentage equals acceptance length minus one, divided by five, times one hundred percent">
+            <span><span class="math-var">A</span><sub>draft</sub></span><span>=</span>
+            <span>((<span class="math-var">L</span><sub>accept</sub> − 1) ÷ 5) × 100%</span>
+          </div>
+          <p>For the formal default-policy baseline, <span class="math-var">L</span><sub>accept</sub> = 3.75922, so 2.75922 of five drafts were accepted: 55.1844%. The bonus token is not credited to the drafter.</p>
+          <h3>Three acceptance mechanisms—and only one safe alternative</h3>
+          <div class="cards">
+            <div class="card"><h3>Single-token threshold</h3><p><code>single=0.05</code> adds a deterministic shortcut: accept a proposed token whenever the verifier gives that token at least 5% probability. The default is 1.0.</p></div>
+            <div class="card"><h3>Accumulated threshold</h3><p>An accumulated threshold <span class="math-var">t</span> below 1 raises stochastic acceptance from <span class="math-var">p</span> to min(1, <span class="math-var">p</span> / <span class="math-var">t</span>). It is also distribution-changing; it is not an exact-speculation improvement.</p></div>
+            <div class="card"><h3>Classical rejection sampling</h3><p>For a draft token with target probability <span class="math-var">p</span> and draft probability <span class="math-var">q</span>, accept with min(1, <span class="math-var">p</span> / <span class="math-var">q</span>); on rejection, sample from the positive residual distribution. This preserves the target distribution when the implementation assumptions hold.</p></div>
+            <div class="card"><h3>Observed result</h3><p>Rejection sampling improved the 128-row natural gate to 58.80%, but that remains 11.20 percentage points short of the target.</p></div>
+          </div>
+        </section>
+
+        <section class="panel" id="screens">
+          <div class="kicker">Search space</div>
+          <h2>Exact model swaps plateaued near 53%; threshold policy crossed 70%</h2>
+          <p class="muted">Directional screens replayed the same trace prefix at 100 maximum in flight and 128 forced output tokens. Acceptance comes from the server’s counter reset around each run. Throughput is not compared across this table because cache state differed between sequential screens.</p>
+          <div class="table-wrap">
+            <table aria-label="Fixed 5-1-6 screening results">
+              <thead><tr><th>Screen</th><th>Semantics</th><th>Draft</th><th>Index share</th><th>Single</th><th>Accum.</th><th>Rows</th><th>Accept length</th><th>Draft acceptance</th><th>Interpretation</th></tr></thead>
+              <tbody>
+            <tr>
+              <th scope="row">builtin-index-share-true-exact</th>
+              <td><span class="pill exact">default</span></td>
+              <td>bundled target MTP</td>
+              <td>true</td>
+              <td>1.000</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>3.4342</td>
+              <td>
+                <div class="bar-cell">
+                  <span>48.68%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:48.684%"></span></span>
+                </div>
+              </td>
+              <td>valid</td>
+            </tr>
+
+            <tr>
+              <th scope="row">builtin-index-share-false-exact</th>
+              <td><span class="pill exact">default</span></td>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>1.000</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>3.6234</td>
+              <td>
+                <div class="bar-cell">
+                  <span>52.47%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:52.468%"></span></span>
+                </div>
+              </td>
+              <td>best bundled exact screen</td>
+            </tr>
+
+            <tr>
+              <th scope="row">quality-max-exact</th>
+              <td><span class="pill exact">default</span></td>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>1.000</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>3.6160</td>
+              <td>
+                <div class="bar-cell">
+                  <span>52.32%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:52.321%"></span></span>
+                </div>
+              </td>
+              <td>BF16 KV, rejection sampling, and overlap-disabled screen did not improve acceptance</td>
+            </tr>
+
+            <tr>
+              <th scope="row">phala-w4afp8-exact</th>
+              <td><span class="pill exact">default</span></td>
+              <td>phala/GLM-5.2-W4AFP8 MTP</td>
+              <td>false</td>
+              <td>1.000</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>1.0285</td>
+              <td>
+                <div class="bar-cell">
+                  <span>0.57%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:0.570%"></span></span>
+                </div>
+              </td>
+              <td>incompatible or badly mismatched</td>
+            </tr>
+
+            <tr>
+              <th scope="row">zai-fp8-index-share-true-exact</th>
+              <td><span class="pill exact">default</span></td>
+              <td>zai-org/GLM-5.2-FP8 MTP</td>
+              <td>true</td>
+              <td>1.000</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>3.5890</td>
+              <td>
+                <div class="bar-cell">
+                  <span>51.78%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:51.780%"></span></span>
+                </div>
+              </td>
+              <td>valid, below bundled index-share-off</td>
+            </tr>
+
+            <tr>
+              <th scope="row">zai-fp8-index-share-false-exact</th>
+              <td><span class="pill exact">default</span></td>
+              <td>zai-org/GLM-5.2-FP8 MTP</td>
+              <td>false</td>
+              <td>1.000</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>3.6330</td>
+              <td>
+                <div class="bar-cell">
+                  <span>52.66%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:52.661%"></span></span>
+                </div>
+              </td>
+              <td>best exact model-swap screen; only +0.19 percentage points</td>
+            </tr>
+
+            <tr>
+              <th scope="row">single-010</th>
+              <td><span class="pill policy">policy</span></td>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>0.100</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>4.4119</td>
+              <td>
+                <div class="bar-cell">
+                  <span>68.24%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:68.237%"></span></span>
+                </div>
+              </td>
+              <td>valid short screen</td>
+            </tr>
+
+            <tr>
+              <th scope="row">single-009</th>
+              <td><span class="pill policy">policy</span></td>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>0.090</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>4.4870</td>
+              <td>
+                <div class="bar-cell">
+                  <span>69.74%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:69.740%"></span></span>
+                </div>
+              </td>
+              <td>valid short screen</td>
+            </tr>
+
+            <tr>
+              <th scope="row">single-0088</th>
+              <td><span class="pill policy">policy</span></td>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>0.088</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>4.4022</td>
+              <td>
+                <div class="bar-cell">
+                  <span>68.04%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:68.043%"></span></span>
+                </div>
+              </td>
+              <td>short screen followed by delayed CUDA illegal-memory failure</td>
+            </tr>
+
+            <tr>
+              <th scope="row">single-008</th>
+              <td><span class="pill policy">policy</span></td>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>0.080</td>
+              <td>1.000</td>
+              <td>512</td>
+              <td>4.4672</td>
+              <td>
+                <div class="bar-cell">
+                  <span>69.34%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:69.343%"></span></span>
+                </div>
+              </td>
+              <td>512-row screen; an earlier short run was followed by a delayed CUDA illegal-memory failure</td>
+            </tr>
+
+            <tr>
+              <th scope="row">single-007</th>
+              <td><span class="pill policy">policy</span></td>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>0.070</td>
+              <td>1.000</td>
+              <td>128</td>
+              <td>4.4810</td>
+              <td>
+                <div class="bar-cell">
+                  <span>69.62%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:69.620%"></span></span>
+                </div>
+              </td>
+              <td>valid short screen</td>
+            </tr>
+
+            <tr>
+              <th scope="row">single-005</th>
+              <td><span class="pill policy">policy</span></td>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>0.050</td>
+              <td>1.000</td>
+              <td>512</td>
+              <td>4.6287</td>
+              <td>
+                <div class="bar-cell">
+                  <span>72.57%</span>
+                  <span class="bar-track" aria-hidden="true"><span style="width:72.574%"></span></span>
+                </div>
+              </td>
+              <td>fixed-128 screen entered the band, but the full natural replay later overshot and changed the output-length tail; rejected</td>
+            </tr></tbody>
+            </table>
+          </div>
+          <div class="callout warn" style="margin-top:14px"><strong>The fixed-128 screen was not a promotion gate.</strong><p><code>single=0.05</code> looked like 72.57% under forced 128-token output, then rose to 88.69% during natural generation. Request 111 changed from 2,851 tokens and <code>stop</code> under the default policy to 128,000 tokens and <code>length</code>. The run was stopped rather than mislabelled as a quality improvement.</p></div>
+        </section>
+
+        <section class="panel" id="natural">
+          <div class="kicker">Formal validation A</div>
+          <h2>One 4,000-row baseline; candidates had to pass a gate first</h2>
+          <p>Every arm began from a cache flush and reset acceptance counters. The client admitted at most 100 requests per server, used no retries, preserved sampling parameters, EOS behavior, source stop controls, and each request’s original output limit. It stored usage and timing only—never prompts or generated text.</p>
+          <p>Those source limits were intentionally large: 6 requests allowed 40k tokens, 2,219 allowed 80k, and 1,775 allowed 128k. Normal model stop behavior—not an artificial 128-token cap—therefore determines the natural-output tail.</p>
+          <p>The acceptance value is the scheduler’s cumulative ratio of accepted tokens to verification forwards since that reset. It is <strong>not</strong> the latest 40-step logging window: <code>/server_info</code> divides the cumulative counters, and the threshold-update endpoint clears those counters before each arm.</p>
+          <div class="table-wrap">
+            <table aria-label="Natural-output baseline and rejection-sampling gate">
+              <thead><tr><th>Policy</th><th>Success</th><th>Accept length</th><th>Draft acceptance</th><th>Output tokens</th><th>Output rate</th><th>Output P50</th><th>TTFT P50</th><th>TPOT P50</th><th>Elapsed</th></tr></thead>
+              <tbody>
+                
+      <tr>
+        <th scope="row">Default acceptance · 4,000 rows</th>
+        <td>4,000 / 4,000</td>
+        <td>3.7592</td>
+        <td>55.18%</td>
+        <td>5,019,302</td>
+        <td>1,042.4 tok/s<br><span class="muted">62,543 tok/min</span></td>
+        <td>349</td>
+        <td>37,813.8 ms</td>
+        <td>53.98 ms</td>
+        <td>4,815.2 s</td>
+      </tr>
+                
+      <tr>
+        <th scope="row">Classical rejection sampling · 128-row gate</th>
+        <td>128 / 128</td>
+        <td>3.9401</td>
+        <td>58.80%</td>
+        <td>203,807</td>
+        <td>762.7 tok/s<br><span class="muted">45,761 tok/min</span></td>
+        <td>696</td>
+        <td>27,405.7 ms</td>
+        <td>128.65 ms</td>
+        <td>267.2 s</td>
+      </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout warn" style="margin-top:14px">
+            <strong>Why there is no 4,000-row “winner” beside the baseline.</strong>
+            <p>Rejection sampling missed 70% in its 128-row gate, while <code>single=0.05</code> was stopped after 3,521 persisted requests because it had already reached 88.69% and request 111 hit its 128,000-token cap. Spending another full run on either candidate would not change the deployment decision.</p>
+          </div>
+          <h3>The natural-output gates exposed a policy cliff</h3>
+          <div class="table-wrap">
+            <table aria-label="Natural-output policy calibration and diagnostic request">
+              <thead><tr><th>Mechanism</th><th>Completed scope</th><th>Draft acceptance</th><th>Request 111</th><th>Decision</th></tr></thead>
+              <tbody>
+                <tr><th>Default target-only</th><td>4,000 / 4,000</td><td>55.18%</td><td>2,851 tokens · stop</td><td>Reference</td></tr>
+                <tr><th>Classical rejection sampling</th><td>128 / 128</td><td>58.80%</td><td>32,752 tokens · stop</td><td>Safe mechanism; below target</td></tr>
+                <tr><th>Accumulated 0.50</th><td>128 / 128</td><td>65.73%</td><td>12,041 tokens · stop</td><td>Below target</td></tr>
+                <tr><th>Accumulated 0.45</th><td>127 persisted; aborted</td><td>73.37% at abort</td><td>Still generating at abort</td><td>Rejected</td></tr>
+                <tr><th>Accumulated 0.40</th><td>128 / 128</td><td>78.01%</td><td>118,028 tokens · stop</td><td>Rejected</td></tr>
+                <tr><th>Single 0.05</th><td>3,521 / 4,000 persisted</td><td>88.69% at abort</td><td>128,000 tokens · length</td><td>Rejected</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="muted">Natural decoding is stochastic, so one request is not a deterministic equivalence test. Here it is a useful sentinel because the same high-limit request repeatedly expanded by 4×–45× as approximate acceptance became more permissive.</p>
+        </section>
+
+        <section class="panel" id="controlled">
+          <div class="kicker">Formal validation B</div>
+          <h2>The matched-output load exposed a fatal runtime failure</h2>
+          <p>The same first 512 requests were issued after independent cache flushes, with 128 forced output tokens, 100 maximum in flight, and no retries. The default arm completed. The rejection-sampling server hit an illegal-memory fault as the candidate arm began, restarted, and disconnected all 512 requests.</p>
+          <div class="table-wrap">
+            <table aria-label="Controlled fixed-output replay">
+              <thead><tr><th>Policy</th><th>Success</th><th>Accept length</th><th>Draft acceptance</th><th>Output tokens</th><th>Output rate</th><th>TTFT P50</th><th>TPOT P50</th><th>Elapsed</th></tr></thead>
+              <tbody>
+                
+      <tr>
+        <th scope="row">Node 132 · default target-only policy</th>
+        <td>512 / 512</td>
+        <td>3.5499</td>
+        <td>51.00%</td>
+        <td>65,536</td>
+        <td>180.9 tok/s<br><span class="muted">10,852 tok/min</span></td>
+        <td>17,377.0 ms</td>
+        <td>360.60 ms</td>
+        <td>362.4 s</td>
+      </tr>
+                <tr><th>Node 136 · classical rejection sampling</th><td>0 / 512</td><td>—</td><td>—</td><td>0</td><td>—</td><td>—</td><td>—</td><td>62.2 s to account failures</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>Controlled result:</strong> the default arm produced 180.9 tok/s (10,852 tokens/min). No candidate rate exists: treating 512 disconnected requests as a throughput measurement would be false. The first fatal stack surfaced on TP3 in DSA CUDA-graph metadata application, followed by the NCCL watchdog and pod restart.</p>
+        </section>
+
+        <section class="panel" id="model">
+          <div class="kicker">Checkpoint audit</div>
+          <h2>The bundled MTP layer is already BF16</h2>
+          <div class="cards">
+            <div class="card"><h3>Direct tensor evidence</h3><p>The NVFP4 config excludes <code>model.layers.78*</code>. Safetensors metadata shows 790 BF16 tensors, 1 FP32 tensor, and no scale-like tensors across layer 78.</p></div>
+            <div class="card"><h3>Consequence</h3><p>“Try a BF16 drafter” was already satisfied by the baseline. The official ZAI FP8 MTP reached 52.66%—only 0.19 percentage points over the bundled exact screen—while the Phala W4A-FP8 head was incompatible.</p></div>
+          </div>
+          <p>The likely exact-quality bottleneck is alignment between the MTP head and this NVFP4 verifier/runtime, not MTP weight precision alone. A real exact-policy path to 70% needs a better-matched MTP head—most plausibly distillation or fine-tuning against the deployed quantized verifier—not another dtype flag.</p>
+        </section>
+
+        <section class="panel" id="stability">
+          <div class="kicker">Runtime safety</div>
+          <h2>Numerical success does not erase the screening crashes</h2>
+          <ul>
+            <li>The node-132 pod restarted twice during low-threshold screening. The delayed failure surfaced as a CUDA illegal memory access in DSA CUDA-graph metadata handling and then through the NCCL watchdog.</li>
+            <li>The 4,000-row default baseline and 128-row rejection-sampling gate completed without a restart, but the rejection server restarted once when the 512-row fixed-output load began.</li>
+            <li>The first fatal stack was <code>dsa_backend.py:_apply_cuda_graph_metadata</code> reporting <code>CUDA error: an illegal memory access was encountered</code> on TP3; the NCCL watchdog then propagated the failure.</li>
+            <li>This is evidence of a runtime bug family, not proof that threshold arithmetic itself corrupts memory. Related upstream reports cover GLM-5.2 NVFP4/DSA/MTP CUDA-graph failures.</li>
+          </ul>
+          <div class="callout warn"><strong>Deployment gate:</strong> no tested candidate passes acceptance, semantics, and runtime-safety gates together. Leave the current deployment unchanged.</div>
+        </section>
+
+        <section class="panel" id="contract">
+          <div class="kicker">Reproducibility</div>
+          <h2>What was held fixed</h2>
+          <div class="cards">
+            <div class="card"><h3>Server</h3><ul><li>GLM-5.2 NVFP4 target, GB300, TP4 / DP1 / EP1 / PP1</li><li>FP8 E4M3 KV cache, chunked prefill 8,192</li><li>EAGLE steps 5, top-k 1, verification width 6</li><li><code>index_share_for_mtp_iteration=false</code></li><li>SGLang <code>0.5.10.dev4902+gef7977e8c</code></li></ul></div>
+            <div class="card"><h3>Replay</h3><ul><li>Verified dataset: 35,744 rows</li><li>SHA-256 <code>9cb06790675e6cd3b3cf1fcca8232f82f36d5002a86351c6510c1c3bb8c77acb</code></li><li>4,000-row default baseline; candidate gates before promotion; max 100 in flight; no retries</li><li>Privacy-safe metrics only; prompts and outputs not persisted</li></ul></div>
+          </div>
+          <h3>Resource scope</h3>
+          <p>GPU work used only <code>gpu-master-gb300-132</code> and <code>gpu-worker-gb300-136</code>, four GPUs on each. The final cleanup audit and Feishu release notification are recorded in the experiment handoff.</p>
+        </section>
+
+        <section class="panel" id="next">
+          <div class="kicker">Decision</div>
+          <h2>Do not ship a numerical 70% “fix”</h2>
+          <ol>
+            <li><strong>Keep thresholds at 1.0.</strong> Lower thresholds can satisfy the counter while violating the behavioral goal.</li>
+            <li><strong>Do not promote rejection sampling for acceptance.</strong> It is principled but reached only 58.8% here.</li>
+            <li><strong>For a real 70% target, improve verifier–MTP alignment.</strong> Fine-tune or distill an MTP head against the deployed NVFP4 verifier, or validate a complete matched verifier/MTP checkpoint rather than swapping only the head.</li>
+            <li><strong>Repeat this gate sequence.</strong> Fixed-output screen → natural-output sentinel → first 4,000 requests → node-swapped throughput → quality/tool-use evaluation.</li>
+          </ol>
+          <h3>Official source evidence</h3>
+          <ul class="source-list">
+            <li><a href="https://github.com/sgl-project/sglang/blob/main/docs/advanced_features/server_arguments.md">SGLang server-argument reference</a>—defines both acceptance thresholds and the <code>min(1, p / threshold_acc)</code> accumulated-policy rule.</li>
+            <li><a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/managers/scheduler.py">SGLang scheduler implementation</a>—exposes cumulative post-reset speculative acceptance through <code>/server_info</code>.</li>
+            <li><a href="https://huggingface.co/zai-org/GLM-5.2-FP8">ZAI GLM-5.2-FP8 model card</a>—states that its updated MTP can improve acceptance length by up to 20%; this deployment did not reproduce a material gain.</li>
+            <li><a href="https://github.com/sgl-project/sglang/blob/main/docs/cookbook/autoregressive/GLM/GLM-5.2.mdx">SGLang GLM-5.2 cookbook</a>—describes 5-1-6 as the low-latency recipe, but explicitly pins its published spec benchmark to a simulated 3.5 acceptance length. That table is configuration guidance, not empirical evidence for this checkpoint and trace.</li>
+            <li><a href="https://github.com/sgl-project/sglang/issues/31093">SGLang issue #31093</a>—GLM-5.2 NVFP4 plus EAGLE illegal-memory failure during CUDA-graph handling.</li>
+            <li><a href="https://github.com/sgl-project/sglang/issues/30854">SGLang issue #30854</a>—GLM-5.2 MTP/DSA stale-index failure as batch shape changes. It is related context, not asserted as the exact root cause here.</li>
+          </ul>
+        </section>
+      </article>
+    </div>
+    <footer>Generated from privacy-safe experiment artifacts · fixed 5-1-6 · 26 August 2026</footer>
+  </main>
+</body>
+</html>
