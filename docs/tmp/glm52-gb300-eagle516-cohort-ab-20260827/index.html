@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Cohort-separated GLM-5.2 EAGLE 5-1-6 acceptance and throughput experiments on a four-GPU NVIDIA GB300 tray.">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-eagle516-cohort-ab-20260827/">
+  <link rel="icon" href="data:,">
+  <title>GLM-5.2 EAGLE 5-1-6 cohort A/B · GB300</title>
+  <style>
+    :root {
+      color-scheme:light; --ink:#172033; --muted:#65728a; --paper:#fff;
+      --soft:#f4f7fb; --line:#dce4ef; --blue:#2458d3; --blue-soft:#eaf1ff;
+      --green:#117658; --green-soft:#e7f7f0; --amber:#975a06;
+      --amber-soft:#fff4dd; --red:#b9344e; --red-soft:#fff0f3;
+      --purple:#684ab5; --purple-soft:#f1edff; --shadow:0 18px 52px rgb(24 39 70 / 8%);
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); line-height:1.58; background:#f2f5f9;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    a { color:#1d4ed8; text-underline-offset:3px; }
+    code { padding:.12em .38em; border:1px solid #dbe4f0; border-radius:5px;
+      background:#f4f7fb; color:#334155; font:.88em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      overflow-wrap:anywhere; }
+    .topbar { position:sticky; top:0; z-index:20; min-height:52px; display:flex;
+      justify-content:space-between; gap:18px; padding:9px clamp(16px,3vw,44px);
+      border-bottom:1px solid rgb(220 228 239 / 90%); background:rgb(255 255 255 / 92%);
+      backdrop-filter:blur(14px); }
+    .brand { color:var(--ink); font-size:13px; font-weight:850; text-decoration:none; }
+    .topmeta { color:var(--muted); font-size:12px; font-weight:650; text-align:right; }
+    .page { width:min(1540px,100%); margin:auto; padding:clamp(18px,2.8vw,44px); }
+    .hero { position:relative; overflow:hidden; padding:clamp(28px,4.2vw,62px);
+      border:1px solid #dce5f0; border-radius:25px; background:linear-gradient(135deg,#fff 0%,#f7f9ff 58%,#eef4ff 100%);
+      box-shadow:var(--shadow); }
+    .hero::after { content:""; position:absolute; width:330px; height:330px; right:-90px; top:-140px;
+      border-radius:50%; background:radial-gradient(circle,rgb(37 99 235 / 17%),transparent 68%); }
+    .eyebrow { margin:0 0 10px; color:var(--blue); font-size:12px; font-weight:850; letter-spacing:.11em; text-transform:uppercase; }
+    h1 { max-width:1020px; margin:0; font-size:clamp(34px,5vw,70px); line-height:1.02; letter-spacing:-.045em; }
+    .lede { max-width:980px; margin:22px 0 0; color:#526179; font-size:clamp(16px,1.6vw,21px); }
+    .verdict { display:grid; grid-template-columns:auto 1fr; gap:14px; max-width:1080px;
+      margin-top:26px; padding:18px 20px; border:1px solid #f0c7cf; border-radius:15px; background:var(--red-soft); }
+    .verdict strong { color:#93243b; }
+    .verdict .icon { font-size:23px; line-height:1.2; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-top:22px; }
+    .metric { padding:17px; border:1px solid var(--line); border-radius:14px; background:rgb(255 255 255 / 84%); }
+    .metric .value { font-size:clamp(22px,2.2vw,34px); font-weight:850; letter-spacing:-.035em; }
+    .metric .label { margin-top:3px; color:var(--muted); font-size:12px; font-weight:700; }
+    .layout { display:grid; grid-template-columns:230px minmax(0,1fr); gap:28px; margin-top:30px; align-items:start; }
+    nav { position:sticky; top:74px; padding:16px; border:1px solid var(--line); border-radius:15px; background:var(--paper); }
+    nav .title { margin:0 0 8px; color:#37445a; font-size:11px; font-weight:850; letter-spacing:.1em; text-transform:uppercase; }
+    nav a { display:block; padding:7px 8px; border-radius:7px; color:#536178; font-size:13px; font-weight:650; text-decoration:none; }
+    nav a:hover { color:#1d4ed8; background:var(--blue-soft); }
+    main { min-width:0; }
+    section { scroll-margin-top:72px; margin-bottom:24px; padding:clamp(21px,3vw,34px);
+      border:1px solid var(--line); border-radius:19px; background:var(--paper); box-shadow:0 10px 32px rgb(35 50 78 / 5%); }
+    h2 { margin:0 0 8px; font-size:clamp(24px,2.7vw,36px); letter-spacing:-.027em; }
+    h3 { margin:22px 0 7px; font-size:18px; letter-spacing:-.012em; }
+    p { margin:9px 0; }
+    .section-lede { max-width:1000px; color:var(--muted); }
+    .callout { margin:17px 0; padding:16px 18px; border-left:4px solid var(--blue); border-radius:9px; background:var(--blue-soft); }
+    .callout.good { border-color:var(--green); background:var(--green-soft); }
+    .callout.warn { border-color:#d18a19; background:var(--amber-soft); }
+    .callout.bad { border-color:var(--red); background:var(--red-soft); }
+    .grid2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:16px; }
+    .mini { padding:17px 18px; border:1px solid var(--line); border-radius:13px; background:var(--soft); }
+    .mini h3 { margin:0 0 6px; }
+    .table-wrap { overflow:auto; margin-top:15px; border:1px solid var(--line); border-radius:12px; }
+    table { width:100%; min-width:900px; border-collapse:collapse; background:#fff; font-size:13px; font-variant-numeric:tabular-nums; }
+    th,td { padding:11px 12px; border-bottom:1px solid #e7edf5; text-align:right; vertical-align:top; white-space:nowrap; }
+    th:first-child,td:first-child { text-align:left; }
+    thead th { position:sticky; top:0; z-index:1; color:#49576c; background:#f3f6fa; font-size:11px; letter-spacing:.025em; text-transform:uppercase; }
+    tbody tr:last-child th,tbody tr:last-child td { border-bottom:0; }
+    tbody tr:hover { background:#fafcff; }
+    .sub { margin-top:4px; color:var(--muted); font-size:11px; font-weight:550; }
+    .pill { display:inline-flex; align-items:center; padding:3px 7px; border-radius:999px; font-size:10px; font-weight:850; letter-spacing:.02em; }
+    .pill.exact { color:#0b694d; background:var(--green-soft); }
+    .pill.approx { color:#7a3aae; background:var(--purple-soft); }
+    .bar-cell { display:flex; align-items:center; justify-content:flex-end; gap:8px; min-width:145px; }
+    .bar-track { width:74px; height:6px; overflow:hidden; border-radius:99px; background:#e8edf4; }
+    .bar-track span { display:block; height:100%; border-radius:inherit; }
+    .bar-track .goal { background:var(--green); } .bar-track .warn { background:#d28a18; } .bar-track .low { background:#bd5267; }
+    .pos { color:var(--green); font-weight:800; } .neg { color:var(--red); font-weight:800; }
+    .formula { margin:16px 0; padding:14px 16px; border:1px dashed #b7c8e1; border-radius:11px;
+      background:#f6f9fd; font:600 14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    ul,ol { padding-left:22px; } li+li { margin-top:7px; }
+    .footer { padding:4px 3px 24px; color:var(--muted); font-size:12px; text-align:center; }
+    @media (max-width:1050px) { .layout { grid-template-columns:1fr; } nav { position:static; display:flex; gap:4px; overflow:auto; } nav .title { display:none; } nav a { white-space:nowrap; } .metrics { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:680px) { .page { padding:12px; } .topmeta { display:none; } .hero { border-radius:18px; padding:25px 20px; } .metrics,.grid2 { grid-template-columns:1fr; } .verdict { grid-template-columns:1fr; } section { padding:20px 16px; border-radius:15px; } }
+    @media print { .topbar,nav { display:none; } .page { width:100%; padding:0; } .layout { display:block; } section,.hero { break-inside:avoid; box-shadow:none; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../">MaaS Docs · GLM-5.2 inference lab</a>
+    <div class="topmeta">Taiguo GB300 · 27 Aug 2026 · fixed EAGLE 5-1-6</div>
+  </header>
+  <div class="page">
+    <header class="hero">
+      <p class="eyebrow">Cohort-separated acceptance investigation</p>
+      <h1>70–80% is numerically reachable, but not yet a safe production win.</h1>
+      <p class="lede">GLM-5.2 on one four-GPU GB300 tray, fixed at EAGLE 5 steps / top-k 1 / 6 draft tokens. Two dominant production sampling policies were replayed separately with natural outputs, matched fixed-output controls, a disjoint replication, model-swap evidence, and classical rejection sampling.</p>
+      <div class="verdict"><div class="icon">⚠</div><div><strong>Bottom line.</strong> Relaxed accumulated threshold <code>0.44</code> reached 72.79% and 75.91% on the primary slice, but temperature-1.0 fell to 65.20% on the disjoint replication. Threshold <code>0.38</code> reached 75.81% only while changing the trajectory enough to produce a 128k-token runaway. Classical rejection sampling stayed at 54.94% / 69.07%. No quality-preserving candidate reached the band for both cohorts.</div></div>
+      <div class="metrics">
+        <div class="metric"><div class="value">5 · 1 · 6</div><div class="label">Steps · EAGLE top-k · draft tokens (never changed)</div></div>
+        <div class="metric"><div class="value">72.8%</div><div class="label">Best primary temperature-1.0 result at threshold 0.44</div></div>
+        <div class="metric"><div class="value">+3.9%</div><div class="label">Temperature-1.0 fixed-work output-token rate</div></div>
+        <div class="metric"><div class="value">0 / 0</div><div class="label">Final GPU utilization / framebuffer used on all 4 GPUs</div></div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav aria-label="Page sections">
+        <div class="title">On this page</div>
+        <a href="#contract">Experiment contract</a>
+        <a href="#calibration">Calibration gates</a>
+        <a href="#primary">Primary validation</a>
+        <a href="#replication">Disjoint replication</a>
+        <a href="#fixed">Fixed-work throughput</a>
+        <a href="#rejection">Rejection sampling</a>
+        <a href="#models">Draft-model evidence</a>
+        <a href="#stability">Stability & recovery</a>
+        <a href="#method">How to read it</a>
+        <a href="#recommendation">Recommendation</a>
+      </nav>
+
+      <main>
+        <section id="contract">
+          <h2>1. Experiment contract</h2>
+          <p class="section-lede">Everything that could move the acceptance denominator was pinned. The only intentional policy changes were accumulated acceptance threshold or classical rejection sampling.</p>
+          <div class="grid2">
+            <div class="mini"><h3>Server</h3><p>NVIDIA GB300 ×4 on <code>gpu-worker-gb300-136</code>; TP4 / DP1 / EP1 / PP1; FP4 target and bundled FP4 MTP draft; FP8 KV cache; DSA; max running requests 128; replay backlog capped at 100.</p></div>
+            <div class="mini"><h3>Dataset</h3><p>Unfiltered verified Liaoze Europe six-hour trace: 36,773 rows. SHA-256 <code>a64a31f…e1cbb</code>. Prompts, tools, source IDs, generated text, and raw errors were never persisted by the replay client.</p></div>
+            <div class="mini"><h3>Cohort A</h3><p><strong>26,923</strong> requests: temperature 1.0, top-p 0.95, no top-k. These rows include source output caps up to 128k tokens.</p></div>
+            <div class="mini"><h3>Cohort B</h3><p><strong>9,701</strong> requests: temperature 0.7, top-p 0.7, no top-k. Another 149 trace rows use other policies and were excluded from this A/B.</p></div>
+          </div>
+          <div class="callout"><strong>Pairing guarantee.</strong> Every A/B pair used an identical cohort offset, row count, source-prefix hash, and set of invalid request fingerprints. No retries were used. Invalid rows were deterministic HTTP 400s and were never silently replaced.</div>
+        </section>
+
+        <section id="calibration">
+          <h2>2. Calibration gates</h2>
+          <p class="section-lede">Small first-128 gates selected <code>acc=0.44</code> for promotion. Lower threshold means more permissive accumulated acceptance and therefore more approximation.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Arm</th><th>single / acc</th><th>Valid</th><th>Accept length</th><th>Strict acceptance</th><th>Output tokens</th><th>tok/s</th><th>Gate reading</th></tr></thead>
+            <tbody>
+
+      <tr>
+        <th scope="row">T=1.0 · exact<div class="sub"><span class="pill exact">target-only · exact</span></div></th>
+        <td>1.00 / 1.00</td>
+        <td>121/128</td>
+        <td>3.8623</td>
+        <td><div class="bar-cell"><strong>57.25%</strong><span class="bar-track"><span class="low" style="width:57.246%"></span></span></div></td>
+        <td>213,293</td>
+        <td>804.3</td>
+        <td>Baseline</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=1.0 · acc 0.65<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>1.00 / 0.65</td>
+        <td>121/128</td>
+        <td>4.0980</td>
+        <td><div class="bar-cell"><strong>61.96%</strong><span class="bar-track"><span class="low" style="width:61.960%"></span></span></div></td>
+        <td>172,293</td>
+        <td>894.9</td>
+        <td>Below target</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=1.0 · acc 0.45<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>1.00 / 0.45</td>
+        <td>121/128</td>
+        <td>4.4863</td>
+        <td><div class="bar-cell"><strong>69.73%</strong><span class="bar-track"><span class="warn" style="width:69.726%"></span></span></div></td>
+        <td>211,728</td>
+        <td>871.1</td>
+        <td>69.73%, just below band</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=1.0 · acc 0.44<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>1.00 / 0.44</td>
+        <td>121/128</td>
+        <td>4.7322</td>
+        <td><div class="bar-cell"><strong>74.64%</strong><span class="bar-track"><span class="goal" style="width:74.644%"></span></span></div></td>
+        <td>242,582</td>
+        <td>911.9</td>
+        <td>Promoted</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=0.7 · exact<div class="sub"><span class="pill exact">target-only · exact</span></div></th>
+        <td>1.00 / 1.00</td>
+        <td>128/128</td>
+        <td>4.5776</td>
+        <td><div class="bar-cell"><strong>71.55%</strong><span class="bar-track"><span class="goal" style="width:71.552%"></span></span></div></td>
+        <td>112,866</td>
+        <td>471.8</td>
+        <td>Already inside band</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=0.7 · acc 0.45<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>1.00 / 0.45</td>
+        <td>128/128</td>
+        <td>4.7985</td>
+        <td><div class="bar-cell"><strong>75.97%</strong><span class="bar-track"><span class="goal" style="width:75.971%"></span></span></div></td>
+        <td>106,025</td>
+        <td>465.9</td>
+        <td>Inside band</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=0.7 · acc 0.44<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>1.00 / 0.44</td>
+        <td>128/128</td>
+        <td>4.8397</td>
+        <td><div class="bar-cell"><strong>76.79%</strong><span class="bar-track"><span class="goal" style="width:76.794%"></span></span></div></td>
+        <td>105,960</td>
+        <td>452.0</td>
+        <td>Promoted pair</td>
+      </tr>
+            </tbody>
+          </table></div>
+        </section>
+
+        <section id="primary">
+          <h2>3. Primary natural-output validation</h2>
+          <p class="section-lede">512 disjoint rows per cohort, offset 128. Source output limits and stop controls were preserved. Natural output is the realistic service behavior, but token-rate differences are confounded whenever the policy changes generated length.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Arm</th><th>Valid</th><th>Accept length</th><th>Strict acceptance</th><th>Output tokens</th><th>Mean out</th><th>Max out</th><th>Elapsed</th><th>Output rate</th><th>TTFT p50</th><th>TPOT p50</th></tr></thead>
+            <tbody>
+
+      <tr>
+        <th scope="row">T=1.0 · exact<div class="sub"><span class="pill exact">target-only · exact</span></div></th>
+        <td>502/512</td>
+        <td>3.7307</td>
+        <td><div class="bar-cell"><strong>54.61%</strong><span class="bar-track"><span class="low" style="width:54.615%"></span></span></div></td>
+        <td>795,940</td>
+        <td>1,585.5</td>
+        <td>55,600</td>
+        <td>747.3 s</td>
+        <td>1,065.1<div class="sub">63,904 tok/min</div></td>
+        <td>39,586.6 ms</td>
+        <td>52.93 ms</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=1.0 · acc 0.44<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>502/512</td>
+        <td>4.6396</td>
+        <td><div class="bar-cell"><strong>72.79%</strong><span class="bar-track"><span class="goal" style="width:72.791%"></span></span></div></td>
+        <td>932,404</td>
+        <td>1,857.4</td>
+        <td>94,964</td>
+        <td>811.8 s</td>
+        <td>1,148.5<div class="sub">68,910 tok/min</div></td>
+        <td>27,990.5 ms</td>
+        <td>46.61 ms</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=1.0 · rejection<div class="sub"><span class="pill exact">rejection · exact</span></div></th>
+        <td>502/512</td>
+        <td>3.7470</td>
+        <td><div class="bar-cell"><strong>54.94%</strong><span class="bar-track"><span class="low" style="width:54.941%"></span></span></div></td>
+        <td>792,504</td>
+        <td>1,578.7</td>
+        <td>46,144</td>
+        <td>734.0 s</td>
+        <td>1,079.7<div class="sub">64,782 tok/min</div></td>
+        <td>34,237.6 ms</td>
+        <td>55.10 ms</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=0.7 · exact<div class="sub"><span class="pill exact">target-only · exact</span></div></th>
+        <td>512/512</td>
+        <td>4.5518</td>
+        <td><div class="bar-cell"><strong>71.04%</strong><span class="bar-track"><span class="goal" style="width:71.036%"></span></span></div></td>
+        <td>323,080</td>
+        <td>631.0</td>
+        <td>25,470</td>
+        <td>322.1 s</td>
+        <td>1,002.9<div class="sub">60,174 tok/min</div></td>
+        <td>3,883.4 ms</td>
+        <td>102.67 ms</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=0.7 · acc 0.44<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>512/512</td>
+        <td>4.7954</td>
+        <td><div class="bar-cell"><strong>75.91%</strong><span class="bar-track"><span class="goal" style="width:75.908%"></span></span></div></td>
+        <td>420,535</td>
+        <td>821.4</td>
+        <td>80,000</td>
+        <td>488.5 s</td>
+        <td>860.9<div class="sub">51,654 tok/min</div></td>
+        <td>4,780.0 ms</td>
+        <td>111.83 ms</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=0.7 · rejection<div class="sub"><span class="pill exact">rejection · exact</span></div></th>
+        <td>512/512</td>
+        <td>4.4535</td>
+        <td><div class="bar-cell"><strong>69.07%</strong><span class="bar-track"><span class="warn" style="width:69.071%"></span></span></div></td>
+        <td>344,852</td>
+        <td>673.5</td>
+        <td>35,668</td>
+        <td>375.3 s</td>
+        <td>918.9<div class="sub">55,132 tok/min</div></td>
+        <td>3,241.5 ms</td>
+        <td>100.87 ms</td>
+      </tr>
+            </tbody>
+          </table></div>
+          <div class="callout warn"><strong>Do not call the natural-rate column a causal speedup.</strong> At temperature 1.0, threshold 0.44 generated 17.15% more tokens and therefore showed +7.83% aggregate token rate. At temperature 0.7 it generated 30.16% more tokens and elapsed time grew 51.63%, so token rate fell 14.16%.</div>
+        </section>
+
+        <section id="replication">
+          <h2>4. Disjoint temperature-1.0 replication</h2>
+          <p class="section-lede">A second, harder 256-row slice at cohort offset 1,152 reversed the earlier ordering: exact first, then 0.44, 0.40, and 0.38 on the same rows.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Arm</th><th>Valid</th><th>Accept length</th><th>Strict acceptance</th><th>Output tokens</th><th>Mean out</th><th>Max out</th><th>Elapsed</th><th>Output rate</th><th>TTFT p50</th><th>TPOT p50</th></tr></thead>
+            <tbody>
+
+      <tr>
+        <th scope="row">Exact<div class="sub"><span class="pill exact">target-only · exact</span></div></th>
+        <td>235/256</td>
+        <td>3.5326</td>
+        <td><div class="bar-cell"><strong>50.65%</strong><span class="bar-track"><span class="low" style="width:50.652%"></span></span></div></td>
+        <td>306,929</td>
+        <td>1,306.1</td>
+        <td>16,718</td>
+        <td>290.5 s</td>
+        <td>1,056.5<div class="sub">63,392 tok/min</div></td>
+        <td>19,600.2 ms</td>
+        <td>64.24 ms</td>
+      </tr>
+
+      <tr>
+        <th scope="row">acc 0.44<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>235/256</td>
+        <td>4.2602</td>
+        <td><div class="bar-cell"><strong>65.20%</strong><span class="bar-track"><span class="warn" style="width:65.203%"></span></span></div></td>
+        <td>337,500</td>
+        <td>1,436.2</td>
+        <td>42,072</td>
+        <td>337.9 s</td>
+        <td>998.8<div class="sub">59,930 tok/min</div></td>
+        <td>23,370.2 ms</td>
+        <td>67.76 ms</td>
+      </tr>
+
+      <tr>
+        <th scope="row">acc 0.40<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>235/256</td>
+        <td>4.4547</td>
+        <td><div class="bar-cell"><strong>69.09%</strong><span class="bar-track"><span class="warn" style="width:69.095%"></span></span></div></td>
+        <td>358,913</td>
+        <td>1,527.3</td>
+        <td>59,562</td>
+        <td>380.4 s</td>
+        <td>943.4<div class="sub">56,607 tok/min</div></td>
+        <td>24,283.7 ms</td>
+        <td>58.85 ms</td>
+      </tr>
+
+      <tr>
+        <th scope="row">acc 0.38<div class="sub"><span class="pill approx">relaxed · approximate</span></div></th>
+        <td>235/256</td>
+        <td>4.7904</td>
+        <td><div class="bar-cell"><strong>75.81%</strong><span class="bar-track"><span class="goal" style="width:75.808%"></span></span></div></td>
+        <td>495,977</td>
+        <td>2,110.5</td>
+        <td>128,000</td>
+        <td>570.2 s</td>
+        <td>869.8<div class="sub">52,187 tok/min</div></td>
+        <td>24,346.3 ms</td>
+        <td>53.65 ms</td>
+      </tr>
+            </tbody>
+          </table></div>
+          <div class="callout bad"><strong>Threshold 0.38 is a failed optimization despite 75.81% acceptance.</strong> On identical inputs, total output rose 61.59%, elapsed time rose 96.29%, output-token rate fell 17.68%, and one request hit the full 128,000-token limit. That is behavioral drift, not free draft efficiency.</div>
+          <p>Threshold 0.44 is the least aggressive useful point, but its acceptance moved from 72.79% on the primary slice to 65.20% here. A single favorable slice is therefore insufficient to claim a stable 70% service-level acceptance rate.</p>
+        </section>
+
+        <section id="fixed">
+          <h2>5. Matched fixed-work throughput</h2>
+          <p class="section-lede">This synthetic control removes source stop controls, ignores EOS, and forces exactly 128 generated tokens for every valid request. It is not a quality test. Its purpose is to equalize generated work so output-token throughput can be compared causally.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Cohort</th><th>Exact tokens</th><th>0.44 tokens</th><th>Exact acceptance</th><th>0.44 acceptance</th><th>Acceptance Δ</th><th>Exact tok/s</th><th>0.44 tok/s</th><th>Rate Δ</th></tr></thead>
+            <tbody>
+
+      <tr>
+        <th scope="row">T=1.0 / p=0.95 · 481 valid</th>
+        <td>61,568</td>
+        <td>61,568</td>
+        <td>43.74%</td>
+        <td>58.58%</td>
+        <td class="pos">+14.84 pp</td>
+        <td>202.14</td>
+        <td>210.10</td>
+        <td class="pos">3.94%</td>
+      </tr>
+
+      <tr>
+        <th scope="row">T=0.7 / p=0.7 · 512 valid</th>
+        <td>65,536</td>
+        <td>65,536</td>
+        <td>65.93%</td>
+        <td>70.97%</td>
+        <td class="pos">+5.04 pp</td>
+        <td>264.60</td>
+        <td>265.24</td>
+        <td class="pos">0.24%</td>
+      </tr>
+            </tbody>
+          </table></div>
+          <div class="grid2">
+            <div class="mini"><h3>Temperature 1.0</h3><p>61,568 tokens in each arm. Threshold 0.44 raised acceptance by 14.84 points and output-token rate by <strong>3.94%</strong> (12,129 → 12,606 tok/min).</p></div>
+            <div class="mini"><h3>Temperature 0.7</h3><p>65,536 tokens in each arm. Acceptance rose 5.04 points, but output-token rate changed only <strong>0.24%</strong> (15,876 → 15,915 tok/min).</p></div>
+          </div>
+          <div class="callout"><strong>Why the speedup is modest.</strong> More accepted draft tokens reduce target verification work, but this service still pays long-context attention, MTP drafting, target verification, scheduling, and communication. Acceptance percentage is not a direct multiplier on end-to-end throughput.</div>
+        </section>
+
+        <section id="rejection">
+          <h2>6. Classical rejection sampling</h2>
+          <p class="section-lede">A fresh server was launched with <code>--speculative-use-rejection-sampling</code>, thresholds fixed at 1.0/1.0, and otherwise the same TP4 / FP4 / FP8-KV / DSA setup. This mechanism uses both target and draft distributions and preserves target sampling semantics under the implementation assumptions.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Cohort</th><th>Target-only exact</th><th>Rejection exact</th><th>Acceptance Δ</th><th>Rejection output rate</th><th>Reading</th></tr></thead>
+            <tbody>
+              <tr><th>T=1.0 / p=0.95</th><td>54.61%</td><td>54.94%</td><td>0.33 pp</td><td>1,079.7 tok/s</td><td>No material acceptance gain</td></tr>
+              <tr><th>T=0.7 / p=0.7</th><td>71.04%</td><td>69.07%</td><td>-1.97 pp</td><td>918.9 tok/s</td><td>Below target and below target-only run</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout good"><strong>Safe does not mean high acceptance.</strong> Rejection sampling fixes the sampling semantics problem of relaxed thresholds; it cannot make a mismatched draft distribution resemble the target. The measured result points back to draft-model quality, not to a missing acceptance trick.</div>
+        </section>
+
+        <section id="models">
+          <h2>7. Existing draft-model evidence</h2>
+          <p class="section-lede">This overnight run reused the best prior exact configuration. The preceding screen had already tested index sharing, BF16-KV quality mode, an external W4A-FP8 draft, and the Z.AI FP8 MTP. None approached 70%. See the <a href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-eagle516-acceptance-optimization-20260826/">full preceding investigation</a>.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Exact screen</th><th>Draft</th><th>Index share</th><th>Acceptance</th><th>Result</th></tr></thead>
+            <tbody>
+            <tr>
+              <th scope="row">builtin-index-share-true-exact</th>
+              <td>bundled target MTP</td>
+              <td>true</td>
+              <td>48.68%</td>
+              <td>valid</td>
+            </tr>
+            <tr>
+              <th scope="row">builtin-index-share-false-exact</th>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>52.47%</td>
+              <td>best bundled exact screen</td>
+            </tr>
+            <tr>
+              <th scope="row">quality-max-exact</th>
+              <td>bundled target MTP</td>
+              <td>false</td>
+              <td>52.32%</td>
+              <td>BF16 KV, rejection sampling, and overlap-disabled screen did not improve acceptance</td>
+            </tr>
+            <tr>
+              <th scope="row">phala-w4afp8-exact</th>
+              <td>phala/GLM-5.2-W4AFP8 MTP</td>
+              <td>false</td>
+              <td>0.57%</td>
+              <td>incompatible or badly mismatched</td>
+            </tr>
+            <tr>
+              <th scope="row">zai-fp8-index-share-true-exact</th>
+              <td>zai-org/GLM-5.2-FP8 MTP</td>
+              <td>true</td>
+              <td>51.78%</td>
+              <td>valid, below bundled index-share-off</td>
+            </tr>
+            <tr>
+              <th scope="row">zai-fp8-index-share-false-exact</th>
+              <td>zai-org/GLM-5.2-FP8 MTP</td>
+              <td>false</td>
+              <td>52.66%</td>
+              <td>best exact model-swap screen; only +0.19 percentage points</td>
+            </tr></tbody>
+          </table></div>
+          <div class="callout"><strong>Important checkpoint fact.</strong> The bundled MTP layer is already unquantized (790 BF16 tensors and one F32 tensor in the prior audit). Merely asking for a “BF16 draft” does not reveal a missing higher-precision copy. A real improvement likely needs better MTP weights/training or a verified compatible draft checkpoint.</div>
+        </section>
+
+        <section id="stability">
+          <h2>8. Stability, crash recovery, and release</h2>
+          <p class="section-lede">The experiment completed, but the runtime image is not stable enough for a production recommendation under this workload.</p>
+          <div class="grid2">
+            <div class="mini"><h3>Two delayed crashes</h3><p>The target-only deployment restarted once and the rejection deployment restarted once. Both faults surfaced after a long-tail arm, before the next replay sent any request.</p></div>
+            <div class="mini"><h3>Same failure path</h3><p><code>dsa_backend.py::_apply_cuda_graph_metadata</code> reported CUDA illegal memory access; NCCL watchdogs then aborted TP ranks. This is a runtime/DSA CUDA-graph defect, not evidence that threshold arithmetic itself crashed.</p></div>
+            <div class="mini"><h3>Recovery integrity</h3><p>Each interrupted arm had no output directory and zero sent requests. The pod restarted automatically; health and live 5-1-6/policy state were revalidated; the same arm ID and source slice were rerun from row 1.</p></div>
+            <div class="mini"><h3>Resources released</h3><p>At 05:13 CST all experiment Deployments, Services, Pods, and ConfigMaps were absent. DCGM showed GPU utilization 0 and framebuffer used 0 on GPUs 0–3.</p></div>
+          </div>
+        </section>
+
+        <section id="method">
+          <h2>9. How to read acceptance</h2>
+          <p><code>avg_spec_accept_length</code> includes the final target/bonus token. With five draft opportunities, strict draft acceptance is:</p>
+          <div class="formula">strict acceptance = (avg_spec_accept_length − 1) ÷ 5 × 100%</div>
+          <p>For example, accept length 4.64 means about 3.64 accepted draft tokens plus one target/bonus token, or roughly 72.8% strict draft acceptance. This definition was applied uniformly to every arm.</p>
+          <h3>What each experiment answers</h3>
+          <ul>
+            <li><strong>Natural output:</strong> what the service does on real request controls, including changes in stopping trajectory.</li>
+            <li><strong>Fixed 128 output:</strong> whether more acceptance improves output-token throughput when successful requests perform equal generated work.</li>
+            <li><strong>Rejection sampling:</strong> whether a semantics-preserving acceptance rule helps these two stochastic cohorts.</li>
+            <li><strong>Disjoint replication:</strong> whether a promising threshold survives a new source slice and reversed arm order.</li>
+          </ul>
+          <p>Client TPOT is derived from streamed deltas and completion-token usage. It is diagnostic for these concurrent batch replays, not an isolated single-request latency benchmark.</p>
+        </section>
+
+        <section id="recommendation">
+          <h2>10. Recommendation</h2>
+          <ol>
+            <li><strong>Do not promote threshold 0.38.</strong> It wins the acceptance metric by changing outputs and causing a 128k-token runaway.</li>
+            <li><strong>Treat threshold 0.44 only as an approximate research candidate.</strong> It is the least aggressive point tested with useful fixed-work gain, but temperature-1.0 acceptance ranged 65.20%–72.79% and quality equivalence was not measured.</li>
+            <li><strong>Do not enable rejection sampling merely to chase acceptance.</strong> It is principled, but measured 54.94% / 69.07% here.</li>
+            <li><strong>The real route to stable 70–80% is a better draft.</strong> Validate a newly trained/compatible GLM-5.2 MTP checkpoint with exact semantics, then repeat these cohort-separated and fixed-work controls.</li>
+            <li><strong>Upgrade or patch the DSA CUDA-graph runtime before production A/B.</strong> Two delayed illegal-memory failures invalidate a reliability claim even though the harness recovered cleanly.</li>
+          </ol>
+          <div class="callout bad"><strong>Decision:</strong> the goal was achieved as a numerical experiment, not as a production-ready optimization. Keep exact policy for service safety; use 0.44 only behind explicit quality evaluation, output caps, and rollback guardrails.</div>
+        </section>
+      </main>
+    </div>
+    <footer class="footer">Generated from privacy-safe arm summaries and server state snapshots · <a href="report-data.json">machine-readable report data</a> · source requests and outputs are not published</footer>
+  </div>
+</body>
+</html>
