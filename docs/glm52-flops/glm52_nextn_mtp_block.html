@@ -597,6 +597,114 @@ pre {
 }
 .myth-card strong { display: block; margin-bottom: 5px; color: #8b3f3f; }
 .myth-card p { margin: 0; font-size: .92rem; }
+.rs-cycle {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 26px;
+}
+.rs-cycle-step {
+  position: relative;
+  min-width: 0;
+  padding: 17px 15px;
+  border: 1px solid var(--line);
+  border-top: 4px solid #7fa4c6;
+  border-radius: 9px;
+  background: var(--paper);
+}
+.rs-cycle-step:nth-child(2) { border-top-color: #80b9b8; }
+.rs-cycle-step:nth-child(3) { border-top-color: #74519a; }
+.rs-cycle-step:nth-child(4) { border-top-color: #d5aa68; }
+.rs-step-num {
+  display: inline-grid;
+  width: 25px;
+  height: 25px;
+  margin-bottom: 9px;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf4f2;
+  color: #31534c;
+  font-size: .78rem;
+  font-weight: 900;
+}
+.rs-cycle-step strong { display: block; margin-bottom: 5px; }
+.rs-cycle-step p { margin: 0; color: var(--muted); font-size: .88rem; }
+.rs-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.rs-mode {
+  padding: 19px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.rs-mode.baseline { border-color: #b7a88d; background: #fffbf2; }
+.rs-mode.classic { border-color: #76aaa6; background: #eff9f7; }
+.rs-mode-label {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .78);
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+.rs-mode h3 { margin: 0 0 9px; }
+.rs-mode ol { margin-bottom: 0; padding-left: 21px; }
+.rs-mode li { margin: 8px 0; }
+.rs-mode .mini-equation {
+  margin: 13px 0;
+  padding: 11px 12px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .9);
+  text-align: center;
+  font-size: 1.02rem;
+}
+.math-frac {
+  display: inline-grid;
+  grid-template-rows: auto auto;
+  margin: 0 .12em;
+  vertical-align: middle;
+  line-height: 1.15;
+  text-align: center;
+}
+.math-frac > span:first-child {
+  padding: 0 .18em .08em;
+  border-bottom: 1px solid currentColor;
+}
+.math-frac > span:last-child { padding: .08em .18em 0; }
+.rs-prob-table td:not(:first-child),
+.rs-prob-table th:not(:first-child) { text-align: center; }
+.rs-prob-table { min-width: 720px; margin: 0; }
+.rs-impl-scroll table { min-width: 760px; margin: 0; }
+.rs-highlight-row td { background: #edf8f4; font-weight: 800; }
+.rs-result {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid #c5a36a;
+  border-left: 6px solid #b47a24;
+  border-radius: 9px;
+  background: #fff9eb;
+}
+.rs-result h3 { margin-top: 0; }
+.rs-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 15px 0;
+}
+.rs-result-metric {
+  padding: 12px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .82);
+}
+.rs-result-metric span { display: block; color: var(--muted); font-size: .78rem; }
+.rs-result-metric strong { display: block; margin-top: 3px; font-size: 1.08rem; }
 .source-list li { margin: 8px 0; color: var(--muted); }
 .footer,
 .footer a { overflow-wrap: anywhere; word-break: break-word; }
@@ -622,7 +730,10 @@ pre {
   .decoder-stage:last-child { grid-column: auto; }
   .rail-grid,
   .layer-map,
-  .misconception-grid { grid-template-columns: 1fr; }
+  .misconception-grid,
+  .rs-cycle,
+  .rs-compare,
+  .rs-result-grid { grid-template-columns: 1fr; }
   .target-stack { grid-template-columns: 1fr; }
 }
 </style>
@@ -640,6 +751,11 @@ pre {
 <a class="depth-1" href="#acceptance-example">Acceptance Example</a>
 <a class="depth-1" href="#state-lifetimes">State Lifetimes</a>
 <a class="depth-1" href="#layer-78">Layer 78 vs 77</a>
+<a class="depth-1" href="#rejection-sampling">Rejection Sampling</a>
+<a class="depth-2" href="#rs-background">Spec-Dec Background</a>
+<a class="depth-2" href="#rs-two-modes">What the Flag Changes</a>
+<a class="depth-2" href="#rs-example">Worked Example</a>
+<a class="depth-2" href="#rs-result">Our Gate Result</a>
 <a class="depth-1" href="#runtime-phases">Runtime Phases</a>
 <a class="depth-1" href="#misconceptions">Misconceptions</a>
 <a class="depth-1" href="#glossary">Glossary</a>
@@ -793,6 +909,96 @@ pre {
 </div>
 <p>SGLang instantiates the draft decoder container with internal layer ID 0, then the weight loader maps checkpoint <code>model.layers.78.*</code> into <code>model.decoder.*</code>. That implementation remap does not turn it into target layer 0, and sharing the decoder family does not make it a copy of target layer 77.</p>
 
+<h2 id="rejection-sampling">Why <code>--speculative-use-rejection-sampling</code> Can Help</h2>
+<div class="truth-banner"><strong>First separate the model from the sampling rule.</strong> Layer 78 produces draft logits and therefore a draft probability distribution <span class="sym sym-draft math-var">q</span>. The flag does not retrain Layer 78, change its weights, or make those logits more accurate. It changes how SGLang draws a proposal from <span class="sym sym-draft math-var">q</span>, what probability information it carries into target verification, and how the verifier accepts or corrects that proposal.</div>
+
+<h3 id="rs-background">Background: what speculative decoding is trying to save</h3>
+<p>Ordinary autoregressive decoding runs the expensive 78-layer target once to obtain each new token. Speculative decoding instead lets the cheap one-layer MTP sidecar propose a short chain, then runs the target once over the whole chain. The target accepts the longest valid prefix and supplies one target-sampled <em>bonus token</em> at the boundary. Accepting more draft tokens can amortize one target verification over more output tokens.</p>
+<div class="rs-cycle" aria-label="One speculative decoding cycle">
+  <section class="rs-cycle-step"><span class="rs-step-num">1</span><strong>Draft cheaply</strong><p>Layer 78 runs recurrently and proposes tokens d<sub>1</sub> through d<sub>5</sub>.</p></section>
+  <section class="rs-cycle-step"><span class="rs-step-num">2</span><strong>Verify together</strong><p>The full target evaluates the proposal chain in one batched forward pass.</p></section>
+  <section class="rs-cycle-step"><span class="rs-step-num">3</span><strong>Accept a prefix</strong><p>Verification stops at the first rejected draft token; later draft tokens depend on that rejected prefix.</p></section>
+  <section class="rs-cycle-step"><span class="rs-step-num">4</span><strong>Correct and continue</strong><p>The target supplies a correctly distributed boundary token, and drafting begins again.</p></section>
+</div>
+<div class="note"><strong>Acceptance length versus strict draft acceptance.</strong> SGLang's <code>avg_spec_accept_length</code> includes the target's one bonus token. In a five-proposal cycle, a displayed length of 3.8 means about 2.8 accepted draft tokens plus one bonus—not 3.8 accepted drafts.</div>
+
+<h3 id="rs-two-modes">What the flag changes</h3>
+<p>Let <span class="sym sym-target math-var">p</span> be the target model's sampling distribution after temperature and request filters, and let <span class="sym sym-draft math-var">q</span> be the MTP drafter's proposal distribution. Both are distributions over the same vocabulary. The important difference is whether the verifier sees the full <span class="sym sym-draft math-var">q</span> or pretends that the chosen draft token had proposal probability one.</p>
+<div class="rs-compare">
+  <section class="rs-mode baseline">
+    <span class="rs-mode-label">flag off · target-only path</span>
+    <h3>Argmax becomes a point mass</h3>
+    <ol>
+      <li>Top-k=1 selects the drafter's argmax token <span class="sym sym-token math-var">d</span>.</li>
+      <li>The verifier effectively uses <span class="sym sym-fused math-var">q<sub>&delta;</sub></span>: probability 1 on <span class="sym sym-token math-var">d</span>, 0 on every other token.</li>
+      <li>The token survives with probability <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>).</li>
+    </ol>
+    <div class="mini-equation"><span class="math-var">P<sub>accept</sub></span> = <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</div>
+    <p>This remains distribution-correct after target correction, but it throws away how uncertain the drafter actually was.</p>
+  </section>
+  <section class="rs-mode classic">
+    <span class="rs-mode-label">flag on · classic rejection sampling</span>
+    <h3>Sample from and retain the full proposal</h3>
+    <ol>
+      <li>Sample <span class="sym sym-token math-var">d</span> from <span class="sym sym-draft math-var">q</span>, rather than always taking its argmax.</li>
+      <li>Carry the vocabulary-wide <span class="sym sym-draft math-var">q</span> into verification.</li>
+      <li>Draw <span class="math-var">u</span> uniformly from 0 to 1 and accept when <span class="math-var">u</span> &lt; <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span>).</li>
+    </ol>
+    <div class="mini-equation"><span class="math-var">P<sub>accept</sub>(<span class="sym sym-token math-var">d</span>)</span> = <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span>)</div>
+    <p>If draft and target assign similar probability to the sampled token, the ratio is near one and the token is usually accepted.</p>
+  </section>
+</div>
+
+<div class="eq-block"><div class="eq-title">Why distribution overlap controls acceptance</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">x</span></sub> <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>) <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>)</span></span>)</div><div class="eq-note">expected acceptance probability</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">x</span></sub> <span class="math-func">min</span>(<span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>), <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>))</div><div class="eq-note">shared probability mass</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">1 &minus; <span class="math-func">TV</span>(<span class="sym sym-target math-var">p</span>, <span class="sym sym-draft math-var">q</span>)</div><div class="eq-note">one minus total-variation distance</div></div><div class="eq-comment">If <span class="sym sym-target math-var">p</span> and <span class="sym sym-draft math-var">q</span> are identical, every proposed token is accepted. The flag cannot make the two distributions closer; it lets verification use the overlap already present instead of collapsing <span class="sym sym-draft math-var">q</span> to a point mass.</div></div>
+
+<h3 id="rs-example">A four-token example</h3>
+<p>Suppose the target and draft distributions are close but not identical. Token A is both models' favorite, yet the remaining probability is meaningful—not noise to discard.</p>
+<div class="alignment-scroll" tabindex="0" role="region" aria-label="Worked rejection-sampling probability table">
+  <table class="rs-prob-table">
+    <thead><tr><th>Distribution or accepted mass</th><th>A</th><th>B</th><th>C</th><th>D</th><th>One-step acceptance</th></tr></thead>
+    <tbody>
+      <tr><td>target <span class="sym sym-target math-var">p</span></td><td>0.60</td><td>0.20</td><td>0.10</td><td>0.10</td><td>&mdash;</td></tr>
+      <tr><td>draft <span class="sym sym-draft math-var">q</span></td><td>0.70</td><td>0.20</td><td>0.05</td><td>0.05</td><td>&mdash;</td></tr>
+      <tr><td>flag off: point mass <span class="sym sym-fused math-var">q<sub>&delta;</sub></span></td><td>1.00</td><td>0</td><td>0</td><td>0</td><td><strong>0.60</strong></td></tr>
+      <tr class="rs-highlight-row"><td>flag on: <span class="math-func">min</span>(<span class="sym sym-target math-var">p</span>, <span class="sym sym-draft math-var">q</span>)</td><td>0.60</td><td>0.20</td><td>0.05</td><td>0.05</td><td><strong>0.90</strong></td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="mobile-hint">On a narrow screen, scroll the probability table horizontally; values stay on one line.</p>
+<p>If the flag samples A, its conditional acceptance is 0.60 &divide; 0.70 = 85.7%. If it samples B, the target and draft both assign 0.20, so B is accepted with probability 100%. Averaging over every possible draft sample gives 90% acceptance. Without the flag, only A can be proposed and it survives with the target's 60% probability.</p>
+<div class="note"><strong>Why sampling a non-argmax token is not a quality compromise.</strong> When a proposal is rejected, SGLang samples the replacement from the positive residual proportional to <span class="math-var">[</span><span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>) &minus; <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>)<span class="math-var">]<sub>+</sub></span>. Accepted mass plus residual correction reconstructs the target distribution <span class="sym sym-target math-var">p</span>; the drafter changes execution cost, not the intended target sampling law.</div>
+
+<h3 id="rs-implementation">What SGLang actually does</h3>
+<div class="alignment-scroll rs-impl-scroll" tabindex="0" role="region" aria-label="Flag-off and flag-on implementation comparison">
+<table><tr><th>Stage</th><th>Flag off</th><th>Flag on</th></tr><tr><td>Layer-78 proposal</td><td>take argmax for EAGLE top-k=1</td><td>temperature-scale logits, form <span class="sym sym-draft math-var">q</span>, and sample one token</td></tr>
+<tr><td>State carried to verify</td><td>token ID; no full draft distribution</td><td>token ID plus vocabulary-wide <span class="sym sym-draft math-var">q</span> for every draft step</td></tr>
+<tr><td>Target verification</td><td>target-only tree kernel; effective point mass <span class="sym sym-fused math-var">q<sub>&delta;</sub></span></td><td>chain rejection kernel using <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span></td></tr>
+<tr><td>First rejection</td><td>sample a target correction that excludes the rejected point-mass candidate</td><td>sample from the normalized positive residual <span class="sym sym-target math-var">p</span> &minus; <span class="sym sym-draft math-var">q</span></td></tr></table>
+</div>
+<p class="mobile-hint">On a narrow screen, scroll the implementation comparison horizontally.</p>
+<p>The request temperature is applied to both target and draft logits in the rejection path. The target distribution is then filtered by the request's top-k and top-p settings. A draft sample outside the target's surviving support has <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>) = 0 and is always rejected, so aggressive target truncation or a poorly aligned drafter can reduce the benefit.</p>
+
+<h3 id="rs-result">Why it only helped a little in our gate</h3>
+<div class="rs-result">
+  <h3>GB300 node-136 matched gate · 512 rows</h3>
+  <p>Exact cohort: temperature 1.0, top-p 0.95, no request top-k; FP4 target and FP4 draft; EAGLE 5-1-6. Both arms replayed the same source slice.</p>
+  <div class="rs-result-grid">
+    <div class="rs-result-metric"><span>flag off</span><strong>55.62% strict draft acceptance</strong></div>
+    <div class="rs-result-metric"><span>flag on</span><strong>56.54% strict draft acceptance</strong></div>
+    <div class="rs-result-metric"><span>measured change</span><strong>+0.91 percentage points</strong></div>
+  </div>
+  <p>The flag extracted slightly more of the overlap between <span class="sym sym-target math-var">p</span> and <span class="sym sym-draft math-var">q</span>, but it did not make the MTP distribution itself more target-like. Draft/target weight or quantization mismatch, context-dependent MTP error, and target top-p truncation can all leave the overlap modest. This is why rejection sampling is not a route from roughly 56% to 70% by itself.</p>
+  <p><strong>Stability caveat:</strong> after the treatment completed its measured rows, the pod hit a CUDA illegal-memory access reported in the DSA CUDA-graph metadata path and restarted. The timing does not prove this flag caused the fault, but the no-restart gate failed, so the full A/B was correctly stopped.</p>
+</div>
+
+<h3 id="rs-boundaries">When to expect benefit—and when not to</h3>
+<table><tr><th>Situation</th><th>Expected effect</th></tr><tr><td>stochastic decoding and <span class="sym sym-draft math-var">q</span> closely tracks <span class="sym sym-target math-var">p</span></td><td>higher acceptance can amortize target verification over more output tokens</td></tr>
+<tr><td>greedy decoding</td><td>the runtime takes the greedy verification branch; rejection sampling has no probability-overlap advantage</td></tr>
+<tr><td><span class="sym sym-draft math-var">q</span> and <span class="sym sym-target math-var">p</span> disagree strongly</td><td>little acceptance gain; improve or realign the drafter instead</td></tr>
+<tr><td>high batch or expensive verification</td><td>higher acceptance may still fail to improve throughput because speculative work is not free</td></tr>
+<tr><td>this downstream implementation</td><td>requires EAGLE/EAGLE3/NEXTN, EAGLE top-k=1, one shared vocabulary, default acceptance thresholds, and non-deterministic sampling</td></tr></table>
+<div class="note"><strong>Bottom line.</strong> The flag is a better coupling rule between two probability distributions, not a better draft model. It can turn existing draft-target agreement into more accepted tokens while preserving the target distribution. Its real value must still be established with a stable, fixed-output throughput A/B.</div>
+
 <h2 id="runtime-phases">How the Block Appears in the Runtime</h2>
 <table><tr><th>Runtime phase</th><th>Does the MTP decoder run?</th><th>Feature source</th><th>Result</th></tr><tr><td><code>draft_extend</code></td><td>Yes: one fixed-width batched pass</td><td>target-produced features from verification</td><td>Refresh committed draft KV; retain the selected frontier feature and logits.</td></tr>
 <tr><td><code>draft_forward</code>, <span class="math-var">i</span> = 0 to 3</td><td>Yes: one recursive row per active top-k=1 request at each step</td><td>selected seed first, then draft-produced features</td><td>Generate the next proposal distribution and provisional draft KV.</td></tr>
@@ -817,6 +1023,8 @@ pre {
   <div class="glossary-item"><dt>target feature</dt><dd>A contextual hidden vector produced by the full 78-layer target.</dd></div>
   <div class="glossary-item"><dt>draft feature</dt><dd>The one-layer MTP output recursively carried to the next proposal row.</dd></div>
   <div class="glossary-item"><dt>draft KV</dt><dd>Attention memory written by the MTP decoder, distinct from both target KV and the row feature.</dd></div>
+  <div class="glossary-item"><dt>target distribution <span class="sym sym-target math-var">p</span></dt><dd>The full target model's next-token probabilities after request sampling controls.</dd></div>
+  <div class="glossary-item"><dt>draft distribution <span class="sym sym-draft math-var">q</span></dt><dd>The MTP sidecar's cheaper proposal probabilities over the same vocabulary.</dd></div>
   <div class="glossary-item"><dt>bonus token</dt><dd>The target-produced token after the accepted draft prefix; it is committed but was not an accepted draft.</dd></div>
   <div class="glossary-item"><dt><code>draft_forward</code></dt><dd>The cheap recursive proposal phase using draft-produced features after its seed.</dd></div>
   <div class="glossary-item"><dt><code>draft_extend</code></dt><dd>The reconciliation pass that consumes target-produced features and refreshes committed draft state.</dd></div>
@@ -829,6 +1037,9 @@ pre {
   <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/models/deepseek_nextn.py">NextN model construction and forward</a>: shared embedding, <code>enorm</code>, <code>hnorm</code>, <code>eh_proj</code>, one DSA/MLA sparse decoder, shared-head norm, and the target LM head.</li>
   <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/models/deepseek_common/deepseek_weight_loader.py">NextN weight remap</a>: checkpoint layer 78 becomes the draft decoder while embedding and LM-head weights are shared.</li>
   <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/eagle_worker_v2.py">EAGLE worker lifecycle</a>: recursive <code>draft_forward</code>, selection-only final step, target verification handoff, fixed-width <code>draft_extend</code>, and selected-row seed.</li>
+  <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/spec_utils.py">Draft proposal distribution</a> and <a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/eagle_worker_v2.py">proposal plumbing</a>: temperature-scaled draft probabilities, full-distribution sampling, and per-step <span class="sym sym-draft math-var">q</span> retention when rejection sampling is enabled.</li>
+  <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/eagle_utils.py">Verifier dispatch</a> and <a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/reject_sampling.py">classic chain kernel</a>: target distribution construction, ratio acceptance, and positive-residual correction.</li>
+  <li><a href="https://arxiv.org/abs/2302.01318">Speculative sampling paper</a>: the modified rejection-sampling algorithm that preserves the target distribution while accepting proposal-model tokens in parallel.</li>
   <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/base_spec_worker.py">Draft-extend batch preparation</a>: fixed per-request width and hidden-state capture boundary.</li>
   <li><a href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-pp4-tp8-realtrace-natural-output-acceptance/?commit=f7b8d0d#eagle-runtime">Runtime companion report</a>: the measured acceptance timeline and phase-level behavior for the profiled GB300 run.</li>
 </ul>
