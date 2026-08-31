@@ -3,402 +3,306 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Reviewer evidence for aligning the SGLang EAGLE rejection-sampling draft proposal with request top-p: a controlled 10,000-request GLM-5.2 experiment on NVIDIA GB300.">
+  <meta name="description" content="Compact reviewer evidence for GLM-5.2 EAGLE draft top-p alignment on NVIDIA GB300.">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-eagle314-top-p-rejection-ab-20260828/">
   <link rel="icon" href="data:,">
-  <title>EAGLE draft top-p alignment · 10,000-request GB300 evidence</title>
+  <title>EAGLE draft top-p alignment · reviewer evidence</title>
   <style>
     :root {
       color-scheme: light;
       --ink: #172033;
-      --muted: #637087;
-      --paper: #ffffff;
-      --canvas: #f2f5f8;
-      --soft: #f6f8fb;
-      --line: #dce4ed;
-      --blue: #2356c7;
-      --blue-soft: #eaf1ff;
-      --green: #0e7858;
-      --green-soft: #e8f7f0;
-      --amber: #9b6108;
-      --amber-soft: #fff4dc;
-      --red: #b33751;
-      --red-soft: #fff0f3;
-      --shadow: 0 18px 54px rgb(25 40 70 / 8%);
+      --muted: #667085;
+      --paper: #fff;
+      --canvas: #f3f5f8;
+      --line: #dce2ea;
+      --soft: #f7f9fb;
+      --green: #087557;
+      --green-soft: #e9f7f1;
+      --red: #a83b52;
+      --blue: #2457c5;
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
     body {
       margin: 0;
       background: var(--canvas);
       color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
+      font-size: 14px;
+      line-height: 1.45;
     }
-    a { color: #174ebf; text-underline-offset: 3px; }
-    code {
-      border: 1px solid #dbe4ef;
-      border-radius: 5px;
-      background: #f3f6fa;
-      padding: .12em .38em;
-      color: #334155;
-      font: .88em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      overflow-wrap: anywhere;
-    }
-    .skip-link {
-      position: absolute;
-      top: -48px;
-      left: 16px;
-      z-index: 100;
-      border-radius: 7px;
-      background: var(--ink);
-      padding: 8px 12px;
-      color: #fff;
-      font-weight: 800;
-      text-decoration: none;
-    }
-    .skip-link:focus { top: 10px; }
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      display: flex;
-      min-height: 52px;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      border-bottom: 1px solid rgb(220 228 237 / 90%);
-      background: rgb(255 255 255 / 92%);
-      padding: 9px clamp(16px, 3vw, 44px);
-      backdrop-filter: blur(14px);
-    }
-    .brand { color: var(--ink); font-size: 13px; font-weight: 850; text-decoration: none; }
-    .topmeta { color: var(--muted); font-size: 12px; font-weight: 650; text-align: right; }
-    .page { width: min(1500px, 100%); margin: auto; padding: clamp(18px, 2.8vw, 44px); }
-    .hero {
-      position: relative;
+    a { color: var(--blue); text-underline-offset: 3px; }
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 28px auto;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: 0 16px 48px rgb(28 42 66 / 7%);
       overflow: hidden;
-      border: 1px solid #dbe4ef;
-      border-radius: 25px;
-      background: linear-gradient(135deg, #fff 0%, #f8faff 62%, #edf3ff 100%);
-      padding: clamp(28px, 4.2vw, 62px);
-      box-shadow: var(--shadow);
     }
-    .hero::after {
-      position: absolute;
-      top: -155px;
-      right: -95px;
-      width: 350px;
-      height: 350px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgb(35 86 199 / 16%), transparent 68%);
-      content: "";
-      pointer-events: none;
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
+      gap: 30px;
+      align-items: end;
+      padding: 30px 34px 27px;
+      background: linear-gradient(135deg, #fff 20%, #f4f8ff);
+      border-bottom: 1px solid var(--line);
     }
     .eyebrow {
-      margin: 0 0 10px;
+      margin: 0 0 7px;
       color: var(--blue);
-      font-size: 12px;
-      font-weight: 850;
-      letter-spacing: .11em;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .1em;
       text-transform: uppercase;
     }
-    h1, h2, h3 { color: var(--ink); line-height: 1.15; }
-    h1 { max-width: 1080px; margin: 0; font-size: clamp(34px, 5vw, 68px); letter-spacing: -.045em; }
-    h2 { margin: 0 0 8px; font-size: clamp(24px, 2.7vw, 36px); letter-spacing: -.027em; }
-    h3 { margin: 21px 0 7px; font-size: 18px; letter-spacing: -.012em; }
-    p { margin: 9px 0; }
-    .lede { max-width: 1000px; margin-top: 20px; color: #526179; font-size: clamp(16px, 1.55vw, 21px); }
-    .verdict {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 14px;
-      max-width: 1120px;
-      margin-top: 25px;
-      border: 1px solid #b9e1cf;
-      border-radius: 15px;
+    h1 {
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(28px, 4vw, 45px);
+      line-height: 1.05;
+      letter-spacing: -.04em;
+    }
+    .purpose {
+      margin: 12px 0 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .result {
+      border: 1px solid #b9dfcf;
+      border-radius: 13px;
       background: var(--green-soft);
-      padding: 18px 20px;
+      padding: 17px 19px;
     }
-    .verdict-mark { color: var(--green); font-size: 25px; font-weight: 900; line-height: 1.1; }
-    .verdict strong { color: #095e45; }
-    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-top: 22px; }
-    .metric { border: 1px solid var(--line); border-radius: 14px; background: rgb(255 255 255 / 86%); padding: 17px; }
-    .metric .value { font-size: clamp(22px, 2.15vw, 34px); font-weight: 850; letter-spacing: -.035em; }
-    .metric .label { margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 700; }
-    .layout { display: grid; grid-template-columns: 238px minmax(0, 1fr); gap: 28px; margin-top: 30px; align-items: start; }
-    nav { position: sticky; top: 74px; border: 1px solid var(--line); border-radius: 15px; background: var(--paper); padding: 16px; }
-    nav .title { margin: 0 0 8px; color: #37445a; font-size: 11px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
-    nav a { display: block; border-radius: 7px; padding: 7px 8px; color: #536178; font-size: 13px; font-weight: 650; text-decoration: none; }
-    nav a:hover, nav a:focus-visible { background: var(--blue-soft); color: #174ebf; }
-    main { min-width: 0; }
-    section {
-      scroll-margin-top: 72px;
-      margin-bottom: 24px;
+    .result .delta {
+      color: var(--green);
+      font-size: 34px;
+      font-weight: 850;
+      letter-spacing: -.04em;
+      line-height: 1;
+    }
+    .result .label {
+      margin-top: 7px;
+      color: #285e4e;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    main { padding: 24px 34px 26px; }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      letter-spacing: -.01em;
+    }
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 23px;
+    }
+    .setting {
+      min-width: 0;
       border: 1px solid var(--line);
-      border-radius: 19px;
-      background: var(--paper);
-      padding: clamp(21px, 3vw, 34px);
-      box-shadow: 0 10px 32px rgb(35 50 78 / 5%);
+      border-radius: 9px;
+      background: var(--soft);
+      padding: 10px 12px;
     }
-    .section-lede { max-width: 1050px; color: var(--muted); }
-    .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
-    .mini { border: 1px solid var(--line); border-radius: 13px; background: var(--soft); padding: 17px 18px; }
-    .mini h3 { margin: 0 0 6px; }
-    .callout { margin: 17px 0; border-left: 4px solid var(--blue); border-radius: 9px; background: var(--blue-soft); padding: 16px 18px; }
-    .callout.good { border-color: var(--green); background: var(--green-soft); }
-    .callout.warn { border-color: #d08a19; background: var(--amber-soft); }
-    .callout.bad { border-color: var(--red); background: var(--red-soft); }
-    .table-wrap { overflow: auto; margin-top: 15px; border: 1px solid var(--line); border-radius: 12px; }
-    table { width: 100%; min-width: 820px; border-collapse: collapse; background: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
-    th, td { border-bottom: 1px solid #e7edf4; padding: 11px 12px; text-align: right; vertical-align: top; white-space: nowrap; }
-    th:first-child, td:first-child { text-align: left; }
-    thead th { position: sticky; top: 0; z-index: 1; background: #f3f6fa; color: #49576c; font-size: 11px; letter-spacing: .025em; text-transform: uppercase; }
-    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
-    tbody tr:hover { background: #fafcff; }
-    .sub { margin-top: 4px; color: var(--muted); font-size: 11px; font-weight: 550; white-space: normal; }
-    .tag { display: inline-flex; border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 850; letter-spacing: .02em; }
-    .tag.control { background: #edf1f6; color: #526075; }
-    .tag.stock { background: var(--red-soft); color: #9d2b44; }
-    .tag.patch { background: var(--green-soft); color: #086248; }
-    .positive { color: var(--green); font-weight: 850; }
-    .negative { color: var(--red); font-weight: 850; }
-    .result-bars { margin-top: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--soft); padding: 18px; }
-    .result-row { display: grid; grid-template-columns: 220px minmax(180px, 1fr) 88px; gap: 12px; align-items: center; }
-    .result-row + .result-row { margin-top: 13px; }
-    .result-label { font-size: 13px; font-weight: 750; }
-    .track { height: 13px; overflow: hidden; border-radius: 999px; background: #e1e7ef; }
-    .track span { display: block; height: 100%; border-radius: inherit; }
-    .track .baseline { background: #708099; }
-    .track .stock { background: #ca5b72; }
-    .track .patch { background: #18a277; }
-    .result-value { text-align: right; font-weight: 850; font-variant-numeric: tabular-nums; }
-    .formula {
-      overflow: auto;
-      margin: 16px 0;
-      border: 1px dashed #b6c8e0;
+    .setting span {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .setting strong {
+      display: block;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
       border-radius: 11px;
-      background: #f6f9fd;
-      padding: 15px 17px;
-      color: #263852;
-      font: 650 14px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    table {
+      width: 100%;
+      min-width: 790px;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid #e7ebf0;
+      text-align: right;
+      vertical-align: middle;
       white-space: nowrap;
     }
-    .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: stretch; margin-top: 17px; }
-    .flow-step { border: 1px solid var(--line); border-radius: 12px; background: var(--soft); padding: 15px; }
-    .flow-step strong { display: block; margin-bottom: 5px; }
-    .arrow { align-self: center; color: var(--blue); font-size: 22px; font-weight: 900; }
-    dl { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; margin: 16px 0 0; border-top: 1px solid var(--line); }
-    dt, dd { margin: 0; border-bottom: 1px solid var(--line); padding: 10px 8px; }
-    dt { color: #48566d; font-size: 13px; font-weight: 800; }
-    dd { min-width: 0; color: #344157; overflow-wrap: anywhere; }
-    ul, ol { padding-left: 22px; }
-    li + li { margin-top: 7px; }
-    .footer { padding: 4px 3px 24px; color: var(--muted); font-size: 12px; text-align: center; }
-    @media (max-width: 1050px) {
-      .layout { grid-template-columns: 1fr; }
-      nav { position: static; display: flex; gap: 4px; overflow: auto; }
-      nav .title { display: none; }
-      nav a { white-space: nowrap; }
-      .metrics { grid-template-columns: repeat(2, 1fr); }
+    th:first-child, td:first-child { text-align: left; }
+    thead th {
+      background: #f5f7fa;
+      color: #556176;
+      font-size: 10px;
+      letter-spacing: .045em;
+      text-transform: uppercase;
+    }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    tbody tr.patch { background: #f2faf6; }
+    .arm { font-size: 12px; font-weight: 800; }
+    .q {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 500;
+    }
+    .best { color: var(--green); font-weight: 850; }
+    .stock { color: var(--red); }
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 24px;
+      margin: 16px 0 0;
+      padding: 0;
+      color: var(--muted);
+      font-size: 11px;
+      list-style: none;
+    }
+    .notes li {
+      position: relative;
+      padding-left: 14px;
+    }
+    .notes li::before {
+      position: absolute;
+      left: 0;
+      color: #8994a5;
+      content: "•";
+    }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      border-top: 1px solid var(--line);
+      padding: 13px 34px;
+      color: var(--muted);
+      font-size: 10px;
     }
     @media (max-width: 760px) {
-      .page { padding: 12px; }
-      .topmeta { display: none; }
-      .hero { border-radius: 18px; padding: 25px 20px; }
-      .metrics, .grid2 { grid-template-columns: 1fr; }
-      .verdict { grid-template-columns: 1fr; }
-      section { border-radius: 15px; padding: 20px 16px; }
-      .result-row { grid-template-columns: 1fr 70px; }
-      .result-row .track { grid-column: 1 / -1; grid-row: 2; }
-      .flow { grid-template-columns: 1fr; }
-      .arrow { transform: rotate(90deg); justify-self: center; }
-      dl { grid-template-columns: 1fr; }
-      dt { border-bottom: 0; padding-bottom: 0; }
+      .page { width: min(100% - 20px, 1120px); margin: 10px auto; border-radius: 13px; }
+      header { grid-template-columns: 1fr; gap: 18px; padding: 23px 20px; }
+      main { padding: 20px; }
+      .settings, .notes { grid-template-columns: 1fr; }
+      table { min-width: 0; font-size: 11px; }
+      th, td { padding: 10px 8px; }
+      th:first-child { width: 58%; white-space: normal; }
+      th:nth-child(2), td:nth-child(2),
+      th:nth-child(3), td:nth-child(3),
+      th:nth-child(4), td:nth-child(4) { display: none; }
+      footer { padding: 13px 20px; flex-direction: column; gap: 4px; }
     }
     @media print {
-      .topbar, nav { display: none; }
-      .page { width: 100%; padding: 0; }
-      .layout { display: block; }
-      section, .hero { break-inside: avoid; box-shadow: none; }
+      @page { size: A4 landscape; margin: 10mm; }
+      body { background: #fff; }
+      .page {
+        width: 100%;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      header { padding: 18px 20px; }
+      main { padding: 17px 20px; }
+      footer { padding: 10px 20px; }
     }
   </style>
 </head>
 <body>
-  <a class="skip-link" href="#content">Skip to evidence</a>
-  <header class="topbar">
-    <a class="brand" href="../../">MaaS Docs · GLM-5.2 inference lab</a>
-    <div class="topmeta">Reviewer evidence · Taiguo GB300 · experiment 28 Aug 2026</div>
-  </header>
-
-  <div class="page">
-    <header class="hero">
-      <p class="eyebrow">SGLang merge-request evidence · exact rejection sampling</p>
-      <h1>Make the EAGLE draft proposal honor request top-p.</h1>
-      <p class="lede">A controlled 10,000-request GLM-5.2 replay compared rejection sampling off, stock rejection sampling with a temperature-only draft proposal, and a patched proposal that applies temperature followed by the request’s top-p cutoff.</p>
-      <div class="verdict">
-        <div class="verdict-mark" aria-hidden="true">✓</div>
-        <div><strong>Reviewer takeaway.</strong> The top-p-aware proposal reached <strong>81.5275%</strong> strict draft acceptance, improving <strong>2.7494 percentage points</strong> over stock rejection sampling on the same cohort. This supports the patch as an acceptance optimization. It does not, by itself, establish a throughput improvement.</div>
+  <article class="page">
+    <header>
+      <div>
+        <p class="eyebrow">Reviewer evidence · 28 August 2026</p>
+        <h1>EAGLE draft top-p alignment</h1>
+        <p class="purpose">One 10,000-request GLM-5.2 replay compared rejection sampling off, stock rejection sampling, and rejection sampling with top-p applied to the draft proposal.</p>
       </div>
-      <div class="metrics">
-        <div class="metric"><div class="value">+2.749 pp</div><div class="label">Patched rejection sampling versus stock rejection sampling</div></div>
-        <div class="metric"><div class="value">81.5275%</div><div class="label">Patched strict acceptance</div></div>
-        <div class="metric"><div class="value">9,985</div><div class="label">Valid rows per arm from 10,000 attempted</div></div>
-        <div class="metric"><div class="value">3 · 1 · 4</div><div class="label">EAGLE steps · top-k · draft tokens</div></div>
+      <div class="result">
+        <div class="delta">+2.7494 pp</div>
+        <div class="label">Patched versus stock rejection sampling<br>81.5275% strict draft acceptance</div>
       </div>
     </header>
 
-    <div class="layout">
-      <nav aria-label="Page sections">
-        <div class="title">On this page</div>
-        <a href="#decision">Reviewer decision</a>
-        <a href="#change">What changes</a>
-        <a href="#contract">Experiment contract</a>
-        <a href="#results">Raw results</a>
-        <a href="#correctness">Correctness invariant</a>
-        <a href="#audit">Audit & caveats</a>
-        <a href="#implementation">MR implementation</a>
-        <a href="#provenance">Reproducibility</a>
-      </nav>
+    <main>
+      <section aria-labelledby="settings-title">
+        <h2 id="settings-title">Fixed experiment settings</h2>
+        <div class="settings">
+          <div class="setting"><span>System</span><strong>GLM-5.2 · 4× NVIDIA GB300</strong></div>
+          <div class="setting"><span>Parallelism</span><strong>TP4 / DP1 / EP1 / PP1</strong></div>
+          <div class="setting"><span>EAGLE</span><strong>3 steps · top-k 1 · 4 draft tokens · thresholds 1 / 1</strong></div>
+          <div class="setting"><span>Sampling</span><strong>temperature 0.7 · top-p 0.7 · no top-k</strong></div>
+          <div class="setting"><span>Cohort</span><strong>Same 10,000 attempted · 9,985 valid · natural output</strong></div>
+          <div class="setting"><span>Execution</span><strong>80 client in flight · server max 96 · CUDA graph off</strong></div>
+        </div>
+      </section>
 
-      <main id="content">
-        <section id="decision">
-          <h2>1. Reviewer decision</h2>
-          <p class="section-lede">The evidence answers one narrow question: when the target request uses <code>temperature=0.7</code> and <code>top_p=0.7</code>, does applying the same top-p support restriction to EAGLE’s proposal distribution improve rejection-sampling acceptance?</p>
-          <div class="grid2">
-            <div class="mini"><h3>Supported</h3><p>Merge the proposal-alignment change behind the existing <code>--speculative-use-rejection-sampling</code> path. The strongest controlled comparison is patched rejection sampling versus stock rejection sampling: <span class="positive">+2.7494 pp</span>.</p></div>
-            <div class="mini"><h3>Not claimed</h3><p>No causal throughput result, no quality comparison, and no claim that stock rejection sampling is mathematically incorrect. The patch changes proposal efficiency, not the target distribution.</p></div>
-          </div>
-          <div class="callout good"><strong>Why the comparison is useful.</strong> The stock and patched rejection arms used the same request ordinals, source bytes, sampling fields, output controls, deterministic request seeds, EAGLE shape, thresholds, and healthy physical node for both shards.</div>
-        </section>
+      <section aria-labelledby="results-title">
+        <h2 id="results-title">Results</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Arm</th>
+                <th>Valid / attempted</th>
+                <th>Accepted drafts</th>
+                <th>Proposed drafts</th>
+                <th>Strict acceptance</th>
+                <th>Accept length</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row"><span class="arm">Rejection sampling off</span><span class="q">stock greedy proposal</span></th>
+                <td>9,985 / 10,000</td>
+                <td>2,729,247</td>
+                <td>3,391,914</td>
+                <td>80.4633%</td>
+                <td>3.41390</td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="arm">Stock rejection sampling</span><span class="q">temperature-only draft q</span></th>
+                <td>9,985 / 10,000</td>
+                <td>2,692,532</td>
+                <td>3,417,870</td>
+                <td class="stock">78.7781%</td>
+                <td>3.36334</td>
+              </tr>
+              <tr class="patch">
+                <th scope="row"><span class="arm">Patched rejection sampling</span><span class="q">temperature + request top-p draft q</span></th>
+                <td>9,985 / 10,000</td>
+                <td>2,911,592</td>
+                <td>3,571,302</td>
+                <td class="best">81.5275%</td>
+                <td class="best">3.44582</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-        <section id="change">
-          <h2>2. What changes</h2>
-          <p class="section-lede">The target side already applies temperature and top-p. Stock EAGLE rejection sampling temperature-scales the draft logits but leaves the draft proposal untruncated. The patch aligns the draft proposal’s support with the request.</p>
-          <div class="flow" aria-label="Draft proposal transformation">
-            <div class="flow-step"><strong>1 · Draft logits</strong><span>One vocabulary row from the EAGLE draft model.</span></div>
-            <div class="arrow" aria-hidden="true">→</div>
-            <div class="flow-step"><strong>2 · Temperature</strong><span>Compute softmax over draft logits divided by request temperature.</span></div>
-            <div class="arrow" aria-hidden="true">→</div>
-            <div class="flow-step"><strong>3 · Request top-p</strong><span>Keep the nucleus support, renormalize, sample from it, and retain that exact distribution.</span></div>
-          </div>
-          <div class="formula">stock q = softmax(draft_logits / T)<br>patched q = top_p_renorm(softmax(draft_logits / T), request_top_p)</div>
-          <div class="callout"><strong>Scope.</strong> This experiment had no request <code>top_k</code>. The proposed change aligns <code>top_p</code>; it does not add draft-side request top-k filtering.</div>
-        </section>
+        <ul class="notes">
+          <li>Strict acceptance is accepted draft tokens divided by proposed draft tokens; accept length includes the target bonus token.</li>
+          <li>The same 15 source HTTP 400 rows occurred in every arm and were excluded from the denominators.</li>
+          <li>Natural outputs differed across arms, so this experiment supports an acceptance claim, not a throughput claim.</li>
+          <li>Stock and patched rejection arms ran both shards on the same healthy node; the control used one valid shard from node 136 before its later Xid 31 fault.</li>
+        </ul>
+      </section>
+    </main>
 
-        <section id="contract">
-          <h2>3. Experiment contract</h2>
-          <p class="section-lede">Three arms replayed one fixed cohort. Each arm preserved natural source output limits and stop controls; no arm forced 128 output tokens.</p>
-          <dl>
-            <dt>Model and hardware</dt><dd>GLM-5.2 on one four-GPU NVIDIA GB300 tray per run; target and bundled draft model in ModelOpt FP4; FP8 E4M3 KV cache.</dd>
-            <dt>Parallelism</dt><dd>TP4 / DP1 / EP1 / PP1; DSA attention; EAGLE V2.</dd>
-            <dt>Speculative shape</dt><dd>3 draft steps, EAGLE top-k 1, 4 draft tokens; acceptance thresholds 1.0 / 1.0.</dd>
-            <dt>Request sampling</dt><dd>Temperature 0.7, top-p 0.7, no top-k, <code>n=1</code>.</dd>
-            <dt>Cohort</dt><dd>10,000 unique requests, split into two immutable 5,000-request shards; full cohort SHA-256 <code>c7e27c6e837ce7324a89c0346aec2395f1165a099ca9f8bef747c50158baeca6</code>.</dd>
-            <dt>Concurrency</dt><dd>Client maximum 80 in flight; server maximum 96 running requests; no retries.</dd>
-            <dt>Output policy</dt><dd>Natural output length and source stop controls preserved; response text discarded after metric extraction.</dd>
-            <dt>Runtime</dt><dd>Image <code>e747dd98-dynamo-0.5.14-sglang-0824-egm</code>; SGLang commit <code>ef7977e8cfde37fa0d82ea48165c800b65276975</code>.</dd>
-            <dt>Attention and cache</dt><dd>DSA backend, 8,192-token chunked prefill, page size 64, static memory fraction 0.85.</dd>
-            <dt>CUDA graph</dt><dd><strong>Disabled for all three A/B arms.</strong> This removes graph-shape behavior as an experimental variable.</dd>
-            <dt>Seeds</dt><dd>Server seed <code>20260828</code>; deterministic per-request seed base <code>202608280</code>, identical by request ordinal across arms.</dd>
-          </dl>
-        </section>
-
-        <section id="results">
-          <h2>4. Raw results</h2>
-          <p class="section-lede">Strict acceptance is aggregate accepted draft tokens divided by aggregate proposed draft tokens. “Accept length” includes the one target bonus token emitted per verification.</p>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Arm</th><th>Attempted</th><th>Valid</th><th>Correct drafts</th><th>Proposed drafts</th><th>Strict acceptance</th><th>Accept length</th></tr></thead>
-              <tbody>
-                <tr><th scope="row">RS off · stock greedy proposal<div class="sub"><span class="tag control">control</span></div></th><td>10,000</td><td>9,985</td><td>2,729,247</td><td>3,391,914</td><td>80.4633%</td><td>3.41390</td></tr>
-                <tr><th scope="row">RS on · stock temperature-only q<div class="sub"><span class="tag stock">stock rejection</span></div></th><td>10,000</td><td>9,985</td><td>2,692,532</td><td>3,417,870</td><td>78.7781%</td><td>3.36334</td></tr>
-                <tr><th scope="row">RS on · temperature + top-p q<div class="sub"><span class="tag patch">proposed patch</span></div></th><td>10,000</td><td>9,985</td><td>2,911,592</td><td>3,571,302</td><td><strong>81.5275%</strong></td><td><strong>3.44582</strong></td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="result-bars" role="img" aria-label="Strict acceptance: rejection off 80.4633 percent, stock rejection 78.7781 percent, patched rejection 81.5275 percent">
-            <div class="result-row"><div class="result-label">RS off · control</div><div class="track"><span class="baseline" style="width:80.4633%"></span></div><div class="result-value">80.4633%</div></div>
-            <div class="result-row"><div class="result-label">RS on · stock q</div><div class="track"><span class="stock" style="width:78.7781%"></span></div><div class="result-value">78.7781%</div></div>
-            <div class="result-row"><div class="result-label">RS on · top-p-aware q</div><div class="track"><span class="patch" style="width:81.5275%"></span></div><div class="result-value">81.5275%</div></div>
-          </div>
-
-          <div class="grid2">
-            <div class="mini"><h3>Primary delta</h3><p><span class="positive">+2.7494 percentage points</span>: patched rejection sampling minus stock rejection sampling.</p></div>
-            <div class="mini"><h3>Secondary delta</h3><p><span class="positive">+1.0641 percentage points</span>: patched rejection sampling minus rejection sampling off.</p></div>
-            <div class="mini"><h3>Stock behavior</h3><p><span class="negative">−1.6853 percentage points</span>: stock rejection sampling minus rejection sampling off.</p></div>
-            <div class="mini"><h3>Raw-only reporting</h3><p>No bootstrap interval or hypothesis-test result is attached. The page reports the 9,985 valid rows and exact aggregate counters directly.</p></div>
-          </div>
-          <div class="callout warn"><strong>Do not infer throughput from these wall times.</strong> Natural generation followed different stochastic trajectories: aggregate completion-token totals were 3,860,850, 3,832,815, and 4,103,031. That changes the amount of work per arm.</div>
-        </section>
-
-        <section id="correctness">
-          <h2>5. Correctness invariant</h2>
-          <p class="section-lede">Rejection sampling remains exact for an arbitrary proposal distribution q, provided the verifier uses the exact same q that generated the proposal token.</p>
-          <div class="formula">sample X ~ q<br>accept X with probability min(1, p(X) / q(X))<br>if rejected, sample from normalize(max(p − q, 0))</div>
-          <ol>
-            <li>The patch computes q by applying request temperature and top-p to draft logits.</li>
-            <li>The draft token is sampled from that returned q.</li>
-            <li>The same q tensor is retained in <code>draft_probs</code>.</li>
-            <li>The verifier consumes that retained q for acceptance and residual recovery.</li>
-          </ol>
-          <div class="callout"><strong>Important distinction.</strong> Stock temperature-only q is not distributionally invalid. It is less aligned with the target’s top-p-truncated p, so more proposals can fall outside useful target support and be rejected. This MR optimizes acceptance while preserving the exact-q invariant.</div>
-          <h3>GPU semantic validation</h3>
-          <p>The isolated GB300 patch was checked against an independent reference calculation on three nontrivial rows: exact match reported true; row sums were 1.0, 0.99999994, and 1.0; retained support sizes were 3, 3, and 1. The current MR implementation was also checked on an NVIDIA H20: maximum absolute error <code>7.45e-9</code> and maximum row-sum error <code>1.19e-7</code>.</p>
-        </section>
-
-        <section id="audit">
-          <h2>6. Audit trail and caveats</h2>
-          <div class="grid2">
-            <div class="mini"><h3>Pairing</h3><p>All arms used the same 10,000 request ordinals. Metadata mismatch count was zero, source shard hashes matched, and all request seeds matched by ordinal.</p></div>
-            <div class="mini"><h3>Invalid rows</h3><p>Exactly 15 rows returned source-level HTTP 400 in every arm. Their ordinals and safe fingerprints matched and they were excluded from speculative denominators.</p></div>
-            <div class="mini"><h3>Privacy</h3><p>The replay output retained aggregate and per-request metrics, but did not persist prompts, tools, source IDs, generated response text, or raw errors.</p></div>
-            <div class="mini"><h3>Hardware rescue</h3><p>Node 136 developed repeatable NVIDIA Xid 31 faults after its valid baseline shard. Stock and patched comparison shards were rerun from scratch on healthy node 131.</p></div>
-          </div>
-          <div class="callout good"><strong>Core comparison survives the rescue.</strong> Stock rejection and patched rejection ran on the same healthy physical node for both shards. The partially cross-node caveat applies to comparisons against the rejection-off control, not to the primary +2.7494 pp stock-versus-patch result.</div>
-          <div class="callout warn"><strong>Version boundary.</strong> The 10,000-request A/B used runtime commit <code>ef7977e8…</code> and a narrowly injected two-file patch. The merge request ports the same proposal semantics onto <code>dev</code> at base <code>83b71ad65…</code>, where proposal helper and multi-layer graph paths have since evolved.</div>
-        </section>
-
-        <section id="implementation">
-          <h2>7. Merge-request implementation and tests</h2>
-          <p class="section-lede">The current change applies the proven transformation across the proposal paths present on today’s <code>dev</code>, without touching the non-rejection proposal behavior.</p>
-          <ul>
-            <li>Apply temperature then per-request top-p in <code>renorm_draft_probs</code>.</li>
-            <li>Make <code>sample_draft_proposal</code> sample and return the same top-p-renormalized q.</li>
-            <li>Carry top-p through standard EAGLE CUDA-graph static inputs and replay copies.</li>
-            <li>Carry top-p through multi-layer EAGLE’s single-graph in-graph proposal path.</li>
-            <li>Keep rejection sampling off on the original plain-softmax path.</li>
-          </ul>
-          <dl>
-            <dt>Branch</dt><dd><code>fix/eagle-rejection-top-p-draft-q</code></dd>
-            <dt>Commit</dt><dd><code>0eb295077357184f6cc02bb0bccbba94f0533ecc</code></dd>
-            <dt>Focused unit tests</dt><dd>7 passed: top-p proposal semantics, exact sampled/stashed q identity, non-rejection behavior, and CUDA-graph replay parameter copies.</dd>
-            <dt>Changed-file checks</dt><dd>Python AST, isort, ruff, Black, codespell, merge-conflict, private-key, and related pre-commit checks passed.</dd>
-            <dt>Known repository check</dt><dd>The repository-wide registered-test validator reports two pre-existing unrelated files: <code>test_spec_anomaly.py</code> and <code>test_hicache_layer_split_storage.py</code>. The new test is registered.</dd>
-          </dl>
-          <div class="callout warn"><strong>Graph evidence boundary.</strong> The A/B intentionally disabled CUDA graphs. Graph parameter propagation is covered by a focused regression test, and the probability kernel is GPU-validated, but this report does not claim a full GB300 graph-enabled throughput run of the final <code>dev</code> patch.</div>
-        </section>
-
-        <section id="provenance">
-          <h2>8. Reproducibility and provenance</h2>
-          <p class="section-lede">The accompanying machine-readable record contains the controlled settings, aggregate counters, pairing checks, shard locations, hashes, and validation boundaries without exposing request content.</p>
-          <dl>
-            <dt>Machine-readable evidence</dt><dd><a href="report-data.json">report-data.json</a></dd>
-            <dt>Experiment date</dt><dd>28 August 2026</dd>
-            <dt>Experiment root</dt><dd><code>benchmark-results/glm52-eagle314-gb300-t07p07-10k-20260828</code></dd>
-            <dt>Patch manifest SHA-256</dt><dd><code>2d5ac0211da272fd8e57f76745cacfd61a79579a82912e4e291a49b24822f911</code></dd>
-            <dt>Shard 0 SHA-256</dt><dd><code>d37767d8eacce1ea026d7af20e53520be84c9527bbec5f8324ad0d78a9aeb8c4</code></dd>
-            <dt>Shard 1 SHA-256</dt><dd><code>6fbf87fe39be788853fcf87bf2dca22a9b5e464e042929a82bc61fff7ca3d17c</code></dd>
-          </dl>
-          <p>For review, use the patched-versus-stock rejection comparison as the primary result; use the rejection-off arm only as contextual control.</p>
-        </section>
-      </main>
-    </div>
-
-    <footer class="footer">MaaS Docs · reviewer evidence pack · generated from preserved experiment artifacts</footer>
-  </div>
+    <footer>
+      <span>Compact reviewer sheet · experiment artifacts preserved</span>
+      <a href="report-data.json">Raw machine-readable record</a>
+    </footer>
+  </article>
 </body>
 </html>
