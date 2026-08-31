@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "title": "GLM-5.2 GB300 EAGLE 3-1-4 top-p-aware rejection-sampling A/B",
+  "experiment_date": "2026-08-28",
+  "review_claim": {
+    "primary_comparison": "top-p-aware rejection sampling minus stock rejection sampling",
+    "delta_percentage_points": 2.7493959509782826,
+    "scope": "acceptance optimization only",
+    "throughput_claim": false
+  },
+  "design": {
+    "attempted_requests_per_arm": 10000,
+    "valid_requests_per_arm": 9985,
+    "full_cohort_sha256": "c7e27c6e837ce7324a89c0346aec2395f1165a099ca9f8bef747c50158baeca6",
+    "shards": [
+      {
+        "offset": 0,
+        "records": 5000,
+        "sha256": "d37767d8eacce1ea026d7af20e53520be84c9527bbec5f8324ad0d78a9aeb8c4"
+      },
+      {
+        "offset": 5000,
+        "records": 5000,
+        "sha256": "6fbf87fe39be788853fcf87bf2dca22a9b5e464e042929a82bc61fff7ca3d17c"
+      }
+    ],
+    "sampling": {
+      "temperature": 0.7,
+      "top_p": 0.7,
+      "top_k": "missing",
+      "n": 1
+    },
+    "speculative_shape": {
+      "steps": 3,
+      "eagle_topk": 1,
+      "draft_tokens": 4,
+      "threshold_single": 1.0,
+      "threshold_acc": 1.0
+    },
+    "parallelism": "TP4 / DP1 / EP1 / PP1",
+    "hardware": "4 x NVIDIA GB300",
+    "target_quantization": "ModelOpt FP4",
+    "draft_quantization": "ModelOpt FP4",
+    "kv_cache_dtype": "FP8 E4M3",
+    "attention_backend": "DSA",
+    "chunked_prefill_tokens": 8192,
+    "client_max_inflight": 80,
+    "server_max_running_requests": 96,
+    "cuda_graph_enabled": false,
+    "natural_output_controls": true,
+    "retries": 0,
+    "server_seed": 20260828,
+    "request_seed_base": 202608280,
+    "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime:e747dd98-dynamo-0.5.14-sglang-0824-egm",
+    "runtime_commit": "ef7977e8cfde37fa0d82ea48165c800b65276975"
+  },
+  "arms": {
+    "rejection_off": {
+      "description": "stock greedy draft proposal",
+      "attempted": 10000,
+      "valid": 9985,
+      "correct_drafts": 2729247,
+      "proposed_drafts": 3391914,
+      "strict_acceptance_pct": 80.46333132266915,
+      "accept_length_including_bonus": 3.4138999396800744,
+      "completion_tokens": 3860850
+    },
+    "stock_rejection": {
+      "description": "temperature-only draft q",
+      "attempted": 10000,
+      "valid": 9985,
+      "correct_drafts": 2692532,
+      "proposed_drafts": 3417870,
+      "strict_acceptance_pct": 78.77806938239313,
+      "accept_length_including_bonus": 3.363342081471794,
+      "completion_tokens": 3832815
+    },
+    "top_p_aware_rejection": {
+      "description": "temperature followed by request top-p draft q",
+      "attempted": 10000,
+      "valid": 9985,
+      "correct_drafts": 2911592,
+      "proposed_drafts": 3571302,
+      "strict_acceptance_pct": 81.52746533337141,
+      "accept_length_including_bonus": 3.4458239600011424,
+      "completion_tokens": 4103031
+    }
+  },
+  "deltas_percentage_points": {
+    "stock_rejection_minus_rejection_off": -1.6852619402760212,
+    "top_p_aware_minus_stock_rejection": 2.7493959509782826,
+    "top_p_aware_minus_rejection_off": 1.0641340107022614
+  },
+  "validation": {
+    "same_10000_ordinals_all_arms": true,
+    "metadata_mismatch_count_all_arms": 0,
+    "same_failure_fingerprints_all_arms": true,
+    "source_http_400_rows_per_arm": 15,
+    "all_valid_rows_obey_three_proposals_per_verify": true,
+    "all_rows_have_expected_seed": true,
+    "natural_output_limits_preserved": true,
+    "natural_stop_controls_preserved": true,
+    "gb300_probability_reference": {
+      "status": "passed",
+      "exact_match_to_reference": true,
+      "row_sums": [1.0, 0.9999999403953552, 1.0],
+      "support_sizes": [3, 3, 1]
+    },
+    "current_mr_h20_probability_reference": {
+      "max_abs_error": 7.450580596923828e-9,
+      "max_row_sum_error": 1.1920928955078125e-7
+    },
+    "focused_unit_tests": "7 passed"
+  },
+  "hardware_caveat": {
+    "event": "repeatable NVIDIA Xid 31 on gpu-worker-gb300-136 after its valid baseline shard",
+    "recovery": "both shard-1 rejection arms rerun from scratch on healthy gpu-worker-gb300-131",
+    "primary_stock_vs_patch_same_physical_node_for_both_shards": true
+  },
+  "patch_provenance": {
+    "experiment_patch_sha256": "2d5ac0211da272fd8e57f76745cacfd61a79579a82912e4e291a49b24822f911",
+    "mr_base_commit": "83b71ad65aaed52facaf8e54a050469ba9105541",
+    "mr_branch": "fix/eagle-rejection-top-p-draft-q",
+    "mr_commit": "0eb295077357184f6cc02bb0bccbba94f0533ecc"
+  },
+  "privacy": {
+    "prompts_written": false,
+    "tools_written": false,
+    "source_ids_written": false,
+    "response_text_written": false,
+    "raw_errors_written": false
+  }
+}
