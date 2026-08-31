@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A production evidence audit of GLM-5.3 DPA rank routing on Taiguo GB300: running requests, decode queues, router state, modeled score, and physical KV headroom.">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm53-taiguo-dpa-routing-balance-audit/">
+  <link rel="icon" href="data:,">
+  <title>Does online DPA routing actually balance the ranks?</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ground: #f3f6f8;
+      --paper: #ffffff;
+      --ink: #18212b;
+      --muted: #5f6c78;
+      --line: #d3dde3;
+      --soft: #edf2f5;
+      --navy: #254e70;
+      --navy-soft: #e4edf4;
+      --teal: #0f766e;
+      --teal-soft: #dcefeb;
+      --violet: #6d55a3;
+      --violet-soft: #ece7f5;
+      --amber: #a06000;
+      --amber-soft: #f8ecd8;
+      --red: #a43b36;
+      --red-soft: #f5e4e2;
+      --green: #26734d;
+      --shadow: 0 10px 26px rgb(26 42 55 / 7%);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.58;
+    }
+    a { color: #175f9d; text-underline-offset: 3px; }
+    a:hover { color: #0c416f; }
+    code, .mono {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .93em;
+      overflow-wrap: anywhere;
+    }
+    .skip-link {
+      position: absolute;
+      top: -52px;
+      left: 16px;
+      z-index: 20;
+      border-radius: 6px;
+      background: var(--ink);
+      color: white;
+      padding: 8px 12px;
+    }
+    .skip-link:focus { top: 12px; }
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      background: rgb(255 255 255 / 96%);
+    }
+    .topbar-inner {
+      width: min(1440px, calc(100% - 40px));
+      min-height: 54px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .brand { color: var(--ink); font-weight: 850; text-decoration: none; }
+    .toplinks { display: flex; flex-wrap: wrap; gap: 17px; font-size: 14px; }
+    .hero { border-bottom: 1px solid var(--line); background: var(--paper); }
+    .hero-inner { width: min(1190px, calc(100% - 40px)); margin: 0 auto; padding: 48px 0 40px; }
+    .eyebrow { color: var(--teal); font-size: 12px; font-weight: 860; letter-spacing: .08em; text-transform: uppercase; }
+    h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: -.018em; }
+    h1 { max-width: 980px; margin-top: 10px; font-size: clamp(34px, 4.5vw, 51px); }
+    h2 { margin-bottom: 15px; font-size: clamp(25px, 3vw, 31px); }
+    h3 { font-size: 19px; }
+    p { margin: 10px 0 0; }
+    .lede { max-width: 930px; color: var(--muted); font-size: 18px; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 21px; }
+    .pill {
+      display: inline-flex;
+      min-height: 30px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .layout {
+      width: min(1440px, calc(100% - 40px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 228px minmax(0, 1fr);
+      gap: 40px;
+      padding: 36px 0 76px;
+    }
+    .toc {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      border-left: 3px solid var(--line);
+      padding-left: 16px;
+    }
+    .toc-title { margin: 0 0 9px; color: var(--muted); font-size: 12px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+    .toc a { display: block; padding: 5px 0; color: #485866; font-size: 14px; text-decoration: none; }
+    .toc a:hover { color: var(--teal); }
+    article { min-width: 0; }
+    section { scroll-margin-top: 18px; }
+    section + section { margin-top: 55px; }
+    .section-intro { max-width: 930px; color: var(--muted); }
+    .verdict {
+      border-top: 4px solid var(--teal);
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 24px 26px;
+    }
+    .verdict strong { color: var(--teal); }
+    .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-top: 18px; }
+    .metric {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .metric-value { color: var(--navy); font-size: 29px; font-weight: 860; line-height: 1.08; font-variant-numeric: tabular-nums; }
+    .metric-value.good { color: var(--teal); }
+    .metric-value.warn { color: var(--amber); }
+    .metric-value.bad { color: var(--red); }
+    .metric-label { margin-top: 7px; font-weight: 780; }
+    .metric-note { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .lens-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-top: 20px; }
+    .lens { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 16px; }
+    .lens.yes { border-top: 4px solid var(--teal); }
+    .lens.no { border-top: 4px solid var(--red); }
+    .lens.partial { border-top: 4px solid var(--amber); }
+    .lens.unknown { border-top: 4px solid var(--violet); }
+    .lens-answer { margin-top: 7px; font-size: 20px; font-weight: 850; }
+    .lens p { color: var(--muted); font-size: 13px; }
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 13px;
+      align-items: stretch;
+      margin-top: 22px;
+    }
+    .flow-step { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 17px; }
+    .flow-kicker { color: var(--muted); font-size: 11px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+    .flow-title { margin-top: 4px; font-size: 18px; font-weight: 840; }
+    .flow-step p { color: var(--muted); font-size: 13px; }
+    .flow-arrow { align-self: center; color: #8b99a5; font-size: 24px; }
+    .callout { margin-top: 20px; border-left: 4px solid var(--amber); background: var(--amber-soft); padding: 15px 18px; }
+    .callout.teal { border-left-color: var(--teal); background: var(--teal-soft); }
+    .callout.red { border-left-color: var(--red); background: var(--red-soft); }
+    .chart-card { margin-top: 22px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); box-shadow: var(--shadow); padding: 20px; }
+    .chart-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+    .chart-note { color: var(--muted); font-size: 13px; text-align: right; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; color: var(--muted); font-size: 12px; }
+    .legend-item::before { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; background: var(--legend-color); content: ""; }
+    .rank-chart { display: grid; gap: 11px; margin-top: 17px; }
+    .rank-row { display: grid; grid-template-columns: 58px minmax(220px, 1fr) 198px; gap: 12px; align-items: center; }
+    .rank-label { color: #42515d; font-weight: 820; }
+    .bar-track { position: relative; height: 25px; border: 1px solid var(--line); background: #f4f7f8; overflow: hidden; }
+    .bar-stack { display: flex; height: 100%; }
+    .bar-seg { height: 100%; min-width: 0; }
+    .seg-running { background: var(--navy); }
+    .seg-prealloc { background: var(--amber); }
+    .seg-transfer { background: var(--violet); }
+    .seg-blocks { background: var(--navy); }
+    .seg-requests { background: var(--violet); }
+    .bar-value { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .bar-value strong { color: var(--ink); }
+    .vector-grid { display: grid; gap: 8px; margin-top: 17px; }
+    .vector-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+    .vector-label { color: var(--muted); font-size: 13px; font-weight: 760; }
+    .vector { border: 1px solid var(--line); border-radius: 6px; background: var(--soft); padding: 7px 9px; font: 680 13px/1.4 "SFMono-Regular", Consolas, monospace; overflow-wrap: anywhere; }
+    .equation-block { margin-top: 20px; border-left: 4px solid var(--teal); background: var(--soft); padding: 16px 18px; }
+    .equation-row { display: grid; grid-template-columns: minmax(180px, .65fr) 26px minmax(0, 2fr); gap: 9px; align-items: baseline; font-family: Cambria, Georgia, serif; font-size: clamp(17px, 2vw, 21px); }
+    .equation-row + .equation-row { margin-top: 8px; }
+    .equals { color: #87949f; text-align: center; }
+    .shape-note { color: var(--muted); font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; }
+    .math-var { font-family: Cambria, Georgia, serif; font-style: italic; }
+    .math-fn { font-family: Cambria, Georgia, serif; font-style: normal; }
+    .sym-blocks { color: var(--navy); }
+    .sym-requests { color: var(--violet); }
+    .sym-added { color: var(--amber); }
+    .table-wrap { margin-top: 22px; overflow-x: auto; border: 1px solid var(--line); background: var(--paper); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 11px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--soft); color: #42515d; font-size: 11px; letter-spacing: .035em; text-transform: uppercase; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover td { background: #f8fafb; }
+    .score-total { color: var(--teal); font-weight: 830; }
+    .kv-chart { display: grid; gap: 11px; margin-top: 18px; }
+    .kv-row { display: grid; grid-template-columns: 58px minmax(230px, 1fr) 176px; gap: 12px; align-items: center; }
+    .capacity-track { position: relative; height: 26px; border: 1px solid var(--line); background: #eff3f5; overflow: hidden; }
+    .capacity-used { height: 100%; background: var(--navy); }
+    .capacity-used.hot { background: var(--red); }
+    .threshold-line { position: absolute; top: 0; bottom: 0; left: 93%; border-left: 2px dashed var(--amber); }
+    .kv-value { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .kv-value strong { color: var(--ink); }
+    .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 22px; }
+    .comparison { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 20px; }
+    .comparison.micro { border-top: 4px solid var(--violet); }
+    .comparison.online { border-top: 4px solid var(--teal); }
+    .rank-dots { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 16px; }
+    .rank-dot { min-height: 48px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 6px; background: var(--soft); color: var(--muted); font: 760 12px/1.2 "SFMono-Regular", Consolas, monospace; }
+    .rank-dot.busy { border-color: #b6a8d6; background: var(--violet-soft); color: #523c83; }
+    .rank-dot.online-busy { border-color: #9bcfc7; background: var(--teal-soft); color: #0b5d56; }
+    .comparison ul, .source-list, .limits { margin: 15px 0 0; padding-left: 22px; }
+    .comparison li + li, .source-list li + li, .limits li + li { margin-top: 7px; }
+    .verdict-table td:first-child { font-weight: 760; }
+    .answer-yes { color: var(--green); font-weight: 850; }
+    .answer-no { color: var(--red); font-weight: 850; }
+    .answer-mixed { color: var(--amber); font-weight: 850; }
+    .answer-unknown { color: var(--violet); font-weight: 850; }
+    details { margin-top: 16px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); }
+    summary { cursor: pointer; padding: 13px 15px; font-weight: 780; }
+    .details-body { border-top: 1px solid var(--line); padding: 0 15px 15px; }
+    pre { overflow-x: auto; border: 1px solid var(--line); background: #f5f8f9; padding: 13px; font-size: 12px; line-height: 1.5; }
+    footer { border-top: 1px solid var(--line); background: var(--paper); }
+    .footer-inner { width: min(1190px, calc(100% - 40px)); margin: 0 auto; padding: 26px 0 35px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 1050px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 13px 15px; }
+      .toc a { display: inline-block; margin-right: 15px; }
+      .metric-grid, .lens-grid { grid-template-columns: 1fr 1fr; }
+      .rank-row { grid-template-columns: 52px minmax(180px, 1fr) 175px; }
+    }
+    @media (max-width: 720px) {
+      .topbar-inner, .hero-inner, .layout, .footer-inner { width: min(100% - 24px, 1440px); }
+      .topbar-inner { align-items: flex-start; flex-direction: column; padding: 10px 0; }
+      .lede { font-size: 16px; }
+      .metric-grid, .lens-grid, .comparison-grid { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .flow-arrow { justify-self: center; transform: rotate(90deg); }
+      .rank-row, .kv-row { grid-template-columns: 47px minmax(150px, 1fr); }
+      .bar-value, .kv-value { grid-column: 2; }
+      .vector-row { grid-template-columns: 1fr; gap: 4px; }
+      .equation-row { grid-template-columns: 1fr; gap: 2px; }
+      .equals { display: none; }
+      .chart-card { padding: 15px; }
+      th, td { padding: 9px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to audit</a>
+  <nav class="topbar" aria-label="Pack navigation">
+    <div class="topbar-inner">
+      <a class="brand" href="../">MaaS Docs · Temporary analyses</a>
+      <div class="toplinks">
+        <a href="evidence.json">Evidence JSON</a>
+        <a href="../glm52-gb300-pp4-tp8-realtrace-natural-output-acceptance/#rank-running-requests">Earlier GLM-5.2 rank trace</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">Taiguo GB300 · GLM-5.3 online decode · DPA8 production snapshot</div>
+      <h1>Does online DPA routing actually balance the ranks?</h1>
+      <p class="lede">The alarming running-request vector is real—but incomplete. Once decode preallocation and transfer queues are restored, the request distribution is much closer to balanced. Once the router's active-block term is added, its own modeled base costs are almost flat. Physical KV headroom, however, remains sharply uneven.</p>
+      <div class="meta-row">
+        <span class="pill">2026-08-31 06:01:42 Beijing</span>
+        <span class="pill">decode group 3 · eight ranks</span>
+        <span class="pill">40 rank-level router candidates fleet-wide</span>
+        <span class="pill">read-only production audit</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout" id="main">
+    <aside class="toc" aria-label="Page overview">
+      <p class="toc-title">On this page</p>
+      <a href="#verdict">Verdict</a>
+      <a href="#ownership">Which layer routes?</a>
+      <a href="#pipeline">Running vs pipeline</a>
+      <a href="#router-score">Router score</a>
+      <a href="#kv-headroom">KV headroom</a>
+      <a href="#calibration">Calibration gap</a>
+      <a href="#decision">What is proven?</a>
+      <a href="#method">Evidence & method</a>
+    </aside>
+
+    <article>
+      <section id="verdict">
+        <div class="verdict">
+          <h2>Verdict</h2>
+          <p><strong>Yes, the snapshot substantially respects the deployed router's balancing objective.</strong> It does not equalize the visible running-request counts. It balances a broader state: active requests across the decode pipeline plus active KV blocks. Reconstructing that base score yields only <strong>1.30% coefficient of variation</strong> and a <strong>1.038×</strong> max/min ratio across the eight ranks.</p>
+          <p>That is not the same as proving equal real step time. The timing coefficients came from a one-hot GLM-5.2 microbenchmark, while this is an all-ranks-active GLM-5.3 deployment. The page therefore treats milliseconds as a model translation, not an online measurement.</p>
+        </div>
+
+        <div class="metric-grid" aria-label="Headline balance metrics">
+          <div class="metric"><div class="metric-value bad">2.09×</div><div class="metric-label">Running max/min</div><div class="metric-note">23 requests versus 11; visibly uneven.</div></div>
+          <div class="metric"><div class="metric-value warn">1.44×</div><div class="metric-label">Full-pipeline max/min</div><div class="metric-note">Running + preallocation + transfer.</div></div>
+          <div class="metric"><div class="metric-value good">1.038×</div><div class="metric-label">Router base-score max/min</div><div class="metric-note">Active blocks + request penalty.</div></div>
+          <div class="metric"><div class="metric-value bad">0.50%</div><div class="metric-label">Minimum KV free</div><div class="metric-note">Rank 2 remained almost full.</div></div>
+        </div>
+
+        <div class="lens-grid" aria-label="Four different meanings of balanced">
+          <div class="lens no"><h3>Running count</h3><div class="lens-answer">No</div><p>The eight scheduler-running gauges have 27.0% CV.</p></div>
+          <div class="lens partial"><h3>Pipeline count</h3><div class="lens-answer">Mostly</div><p>Restoring the two decode queues cuts CV to 12.8%.</p></div>
+          <div class="lens yes"><h3>Router model</h3><div class="lens-answer">Yes</div><p>The reconstructed base cost has 1.30% CV.</p></div>
+          <div class="lens unknown"><h3>Actual step time</h3><div class="lens-answer">Unknown</div><p>No per-rank online step-duration measurement exists.</p></div>
+        </div>
+      </section>
+
+      <section id="ownership">
+        <h2>Which layer owns the eight-rank placement?</h2>
+        <p class="section-intro">The live command line contains SGLang <code>--load-balance-method total_tokens</code>, but normal online requests arrive with an externally chosen DP rank. That direct rank bypasses SGLang's local load-balancer method.</p>
+        <div class="flow" aria-label="Online DP-rank routing path">
+          <div class="flow-step">
+            <div class="flow-kicker">1 · Dynamo frontend</div>
+            <div class="flow-title">Scores 40 rank candidates</div>
+            <p>Five logical decode workers × eight DP ranks. Three HA frontends expose all 40 candidates.</p>
+          </div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step">
+            <div class="flow-kicker">2 · Strict selection</div>
+            <div class="flow-title">Chooses worker + DP rank</div>
+            <p>Router temperature is zero, so eligible request-conditioned scores use strict minimum selection.</p>
+          </div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step">
+            <div class="flow-kicker">3 · SGLang DPC</div>
+            <div class="flow-title">Directly dispatches that rank</div>
+            <p><code>routed_dp_rank</code> returns before <code>total_tokens</code>. The latter is a fallback for unpinned traffic.</p>
+          </div>
+        </div>
+        <div class="callout teal"><strong>Ownership conclusion:</strong> the eight-element production vector is principally the result of Dynamo's rank-level KV router plus later request state transitions—not SGLang independently re-choosing the least-token rank.</div>
+      </section>
+
+      <section id="pipeline">
+        <h2>The running-only vector hides 42 queued requests</h2>
+        <p class="section-intro">At the same Prometheus evaluation instant, 19 requests were waiting in decode preallocation and 23 were waiting in transfer. These queues complement the ranks that looked light in the running-only panel.</p>
+
+        <div class="chart-card">
+          <div class="chart-head">
+            <div><h3>Decode requests by rank and state</h3><p class="section-intro">Each bar is normalized to the largest full-pipeline count, 26.</p></div>
+            <div class="chart-note">The value at right is<br><strong>running / full pipeline</strong></div>
+          </div>
+          <div class="legend">
+            <span class="legend-item" style="--legend-color: var(--navy)">Running</span>
+            <span class="legend-item" style="--legend-color: var(--amber)">Preallocation queue</span>
+            <span class="legend-item" style="--legend-color: var(--violet)">Transfer queue</span>
+          </div>
+          <div class="rank-chart" id="pipeline-chart" aria-label="Stacked request counts by rank"></div>
+        </div>
+
+        <div class="vector-grid" aria-label="Request vectors">
+          <div class="vector-row"><div class="vector-label">Running only</div><div class="vector">[23, 11, 11, 14, 22, 20, 15, 21]</div></div>
+          <div class="vector-row"><div class="vector-label">Preallocation queue</div><div class="vector">[0, 8, 5, 3, 2, 1, 0, 0]</div></div>
+          <div class="vector-row"><div class="vector-label">Transfer queue</div><div class="vector">[3, 0, 2, 3, 0, 1, 10, 4]</div></div>
+          <div class="vector-row"><div class="vector-label">Derived full pipeline</div><div class="vector">[26, 19, 18, 20, 24, 22, 25, 25]</div></div>
+          <div class="vector-row"><div class="vector-label">Frontend router gauge</div><div class="vector">[26, 19, 17, 20, 23, 22, 24, 25]</div></div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric"><div class="metric-value">27.0%</div><div class="metric-label">Running-count CV</div><div class="metric-note">Population CV across eight ranks.</div></div>
+          <div class="metric"><div class="metric-value good">12.8%</div><div class="metric-label">Pipeline-count CV</div><div class="metric-note">52.5% lower normalized dispersion.</div></div>
+          <div class="metric"><div class="metric-value">179</div><div class="metric-label">Derived pipeline total</div><div class="metric-note">137 running + 19 prealloc + 23 transfer.</div></div>
+          <div class="metric"><div class="metric-value good">≤1</div><div class="metric-label">Per-rank gauge difference</div><div class="metric-note">Pipeline sum versus router active count.</div></div>
+        </div>
+
+        <div class="callout"><strong>Why the three totals differ:</strong> the derived pipeline has 179 requests while the frontend gauge has 176. Every rank differs by at most one request. This is consistent with approximately one-second cross-pod scrape skew and requests transitioning between states—not a different population shape.</div>
+      </section>
+
+      <section id="router-score">
+        <h2>The deployed objective explains the remaining count skew</h2>
+        <p class="section-intro">The router does not minimize request count alone. It adds a concave request-count penalty to the rank's active decode blocks. For a particular incoming request, it also adds blocks not already covered by prefix overlap.</p>
+
+        <div class="equation-block" aria-label="Router score equations">
+          <div class="equation-row">
+            <span><span class="math-var">s<sub>i</sub></span>(<span class="math-var">r</span>)</span>
+            <span class="equals">=</span>
+            <span><span class="math-var sym-blocks">b<sub>i</sub></span> + <span class="math-fn">p</span>(<span class="math-var sym-requests">n<sub>i</sub></span>) + <span class="math-var sym-added">a<sub>i</sub></span>(<span class="math-var">r</span>) <span class="shape-note">· request-conditioned score in 64-token block equivalents</span></span>
+          </div>
+          <div class="equation-row">
+            <span><span class="math-fn">p</span>(<span class="math-var sym-requests">n<sub>i</sub></span>)</span>
+            <span class="equals">=</span>
+            <span>6749<span class="math-var sym-requests">n<sub>i</sub></span> − 76<span class="math-var sym-requests">n<sub>i</sub><sup>2</sup></span> <span class="shape-note">· fitted region through 32 active requests</span></span>
+          </div>
+        </div>
+        <p class="section-intro"><span class="math-var sym-blocks">b<sub>i</sub></span> is the router's active-decode-block ledger, <span class="math-var sym-requests">n<sub>i</sub></span> is its active-request count, and <span class="math-var sym-added">a<sub>i</sub></span>(<span class="math-var">r</span>) is the incoming request's additional active footprint after prefix overlap. The reconstruction below shows the <em>base state</em> before the request-specific final term.</p>
+
+        <div class="chart-card">
+          <div class="chart-head">
+            <div><h3>Complementary costs produce a nearly level total</h3><p class="section-intro">Ranks with more requests generally carry fewer router-tracked active blocks, and vice versa.</p></div>
+            <div class="chart-note">Stacked to the largest<br>base score, 167,024 blocks</div>
+          </div>
+          <div class="legend">
+            <span class="legend-item" style="--legend-color: var(--navy)">Active decode blocks</span>
+            <span class="legend-item" style="--legend-color: var(--violet)">Request-count penalty</span>
+          </div>
+          <div class="rank-chart" id="score-chart" aria-label="Router base score decomposition by rank"></div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric"><div class="metric-value good">1.30%</div><div class="metric-label">Base-score CV</div><div class="metric-note">Versus 27.0% for running counts.</div></div>
+          <div class="metric"><div class="metric-value good">−0.976</div><div class="metric-label">Blocks ↔ requests correlation</div><div class="metric-note">A near-perfect inverse tradeoff.</div></div>
+          <div class="metric"><div class="metric-value good">1.038×</div><div class="metric-label">Score max/min</div><div class="metric-note">A 6,054-block total range.</div></div>
+          <div class="metric"><div class="metric-value warn">0.96 ms</div><div class="metric-label">Fit-implied range</div><div class="metric-note">Model translation, not measured timing.</div></div>
+        </div>
+
+        <div class="table-wrap">
+          <table aria-label="Per-rank routing score reconstruction">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th class="num">Running</th>
+                <th class="num">Full pipeline</th>
+                <th class="num">Router active</th>
+                <th class="num">Active blocks</th>
+                <th class="num">Request penalty</th>
+                <th class="num">Base score</th>
+                <th class="num">Fit-implied step</th>
+              </tr>
+            </thead>
+            <tbody id="score-table-body"></tbody>
+          </table>
+        </div>
+
+        <div class="callout teal"><strong>Direct answer:</strong> under its own recorded state and configured cost function, the online router had balanced group 3 very closely at this moment. The count imbalance was not random neglect; it was compensated by opposing active-block load. In the five minutes ending at this snapshot, the router's directly exported request-conditioned <code>total_score</code> averages had only 0.39% CV and a 1.013× max/min ratio.</div>
+
+        <h3 style="margin-top: 30px">The pattern persisted across the high-load window</h3>
+        <p class="section-intro">From 03:11 to 12:00 Beijing time, 2,117 complete group-3 vectors were available at a 15-second evaluation step. The table keeps the 92 samples with at least 80 running requests across the group.</p>
+        <div class="table-wrap">
+          <table aria-label="High-load balance distribution over the nine-hour window">
+            <thead><tr><th>Balance signal</th><th class="num">Median</th><th class="num">P90</th><th class="num">Maximum</th></tr></thead>
+            <tbody>
+              <tr><td>Running-request CV</td><td class="num">18.76%</td><td class="num">26.16%</td><td class="num">30.91%</td></tr>
+              <tr><td>Router-active-request CV</td><td class="num">9.44%</td><td class="num">13.06%</td><td class="num">17.57%</td></tr>
+              <tr><td class="score-total">Composite base-score CV</td><td class="num score-total">2.85%</td><td class="num score-total">5.20%</td><td class="num score-total">7.53%</td></tr>
+              <tr><td>Composite score max/min</td><td class="num">1.098×</td><td class="num">1.182×</td><td class="num">1.254×</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout"><strong>Window-level conclusion:</strong> score balance is not a one-point coincidence. Even at high load, the composite score was consistently much flatter than either visible running counts or router active counts.</div>
+      </section>
+
+      <section id="kv-headroom">
+        <h2>Modeled balance did not equal physical KV-headroom balance</h2>
+        <p class="section-intro">The scheduler pool had 3,135,616 token slots per rank. The free-token spread was 15,616 to 849,536—a 54.4× ratio. This is a different signal from the router's active block ledger.</p>
+
+        <div class="chart-card">
+          <div class="chart-head">
+            <div><h3>Physical KV-pool utilization by rank</h3><p class="section-intro">The dashed line marks the configured 93% active-decode admission threshold as a visual reference; pool utilization and router active-block admission are not identical quantities.</p></div>
+            <div class="chart-note">Capacity per rank<br><strong>3,135,616 tokens</strong></div>
+          </div>
+          <div class="kv-chart" id="kv-chart" aria-label="KV pool utilization by rank"></div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric"><div class="metric-value bad">99.50%</div><div class="metric-label">Highest utilization</div><div class="metric-note">Rank 2; only 15,616 tokens free.</div></div>
+          <div class="metric"><div class="metric-value good">72.91%</div><div class="metric-label">Lowest utilization</div><div class="metric-note">Rank 1; 849,536 tokens free.</div></div>
+          <div class="metric"><div class="metric-value bad">54.4×</div><div class="metric-label">Free-token max/min</div><div class="metric-note">Much less balanced than router score.</div></div>
+          <div class="metric"><div class="metric-value bad">26.6 pp</div><div class="metric-label">Utilization spread</div><div class="metric-note">99.50% minus 72.91%.</div></div>
+        </div>
+
+        <div class="callout red"><strong>The cleanest counterexample:</strong> ranks 1 and 2 both showed 11 running requests. Their full-pipeline counts were 19 and 18, and their reconstructed router base scores were similarly close—165,872 and 161,984 blocks. Yet their physical KV headroom was 27.1% versus 0.50%. Request/cost balance alone is therefore not a sufficient hard headroom guarantee.</div>
+        <p class="section-intro">This was not isolated: among the 92 high-load samples, at least one rank had less than 1% physical headroom 16 times and less than 5% headroom 43 times. The minimum observed free capacity was 1,600 tokens.</p>
+      </section>
+
+      <section id="calibration">
+        <h2>Why the 0.96 ms result must remain “fit-implied”</h2>
+        <p class="section-intro">The coefficients are real and the isolated fit was strong. The experiment geometry, however, differs from the production geometry in exactly the dimension that synchronized DPA makes important: sibling-rank occupancy.</p>
+
+        <div class="comparison-grid">
+          <div class="comparison micro">
+            <h3>Calibration: one-hot GLM-5.2</h3>
+            <div class="rank-dots" aria-label="One rank loaded and seven shown idle">
+              <div class="rank-dot busy">n</div><div class="rank-dot">0</div><div class="rank-dot">0</div><div class="rank-dot">0</div><div class="rank-dot">0</div><div class="rank-dot">0</div><div class="rank-dot">0</div><div class="rank-dot">0</div>
+            </div>
+            <ul>
+              <li>One loaded DPA rank; 15 siblings idle in the original DP16 test.</li>
+              <li>26 cells, 1–32 active requests, 6.5K–2.8M loaded-rank KV tokens.</li>
+              <li>Reported R² 0.988 and RMSE 0.80 ms.</li>
+              <li>Local request count and group-total request count changed together.</li>
+            </ul>
+          </div>
+          <div class="comparison online">
+            <h3>Production: all-ranks-active GLM-5.3</h3>
+            <div class="rank-dots" aria-label="All eight ranks active with router request counts">
+              <div class="rank-dot online-busy">26</div><div class="rank-dot online-busy">19</div><div class="rank-dot online-busy">17</div><div class="rank-dot online-busy">20</div><div class="rank-dot online-busy">23</div><div class="rank-dot online-busy">22</div><div class="rank-dot online-busy">24</div><div class="rank-dot online-busy">25</div>
+            </div>
+            <ul>
+              <li>Every DPA rank is occupied.</li>
+              <li>Group-wide MoE, DeepEP, padding and collective behavior also matter.</li>
+              <li>Changing candidate rank leaves the group-total request count unchanged.</li>
+              <li>The full token vector can change DPA communication/padding paths.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout"><strong>Calibration verdict:</strong> <code>6749</code> and <code>-76</code> are defensible as a one-hot GB300 heuristic. Their excellent score balance in this snapshot shows the router is applying the intended policy; it does not prove that the policy equalized actual online step time. The raw 26-cell measurements and fitting script were not preserved, adding a reproducibility gap.</div>
+      </section>
+
+      <section id="decision">
+        <h2>What the snapshot can—and cannot—establish</h2>
+        <div class="table-wrap">
+          <table class="verdict-table" aria-label="Evidence verdict matrix">
+            <thead><tr><th>Question</th><th>Answer</th><th>Evidence</th></tr></thead>
+            <tbody>
+              <tr><td>Are running requests evenly distributed?</td><td class="answer-no">No</td><td>27.0% CV; 23 versus 11; 2.09× max/min.</td></tr>
+              <tr><td>Does the running vector represent all routed active requests?</td><td class="answer-no">No</td><td>It omits 19 preallocation and 23 transfer-queue requests.</td></tr>
+              <tr><td>Is the whole decode pipeline more balanced?</td><td class="answer-yes">Yes</td><td>12.8% CV and 1.44× max/min after restoring both queues.</td></tr>
+              <tr><td>Is the deployed router's base score balanced?</td><td class="answer-yes">Yes</td><td>1.30% CV and 1.038× max/min using its own active-request and active-block gauges.</td></tr>
+              <tr><td>Is physical KV headroom balanced?</td><td class="answer-no">No</td><td>0.50% to 27.1% free; a 54.4× free-token ratio.</td></tr>
+              <tr><td>Did every historical admission choose the true minimum?</td><td class="answer-mixed">Not audited</td><td>The code and selection metrics prove rank-level strict scoring, but this state snapshot is not a per-request decision log.</td></tr>
+              <tr><td>Were actual online rank step times equal?</td><td class="answer-unknown">Unknown</td><td>No per-rank online step-duration metric or paired controlled placement was captured.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="method">
+        <h2>Evidence and method</h2>
+        <p class="section-intro">The production inspection was read-only. No request traffic was generated, and no workload, router, dashboard or cluster object was changed.</p>
+        <ul class="source-list">
+          <li><strong>Population:</strong> Taiguo cluster, namespace <code>maas-prod-zhipu</code>, DGD <code>glm53-nvfp4-gb300-pp-dev</code>, decode group 3, ranks 0–7.</li>
+          <li><strong>Snapshot:</strong> Prometheus evaluation at 2026-08-31 06:01:42 Beijing time. SGLang source scrapes were 06:01:37.508 and 06:01:38.297; paired frontend router state was scraped at 06:01:38.712.</li>
+          <li><strong>SGLang gauges:</strong> running requests, decode preallocation queue, decode transfer queue, KV available and KV used tokens.</li>
+          <li><strong>Dynamo gauges:</strong> frontend worker active requests, active decode blocks, per-candidate score histograms and rank-labeled selection counters.</li>
+          <li><strong>Live configuration check:</strong> 2026-08-31 14:48–14:50 Beijing. The same no-restart frontend and group-3 processes had been running before the snapshot.</li>
+          <li><strong>Router implementation:</strong> Wang Siqin's <a href="https://git.luchentech.com/platform/dynamo/-/merge_requests/122">Dynamo MR !122</a>; model commit <code>56ebc55e</code>, merged as <code>e747dd98</code>.</li>
+          <li><strong>Historical context:</strong> recovered from the exact <code>optim_exp5</code> Codex session. The separate <a href="../glm52-gb300-pp4-tp8-realtrace-natural-output-acceptance/#rank-running-requests">GLM-5.2 real-trace page</a> is contextual only.</li>
+        </ul>
+
+        <details>
+          <summary>PromQL shapes used for the snapshot</summary>
+          <div class="details-body">
+            <pre><code>max by (dp_rank) (sglang:num_running_reqs{...})
+max by (dp_rank) (sglang:num_decode_prealloc_queue_reqs{...})
+max by (dp_rank) (sglang:num_decode_transfer_queue_reqs{...})
+dynamo_frontend_worker_active_requests{worker_type="decode", ...}
+dynamo_frontend_worker_active_decode_blocks{worker_type="decode", ...}</code></pre>
+            <p>Ranks 0–3 and 4–7 are exported from two physical decode pods. Their raw scrapes were 0.789 seconds apart. One frontend was selected consistently for the router-state reconstruction; the three replicas agreed on shape, with at most one request or 596 active blocks of transition-time difference at this instant.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Important limitations</summary>
+          <div class="details-body">
+            <ul class="limits">
+              <li>The reconstructed base score excludes the incoming request's prefix-dependent additional active blocks.</li>
+              <li>Router active blocks and scheduler KV-pool used/free tokens have different cache and lifecycle semantics.</li>
+              <li>The fit-implied step values are not Nsight measurements or per-rank online latency gauges.</li>
+              <li>Running-request gauges describe scheduler batch state, not GPU occupancy or per-rank kernel duration.</li>
+              <li>To validate causality, hold sibling occupancy and group totals fixed, place the same request on each candidate rank, and measure the incremental group critical path.</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+    </article>
+  </main>
+
+  <footer>
+    <div class="footer-inner">Generated 2026-08-31 · Asia/Shanghai · Static, dependency-free MaaS Docs report · <a href="evidence.json">Download the machine-readable evidence</a></div>
+  </footer>
+
+  <script>
+    "use strict";
+    const auditData = {
+      running: [23, 11, 11, 14, 22, 20, 15, 21],
+      prealloc: [0, 8, 5, 3, 2, 1, 0, 0],
+      transfer: [3, 0, 2, 3, 0, 1, 10, 4],
+      pipeline: [26, 19, 18, 20, 24, 22, 25, 25],
+      routerActive: [26, 19, 17, 20, 23, 22, 24, 25],
+      activeBlocks: [42036, 65077, 69215, 62444, 47644, 50390, 42770, 43285],
+      requestPenalty: [124098, 100795, 92769, 104580, 115023, 111694, 118200, 121225],
+      baseScore: [166134, 165872, 161984, 167024, 162667, 162084, 160970, 164510],
+      fitStepMs: [46.821197568, 46.779814144, 46.165696768, 46.961774848, 46.273577984, 46.181491968, 46.00553344, 46.56468352],
+      kvFree: [322240, 849536, 15616, 248832, 295744, 128256, 310528, 286912],
+      kvCapacity: 3135616
+    };
+
+    const formatInt = value => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+
+    function renderPipeline() {
+      const root = document.getElementById("pipeline-chart");
+      const scale = Math.max(...auditData.pipeline);
+      auditData.running.forEach((running, rank) => {
+        const row = document.createElement("div");
+        row.className = "rank-row";
+        const label = document.createElement("div");
+        label.className = "rank-label";
+        label.textContent = `rank ${rank}`;
+        const track = document.createElement("div");
+        track.className = "bar-track";
+        const stack = document.createElement("div");
+        stack.className = "bar-stack";
+        [
+          [running, "seg-running", "running"],
+          [auditData.prealloc[rank], "seg-prealloc", "preallocation queue"],
+          [auditData.transfer[rank], "seg-transfer", "transfer queue"]
+        ].forEach(([value, className, name]) => {
+          const segment = document.createElement("div");
+          segment.className = `bar-seg ${className}`;
+          segment.style.width = `${100 * value / scale}%`;
+          segment.title = `${name}: ${value}`;
+          stack.appendChild(segment);
+        });
+        track.appendChild(stack);
+        const value = document.createElement("div");
+        value.className = "bar-value";
+        value.innerHTML = `<strong>${running}</strong> / ${auditData.pipeline[rank]} · router ${auditData.routerActive[rank]}`;
+        row.append(label, track, value);
+        root.appendChild(row);
+      });
+    }
+
+    function renderScores() {
+      const root = document.getElementById("score-chart");
+      const scale = Math.max(...auditData.baseScore);
+      auditData.baseScore.forEach((score, rank) => {
+        const row = document.createElement("div");
+        row.className = "rank-row";
+        const label = document.createElement("div");
+        label.className = "rank-label";
+        label.textContent = `rank ${rank}`;
+        const track = document.createElement("div");
+        track.className = "bar-track";
+        const stack = document.createElement("div");
+        stack.className = "bar-stack";
+        const blocks = document.createElement("div");
+        blocks.className = "bar-seg seg-blocks";
+        blocks.style.width = `${100 * auditData.activeBlocks[rank] / scale}%`;
+        blocks.title = `active decode blocks: ${formatInt(auditData.activeBlocks[rank])}`;
+        const requests = document.createElement("div");
+        requests.className = "bar-seg seg-requests";
+        requests.style.width = `${100 * auditData.requestPenalty[rank] / scale}%`;
+        requests.title = `request penalty: ${formatInt(auditData.requestPenalty[rank])}`;
+        stack.append(blocks, requests);
+        track.appendChild(stack);
+        const value = document.createElement("div");
+        value.className = "bar-value";
+        value.innerHTML = `<strong>${formatInt(score)}</strong> blocks · ${auditData.fitStepMs[rank].toFixed(2)} ms*`;
+        row.append(label, track, value);
+        root.appendChild(row);
+      });
+    }
+
+    function renderKv() {
+      const root = document.getElementById("kv-chart");
+      auditData.kvFree.forEach((free, rank) => {
+        const used = auditData.kvCapacity - free;
+        const usedPercent = 100 * used / auditData.kvCapacity;
+        const freePercent = 100 - usedPercent;
+        const row = document.createElement("div");
+        row.className = "kv-row";
+        const label = document.createElement("div");
+        label.className = "rank-label";
+        label.textContent = `rank ${rank}`;
+        const track = document.createElement("div");
+        track.className = "capacity-track";
+        const fill = document.createElement("div");
+        fill.className = `capacity-used${usedPercent >= 93 ? " hot" : ""}`;
+        fill.style.width = `${usedPercent}%`;
+        const threshold = document.createElement("div");
+        threshold.className = "threshold-line";
+        track.append(fill, threshold);
+        const value = document.createElement("div");
+        value.className = "kv-value";
+        value.innerHTML = `<strong>${usedPercent.toFixed(2)}%</strong> used · ${freePercent.toFixed(2)}% free`;
+        row.append(label, track, value);
+        root.appendChild(row);
+      });
+    }
+
+    function renderScoreTable() {
+      const root = document.getElementById("score-table-body");
+      auditData.baseScore.forEach((score, rank) => {
+        const tr = document.createElement("tr");
+        const cells = [
+          [`rank ${rank}`, ""],
+          [auditData.running[rank], "num"],
+          [auditData.pipeline[rank], "num"],
+          [auditData.routerActive[rank], "num"],
+          [formatInt(auditData.activeBlocks[rank]), "num"],
+          [formatInt(auditData.requestPenalty[rank]), "num"],
+          [formatInt(score), "num score-total"],
+          [`${auditData.fitStepMs[rank].toFixed(2)} ms*`, "num"]
+        ];
+        cells.forEach(([content, className]) => {
+          const td = document.createElement("td");
+          td.className = className;
+          td.textContent = content;
+          tr.appendChild(td);
+        });
+        root.appendChild(tr);
+      });
+    }
+
+    renderPipeline();
+    renderScores();
+    renderKv();
+    renderScoreTable();
+  </script>
+</body>
+</html>
