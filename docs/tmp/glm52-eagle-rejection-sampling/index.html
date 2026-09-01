@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="解释 SGLang EAGLE 拒绝采样如何利用草稿分布与目标分布的概率重叠，并梳理其实现边界与实测收益。">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-eagle-rejection-sampling/">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/tmp/glm52-eagle-rejection-sampling/">
+  <title>为什么 SGLang EAGLE 拒绝采样能够提升推测解码</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --soft: #e8f2ef;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.doc-shell {
+  display: grid;
+  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.doc-content {
+  min-width: 0;
+}
+.content-overview {
+  position: sticky;
+  top: 18px;
+  padding: 10px 0 10px 14px;
+  border-left: 4px solid rgba(11, 107, 102, .28);
+  color: var(--muted);
+}
+.content-overview-title {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.content-overview a {
+  display: block;
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.content-overview a:hover,
+.content-overview a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.content-overview a.depth-2 {
+  padding-left: 12px;
+  font-size: .84rem;
+  font-weight: 650;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 900px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 860px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.value code {
+  white-space: normal;
+  word-break: break-word;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: #4c5d59;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.logical-parameter-table .param-col-component { width: 20%; }
+.logical-parameter-table .param-col-shape { width: 27%; }
+.logical-parameter-table .param-col-expansion { width: 39%; }
+.logical-parameter-table .param-col-logical { width: 14%; }
+.tp8-parameter-table .param-col-component { width: 24%; }
+.tp8-parameter-table .param-col-partition { width: 19%; }
+.tp8-parameter-table .param-col-shape { width: 39%; }
+.tp8-parameter-table .param-col-rank { width: 18%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+code {
+  padding: .08rem .22rem;
+  border-radius: 4px;
+  background: #edf3f1;
+  color: #243431;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.math-var, .math-func, .math-space, .shape, .eq-block {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+.math-var { font-style: italic; white-space: nowrap; }
+.math-vec, .math-mat, .math-set, .math-tensor { font-weight: 700; }
+.math-func { font-style: normal; white-space: nowrap; }
+.math-space { white-space: nowrap; color: #253633; }
+.shape {
+  display: inline-block;
+  white-space: nowrap;
+  color: #314541;
+  font-variant-numeric: tabular-nums;
+}
+.sym {
+  padding: 0 .08em;
+  border-bottom: 2px solid transparent;
+}
+.sym-hidden { color: #0b6b66; border-bottom-color: rgba(11, 107, 102, .35); }
+.sym-q { color: #7a3e9d; border-bottom-color: rgba(122, 62, 157, .35); }
+.sym-kv { color: #8f4b16; border-bottom-color: rgba(143, 75, 22, .35); }
+.sym-index { color: #1b5faa; border-bottom-color: rgba(27, 95, 170, .35); }
+.sym-gate { color: #9f3d3d; border-bottom-color: rgba(159, 61, 61, .35); }
+.sym-attn { color: #4f6b18; border-bottom-color: rgba(79, 107, 24, .35); }
+.sym-select { color: #6a4f00; border-bottom-color: rgba(106, 79, 0, .34); }
+.sym-weight { color: #3d5260; border-bottom-color: rgba(61, 82, 96, .28); }
+.eq-block {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  overflow-x: auto;
+}
+.eq-title {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font: 800 .86rem Inter, ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.eq-row {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 26px minmax(260px, 1fr) minmax(140px, max-content);
+  gap: 10px;
+  align-items: baseline;
+  width: max-content;
+  min-width: min(760px, 100%);
+  padding: 5px 0;
+}
+.eq-lhs { text-align: right; }
+.eq-op { text-align: center; color: var(--muted); }
+.eq-rhs { color: #1d2b28; }
+.eq-note { color: var(--muted); white-space: nowrap; }
+.eq-row.single {
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, max-content);
+}
+.eq-comment {
+  margin-top: 8px;
+  color: var(--muted);
+  font: .93rem Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.danger { color: var(--accent-2); font-weight: 800; }
+.footer {
+  margin-top: 42px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+@media (max-width: 980px) {
+  main {
+    max-width: 1160px;
+    padding: 28px 16px 64px;
+  }
+  .doc-shell {
+    display: block;
+  }
+  .content-overview {
+    position: static;
+    margin: 0 0 22px;
+    padding: 12px 14px;
+    border-left: 4px solid rgba(11, 107, 102, .28);
+    background: rgba(255, 255, 255, .72);
+  }
+  .content-overview a {
+    display: inline-block;
+    margin-right: 14px;
+  }
+  .content-overview a.depth-2 {
+    padding-left: 0;
+  }
+  .parameter-table-scroll .logical-parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
+  .parameter-table-scroll .tp8-parameter-table {
+    width: 900px;
+    min-width: 900px;
+  }
+}
+@media (max-width: 600px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .eq-row {
+    grid-template-columns: max-content 24px max-content max-content;
+  }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+  }
+}
+
+.sym-token { color: #9a5a0a; border-bottom-color: rgba(154, 90, 10, .34); }
+.sym-target { color: #245a91; border-bottom-color: rgba(36, 90, 145, .34); }
+.sym-fused { color: #74519a; border-bottom-color: rgba(116, 81, 154, .34); }
+.sym-draft { color: #08777b; border-bottom-color: rgba(8, 119, 123, .34); }
+section[id] { scroll-margin-top: 18px; }
+code { overflow-wrap: anywhere; word-break: break-word; }
+.footer a { overflow-wrap: anywhere; word-break: break-word; }
+.rs-hero-note {
+  margin: 20px 0 28px;
+  padding: 20px 22px;
+  border: 1px solid #94b7ae;
+  border-left: 6px solid var(--accent);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f9fdfb, #e6f2ee);
+  color: #1b2d29;
+  font-size: 1.06rem;
+}
+.rs-symbol-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 18px 0 30px;
+}
+.rs-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: #34433f;
+  font-size: .82rem;
+  font-weight: 800;
+}
+.rs-key-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.rs-key.target { color: #245a91; }
+.rs-key.draft { color: #08777b; }
+.rs-key.point { color: #74519a; }
+.rs-key.token { color: #9a5a0a; }
+.rs-cycle {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 26px;
+}
+.rs-cycle-step {
+  min-width: 0;
+  padding: 17px 15px;
+  border: 1px solid var(--line);
+  border-top: 4px solid #7fa4c6;
+  border-radius: 9px;
+  background: var(--paper);
+}
+.rs-cycle-step:nth-child(2) { border-top-color: #80b9b8; }
+.rs-cycle-step:nth-child(3) { border-top-color: #74519a; }
+.rs-cycle-step:nth-child(4) { border-top-color: #d5aa68; }
+.rs-step-num {
+  display: inline-grid;
+  width: 25px;
+  height: 25px;
+  margin-bottom: 9px;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf4f2;
+  color: #31534c;
+  font-size: .78rem;
+  font-weight: 900;
+}
+.rs-cycle-step strong { display: block; margin-bottom: 5px; }
+.rs-cycle-step p { margin: 0; color: var(--muted); font-size: .88rem; }
+.rs-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.rs-mode {
+  padding: 19px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.rs-mode.baseline { border-color: #b7a88d; background: #fffbf2; }
+.rs-mode.classic { border-color: #76aaa6; background: #eff9f7; }
+.rs-mode-label {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .78);
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+.rs-mode h3 { margin: 0 0 9px; }
+.rs-mode ol { margin-bottom: 0; padding-left: 21px; }
+.rs-mode li { margin: 8px 0; }
+.mini-equation {
+  margin: 13px 0;
+  padding: 11px 12px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .9);
+  text-align: center;
+  font-size: 1.03rem;
+}
+.math-frac {
+  display: inline-grid;
+  grid-template-rows: auto auto;
+  margin: 0 .12em;
+  vertical-align: middle;
+  line-height: 1.15;
+  text-align: center;
+}
+.math-frac > span:first-child {
+  padding: 0 .18em .08em;
+  border-bottom: 1px solid currentColor;
+}
+.math-frac > span:last-child { padding: .08em .18em 0; }
+.alignment-scroll {
+  max-width: 100%;
+  margin: 18px 0 8px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+}
+.rs-prob-table { min-width: 720px; margin: 0; }
+.rs-prob-table td:not(:first-child),
+.rs-prob-table th:not(:first-child) { text-align: center; }
+.rs-impl-scroll table { min-width: 760px; margin: 0; }
+.rs-highlight-row td { background: #edf8f4; font-weight: 800; }
+.mobile-hint { margin: 5px 0 18px; color: var(--muted); font-size: .82rem; }
+.rs-result {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid #c5a36a;
+  border-left: 6px solid #b47a24;
+  border-radius: 9px;
+  background: #fff9eb;
+}
+.rs-result h3 { margin-top: 0; }
+.rs-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 15px 0;
+}
+.rs-result-metric {
+  padding: 12px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .82);
+}
+.rs-result-metric span { display: block; color: var(--muted); font-size: .78rem; }
+.rs-result-metric strong { display: block; margin-top: 3px; font-size: 1.08rem; }
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.related-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+}
+.related-card strong { display: block; margin-bottom: 5px; }
+.related-card p { margin: 0; color: var(--muted); font-size: .9rem; }
+.source-list li { margin: 8px 0; color: var(--muted); }
+.source-list a { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .rs-cycle,
+  .rs-compare,
+  .rs-result-grid,
+  .related-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<main>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="本页目录">
+  <div class="content-overview-title">本页目录</div>
+  <a class="depth-1" href="#mental-model">心智模型</a>
+<a class="depth-1" href="#cycle">推测解码循环</a>
+<a class="depth-1" href="#flag-change">开关改变什么</a>
+<a class="depth-1" href="#overlap">概率重叠恒等式</a>
+<a class="depth-1" href="#worked-example">四 token 示例</a>
+<a class="depth-1" href="#implementation">SGLang 实现</a>
+<a class="depth-1" href="#measured-gate">原始门禁</a>
+<a class="depth-1" href="#boundaries">收益边界</a>
+<a class="depth-1" href="#related-evidence">相关证据</a>
+<a class="depth-1" href="#sources">来源</a>
+</aside>
+<article class="doc-content">
+
+<h1>为什么 <code>--speculative-use-rejection-sampling</code> 能提升推测解码</h1>
+<p class="lead">本文集中解释：启用该开关后 SGLang 究竟改变了什么、为什么草稿分布与目标分布的概率重叠决定接受率，以及为什么数学上严格正确的机制在实测中仍可能只带来有限增益。</p>
+<div class="grid"><section class="card"><div class="label">开关改变的部分</div><div class="value">候选生成与校正规则</div></section><section class="card"><div class="label">开关不改变的部分</div><div class="value">草稿模型权重与 logits</div></section><section class="card"><div class="label">理想单步接受率</div><div class="value">1 &minus; <span class="math-func">TV</span>(<span class="sym sym-target math-var">p</span>, <span class="sym sym-draft math-var">q</span>)</div></section><section class="card"><div class="label">历史同条件门禁</div><div class="value">+0.91 个百分点</div></section></div>
+<div class="rs-symbol-key" aria-label="概率符号说明">
+  <span class="rs-key target"><span class="rs-key-dot" aria-hidden="true"></span>目标分布 <span class="sym sym-target math-var">p</span></span>
+  <span class="rs-key draft"><span class="rs-key-dot" aria-hidden="true"></span>草稿分布 <span class="sym sym-draft math-var">q</span></span>
+  <span class="rs-key point"><span class="rs-key-dot" aria-hidden="true"></span>点质量分布 <span class="sym sym-fused math-var">q<sub>&delta;</sub></span></span>
+  <span class="rs-key token"><span class="rs-key-dot" aria-hidden="true"></span>候选 token <span class="sym sym-token math-var">d</span></span>
+</div>
+
+<section id="mental-model">
+  <h2>先建立正确的心智模型</h2>
+  <div class="rs-hero-note"><strong>把模型与采样规则分开看。</strong> GLM-5.2 检查点的第 78 层产生草稿 logits，进而形成草稿分布 <span class="sym sym-draft math-var">q</span>。这个开关不会重新训练该层、修改其权重，也不会让 logits 本身变得更准确。它改变的是：SGLang 如何从 <span class="sym sym-draft math-var">q</span> 中抽取候选、哪些概率信息会传入目标模型验证，以及验证器如何接受或校正候选。</div>
+</section>
+
+<section id="cycle">
+  <h2>推测解码究竟想节省什么</h2>
+  <p>普通自回归解码每生成一个新 token，都要运行一次昂贵的 78 层目标模型。推测解码先让便宜的单层 MTP 辅助模型提出一条短候选链，再让目标模型一次性验证整条链。目标模型接受最长的有效前缀，并在边界处补上一个由目标分布采样得到的<em>奖励 token</em>。因此，接受的草稿 token 越多，一次目标模型验证就能摊薄到越多输出 token 上。</p>
+  <div class="rs-cycle" aria-label="一次推测解码循环">
+    <section class="rs-cycle-step"><span class="rs-step-num">1</span><strong>低成本起草</strong><p>第 78 层循环运行，依次提出 <span class="math-var">d</span><sub>1</sub> 到 <span class="math-var">d</span><sub>5</sub>。</p></section>
+    <section class="rs-cycle-step"><span class="rs-step-num">2</span><strong>批量验证</strong><p>完整目标模型通过一次批处理前向计算评估整条候选链。</p></section>
+    <section class="rs-cycle-step"><span class="rs-step-num">3</span><strong>接受前缀</strong><p>遇到第一个被拒绝的草稿 token 时停止；后续候选都依赖这个已被拒绝的前缀。</p></section>
+    <section class="rs-cycle-step"><span class="rs-step-num">4</span><strong>校正并继续</strong><p>目标模型给出一个分布正确的边界 token，然后开始下一轮起草。</p></section>
+  </div>
+  <div class="note"><strong>接受长度不等于严格草稿接受数。</strong> SGLang 的 <code>avg_spec_accept_length</code> 包含目标模型补上的一个奖励 token。在每轮提出 5 个候选时，显示接受长度 3.8，表示平均约有 2.8 个草稿 token 被接受，再加 1 个奖励 token；并不是接受了 3.8 个草稿 token。</div>
+</section>
+
+<section id="flag-change">
+  <h2>这个开关究竟改变什么</h2>
+  <p>令 <span class="sym sym-target math-var">p</span> 表示经过温度与请求过滤后的目标模型采样分布，<span class="sym sym-draft math-var">q</span> 表示 MTP 草稿模型在同一词表上的候选分布。核心区别在于：验证器是看到完整的 <span class="sym sym-draft math-var">q</span>，还是把已选中的草稿 token 当成概率为 1 的点质量分布。</p>
+  <div class="rs-compare">
+    <section class="rs-mode baseline">
+      <span class="rs-mode-label">开关关闭 · 仅目标分布路径</span>
+      <h3>Argmax 被折叠成点质量分布</h3>
+      <ol>
+        <li>EAGLE top-k=1 选择草稿模型的 argmax token <span class="sym sym-token math-var">d</span>。</li>
+        <li>验证器实际使用 <span class="sym sym-fused math-var">q<sub>&delta;</sub></span>：<span class="sym sym-token math-var">d</span> 的概率为 1，其余 token 的概率为 0。</li>
+        <li>该候选以 <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>) 的概率通过验证。</li>
+      </ol>
+      <div class="mini-equation"><span class="math-var">P</span><sub>accept</sub> = <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</div>
+      <p>经过目标模型校正后，最终输出分布仍然正确，但草稿模型原本表达的不确定性被丢掉了。</p>
+    </section>
+    <section class="rs-mode classic">
+      <span class="rs-mode-label">开关开启 · 经典拒绝采样</span>
+      <h3>从草稿分布采样，并保留完整分布</h3>
+      <ol>
+        <li>从 <span class="sym sym-draft math-var">q</span> 中采样 <span class="sym sym-token math-var">d</span>，而不是永远选择 argmax。</li>
+        <li>把覆盖整个词表的 <span class="sym sym-draft math-var">q</span> 一并传入验证阶段。</li>
+        <li>从 0 到 1 均匀采样 <span class="math-var">u</span>；当 <span class="math-var">u</span> &lt; <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span>) 时接受候选。</li>
+      </ol>
+      <div class="mini-equation"><span class="math-var">P</span><sub>accept</sub>(<span class="sym sym-token math-var">d</span>) = <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span>)</div>
+      <p>如果草稿模型与目标模型给这个候选分配了相近概率，比值就接近 1，候选也更容易被接受。</p>
+    </section>
+  </div>
+</section>
+
+<section id="overlap">
+  <h2>为什么概率重叠决定接受率</h2>
+  <div class="eq-block"><div class="eq-title">期望单步接受率</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">x</span></sub> <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>) <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>)</span></span>)</div><div class="eq-note">按候选概率加权的接受率</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">x</span></sub> <span class="math-func">min</span>(<span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>), <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>))</div><div class="eq-note">两个分布共享的概率质量</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">1 &minus; <span class="math-func">TV</span>(<span class="sym sym-target math-var">p</span>, <span class="sym sym-draft math-var">q</span>)</div><div class="eq-note">1 减去全变差距离</div></div><div class="eq-comment">如果 <span class="sym sym-target math-var">p</span> 与 <span class="sym sym-draft math-var">q</span> 完全相同，每个候选都会被接受。这个开关不能主动拉近两个分布；它只是让验证器利用本来就存在的概率重叠，而不是把 <span class="sym sym-draft math-var">q</span> 折叠成 <span class="sym sym-fused math-var">q<sub>&delta;</sub></span>。</div></div>
+</section>
+
+<section id="worked-example">
+  <h2>一个包含 4 个 token 的例子</h2>
+  <p>假设目标分布与草稿分布很接近，但并不完全相同。Token A 是两个模型共同的最高概率选择，不过其余概率质量也有实际意义，不应直接丢弃。</p>
+  <div class="alignment-scroll" tabindex="0" role="region" aria-label="拒绝采样概率示例表">
+    <table class="rs-prob-table">
+      <thead><tr><th>分布或已接受概率质量</th><th>A</th><th>B</th><th>C</th><th>D</th><th>单步接受率</th></tr></thead>
+      <tbody>
+        <tr><td>目标分布 <span class="sym sym-target math-var">p</span></td><td>0.60</td><td>0.20</td><td>0.10</td><td>0.10</td><td>&mdash;</td></tr>
+        <tr><td>草稿分布 <span class="sym sym-draft math-var">q</span></td><td>0.70</td><td>0.20</td><td>0.05</td><td>0.05</td><td>&mdash;</td></tr>
+        <tr><td>开关关闭：点质量 <span class="sym sym-fused math-var">q<sub>&delta;</sub></span></td><td>1.00</td><td>0</td><td>0</td><td>0</td><td><strong>0.60</strong></td></tr>
+        <tr class="rs-highlight-row"><td>开关开启：<span class="math-func">min</span>(<span class="sym sym-target math-var">p</span>, <span class="sym sym-draft math-var">q</span>)</td><td>0.60</td><td>0.20</td><td>0.05</td><td>0.05</td><td><strong>0.90</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mobile-hint">在窄屏上可横向滚动概率表；数值会保持在同一行。</p>
+  <p>如果开关采样到 A，条件接受率为 0.60 &divide; 0.70 = 85.7%。如果采样到 B，两个模型都给出 0.20，因此接受率为 100%。对草稿模型可能采样到的所有 token 求平均后，单步接受率为 90%。关闭开关时只能提出 A，而它仅以目标分布给出的 60% 概率通过。</p>
+  <div class="note"><strong>采样非 argmax token 不会改变目标输出分布。</strong> 发生拒绝时，SGLang 会从与正残差 <span class="math-bracket">[</span><span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>) &minus; <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>)<span class="math-bracket">]</span><sub>+</sub> 成比例的分布中采样替代 token。已接受的概率质量加上残差校正会重建 <span class="sym sym-target math-var">p</span>；草稿模型改变的是执行成本，而不是目标采样分布。</div>
+</section>
+
+<section id="implementation">
+  <h2>固定版本的 SGLang 实现做了什么</h2>
+  <div class="alignment-scroll rs-impl-scroll" tabindex="0" role="region" aria-label="开关关闭与开启的实现对比">
+  <table><tr><th>阶段</th><th>开关关闭</th><th>开关开启</th></tr><tr><td>第 78 层提出候选</td><td>EAGLE top-k=1 直接取 argmax</td><td>按温度缩放 logits，形成 <span class="sym sym-draft math-var">q</span>，再采样一个 token</td></tr>
+<tr><td>传入验证器的状态</td><td>只有 token ID，没有完整草稿分布</td><td>每个草稿步骤都传入 token ID 与覆盖整个词表的 <span class="sym sym-draft math-var">q</span></td></tr>
+<tr><td>目标模型验证</td><td>仅目标分布的树验证 kernel；等效点质量为 <span class="sym sym-fused math-var">q<sub>&delta;</sub></span></td><td>使用 <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span> 的链式拒绝采样 kernel</td></tr>
+<tr><td>第一次拒绝</td><td>采样目标校正 token，并排除被拒绝的点质量候选</td><td>从归一化正残差 <span class="sym sym-target math-var">p</span> &minus; <span class="sym sym-draft math-var">q</span> 中采样</td></tr></table>
+  </div>
+  <p class="mobile-hint">在窄屏上可横向滚动实现对比表。</p>
+  <p>在拒绝采样路径中，请求温度会同时作用于目标 logits 与草稿 logits。随后，请求的 top-k 和 top-p 设置会过滤目标分布。若某个草稿候选不在目标分布保留的支持集内，则 <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>) = 0，它一定会被拒绝。因此，过强的目标分布截断或对齐较差的草稿模型都会削弱收益。</p>
+  <div class="note"><strong>与版本相关的边界。</strong> 在这里固定的下游实现中，请求 top-p 会过滤 <span class="sym sym-target math-var">p</span>，但不会过滤保留下来的草稿支持集 <span class="sym sym-draft math-var">q</span>。后续支持 top-p 的实验会显式测试两边支持集对齐；这属于实现层面的改进，并不改变上面的经典拒绝采样恒等式。</div>
+</section>
+
+<section id="measured-gate">
+  <h2>为什么最初门禁实验中的增益很小</h2>
+  <div class="rs-result">
+    <h3>GB300 node-136 同条件门禁 · 512 条请求</h3>
+    <p>temperature=1.0、top-p=0.95、请求未设置 top-k；FP4 目标模型与 FP4 草稿模型；EAGLE 5-1-6。两个实验臂重放相同的数据切片。</p>
+    <div class="rs-result-grid">
+      <div class="rs-result-metric"><span>开关关闭</span><strong>55.62% 严格草稿接受率</strong></div>
+      <div class="rs-result-metric"><span>开关开启</span><strong>56.54% 严格草稿接受率</strong></div>
+      <div class="rs-result-metric"><span>实测变化</span><strong>+0.91 个百分点</strong></div>
+    </div>
+    <p>这个开关从 <span class="sym sym-target math-var">p</span> 与 <span class="sym sym-draft math-var">q</span> 之间提取出了略多的重叠，但并没有让 MTP 分布本身更接近目标分布。草稿/目标权重或量化不匹配、随上下文变化的 MTP 误差，以及目标 top-p 截断，都可能让可利用的重叠仍然很小。</p>
+    <p><strong>稳定性说明：</strong>实验组完成已统计请求后，Pod 在 DSA CUDA Graph 元数据路径中遇到 CUDA 非法内存访问并重启。仅凭时间顺序无法证明该开关导致了故障，但“运行期间不重启”的门禁条件未通过，因此完整 A/B 实验被停止。</p>
+  </div>
+</section>
+
+<section id="boundaries">
+  <h2>什么时候应当期待收益，什么时候不应当</h2>
+  <div class="alignment-scroll" tabindex="0" role="region" aria-label="拒绝采样预期效果">
+  <table><tr><th>场景</th><th>预期效果</th></tr><tr><td>随机采样解码，且 <span class="sym sym-draft math-var">q</span> 与 <span class="sym sym-target math-var">p</span> 高度接近</td><td>更高接受率可把目标模型验证成本摊薄到更多输出 token 上</td></tr>
+<tr><td>贪心解码</td><td>运行时走贪心验证分支；拒绝采样没有概率重叠优势</td></tr>
+<tr><td><span class="sym sym-draft math-var">q</span> 与 <span class="sym sym-target math-var">p</span> 差异很大</td><td>接受率增益很小；应优先改进草稿模型或重新对齐分布</td></tr>
+<tr><td>高 batch 或验证成本很高</td><td>即使接受率上升，吞吐也未必提升，因为推测计算本身并非免费</td></tr>
+<tr><td>这里固定的下游实现</td><td>要求使用 EAGLE/EAGLE3/NEXTN、EAGLE top-k=1、共享同一词表、默认接受阈值，并采用非确定性采样</td></tr></table>
+  </div>
+  <div class="note"><strong>结论。</strong> 这个开关提供的是两个分布之间更好的耦合规则，而不是更好的草稿模型。它可以在保持目标输出分布不变的前提下，把已有的草稿—目标一致性转化为更多被接受的 token。是否值得上线，仍需要稳定、固定输出量的吞吐 A/B 实验来确认。</div>
+</section>
+
+<section id="related-evidence">
+  <h2>相关实测证据</h2>
+  <div class="related-grid">
+    <a class="related-card" href="../glm52-gb300-eagle314-top-p-rejection-ab-20260828/"><strong>GLM-5.2 · 10,000 请求 top-p 对齐 A/B</strong><p>在同一批请求上比较关闭拒绝采样、SGLang 原生拒绝采样，以及支持 top-p 的草稿候选方案。</p></a>
+    <a class="related-card" href="../glm53-gb300-eagle314-six-arm-matrix-20260901/"><strong>GLM-5.3 · 六实验臂采样矩阵</strong><p>在同一组 1,907 个有效位置上，交叉比较两种生产采样策略与三种拒绝采样模式。</p></a>
+  </div>
+</section>
+
+<section id="sources">
+  <h2>实现与论文依据</h2>
+  <p>本文对应下游 SGLang 提交 <code>c8ce314a</code>。内部源码链接可能需要登录 Luchen GitLab。</p>
+  <ul class="source-list">
+    <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/spec_utils.py">草稿候选构造</a>：温度缩放、从完整分布采样，以及保留草稿概率。</li>
+    <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/eagle_worker_v2.py">EAGLE 候选传递</a>：把每个候选 token 及其草稿分布传入验证阶段。</li>
+    <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/eagle_utils.py">验证器分派</a>：选择拒绝采样路径并构造目标分布。</li>
+    <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/reject_sampling.py">经典链式 kernel</a>：执行概率比接受与正残差校正。</li>
+    <li><a href="https://arxiv.org/abs/2302.01318">推测采样论文</a>：给出保持目标分布不变的修正拒绝采样算法。</li>
+    <li><a href="../../glm52-flops/glm52_nextn_mtp_block.html#rejection-sampling">NextN/MTP 上下文中的原始说明</a>：查看该机制在第 78 层草稿模型架构中的位置。</li>
+  </ul>
+</section>
+
+<p class="footer">公开地址：<a href="https://tomyoung903.github.io/maas_docs/tmp/glm52-eagle-rejection-sampling/">https://tomyoung903.github.io/maas_docs/tmp/glm52-eagle-rejection-sampling/</a><br>内容依据 GLM-5.2 配置常量、SGLang 推测解码实现与实测结果生成。公开参考：<a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 配置</a>、<a href="https://docs.sglang.ai/advanced_features/speculative_decoding.html">SGLang 推测解码指南</a>。</p>
+</article>
+</div>
+</main>
+  <script defer src="../../assets/maas-annotator.js" data-maas-annotator data-page-key="/tmp/glm52-eagle-rejection-sampling/"></script>
+</body>
+</html>
