@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Static technical documentation for Why SGLang EAGLE Rejection Sampling Can Help.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_eagle_rejection_sampling.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_eagle_rejection_sampling.html">
+  <title>Why SGLang EAGLE Rejection Sampling Can Help</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --soft: #e8f2ef;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.doc-shell {
+  display: grid;
+  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.doc-content {
+  min-width: 0;
+}
+.content-overview {
+  position: sticky;
+  top: 18px;
+  padding: 10px 0 10px 14px;
+  border-left: 4px solid rgba(11, 107, 102, .28);
+  color: var(--muted);
+}
+.content-overview-title {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.content-overview a {
+  display: block;
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.content-overview a:hover,
+.content-overview a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.content-overview a.depth-2 {
+  padding-left: 12px;
+  font-size: .84rem;
+  font-weight: 650;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 900px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 860px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.value code {
+  white-space: normal;
+  word-break: break-word;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: #4c5d59;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.logical-parameter-table .param-col-component { width: 20%; }
+.logical-parameter-table .param-col-shape { width: 27%; }
+.logical-parameter-table .param-col-expansion { width: 39%; }
+.logical-parameter-table .param-col-logical { width: 14%; }
+.tp8-parameter-table .param-col-component { width: 24%; }
+.tp8-parameter-table .param-col-partition { width: 19%; }
+.tp8-parameter-table .param-col-shape { width: 39%; }
+.tp8-parameter-table .param-col-rank { width: 18%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+code {
+  padding: .08rem .22rem;
+  border-radius: 4px;
+  background: #edf3f1;
+  color: #243431;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.math-var, .math-func, .math-space, .shape, .eq-block {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+.math-var { font-style: italic; white-space: nowrap; }
+.math-vec, .math-mat, .math-set, .math-tensor { font-weight: 700; }
+.math-func { font-style: normal; white-space: nowrap; }
+.math-space { white-space: nowrap; color: #253633; }
+.shape {
+  display: inline-block;
+  white-space: nowrap;
+  color: #314541;
+  font-variant-numeric: tabular-nums;
+}
+.sym {
+  padding: 0 .08em;
+  border-bottom: 2px solid transparent;
+}
+.sym-hidden { color: #0b6b66; border-bottom-color: rgba(11, 107, 102, .35); }
+.sym-q { color: #7a3e9d; border-bottom-color: rgba(122, 62, 157, .35); }
+.sym-kv { color: #8f4b16; border-bottom-color: rgba(143, 75, 22, .35); }
+.sym-index { color: #1b5faa; border-bottom-color: rgba(27, 95, 170, .35); }
+.sym-gate { color: #9f3d3d; border-bottom-color: rgba(159, 61, 61, .35); }
+.sym-attn { color: #4f6b18; border-bottom-color: rgba(79, 107, 24, .35); }
+.sym-select { color: #6a4f00; border-bottom-color: rgba(106, 79, 0, .34); }
+.sym-weight { color: #3d5260; border-bottom-color: rgba(61, 82, 96, .28); }
+.eq-block {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  overflow-x: auto;
+}
+.eq-title {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font: 800 .86rem Inter, ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.eq-row {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 26px minmax(260px, 1fr) minmax(140px, max-content);
+  gap: 10px;
+  align-items: baseline;
+  width: max-content;
+  min-width: min(760px, 100%);
+  padding: 5px 0;
+}
+.eq-lhs { text-align: right; }
+.eq-op { text-align: center; color: var(--muted); }
+.eq-rhs { color: #1d2b28; }
+.eq-note { color: var(--muted); white-space: nowrap; }
+.eq-row.single {
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, max-content);
+}
+.eq-comment {
+  margin-top: 8px;
+  color: var(--muted);
+  font: .93rem Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.danger { color: var(--accent-2); font-weight: 800; }
+.footer {
+  margin-top: 42px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+@media (max-width: 980px) {
+  main {
+    max-width: 1160px;
+    padding: 28px 16px 64px;
+  }
+  .doc-shell {
+    display: block;
+  }
+  .content-overview {
+    position: static;
+    margin: 0 0 22px;
+    padding: 12px 14px;
+    border-left: 4px solid rgba(11, 107, 102, .28);
+    background: rgba(255, 255, 255, .72);
+  }
+  .content-overview a {
+    display: inline-block;
+    margin-right: 14px;
+  }
+  .content-overview a.depth-2 {
+    padding-left: 0;
+  }
+  .parameter-table-scroll .logical-parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
+  .parameter-table-scroll .tp8-parameter-table {
+    width: 900px;
+    min-width: 900px;
+  }
+}
+@media (max-width: 600px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .eq-row {
+    grid-template-columns: max-content 24px max-content max-content;
+  }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+  }
+}
+
+.sym-token { color: #9a5a0a; border-bottom-color: rgba(154, 90, 10, .34); }
+.sym-target { color: #245a91; border-bottom-color: rgba(36, 90, 145, .34); }
+.sym-fused { color: #74519a; border-bottom-color: rgba(116, 81, 154, .34); }
+.sym-draft { color: #08777b; border-bottom-color: rgba(8, 119, 123, .34); }
+section[id] { scroll-margin-top: 18px; }
+code { overflow-wrap: anywhere; word-break: break-word; }
+.rs-hero-note {
+  margin: 20px 0 28px;
+  padding: 20px 22px;
+  border: 1px solid #94b7ae;
+  border-left: 6px solid var(--accent);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f9fdfb, #e6f2ee);
+  color: #1b2d29;
+  font-size: 1.06rem;
+}
+.rs-symbol-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 18px 0 30px;
+}
+.rs-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: #34433f;
+  font-size: .82rem;
+  font-weight: 800;
+}
+.rs-key-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.rs-key.target { color: #245a91; }
+.rs-key.draft { color: #08777b; }
+.rs-key.point { color: #74519a; }
+.rs-key.token { color: #9a5a0a; }
+.rs-cycle {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 26px;
+}
+.rs-cycle-step {
+  min-width: 0;
+  padding: 17px 15px;
+  border: 1px solid var(--line);
+  border-top: 4px solid #7fa4c6;
+  border-radius: 9px;
+  background: var(--paper);
+}
+.rs-cycle-step:nth-child(2) { border-top-color: #80b9b8; }
+.rs-cycle-step:nth-child(3) { border-top-color: #74519a; }
+.rs-cycle-step:nth-child(4) { border-top-color: #d5aa68; }
+.rs-step-num {
+  display: inline-grid;
+  width: 25px;
+  height: 25px;
+  margin-bottom: 9px;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf4f2;
+  color: #31534c;
+  font-size: .78rem;
+  font-weight: 900;
+}
+.rs-cycle-step strong { display: block; margin-bottom: 5px; }
+.rs-cycle-step p { margin: 0; color: var(--muted); font-size: .88rem; }
+.rs-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.rs-mode {
+  padding: 19px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.rs-mode.baseline { border-color: #b7a88d; background: #fffbf2; }
+.rs-mode.classic { border-color: #76aaa6; background: #eff9f7; }
+.rs-mode-label {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .78);
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+.rs-mode h3 { margin: 0 0 9px; }
+.rs-mode ol { margin-bottom: 0; padding-left: 21px; }
+.rs-mode li { margin: 8px 0; }
+.mini-equation {
+  margin: 13px 0;
+  padding: 11px 12px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .9);
+  text-align: center;
+  font-size: 1.03rem;
+}
+.math-frac {
+  display: inline-grid;
+  grid-template-rows: auto auto;
+  margin: 0 .12em;
+  vertical-align: middle;
+  line-height: 1.15;
+  text-align: center;
+}
+.math-frac > span:first-child {
+  padding: 0 .18em .08em;
+  border-bottom: 1px solid currentColor;
+}
+.math-frac > span:last-child { padding: .08em .18em 0; }
+.alignment-scroll {
+  max-width: 100%;
+  margin: 18px 0 8px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+}
+.rs-prob-table { min-width: 720px; margin: 0; }
+.rs-prob-table td:not(:first-child),
+.rs-prob-table th:not(:first-child) { text-align: center; }
+.rs-impl-scroll table { min-width: 760px; margin: 0; }
+.rs-highlight-row td { background: #edf8f4; font-weight: 800; }
+.mobile-hint { margin: 5px 0 18px; color: var(--muted); font-size: .82rem; }
+.rs-result {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid #c5a36a;
+  border-left: 6px solid #b47a24;
+  border-radius: 9px;
+  background: #fff9eb;
+}
+.rs-result h3 { margin-top: 0; }
+.rs-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 15px 0;
+}
+.rs-result-metric {
+  padding: 12px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .82);
+}
+.rs-result-metric span { display: block; color: var(--muted); font-size: .78rem; }
+.rs-result-metric strong { display: block; margin-top: 3px; font-size: 1.08rem; }
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.related-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+}
+.related-card strong { display: block; margin-bottom: 5px; }
+.related-card p { margin: 0; color: var(--muted); font-size: .9rem; }
+.source-list li { margin: 8px 0; color: var(--muted); }
+.source-list a { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .rs-cycle,
+  .rs-compare,
+  .rs-result-grid,
+  .related-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="index.html">Overview</a><a href="glm52_architecture.html">Architecture</a><a href="glm52_nextn_mtp_block.html">NextN / MTP</a><a href="glm52_100k_prefill_execution_tree.html">100K Prefill Tree</a><a href="glm52_dsa_mla_connection.html">DSA + MLA</a><a href="glm52_prefill_cp_advantage.html">Prefill CP</a><a href="glm52_dsa_selector_cp8_evidence.html">Selector CP8 Evidence</a><a href="glm52_pp_100k_prefill.html">PP 100K Prefill</a><a href="glm52_linear_flops_per_token.html">Linear FLOPs</a><a href="glm52_attention_scan_flops_per_token.html">Attention Scan</a><a href="glm52_decode_roofline.html">Decode Roofline</a><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_eagle_rejection_sampling.html">Public URL</a></nav>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">On this page</div>
+  <a class="depth-1" href="#mental-model">Mental Model</a>
+<a class="depth-1" href="#cycle">Spec-Dec Cycle</a>
+<a class="depth-1" href="#flag-change">What the Flag Changes</a>
+<a class="depth-1" href="#overlap">Overlap Identity</a>
+<a class="depth-1" href="#worked-example">Worked Example</a>
+<a class="depth-1" href="#implementation">SGLang Path</a>
+<a class="depth-1" href="#measured-gate">Original Gate</a>
+<a class="depth-1" href="#boundaries">Benefit Boundaries</a>
+<a class="depth-1" href="#related-evidence">Related Evidence</a>
+<a class="depth-1" href="#sources">Sources</a>
+</aside>
+<article class="doc-content">
+
+<h1>Why <code>--speculative-use-rejection-sampling</code> Can Help</h1>
+<p class="lead">A focused explanation of what SGLang changes when the flag is enabled, why draft-target probability overlap controls acceptance, and why a mathematically correct mechanism may still yield only a modest measured gain.</p>
+<div class="grid"><section class="card"><div class="label">the flag changes</div><div class="value">proposal and correction rule</div></section><section class="card"><div class="label">the flag does not change</div><div class="value">draft weights or logits</div></section><section class="card"><div class="label">ideal one-step acceptance</div><div class="value">1 &minus; <span class="math-func">TV</span>(<span class="sym sym-target math-var">p</span>, <span class="sym sym-draft math-var">q</span>)</div></section><section class="card"><div class="label">historical matched gate</div><div class="value">+0.91 percentage points</div></section></div>
+<div class="rs-symbol-key" aria-label="Probability symbol key">
+  <span class="rs-key target"><span class="rs-key-dot" aria-hidden="true"></span>target distribution <span class="sym sym-target math-var">p</span></span>
+  <span class="rs-key draft"><span class="rs-key-dot" aria-hidden="true"></span>draft distribution <span class="sym sym-draft math-var">q</span></span>
+  <span class="rs-key point"><span class="rs-key-dot" aria-hidden="true"></span>point mass <span class="sym sym-fused math-var">q<sub>&delta;</sub></span></span>
+  <span class="rs-key token"><span class="rs-key-dot" aria-hidden="true"></span>proposed token <span class="sym sym-token math-var">d</span></span>
+</div>
+
+<section id="mental-model">
+  <h2>Start with the right mental model</h2>
+  <div class="rs-hero-note"><strong>Separate the model from the sampling rule.</strong> GLM-5.2 checkpoint layer 78 produces draft logits and therefore the draft distribution <span class="sym sym-draft math-var">q</span>. The flag does not retrain that layer, change its weights, or make its logits more accurate. It changes how SGLang draws a proposal from <span class="sym sym-draft math-var">q</span>, what probability information reaches target verification, and how the verifier accepts or corrects the proposal.</div>
+</section>
+
+<section id="cycle">
+  <h2>What speculative decoding is trying to save</h2>
+  <p>Ordinary autoregressive decoding runs the expensive 78-layer target once for every new token. Speculative decoding lets the cheap one-layer MTP sidecar propose a short chain, then runs the target once over the whole chain. The target accepts the longest valid prefix and contributes one target-sampled <em>bonus token</em> at the boundary. More accepted drafts can therefore amortize one target verification over more output tokens.</p>
+  <div class="rs-cycle" aria-label="One speculative decoding cycle">
+    <section class="rs-cycle-step"><span class="rs-step-num">1</span><strong>Draft cheaply</strong><p>Layer 78 runs recurrently and proposes tokens <span class="math-var">d</span><sub>1</sub> through <span class="math-var">d</span><sub>5</sub>.</p></section>
+    <section class="rs-cycle-step"><span class="rs-step-num">2</span><strong>Verify together</strong><p>The full target evaluates the proposal chain in one batched forward pass.</p></section>
+    <section class="rs-cycle-step"><span class="rs-step-num">3</span><strong>Accept a prefix</strong><p>Verification stops at the first rejected draft; later proposals depended on that rejected prefix.</p></section>
+    <section class="rs-cycle-step"><span class="rs-step-num">4</span><strong>Correct and continue</strong><p>The target supplies a correctly distributed boundary token, and drafting begins again.</p></section>
+  </div>
+  <div class="note"><strong>Acceptance length is not strict draft acceptance.</strong> SGLang's <code>avg_spec_accept_length</code> includes the target's one bonus token. In a five-proposal cycle, a displayed length of 3.8 means about 2.8 accepted draft tokens plus one bonus—not 3.8 accepted drafts.</div>
+</section>
+
+<section id="flag-change">
+  <h2>What the flag changes</h2>
+  <p>Let <span class="sym sym-target math-var">p</span> be the target model's sampling distribution after temperature and request filters, and <span class="sym sym-draft math-var">q</span> the MTP drafter's proposal distribution over the same vocabulary. The important difference is whether verification sees the full <span class="sym sym-draft math-var">q</span> or treats the chosen draft token as a probability-one point mass.</p>
+  <div class="rs-compare">
+    <section class="rs-mode baseline">
+      <span class="rs-mode-label">flag off · target-only path</span>
+      <h3>Argmax becomes a point mass</h3>
+      <ol>
+        <li>EAGLE top-k=1 selects the drafter's argmax token <span class="sym sym-token math-var">d</span>.</li>
+        <li>The verifier effectively uses <span class="sym sym-fused math-var">q<sub>&delta;</sub></span>: probability 1 on <span class="sym sym-token math-var">d</span> and 0 elsewhere.</li>
+        <li>The candidate survives with probability <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>).</li>
+      </ol>
+      <div class="mini-equation"><span class="math-var">P</span><sub>accept</sub> = <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</div>
+      <p>This remains distribution-correct after target correction, but it discards how uncertain the drafter was.</p>
+    </section>
+    <section class="rs-mode classic">
+      <span class="rs-mode-label">flag on · classic rejection sampling</span>
+      <h3>Sample from and retain the proposal</h3>
+      <ol>
+        <li>Sample <span class="sym sym-token math-var">d</span> from <span class="sym sym-draft math-var">q</span> rather than always taking its argmax.</li>
+        <li>Carry the vocabulary-wide <span class="sym sym-draft math-var">q</span> into verification.</li>
+        <li>Draw <span class="math-var">u</span> uniformly from 0 to 1 and accept when <span class="math-var">u</span> &lt; <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span>).</li>
+      </ol>
+      <div class="mini-equation"><span class="math-var">P</span><sub>accept</sub>(<span class="sym sym-token math-var">d</span>) = <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span>)</div>
+      <p>If draft and target assign similar probability to the sampled token, the ratio is near one and acceptance is likely.</p>
+    </section>
+  </div>
+</section>
+
+<section id="overlap">
+  <h2>Why probability overlap controls acceptance</h2>
+  <div class="eq-block"><div class="eq-title">Expected one-step acceptance</div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">x</span></sub> <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>) <span class="math-func">min</span>(1, <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>)</span></span>)</div><div class="eq-note">proposal-weighted acceptance</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">&sum;<sub><span class="math-var">x</span></sub> <span class="math-func">min</span>(<span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>), <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>))</div><div class="eq-note">shared probability mass</div></div><div class="eq-row"><div class="eq-lhs"><span class="math-var">A</span></div><div class="eq-op">=</div><div class="eq-rhs">1 &minus; <span class="math-func">TV</span>(<span class="sym sym-target math-var">p</span>, <span class="sym sym-draft math-var">q</span>)</div><div class="eq-note">one minus total-variation distance</div></div><div class="eq-comment">If <span class="sym sym-target math-var">p</span> and <span class="sym sym-draft math-var">q</span> are identical, every proposal is accepted. The flag cannot make the distributions closer; it lets verification use overlap that already exists instead of collapsing <span class="sym sym-draft math-var">q</span> to <span class="sym sym-fused math-var">q<sub>&delta;</sub></span>.</div></div>
+</section>
+
+<section id="worked-example">
+  <h2>A four-token worked example</h2>
+  <p>Suppose the target and draft distributions are close but not identical. Token A is both models' favorite, but the remaining probability is meaningful rather than noise to discard.</p>
+  <div class="alignment-scroll" tabindex="0" role="region" aria-label="Worked rejection-sampling probability table">
+    <table class="rs-prob-table">
+      <thead><tr><th>Distribution or accepted mass</th><th>A</th><th>B</th><th>C</th><th>D</th><th>One-step acceptance</th></tr></thead>
+      <tbody>
+        <tr><td>target <span class="sym sym-target math-var">p</span></td><td>0.60</td><td>0.20</td><td>0.10</td><td>0.10</td><td>&mdash;</td></tr>
+        <tr><td>draft <span class="sym sym-draft math-var">q</span></td><td>0.70</td><td>0.20</td><td>0.05</td><td>0.05</td><td>&mdash;</td></tr>
+        <tr><td>flag off: point mass <span class="sym sym-fused math-var">q<sub>&delta;</sub></span></td><td>1.00</td><td>0</td><td>0</td><td>0</td><td><strong>0.60</strong></td></tr>
+        <tr class="rs-highlight-row"><td>flag on: <span class="math-func">min</span>(<span class="sym sym-target math-var">p</span>, <span class="sym sym-draft math-var">q</span>)</td><td>0.60</td><td>0.20</td><td>0.05</td><td>0.05</td><td><strong>0.90</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="mobile-hint">On a narrow screen, scroll the probability table horizontally; values remain on one line.</p>
+  <p>If the flag samples A, conditional acceptance is 0.60 &divide; 0.70 = 85.7%. If it samples B, both models assign 0.20, so acceptance is 100%. Averaging over all possible draft samples gives 90% one-step acceptance. Without the flag, only A can be proposed and it survives with the target's 60% probability.</p>
+  <div class="note"><strong>Sampling a non-argmax token does not change the intended target law.</strong> On rejection, SGLang samples a replacement from the positive residual proportional to <span class="math-bracket">[</span><span class="sym sym-target math-var">p</span>(<span class="math-var">x</span>) &minus; <span class="sym sym-draft math-var">q</span>(<span class="math-var">x</span>)<span class="math-bracket">]</span><sub>+</sub>. Accepted mass plus residual correction reconstructs <span class="sym sym-target math-var">p</span>; the drafter changes execution cost, not the target sampling distribution.</div>
+</section>
+
+<section id="implementation">
+  <h2>What the pinned SGLang implementation does</h2>
+  <div class="alignment-scroll rs-impl-scroll" tabindex="0" role="region" aria-label="Flag-off and flag-on implementation comparison">
+  <table><tr><th>Stage</th><th>Flag off</th><th>Flag on</th></tr><tr><td>Layer-78 proposal</td><td>take argmax for EAGLE top-k=1</td><td>temperature-scale logits, form <span class="sym sym-draft math-var">q</span>, and sample one token</td></tr>
+<tr><td>State carried to verify</td><td>token ID; no full draft distribution</td><td>token ID plus vocabulary-wide <span class="sym sym-draft math-var">q</span> for every draft step</td></tr>
+<tr><td>Target verification</td><td>target-only tree kernel; effective point mass <span class="sym sym-fused math-var">q<sub>&delta;</sub></span></td><td>chain rejection kernel using <span class="math-frac"><span><span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>)</span><span><span class="sym sym-draft math-var">q</span>(<span class="sym sym-token math-var">d</span>)</span></span></td></tr>
+<tr><td>First rejection</td><td>sample a target correction that excludes the rejected point-mass candidate</td><td>sample from normalized positive residual <span class="sym sym-target math-var">p</span> &minus; <span class="sym sym-draft math-var">q</span></td></tr></table>
+  </div>
+  <p class="mobile-hint">On a narrow screen, scroll the implementation comparison horizontally.</p>
+  <p>The request temperature is applied to both target and draft logits in the rejection path. The target distribution is then filtered by the request's top-k and top-p settings. A draft candidate outside the target's surviving support has <span class="sym sym-target math-var">p</span>(<span class="sym sym-token math-var">d</span>) = 0 and is always rejected, so aggressive target truncation or a poorly aligned drafter can reduce the benefit.</p>
+  <div class="note"><strong>Version-specific boundary.</strong> In the pinned downstream implementation, request top-p filters <span class="sym sym-target math-var">p</span> but is not applied to the retained draft support <span class="sym sym-draft math-var">q</span>. The later top-p-aware experiments test aligning that support explicitly; this is an implementation refinement, not a change to the classical rejection-sampling identity above.</div>
+</section>
+
+<section id="measured-gate">
+  <h2>Why it helped only a little in the original gate</h2>
+  <div class="rs-result">
+    <h3>GB300 node-136 matched gate · 512 rows</h3>
+    <p>Temperature 1.0, top-p 0.95, no request top-k; FP4 target and FP4 draft; EAGLE 5-1-6. Both arms replayed the same source slice.</p>
+    <div class="rs-result-grid">
+      <div class="rs-result-metric"><span>flag off</span><strong>55.62% strict draft acceptance</strong></div>
+      <div class="rs-result-metric"><span>flag on</span><strong>56.54% strict draft acceptance</strong></div>
+      <div class="rs-result-metric"><span>measured change</span><strong>+0.91 percentage points</strong></div>
+    </div>
+    <p>The flag extracted slightly more overlap between <span class="sym sym-target math-var">p</span> and <span class="sym sym-draft math-var">q</span>, but it did not make the MTP distribution itself more target-like. Draft/target weight or quantization mismatch, context-dependent MTP error, and target top-p truncation can all leave overlap modest.</p>
+    <p><strong>Stability caveat:</strong> after the treatment completed its measured rows, the pod hit a CUDA illegal-memory access in the DSA CUDA-graph metadata path and restarted. Timing does not prove the flag caused the fault, but the no-restart gate failed, so the full A/B was stopped.</p>
+  </div>
+</section>
+
+<section id="boundaries">
+  <h2>When to expect a benefit—and when not to</h2>
+  <div class="alignment-scroll" tabindex="0" role="region" aria-label="Expected rejection-sampling effects">
+  <table><tr><th>Situation</th><th>Expected effect</th></tr><tr><td>stochastic decoding and <span class="sym sym-draft math-var">q</span> closely tracks <span class="sym sym-target math-var">p</span></td><td>higher acceptance can amortize target verification over more output tokens</td></tr>
+<tr><td>greedy decoding</td><td>the runtime takes the greedy verification branch; rejection sampling has no probability-overlap advantage</td></tr>
+<tr><td><span class="sym sym-draft math-var">q</span> and <span class="sym sym-target math-var">p</span> disagree strongly</td><td>little acceptance gain; improve or realign the drafter instead</td></tr>
+<tr><td>high batch or expensive verification</td><td>higher acceptance may still fail to improve throughput because speculative work is not free</td></tr>
+<tr><td>this pinned downstream implementation</td><td>requires EAGLE/EAGLE3/NEXTN, EAGLE top-k=1, one shared vocabulary, default acceptance thresholds, and non-deterministic sampling</td></tr></table>
+  </div>
+  <div class="note"><strong>Bottom line.</strong> The flag is a better coupling rule between two distributions, not a better draft model. It can turn existing draft-target agreement into more accepted tokens while preserving the target law. Its production value still requires a stable, fixed-output throughput A/B.</div>
+</section>
+
+<section id="related-evidence">
+  <h2>Related measured evidence</h2>
+  <div class="related-grid">
+    <a class="related-card" href="../tmp/glm52-gb300-eagle314-top-p-rejection-ab-20260828/"><strong>GLM-5.2 · 10,000-request top-p alignment A/B</strong><p>Matched comparison of rejection sampling off, stock rejection sampling, and top-p-aware draft proposals.</p></a>
+    <a class="related-card" href="../tmp/glm53-gb300-eagle314-six-arm-matrix-20260901/"><strong>GLM-5.3 · six-arm sampling matrix</strong><p>Two production sampling policies crossed with three rejection modes on one 1,907-position mask.</p></a>
+  </div>
+</section>
+
+<section id="sources">
+  <h2>Implementation and paper trail</h2>
+  <p>This explanation follows downstream SGLang commit <code>c8ce314a</code>. Internal source links may require Luchen GitLab sign-in.</p>
+  <ul class="source-list">
+    <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/spec_utils.py">Draft proposal construction</a>: temperature scaling, full-distribution sampling, and retained draft probabilities.</li>
+    <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/eagle_worker_v2.py">EAGLE proposal plumbing</a>: passes each proposal token and its draft distribution into verification.</li>
+    <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/eagle_utils.py">Verifier dispatch</a>: chooses the rejection-sampling path and builds target distributions.</li>
+    <li><a href="https://git.luchentech.com/platform/sglang/-/blob/c8ce314a6544a6aa1dbd532499096b6fc1758cc3/python/sglang/srt/speculative/reject_sampling.py">Classic chain kernel</a>: probability-ratio acceptance and positive-residual correction.</li>
+    <li><a href="https://arxiv.org/abs/2302.01318">Speculative sampling paper</a>: the modified rejection-sampling algorithm that preserves the target distribution.</li>
+    <li><a href="glm52_nextn_mtp_block.html#rejection-sampling">Parent NextN/MTP explainer</a>: the original section in its layer-78 architectural context.</li>
+  </ul>
+</section>
+
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_eagle_rejection_sampling.html">https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_eagle_rejection_sampling.html</a><br>Generated from GLM-5.2 config constants and SGLang serving math. Public source links: <a href="https://huggingface.co/zai-org/GLM-5.2/blob/main/config.json">GLM-5.2 config</a>, <a href="https://docs.sglang.ai/advanced_features/speculative_decoding.html">SGLang speculative-decoding guide</a>.</p>
+</article>
+</div>
+</main>
+</body>
+</html>
