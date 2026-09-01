@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Experiment design for separating active-request cost from cached-context scan cost in GLM-5.2 DPA decode on Taiguo GB300.">
+  <meta property="og:title" content="DPA calibration · active requests × cached context">
+  <meta property="og:description" content="A 24-cell, fully cached decode sweep designed to isolate request-count, KV-scan, and shared-MoE contributions.">
+  <meta property="og:type" content="article">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-dpa-request-context-calibration/">
+  <link rel="icon" href="data:,">
+  <title>DPA calibration · active requests × cached context</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ground: #f2f5f7;
+      --paper: #ffffff;
+      --ink: #18232d;
+      --muted: #63717d;
+      --line: #d5dee4;
+      --line-strong: #bcc9d1;
+      --soft: #eef3f5;
+      --navy: #244d68;
+      --navy-soft: #e2edf3;
+      --request: #6954a3;
+      --request-soft: #ece8f6;
+      --context: #276b9b;
+      --context-soft: #e1eef7;
+      --kv: #0d766e;
+      --kv-soft: #def0ec;
+      --moe: #a36309;
+      --moe-soft: #faecd5;
+      --red: #a23c37;
+      --red-soft: #f7e5e3;
+      --shadow: 0 12px 30px rgb(27 46 59 / 7%);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.58;
+    }
+    a { color: #175f98; text-underline-offset: 3px; }
+    button { font: inherit; }
+    code, .mono {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .92em;
+      overflow-wrap: anywhere;
+    }
+    .math-var {
+      font-family: Cambria, Georgia, serif;
+      font-style: italic;
+    }
+    .math-fn {
+      font-family: Cambria, Georgia, serif;
+      font-style: normal;
+    }
+    .sym-request { color: var(--request); }
+    .sym-context { color: var(--context); }
+    .sym-kv { color: var(--kv); }
+    .sym-moe { color: var(--moe); }
+
+    .skip-link {
+      position: absolute;
+      top: -60px;
+      left: 16px;
+      z-index: 30;
+      border-radius: 7px;
+      background: var(--ink);
+      color: white;
+      padding: 8px 12px;
+    }
+    .skip-link:focus { top: 12px; }
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      background: rgb(255 255 255 / 96%);
+    }
+    .topbar-inner {
+      width: min(1440px, calc(100% - 40px));
+      min-height: 54px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .brand { color: var(--ink); font-weight: 850; text-decoration: none; }
+    .toplinks { display: flex; flex-wrap: wrap; gap: 17px; font-size: 14px; }
+
+    .hero {
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 83% 15%, rgb(39 107 155 / 11%), transparent 26%),
+        radial-gradient(circle at 72% 84%, rgb(105 84 163 / 10%), transparent 27%),
+        var(--paper);
+    }
+    .hero-inner {
+      width: min(1190px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 52px 0 43px;
+    }
+    .eyebrow {
+      color: var(--kv);
+      font-size: 12px;
+      font-weight: 880;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { margin: 0; line-height: 1.18; letter-spacing: -.02em; }
+    h1 { max-width: 970px; margin-top: 10px; font-size: clamp(34px, 4.7vw, 53px); }
+    h2 { margin-bottom: 15px; font-size: clamp(25px, 3vw, 32px); }
+    h3 { font-size: 19px; }
+    p { margin: 10px 0 0; }
+    .lede { max-width: 950px; color: var(--muted); font-size: 18px; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    .pill {
+      display: inline-flex;
+      min-height: 31px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 760;
+    }
+    .pill.status { border-color: #e1b5b1; background: var(--red-soft); color: var(--red); }
+    .pill.request { border-color: #c7bee0; background: var(--request-soft); color: var(--request); }
+    .pill.context { border-color: #bad2e3; background: var(--context-soft); color: var(--context); }
+
+    .layout {
+      width: min(1440px, calc(100% - 40px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 40px;
+      padding: 36px 0 78px;
+    }
+    .toc {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      border-left: 3px solid var(--line);
+      padding-left: 16px;
+    }
+    .toc-title {
+      margin: 0 0 9px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .toc a {
+      display: block;
+      padding: 5px 0;
+      color: #4a5965;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .toc a:hover { color: var(--kv); }
+    article { min-width: 0; }
+    section { scroll-margin-top: 18px; }
+    section + section { margin-top: 56px; }
+    .section-intro { max-width: 940px; color: var(--muted); }
+
+    .verdict {
+      border-top: 4px solid var(--kv);
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 25px 27px;
+    }
+    .verdict strong { color: var(--kv); }
+    .question-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 13px;
+      align-items: stretch;
+      margin-top: 21px;
+    }
+    .axis-card {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .axis-card.request { border-top: 4px solid var(--request); }
+    .axis-card.context { border-top: 4px solid var(--context); }
+    .axis-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .axis-value { margin-top: 5px; font-size: 26px; font-weight: 860; line-height: 1.12; }
+    .axis-card p { color: var(--muted); font-size: 13px; }
+    .times {
+      align-self: center;
+      color: #8b99a4;
+      font-family: Cambria, Georgia, serif;
+      font-size: 32px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 16px;
+    }
+    .metric-value {
+      color: var(--navy);
+      font-size: 28px;
+      font-weight: 860;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.08;
+    }
+    .metric-label { margin-top: 7px; font-weight: 780; }
+    .metric-note { margin-top: 4px; color: var(--muted); font-size: 12px; }
+
+    .matrix-card {
+      margin-top: 22px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+    .matrix-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 15px;
+    }
+    .matrix-head p { max-width: 680px; color: var(--muted); font-size: 13px; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .legend-ramp {
+      width: 112px;
+      height: 10px;
+      border: 1px solid #bad4ce;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #eff9f7, #0d766e);
+    }
+    .matrix-wrap { margin-top: 18px; overflow-x: auto; padding-bottom: 4px; }
+    .matrix {
+      width: 100%;
+      min-width: 920px;
+      border-collapse: separate;
+      border-spacing: 7px;
+      table-layout: fixed;
+    }
+    .matrix th { color: var(--muted); font-size: 12px; font-weight: 780; }
+    .matrix .corner { width: 120px; text-align: left; vertical-align: bottom; }
+    .matrix .n-head {
+      border-bottom: 3px solid var(--request);
+      color: var(--request);
+      padding: 7px 3px;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+    .matrix .l-head {
+      border-right: 3px solid var(--context);
+      color: var(--context);
+      padding: 8px 10px 8px 3px;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .matrix .l-head small { display: block; color: var(--muted); font-weight: 560; }
+    .cell-button {
+      width: 100%;
+      min-height: 73px;
+      cursor: pointer;
+      border: 1px solid rgb(13 118 110 / 24%);
+      border-radius: 8px;
+      color: #153a38;
+      padding: 9px 5px;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .cell-button:hover,
+    .cell-button:focus-visible {
+      z-index: 2;
+      border-color: var(--kv);
+      box-shadow: 0 6px 16px rgb(13 118 110 / 17%);
+      outline: none;
+      transform: translateY(-2px);
+    }
+    .cell-button.selected { outline: 3px solid rgb(13 118 110 / 28%); border-color: var(--kv); }
+    .cell-total { display: block; font-size: 16px; font-weight: 840; font-variant-numeric: tabular-nums; }
+    .cell-label { display: block; margin-top: 2px; color: rgb(21 58 56 / 72%); font-size: 10px; font-weight: 650; }
+    .heat-1 { background: #f1faf8; }
+    .heat-2 { background: #e6f5f1; }
+    .heat-3 { background: #d4ede7; }
+    .heat-4 { background: #bde3da; }
+    .heat-5 { background: #99d2c6; }
+    .heat-6 { background: #6dbbad; }
+    .heat-7 { background: #3d9b90; color: white; }
+    .heat-8 { background: #0d766e; color: white; }
+    .heat-7 .cell-label, .heat-8 .cell-label { color: rgb(255 255 255 / 78%); }
+
+    .inspector {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+    .inspector-item {
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 13px 14px;
+    }
+    .inspector-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .inspector-value { margin-top: 4px; font-size: 21px; font-weight: 840; font-variant-numeric: tabular-nums; }
+    .inspector-note { margin-top: 4px; color: var(--muted); font-size: 11px; }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .comparison {
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--kv);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 15px;
+    }
+    .comparison-total { color: var(--kv); font-size: 20px; font-weight: 850; }
+    .comparison-pair { margin-top: 8px; color: var(--ink); font-weight: 760; line-height: 1.45; }
+    .comparison p { color: var(--muted); font-size: 12px; }
+
+    .isolation-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 21px;
+    }
+    .isolation {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      padding: 19px;
+    }
+    .isolation.context { border-top: 4px solid var(--context); }
+    .isolation.request { border-top: 4px solid var(--request); }
+    .isolation p { color: var(--muted); font-size: 13px; }
+    .mini-sequence {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 14px;
+      overflow-x: auto;
+      padding-bottom: 3px;
+    }
+    .mini-node {
+      min-width: 68px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--soft);
+      padding: 8px 7px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+    .mini-node.context { border-color: #b7d2e4; background: var(--context-soft); color: var(--context); }
+    .mini-node.request { border-color: #c8bee1; background: var(--request-soft); color: var(--request); }
+    .mini-arrow { color: #98a4ad; }
+
+    .equation-block {
+      margin-top: 20px;
+      border-left: 4px solid var(--kv);
+      background: var(--soft);
+      padding: 16px 18px;
+    }
+    .equation-row {
+      display: grid;
+      grid-template-columns: minmax(210px, .8fr) 26px minmax(0, 2fr);
+      gap: 9px;
+      align-items: baseline;
+      font-family: Cambria, Georgia, serif;
+      font-size: clamp(17px, 2vw, 21px);
+    }
+    .equation-row + .equation-row { margin-top: 9px; }
+    .equals { color: #87949f; text-align: center; }
+    .equation-note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-size: 12px;
+    }
+
+    .rank-card {
+      margin-top: 22px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+    .rank-row {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 17px;
+    }
+    .rank {
+      min-height: 88px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 10px 7px;
+      text-align: center;
+    }
+    .rank.loaded { border-color: #a99bcf; background: var(--request-soft); }
+    .rank-name { font: 800 12px/1.2 "SFMono-Regular", Consolas, monospace; }
+    .rank-state { margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+    .rank.loaded .rank-name { color: var(--request); }
+    .moe-rail {
+      position: relative;
+      margin-top: 12px;
+      border: 1px solid #e3c89b;
+      border-radius: 7px;
+      background: var(--moe-soft);
+      color: var(--moe);
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .moe-rail::before {
+      position: absolute;
+      top: -13px;
+      left: 6.25%;
+      width: 87.5%;
+      border-top: 2px solid #d2a75d;
+      content: "";
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 21px;
+      counter-reset: flow;
+    }
+    .flow-step {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 16px;
+      counter-increment: flow;
+    }
+    .flow-step::before {
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--navy-soft);
+      color: var(--navy);
+      content: counter(flow, decimal-leading-zero);
+      font-size: 10px;
+      font-weight: 850;
+    }
+    .flow-title { margin-top: 10px; font-weight: 820; }
+    .flow-step p { color: var(--muted); font-size: 12px; }
+
+    .table-wrap {
+      margin-top: 20px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      background: var(--paper);
+    }
+    table.data { width: 100%; border-collapse: collapse; }
+    .data th, .data td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .data th {
+      background: var(--soft);
+      color: #43525e;
+      font-size: 11px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .data tbody tr:last-child td { border-bottom: 0; }
+    .data td:first-child { font-weight: 770; white-space: nowrap; }
+    .data td { color: var(--muted); font-size: 13px; }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 13px;
+      margin-top: 20px;
+    }
+    .readout {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 17px;
+    }
+    .readout.attention { border-top: 4px solid var(--context); }
+    .readout.moe { border-top: 4px solid var(--moe); }
+    .readout.total { border-top: 4px solid var(--kv); }
+    .readout p { color: var(--muted); font-size: 13px; }
+    .readout-tag {
+      display: inline-block;
+      margin-top: 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      padding: 4px 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .callout {
+      margin-top: 20px;
+      border-left: 4px solid var(--moe);
+      background: var(--moe-soft);
+      padding: 15px 18px;
+    }
+    .callout.red { border-left-color: var(--red); background: var(--red-soft); }
+    .callout strong { color: var(--ink); }
+    .callout p { color: #5c5347; font-size: 13px; }
+    .callout.red p { color: #694946; }
+
+    details {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+    summary { cursor: pointer; padding: 13px 15px; font-weight: 790; }
+    .details-body { border-top: 1px solid var(--line); padding: 0 15px 15px; }
+    .details-body ul { margin: 13px 0 0; padding-left: 21px; }
+    .details-body li + li { margin-top: 6px; }
+
+    footer { border-top: 1px solid var(--line); background: var(--paper); }
+    .footer-inner {
+      width: min(1190px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 26px 0 35px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1080px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc {
+        position: static;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 13px 15px;
+      }
+      .toc a { display: inline-block; margin-right: 15px; }
+      .metric-grid, .comparison-grid { grid-template-columns: 1fr 1fr; }
+      .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .topbar-inner, .hero-inner, .layout, .footer-inner { width: min(100% - 24px, 1440px); }
+      .topbar-inner { align-items: flex-start; flex-direction: column; padding: 10px 0; }
+      .lede { font-size: 16px; }
+      .question-grid, .isolation-grid, .inspector, .readout-grid { grid-template-columns: 1fr; }
+      .times { justify-self: center; transform: rotate(90deg); }
+      .metric-grid, .comparison-grid, .flow { grid-template-columns: 1fr; }
+      .equation-row { grid-template-columns: 1fr; gap: 2px; }
+      .equals { display: none; }
+      .rank-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .moe-rail::before { left: 12.5%; width: 75%; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to experiment design</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../../">MaaS Docs</a>
+      <nav class="toplinks" aria-label="Pack navigation">
+        <a href="#grid">24-cell grid</a>
+        <a href="#isolation">Isolation logic</a>
+        <a href="#execution">Execution</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">GLM-5.2 · Taiguo GB300 · proposed DPA calibration</div>
+      <h1>DPA calibration: active requests × cached context</h1>
+      <p class="lede">
+        A two-dimensional decode sweep designed to distinguish the cost of carrying more active sequences from the cost of scanning more KV history. Each cell contains concurrent, equal-length, fully cached requests routed to one DPA rank.
+      </p>
+      <div class="meta-row">
+        <span class="pill status">Design only · no measurements collected</span>
+        <span class="pill request">8 request-count levels</span>
+        <span class="pill context">3 cached-context levels</span>
+        <span class="pill">24 randomized cells</span>
+        <span class="pill">2026-09-01</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="layout" id="main">
+    <aside class="toc" aria-label="Page overview">
+      <div class="toc-title">On this page</div>
+      <a href="#question">01 · Question</a>
+      <a href="#grid">02 · 24-cell grid</a>
+      <a href="#isolation">03 · Isolation logic</a>
+      <a href="#topology">04 · Rank topology</a>
+      <a href="#execution">05 · Execution</a>
+      <a href="#readout">06 · Intended readout</a>
+      <a href="#limits">07 · Guardrails</a>
+    </aside>
+
+    <article>
+      <section id="question">
+        <h2>01 · The question this grid answers</h2>
+        <div class="verdict">
+          <strong>One variable is not enough.</strong> Increasing request count at one fixed context length simultaneously adds queries, KV to scan, MoE tokens, and launch work. Crossing request count with context length gives the comparisons needed to separate those effects.
+        </div>
+        <div class="question-grid">
+          <div class="axis-card request">
+            <div class="axis-kicker">Horizontal axis</div>
+            <div class="axis-value sym-request">Active requests</div>
+            <p><span class="math-var sym-request">N</span> = 1, 2, 4, 8, 12, 16, 24, or 32 concurrent sequences on the loaded rank.</p>
+          </div>
+          <div class="times" aria-hidden="true">×</div>
+          <div class="axis-card context">
+            <div class="axis-kicker">Vertical axis</div>
+            <div class="axis-value sym-context">Cached context</div>
+            <p><span class="math-var sym-context">L</span> = 8,192, 32,768, or 81,920 cached tokens per request.</p>
+          </div>
+        </div>
+        <div class="equation-block" aria-label="Experiment variables">
+          <div class="equation-row">
+            <span class="math-var sym-kv">K<sub>rank</sub></span>
+            <span class="equals">=</span>
+            <span><span class="math-var sym-request">N</span> × <span class="math-var sym-context">L</span> <span class="equation-note">nominal cached tokens resident on the loaded rank</span></span>
+          </div>
+          <div class="equation-row">
+            <span class="math-fn">cell count</span>
+            <span class="equals">=</span>
+            <span>8 request levels × 3 context levels = 24 cells</span>
+          </div>
+        </div>
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="metric-value">1 → 32</div>
+            <div class="metric-label">Active sequences</div>
+            <div class="metric-note">32× span in request count</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">8K → 80K</div>
+            <div class="metric-label">Context per sequence</div>
+            <div class="metric-note">10× span in cached length</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">8K → 2.62M</div>
+            <div class="metric-label">Total rank KV</div>
+            <div class="metric-note">320× nominal scan-volume span</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">96</div>
+            <div class="metric-label">Output-token cap</div>
+            <div class="metric-note">Per request; deterministic sampling</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="grid">
+        <h2>02 · The 24-cell sweep</h2>
+        <p class="section-intro">
+          Every row fixes the cached length per request. Every column fixes the number of simultaneous requests. Each cell shows <span class="math-var sym-kv">K<sub>rank</sub></span>, the nominal total cached tokens assigned to the loaded DPA rank. Click a cell to inspect its exact values.
+        </p>
+        <div class="matrix-card">
+          <div class="matrix-head">
+            <div>
+              <h3>Request-count × context-length matrix</h3>
+              <p>The heat color represents total KV, not a measured latency. Compact K/M labels follow the 1,024-token prompt convention; clicking shows exact counts.</p>
+            </div>
+            <div class="legend" aria-label="Total KV legend">
+              <span>less total KV</span><span class="legend-ramp"></span><span>more total KV</span>
+            </div>
+          </div>
+          <div class="matrix-wrap">
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th class="corner"><span class="sym-context">context</span> ↓<br><span class="sym-request">requests</span> →</th>
+                  <th class="n-head">1</th>
+                  <th class="n-head">2</th>
+                  <th class="n-head">4</th>
+                  <th class="n-head">8</th>
+                  <th class="n-head">12</th>
+                  <th class="n-head">16</th>
+                  <th class="n-head">24</th>
+                  <th class="n-head">32</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th class="l-head">8K<small>8,192 each</small></th>
+                  <td><button class="cell-button heat-1" data-n="1" data-l="8192" data-total="8192"><span class="cell-total">8K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-1" data-n="2" data-l="8192" data-total="16384"><span class="cell-total">16K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-1" data-n="4" data-l="8192" data-total="32768"><span class="cell-total">32K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-2" data-n="8" data-l="8192" data-total="65536"><span class="cell-total">64K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-2" data-n="12" data-l="8192" data-total="98304"><span class="cell-total">96K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-3" data-n="16" data-l="8192" data-total="131072"><span class="cell-total">128K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-3" data-n="24" data-l="8192" data-total="196608"><span class="cell-total">192K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-4" data-n="32" data-l="8192" data-total="262144"><span class="cell-total">256K</span><span class="cell-label">total KV</span></button></td>
+                </tr>
+                <tr>
+                  <th class="l-head">32K<small>32,768 each</small></th>
+                  <td><button class="cell-button heat-1" data-n="1" data-l="32768" data-total="32768"><span class="cell-total">32K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-2" data-n="2" data-l="32768" data-total="65536"><span class="cell-total">64K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-3" data-n="4" data-l="32768" data-total="131072"><span class="cell-total">128K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-4 selected" data-n="8" data-l="32768" data-total="262144"><span class="cell-total">256K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-4" data-n="12" data-l="32768" data-total="393216"><span class="cell-total">384K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-5" data-n="16" data-l="32768" data-total="524288"><span class="cell-total">512K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-6" data-n="24" data-l="32768" data-total="786432"><span class="cell-total">768K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-6" data-n="32" data-l="32768" data-total="1048576"><span class="cell-total">1.00M</span><span class="cell-label">total KV</span></button></td>
+                </tr>
+                <tr>
+                  <th class="l-head">80K<small>81,920 each</small></th>
+                  <td><button class="cell-button heat-2" data-n="1" data-l="81920" data-total="81920"><span class="cell-total">80K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-3" data-n="2" data-l="81920" data-total="163840"><span class="cell-total">160K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-4" data-n="4" data-l="81920" data-total="327680"><span class="cell-total">320K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-5" data-n="8" data-l="81920" data-total="655360"><span class="cell-total">640K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-6" data-n="12" data-l="81920" data-total="983040"><span class="cell-total">960K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-7" data-n="16" data-l="81920" data-total="1310720"><span class="cell-total">1.25M</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-7" data-n="24" data-l="81920" data-total="1966080"><span class="cell-total">1.88M</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-8" data-n="32" data-l="81920" data-total="2621440"><span class="cell-total">2.50M</span><span class="cell-label">total KV</span></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="inspector" aria-live="polite">
+            <div class="inspector-item">
+              <div class="inspector-label">Active requests</div>
+              <div class="inspector-value sym-request" id="inspect-n">8</div>
+              <div class="inspector-note">Concurrent sequences routed to rank 0</div>
+            </div>
+            <div class="inspector-item">
+              <div class="inspector-label">Cached context each</div>
+              <div class="inspector-value sym-context" id="inspect-l">32,768</div>
+              <div class="inspector-note">Prompt KV already resident before decode</div>
+            </div>
+            <div class="inspector-item">
+              <div class="inspector-label">Nominal total KV</div>
+              <div class="inspector-value sym-kv" id="inspect-total">262,144</div>
+              <div class="inspector-note" id="inspect-formula">8 requests × 32,768 tokens</div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:28px">Built-in equal-total-KV comparisons</h3>
+        <p class="section-intro">These pairs keep nominal total KV fixed while changing the number of active sequences by 4×. They are the cleanest direct checks for a request-count effect that is not merely more KV.</p>
+        <div class="comparison-grid">
+          <div class="comparison">
+            <div class="comparison-total">32K total</div>
+            <div class="comparison-pair">1 × 32K<br>versus<br>4 × 8K</div>
+            <p>Same KV; four times as many sequence states.</p>
+          </div>
+          <div class="comparison">
+            <div class="comparison-total">64K total</div>
+            <div class="comparison-pair">2 × 32K<br>versus<br>8 × 8K</div>
+            <p>Repeats the contrast at twice the KV volume.</p>
+          </div>
+          <div class="comparison">
+            <div class="comparison-total">128K total</div>
+            <div class="comparison-pair">4 × 32K<br>versus<br>16 × 8K</div>
+            <p>Tests whether the request penalty changes with batch geometry.</p>
+          </div>
+          <div class="comparison">
+            <div class="comparison-total">256K total</div>
+            <div class="comparison-pair">8 × 32K<br>versus<br>32 × 8K</div>
+            <p>Largest equal-KV pair in the proposed grid.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="isolation">
+        <h2>03 · How the two axes isolate the costs</h2>
+        <p class="section-intro">
+          The matrix supports two complementary slices. Neither slice alone is perfect; together with kernel-family timing they make the coefficient identifiable.
+        </p>
+        <div class="isolation-grid">
+          <div class="isolation context">
+            <h3>Hold <span class="math-var sym-request">N</span> fixed; increase <span class="math-var sym-context">L</span></h3>
+            <p>The number of active sequences stays constant while each sequence exposes more cached history. DSA indexer and MLA attention must inspect more KV; ordinary per-position MoE token count should remain approximately fixed.</p>
+            <div class="mini-sequence" aria-label="Context length slice">
+              <span class="mini-node context">8K each</span><span class="mini-arrow">→</span>
+              <span class="mini-node context">32K each</span><span class="mini-arrow">→</span>
+              <span class="mini-node context">80K each</span>
+            </div>
+          </div>
+          <div class="isolation request">
+            <h3>Hold total KV fixed; increase <span class="math-var sym-request">N</span></h3>
+            <p>Equal-total-KV pairs keep nominal scan volume constant while changing sequence count. The difference exposes per-sequence launch geometry, query-side work, scheduler state, and—unless removed—shared MoE work.</p>
+            <div class="mini-sequence" aria-label="Equal total KV slice">
+              <span class="mini-node request">1 × 32K</span><span class="mini-arrow">↔</span>
+              <span class="mini-node request">4 × 8K</span>
+            </div>
+          </div>
+        </div>
+        <div class="equation-block" aria-label="Timing decomposition">
+          <div class="equation-row">
+            <span class="math-var">T<sub>step</sub></span>
+            <span class="equals">=</span>
+            <span><span class="math-var sym-kv">T<sub>DSA</sub></span> + <span class="math-var sym-context">T<sub>MLA</sub></span> + <span class="math-var sym-moe">T<sub>MoE</sub></span> + <span class="math-var">T<sub>other</sub></span></span>
+          </div>
+          <div class="equation-row">
+            <span class="math-var">T<sub>rank-sensitive</sub></span>
+            <span class="equals">=</span>
+            <span><span class="math-var sym-kv">T<sub>DSA</sub></span> + <span class="math-var sym-context">T<sub>MLA</sub></span> <span class="equation-note">the quantity most relevant when choosing among DPA ranks</span></span>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Why total step time is not the desired coefficient:</strong>
+          <p>MoE is synchronized across the TP/EP participants. Loading one DPA rank increases the shared MoE batch seen by every rank. If total step time is regressed directly against active requests, that shared work is incorrectly assigned to the loaded rank’s routing penalty.</p>
+        </div>
+      </section>
+
+      <section id="topology">
+        <h2>04 · One loaded attention rank, eight-rank shared model work</h2>
+        <p class="section-intro">All synthetic requests are explicitly routed to rank 0. Ranks 1–7 receive no requests for their local DSA/MLA path, but they are not idle for the entire model step: synchronized MoE and collectives still involve the full group.</p>
+        <div class="rank-card">
+          <h3>Planned DPA8 topology across two four-GPU GB300 nodes</h3>
+          <div class="rank-row">
+            <div class="rank loaded"><div class="rank-name">rank 0</div><div class="rank-state"><span class="sym-request">N requests</span><br><span class="sym-context">L cached each</span></div></div>
+            <div class="rank"><div class="rank-name">rank 1</div><div class="rank-state">no local<br>attention batch</div></div>
+            <div class="rank"><div class="rank-name">rank 2</div><div class="rank-state">no local<br>attention batch</div></div>
+            <div class="rank"><div class="rank-name">rank 3</div><div class="rank-state">no local<br>attention batch</div></div>
+            <div class="rank"><div class="rank-name">rank 4</div><div class="rank-state">no local<br>attention batch</div></div>
+            <div class="rank"><div class="rank-name">rank 5</div><div class="rank-state">no local<br>attention batch</div></div>
+            <div class="rank"><div class="rank-name">rank 6</div><div class="rank-state">no local<br>attention batch</div></div>
+            <div class="rank"><div class="rank-name">rank 7</div><div class="rank-state">no local<br>attention batch</div></div>
+          </div>
+          <div class="moe-rail">Shared MoE / collective cadence spans all eight ranks</div>
+        </div>
+      </section>
+
+      <section id="execution">
+        <h2>05 · Exact execution sequence</h2>
+        <p class="section-intro">The preserved runner makes every cell a cached-decode workload and prevents prefill latency from entering the measured region.</p>
+        <div class="flow">
+          <div class="flow-step">
+            <div class="flow-title">Create lanes</div>
+            <p>Generate 32 deterministic, distinct token-ID prompts, each 81,920 tokens long.</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-title">Warm the cache</div>
+            <p>Flush once, then submit every full-length lane before profiling begins.</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-title">Verify the hit</div>
+            <p>Require reported cached tokens to be within two tokens of the selected length.</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-title">Launch a cell</div>
+            <p>A thread barrier releases <span class="math-var sym-request">N</span> requests together, all pinned to rank 0.</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-title">Trace and repeat</div>
+            <p>Capture GPU work, then visit all 24 cells in seeded randomized order.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Property</th><th>Planned value</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td>Prompt form</td><td>Direct token IDs; one unique lane per request</td><td>Avoid tokenizer work and unintended cross-request prefix sharing.</td></tr>
+              <tr><td>Cache condition</td><td>Fully cached before profiling</td><td>Decode still scans KV, while prefill computation is removed from the timed region.</td></tr>
+              <tr><td>Cell order</td><td>Seeded random permutation of 24 cells</td><td>Reduce bias from warm-up, clock, and time-order drift.</td></tr>
+              <tr><td>Routing</td><td><code>routed_dp_rank: 0</code></td><td>Create the one-hot rank imbalance used by the calibration.</td></tr>
+              <tr><td>Decode</td><td>Temperature 0; EOS ignored; at most 96 output tokens</td><td>Provide a repeatable steady decode interval for kernel extraction.</td></tr>
+              <tr><td>Capture</td><td>Nsight Systems, CUDA profiler range</td><td>Separate DSA, MLA, MoE, collectives, and exposed gaps instead of relying on HTTP latency.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="readout">
+        <h2>06 · What the completed experiment should report</h2>
+        <p class="section-intro">Each cell should produce per-step distributions, not merely one request-level duration. The same 24-cell panel should be reported for the three timing views below.</p>
+        <div class="readout-grid">
+          <div class="readout attention">
+            <h3>DSA + MLA</h3>
+            <p>Rank-sensitive attention time. This is the primary surface for calibrating rank selection against active requests and resident KV.</p>
+            <span class="readout-tag">router-relevant</span>
+          </div>
+          <div class="readout moe">
+            <h3>MoE + collectives</h3>
+            <p>Shared synchronized work. Report it explicitly so its request-count slope is not silently attributed to one candidate rank.</p>
+            <span class="readout-tag">confound to subtract</span>
+          </div>
+          <div class="readout total">
+            <h3>Whole step</h3>
+            <p>Observed critical-path time, including gaps. Useful as a reconciliation check: component timing must explain the end-to-end step.</p>
+            <span class="readout-tag">reconciliation</span>
+          </div>
+        </div>
+        <div class="equation-block" aria-label="Proposed fit">
+          <div class="equation-row">
+            <span class="math-var">T<sub>attention</sub></span>
+            <span class="equals">≈</span>
+            <span><span class="math-var">β<sub>0</sub></span> + <span class="math-var sym-request">β<sub>N</sub>N</span> + <span class="math-var sym-kv">β<sub>K</sub>K<sub>rank</sub></span> + <span class="math-var sym-request">β<sub>N²</sub>N<sup>2</sup></span></span>
+          </div>
+          <div class="equation-row">
+            <span class="math-var">residual check</span>
+            <span class="equals">=</span>
+            <span><span class="math-var">T<sub>step</sub></span> − (<span class="math-var">T<sub>attention</sub></span> + <span class="math-var sym-moe">T<sub>MoE</sub></span> + <span class="math-var">T<sub>collective</sub></span>)</span>
+          </div>
+        </div>
+        <p class="section-intro" style="margin-top:14px">The fitted request coefficient is defensible only if it predicts held-out cells and the equal-total-KV pairs. A high whole-surface fit alone is insufficient if MoE remains inside the numerator.</p>
+      </section>
+
+      <section id="limits">
+        <h2>07 · Guardrails before treating it as production truth</h2>
+        <div class="callout red">
+          <strong>Status boundary:</strong>
+          <p>The cluster attempt was cancelled during NCCL initialization, before model readiness. Therefore this page contains an experiment design and exact proposed inputs—no measured step times, fitted coefficients, or performance conclusions.</p>
+        </div>
+        <details open>
+          <summary>Three analysis checks required after a rerun</summary>
+          <div class="details-body">
+            <ul>
+              <li><strong>EAGLE work matching:</strong> group cycles by target verification width or accepted-token count. Different speculative outcomes can change per-cycle work even at the same <span class="math-var sym-request">N</span> and <span class="math-var sym-context">L</span>.</li>
+              <li><strong>Steady-state selection:</strong> exclude graph capture, first-step setup, final partial batches, and cache-warm operations from the fitted window.</li>
+              <li><strong>Production validation:</strong> replay natural mixed-rank traffic after the one-hot microbenchmark. The calibration is useful only if it improves prediction of the rank-sensitive critical path online.</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+    </article>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      MaaS experiment note · GLM-5.2 DPA routing calibration · design reconstructed from the preserved 2026-08-31 runner.
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      const format = new Intl.NumberFormat("en-US");
+      const buttons = Array.from(document.querySelectorAll(".cell-button"));
+      const nOut = document.getElementById("inspect-n");
+      const lOut = document.getElementById("inspect-l");
+      const totalOut = document.getElementById("inspect-total");
+      const formulaOut = document.getElementById("inspect-formula");
+
+      function selectCell(button) {
+        buttons.forEach((item) => item.classList.toggle("selected", item === button));
+        const n = Number(button.dataset.n);
+        const length = Number(button.dataset.l);
+        const total = Number(button.dataset.total);
+        nOut.textContent = format.format(n);
+        lOut.textContent = format.format(length);
+        totalOut.textContent = format.format(total);
+        formulaOut.textContent = `${format.format(n)} request${n === 1 ? "" : "s"} × ${format.format(length)} tokens`;
+      }
+
+      buttons.forEach((button) => {
+        const n = Number(button.dataset.n);
+        const length = Number(button.dataset.l);
+        const total = Number(button.dataset.total);
+        button.setAttribute(
+          "aria-label",
+          `${format.format(n)} active request${n === 1 ? "" : "s"}, ${format.format(length)} cached tokens each, ${format.format(total)} total KV tokens`,
+        );
+        button.addEventListener("click", () => selectCell(button));
+      });
+    })();
+  </script>
+</body>
+</html>
