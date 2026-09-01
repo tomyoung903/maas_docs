@@ -16,19 +16,19 @@
       --ground: #f2f5f7;
       --paper: #ffffff;
       --ink: #18232d;
-      --muted: #63717d;
+      --muted: #5d6b76;
       --line: #d5dee4;
       --line-strong: #bcc9d1;
       --soft: #eef3f5;
       --navy: #244d68;
       --navy-soft: #e2edf3;
-      --request: #6954a3;
+      --request: #57418f;
       --request-soft: #ece8f6;
       --context: #276b9b;
       --context-soft: #e1eef7;
       --kv: #0d766e;
       --kv-soft: #def0ec;
-      --moe: #a36309;
+      --moe: #8a5005;
       --moe-soft: #faecd5;
       --red: #a23c37;
       --red-soft: #f7e5e3;
@@ -231,6 +231,83 @@
     .metric-label { margin-top: 7px; font-weight: 780; }
     .metric-note { margin-top: 4px; color: var(--muted); font-size: 12px; }
 
+    .estimate-banner {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .estimate-primary {
+      border: 1px solid #a9d2ca;
+      border-top: 5px solid var(--kv);
+      border-radius: 10px;
+      background: linear-gradient(120deg, var(--kv-soft), var(--paper) 72%);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+    .estimate-kicker { color: var(--kv); font-size: 11px; font-weight: 880; letter-spacing: .08em; text-transform: uppercase; }
+    .estimate-time {
+      margin-top: 6px;
+      color: var(--kv);
+      font-size: clamp(38px, 5vw, 58px);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.045em;
+      line-height: 1;
+    }
+    .estimate-unit { margin-left: 6px; font-size: .42em; letter-spacing: 0; }
+    .estimate-primary p { max-width: 720px; color: #49645f; font-size: 13px; }
+    .estimate-side { display: grid; gap: 10px; }
+    .estimate-side-row { border: 1px solid var(--line); border-radius: 9px; background: var(--paper); padding: 14px 16px; }
+    .estimate-side-row strong { display: block; color: var(--navy); font-size: 22px; font-variant-numeric: tabular-nums; }
+    .estimate-side-row span { color: var(--muted); font-size: 12px; }
+    .budget-track {
+      display: flex;
+      min-height: 62px;
+      margin-top: 20px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+    .budget-segment {
+      display: flex;
+      min-width: 58px;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid rgb(255 255 255 / 78%);
+      padding: 7px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 820;
+      line-height: 1.25;
+    }
+    .budget-segment:last-child { border-right: 0; }
+    .budget-preflight { flex: 5; background: #e8eef2; color: var(--navy); }
+    .budget-startup { flex: 7; background: var(--navy-soft); color: var(--navy); }
+    .budget-cache { flex: 4; background: var(--context-soft); color: var(--context); }
+    .budget-onehot { flex: 12; background: var(--request-soft); color: var(--request); }
+    .budget-control { flex: 18; background: var(--kv-soft); color: var(--kv); }
+    .budget-analysis { flex: 10; background: var(--moe-soft); color: var(--moe); }
+    .budget-caption { margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .evidence-note { margin-top: 18px; border-left: 4px solid var(--navy); background: var(--navy-soft); padding: 14px 17px; color: #3e596b; font-size: 13px; }
+
+    .phase-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 21px; }
+    .phase-card { border: 1px solid var(--line); border-radius: 9px; background: var(--paper); padding: 18px; }
+    .phase-card:nth-child(1) { border-top: 4px solid var(--navy); }
+    .phase-card:nth-child(2) { border-top: 4px solid var(--context); }
+    .phase-card:nth-child(3) { border-top: 4px solid var(--request); }
+    .phase-card:nth-child(4) { border-top: 4px solid var(--kv); }
+    .phase-id { color: var(--muted); font-size: 11px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+    .phase-card h3 { margin-top: 5px; }
+    .phase-card p { color: var(--muted); font-size: 13px; }
+    .phase-count { display: inline-block; margin-top: 11px; border-radius: 999px; background: var(--soft); padding: 4px 9px; color: var(--muted); font-size: 11px; font-weight: 800; }
+    .checkpoint-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+    .checkpoint-card { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 16px; }
+    .checkpoint-card h3 { font-size: 16px; }
+    .checkpoint-card p { color: var(--muted); font-size: 12px; }
+    .checkpoint-mark { display: inline-grid; width: 25px; height: 25px; margin-bottom: 9px; place-items: center; border-radius: 50%; background: var(--kv-soft); color: var(--kv); font-size: 12px; font-weight: 900; }
+
     .matrix-card {
       margin-top: 22px;
       border: 1px solid var(--line);
@@ -308,16 +385,17 @@
     }
     .cell-button.selected { outline: 3px solid rgb(13 118 110 / 28%); border-color: var(--kv); }
     .cell-total { display: block; font-size: 16px; font-weight: 840; font-variant-numeric: tabular-nums; }
-    .cell-label { display: block; margin-top: 2px; color: rgb(21 58 56 / 72%); font-size: 10px; font-weight: 650; }
+    .cell-label { display: block; margin-top: 2px; color: #153a38; font-size: 10px; font-weight: 650; }
     .heat-1 { background: #f1faf8; }
     .heat-2 { background: #e6f5f1; }
     .heat-3 { background: #d4ede7; }
     .heat-4 { background: #bde3da; }
     .heat-5 { background: #99d2c6; }
     .heat-6 { background: #6dbbad; }
-    .heat-7 { background: #3d9b90; color: white; }
+    .heat-7 { background: #3d9b90; color: #0b2927; }
     .heat-8 { background: #0d766e; color: white; }
-    .heat-7 .cell-label, .heat-8 .cell-label { color: rgb(255 255 255 / 78%); }
+    .heat-7 .cell-label { color: inherit; }
+    .heat-8 .cell-label { color: white; }
 
     .inspector {
       display: grid;
@@ -717,17 +795,19 @@
         padding: 13px 15px;
       }
       .toc a { display: inline-block; margin-right: 15px; }
-      .metric-grid, .comparison-grid, .program-grid, .distribution-grid { grid-template-columns: 1fr 1fr; }
+      .metric-grid, .comparison-grid, .program-grid, .distribution-grid, .checkpoint-grid { grid-template-columns: 1fr 1fr; }
       .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 720px) {
       .topbar-inner, .hero-inner, .layout, .footer-inner { width: min(100% - 24px, 1440px); }
       .topbar-inner { align-items: flex-start; flex-direction: column; padding: 10px 0; }
       .lede { font-size: 16px; }
-      .question-grid, .isolation-grid, .inspector, .readout-grid, .program-grid, .distribution-grid { grid-template-columns: 1fr; }
+      .question-grid, .isolation-grid, .inspector, .readout-grid, .program-grid, .distribution-grid, .estimate-banner, .phase-grid, .checkpoint-grid { grid-template-columns: 1fr; }
       .method-verdict { grid-template-columns: 1fr; }
       .times { justify-self: center; transform: rotate(90deg); }
       .metric-grid, .comparison-grid, .flow { grid-template-columns: 1fr; }
+      .budget-track { flex-wrap: wrap; }
+      .budget-segment { min-height: 52px; flex: 1 1 30%; }
       .equation-row { grid-template-columns: 1fr; gap: 2px; }
       .equals { display: none; }
       .rank-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -741,6 +821,7 @@
     <div class="topbar-inner">
       <a class="brand" href="../../">MaaS Docs</a>
       <nav class="toplinks" aria-label="Pack navigation">
+        <a href="#time-budget">Time budget</a>
         <a href="#program">Program status</a>
         <a href="#grid">24-cell grid</a>
         <a href="#control">Proposed control</a>
@@ -761,6 +842,7 @@
         <span class="pill request">8 request-count levels</span>
         <span class="pill context">3 cached-context levels</span>
         <span class="pill">24 randomized cells</span>
+        <span class="pill">90-minute recommended reservation</span>
         <span class="pill">Status verified 2026-09-01</span>
       </div>
     </div>
@@ -769,6 +851,7 @@
   <main class="layout" id="main">
     <aside class="toc" aria-label="Page overview">
       <div class="toc-title">On this page</div>
+      <a href="#time-budget">00 · Time budget first</a>
       <a href="#program">01 · Program status</a>
       <a href="#question">02 · Question</a>
       <a href="#grid">03 · 24-cell grid</a>
@@ -781,6 +864,46 @@
     </aside>
 
     <article>
+      <section id="time-budget">
+        <h2>00 · Estimate total experiment time first</h2>
+        <p class="section-intro">The recommended run is larger than the preserved 24-cell attempt: it adds repetitions, a fixed-logical-load control, physical-rank anchors, short two-node profiler shards, validation, and restart-safe artifacts.</p>
+        <div class="estimate-banner">
+          <div class="estimate-primary">
+            <div class="estimate-kicker">Expected · image already present · no reclaim</div>
+            <div class="estimate-time">55–75<span class="estimate-unit">minutes</span></div>
+            <p>Use two four-GPU GB300 nodes for one production-shaped TP8/DP8/EP8 server. The fixed-output GPU cells are bounded; readiness, cache placement, profiler export, and analysis dominate elapsed time.</p>
+          </div>
+          <div class="estimate-side">
+            <div class="estimate-side-row"><strong>90 minutes</strong><span>recommended reservation for one clean attempt</span></div>
+            <div class="estimate-side-row"><strong>2 hours</strong><span>safe window for a cold pull or one reclaim/restart</span></div>
+            <div class="estimate-side-row"><strong>35–45 minutes</strong><span>minimal one-hot reproduction only</span></div>
+          </div>
+        </div>
+        <div class="budget-track" aria-label="Expected warm-image time budget">
+          <div class="budget-segment budget-preflight">preflight<br>4–6 min</div>
+          <div class="budget-segment budget-startup">ready gate<br>6–8 min</div>
+          <div class="budget-segment budget-cache">cache + smoke<br>3–5 min</div>
+          <div class="budget-segment budget-onehot">one-hot<br>10–14 min</div>
+          <div class="budget-segment budget-control">control + rotation<br>18–27 min</div>
+          <div class="budget-segment budget-analysis">export + fit<br>8–12 min</div>
+        </div>
+        <div class="budget-caption">Some export and preparation work can overlap. The 55–75 minute estimate is an end-to-end planning range, not a sum of every independent worst case.</div>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Scenario</th><th>Model readiness</th><th>Whole program</th><th>Operational decision</th></tr></thead>
+            <tbody>
+              <tr><td>Warm image, clean run</td><td>6–8 minutes</td><td>55–75 minutes</td><td>Normal expected path; reserve 90 minutes.</td></tr>
+              <tr><td>Cold image on one node</td><td>15–18 minutes</td><td>65–85 minutes</td><td>Continue if the pull is healthy; do not restart only because it is slow.</td></tr>
+              <tr><td>One node reclaimed</td><td>6–18 minutes after replacement</td><td>75–105 minutes</td><td>Re-prime cache state and resume only missing observation IDs.</td></tr>
+              <tr><td>Minimal one-hot only</td><td>Same startup gate</td><td>35–45 minutes</td><td>Useful for reproduction, insufficient for a causal router coefficient.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="evidence-note">
+          <strong>Operational basis from <span class="mono">optim_exp7</span>, not a direct performance transfer.</strong> Recent Taiguo GB300 servers passed their full contract about 6–8 minutes after a warm-image start; one healthy cold path spent roughly 11 minutes pulling and about 17 minutes total before readiness. That different GLM-5.3 workload also proved the value of atomic progress and bounded recovery. These observations set the startup and safety envelope here; they do not predict this GLM-5.2 kernel surface. Unlike the earlier natural-output run, this protocol uses fixed output caps and ignores EOS, so an unbounded completion tail cannot determine wall time.
+        </div>
+      </section>
+
       <section id="program">
         <h2>01 · The experiment program at a glance</h2>
         <p class="section-intro">Three stages answer different questions. Only the historical observation has numbers; the new calibration and causal control have not produced data.</p>
@@ -873,9 +996,9 @@
             <div class="metric-note">320× nominal DSA-history span</div>
           </div>
           <div class="metric">
-            <div class="metric-value">96</div>
-            <div class="metric-label">Output-token cap</div>
-            <div class="metric-note">Per request; deterministic sampling</div>
+            <div class="metric-value">384 / 96</div>
+            <div class="metric-label">Timing / trace cap</div>
+            <div class="metric-note">Fixed outputs per request; EOS ignored</div>
           </div>
         </div>
       </section>
@@ -1099,6 +1222,27 @@
             <div class="distribution-total">Global total: 64 requests</div>
           </div>
         </div>
+        <h3 style="margin-top:28px">Planned nested placement schedule</h3>
+        <p class="section-intro">The residual counts are deterministic and as even as possible. Lane ownership is nested: as <span class="math-var sym-request">N<sub>0</sub></span> rises, lanes move from ranks 1–7 to rank 0 but do not move among residual ranks. This limits rank-local prefix copies while keeping the same 64 logical lanes.</p>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th><span class="math-var sym-request">N<sub>0</sub></span></th><th>Ranks 1–7</th><th>Logical total</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td class="mono">9 · 9 · 9 · 9 · 9 · 9 · 9</td><td>64</td><td>Rank 0 is cooler than every residual rank.</td></tr>
+              <tr><td>2</td><td class="mono">9 · 9 · 9 · 9 · 9 · 9 · 8</td><td>64</td><td>One lane has migrated to rank 0.</td></tr>
+              <tr><td>4</td><td class="mono">9 · 9 · 9 · 9 · 8 · 8 · 8</td><td>64</td><td>Low local batch with fixed logical group size.</td></tr>
+              <tr><td>8</td><td class="mono">8 · 8 · 8 · 8 · 8 · 8 · 8</td><td>64</td><td>Exactly balanced logical control.</td></tr>
+              <tr><td>12</td><td class="mono">8 · 8 · 8 · 7 · 7 · 7 · 7</td><td>64</td><td>Rank 0 begins to lead the local batch.</td></tr>
+              <tr><td>16</td><td class="mono">7 · 7 · 7 · 7 · 7 · 7 · 6</td><td>64</td><td>Moderate concentration.</td></tr>
+              <tr><td>24</td><td class="mono">6 · 6 · 6 · 6 · 6 · 5 · 5</td><td>64</td><td>Strong concentration.</td></tr>
+              <tr><td>32</td><td class="mono">5 · 5 · 5 · 5 · 4 · 4 · 4</td><td>64</td><td>Largest target-rank batch in the grid.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout" style="border-left-color:var(--context);background:var(--context-soft)">
+          <strong>Cache feasibility:</strong>
+          <p>Prime 95 lane–rank placements at 81,920 tokens: 32 possible target-rank lanes plus the 63 residual placements in the <span class="math-var sym-request">N<sub>0</sub></span> = 1 layout. That is 7,782,400 prefix tokens across the group, while no rank holds more than 2,621,440. Against the configured 3,200,000-token rank pool, rank 0 retains 578,560 slots before decode growth. The 8K and 32K cells reuse prefixes of those 80K entries. Every cell still must prove its reported cache hit; a physical-rank rotation flushes and re-primes before measurement.</p>
+        </div>
         <div class="table-wrap">
           <table class="data">
             <thead><tr><th>Control</th><th>Held fixed</th><th>Changed</th><th>Why it matters</th></tr></thead>
@@ -1118,42 +1262,96 @@
       </section>
 
       <section id="execution">
-        <h2>07 · Exact execution sequence for the preserved sweep</h2>
-        <p class="section-intro">The preserved runner makes every cell a cached-decode workload and prevents prefill latency from entering the measured region.</p>
+        <h2>07 · Operational execution plan</h2>
+        <p class="section-intro">The preserved runner is the starting point, not the final protocol. The expanded run separates high-sample timing from short profiler captures, observes physical EAGLE and MoE work in the logical-load control, and makes every completed observation independently resumable.</p>
         <div class="flow">
           <div class="flow-step">
-            <div class="flow-title">Create lanes</div>
-            <p>Generate 32 deterministic, distinct token-ID prompts, each 81,920 tokens long.</p>
+            <div class="flow-title">Freeze contract</div>
+            <p>Write image, model, SGLang commit, launch arguments, nodes, seeds, cell inventory, and output path before reserving GPUs.</p>
           </div>
           <div class="flow-step">
-            <div class="flow-title">Warm the cache</div>
-            <p>Flush once, then submit every full-length lane before profiling begins.</p>
+            <div class="flow-title">Pass ready gate</div>
+            <p>Require all eight ranks, exact server configuration, EAGLE, routed-rank control, metrics, and a one-cell decode smoke test.</p>
           </div>
           <div class="flow-step">
-            <div class="flow-title">Verify the hit</div>
-            <p>Require reported cached tokens to be within two tokens of the selected length.</p>
+            <div class="flow-title">Prime placements</div>
+            <p>Warm deterministic 80K lane–rank pairs, then prove every measured request reports the expected cached prefix.</p>
           </div>
           <div class="flow-step">
-            <div class="flow-title">Launch a cell</div>
-            <p>A thread barrier releases <span class="math-var sym-request">N</span> requests together, all pinned to rank 0.</p>
+            <div class="flow-title">Run timing blocks</div>
+            <p>Collect three seeded repetitions of both 24-cell surfaces with 384 fixed output tokens per request.</p>
           </div>
           <div class="flow-step">
-            <div class="flow-title">Trace and repeat</div>
-            <p>Capture GPU work, then visit all 24 cells in seeded randomized order.</p>
+            <div class="flow-title">Trace and close</div>
+            <p>Capture 96-token cells in six-cell shards on both nodes; export, checksum, classify, fit, and release.</p>
           </div>
         </div>
+
+        <div class="phase-grid">
+          <div class="phase-card">
+            <div class="phase-id">Phase 0 · qualification</div>
+            <h3>Server and instrumentation gate</h3>
+            <p>Start outside the profiler range. Verify model identity, TP8/DP8/EP8 topology, rank capacity, EAGLE settings, rank pinning, cache reporting, two-node timestamp alignment, and shared-storage writes.</p>
+            <span class="phase-count">no measurement admitted yet</span>
+          </div>
+          <div class="phase-card">
+            <div class="phase-id">Phase 1 · timing surfaces</div>
+            <h3>144 bounded cell-runs</h3>
+            <p>Run 24 one-hot cells and 24 fixed-logical-load cells, each three times. Independent seeded permutations and 384 fixed outputs provide a long steady window without a natural-output tail.</p>
+            <span class="phase-count">2 modes × 24 cells × 3 repeats</span>
+          </div>
+          <div class="phase-card">
+            <div class="phase-id">Phase 2 · component traces</div>
+            <h3>48 short profiled cells</h3>
+            <p>Repeat every shape once at 96 outputs with Nsight on both nodes. Split each mode into four six-cell shards and derive interval unions or mutually exclusive phase envelopes—never sums of overlapping raw residency.</p>
+            <span class="phase-count">8 shards · 6 cells each</span>
+          </div>
+          <div class="phase-card">
+            <div class="phase-id">Phase 3 · rank anchors</div>
+            <h3>24 physical-rank checks</h3>
+            <p>Use <span class="math-var sym-request">N</span> ∈ {1, 8, 32} and <span class="math-var sym-context">L</span> ∈ {8K, 80K}; rotate the target over ranks 0, 3, 4, and 7 with 192 fixed outputs. Re-prime each rotation and profile its 32 × 80K endpoint.</p>
+            <span class="phase-count">6 shapes × 4 target ranks</span>
+          </div>
+        </div>
+
         <div class="table-wrap">
           <table class="data">
-            <thead><tr><th>Property</th><th>Planned value</th><th>Reason</th></tr></thead>
+            <thead><tr><th>Property</th><th>Final planned value</th><th>Reason</th></tr></thead>
             <tbody>
-              <tr><td>Prompt form</td><td>Direct token IDs; one unique lane per request</td><td>Avoid tokenizer work and unintended cross-request prefix sharing.</td></tr>
-              <tr><td>Cache condition</td><td>Fully cached before profiling</td><td>Decode still scans KV, while prefill computation is removed from the timed region.</td></tr>
-              <tr><td>Cell order</td><td>Seeded random permutation of 24 cells</td><td>Reduce bias from warm-up, clock, and time-order drift.</td></tr>
-              <tr><td>Routing</td><td><code>routed_dp_rank: 0</code></td><td>Create the one-hot rank imbalance used by the calibration.</td></tr>
-              <tr><td>Decode</td><td>Temperature 0; EOS ignored; at most 96 output tokens</td><td>Provide a repeatable steady decode interval for kernel extraction.</td></tr>
-              <tr><td>Capture</td><td>Nsight Systems, CUDA profiler range</td><td>Separate DSA, MLA, MoE, collectives, and exposed gaps instead of relying on HTTP latency.</td></tr>
+              <tr><td>Prompt lanes</td><td>64 distinct deterministic token-ID sequences, each 81,920 tokens long</td><td>Avoid tokenizer work, preserve identity across placements, and expose 8K/32K as cached prefixes.</td></tr>
+              <tr><td>Request axis</td><td>1, 2, 4, 8, 12, 16, 24, 32 active requests on the target rank</td><td>Match the historical supported range and cross graph/batch geometry changes.</td></tr>
+              <tr><td>Context axis</td><td>8,192; 32,768; 81,920 cached tokens per request</td><td>Give a 10× per-request context span and a 320× target-rank logical-context span.</td></tr>
+              <tr><td>Timing pass</td><td>Three repetitions; 384 outputs; temperature 0; EOS ignored</td><td>Bound wall time while obtaining a long full-batch steady window.</td></tr>
+              <tr><td>Trace pass</td><td>One repetition; 96 outputs; six cells per profiler shard</td><td>Obtain phase attribution without one huge, fragile trace.</td></tr>
+              <tr><td>Cell order</td><td>Independent seeded permutation per mode and repetition</td><td>Reduce warm-up, clock, thermal, and time-order bias.</td></tr>
+              <tr><td>Capture scope</td><td>Both nodes; process/rank IDs and synchronized cell IDs</td><td>Reconstruct group envelopes without inferring ranks 4–7 from ranks 0–3.</td></tr>
+              <tr><td>Admitted window</td><td>After every intended request is active and before the first request finishes</td><td>Fit the contracted logical batch, not the partial tail.</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <h3 style="margin-top:28px">Durable progress and restart semantics</h3>
+        <p class="section-intro">The recent multi-node run showed that “the pod is Running” is not a sufficient durability boundary. This experiment adopts the same principle at cell granularity.</p>
+        <div class="checkpoint-grid">
+          <div class="checkpoint-card">
+            <span class="checkpoint-mark">1</span>
+            <h3>Atomic observation</h3>
+            <p>Each mode–cell–repeat ID writes a temporary result, fsyncs it, atomically renames it, and updates the completed-ID ledger. A resumed runner submits only IDs that do not validate.</p>
+          </div>
+          <div class="checkpoint-card">
+            <span class="checkpoint-mark">2</span>
+            <h3>Bounded trace shard</h3>
+            <p>After at most six cells, stop capture, export report and SQLite, write checksums and cell boundaries, then start the next shard. Never make the whole program one profiler transaction.</p>
+          </div>
+          <div class="checkpoint-card">
+            <span class="checkpoint-mark">3</span>
+            <h3>Explicit recovery</h3>
+            <p>A replacement server passes the immutable contract, flushes and re-primes deterministic placements, reruns one smoke cell, then continues missing IDs. Cache residency is never durable state.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Slow startup is not failure:</strong>
+          <p>If a cold image pull has no warning events and keeps progressing, preserve it. The recent GB300 run had one healthy node spend roughly 11 minutes pulling before model load and autotuning; deleting it early would only restart the same cost.</p>
         </div>
       </section>
 
@@ -1190,6 +1388,25 @@
           </div>
         </div>
         <p class="section-intro" style="margin-top:14px">The fitted request coefficient is only an attention proxy. It becomes defensible for routing only if it predicts held-out cells and equal-logical-context pairs, observed physical work is controlled, and the remaining rank-local residual is small or explicitly modeled. A high whole-surface fit alone is insufficient.</p>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Acceptance gate</th><th>Required evidence</th><th>Action if it fails</th></tr></thead>
+            <tbody>
+              <tr><td>Cell contract</td><td>Observed per-rank logical requests, cached length, active logical context, physical rows, padding mode, graph bucket, and target rank match the declared cell.</td><td>Reject that interval; never infer physical shape from client intent.</td></tr>
+              <tr><td>Steady sample</td><td>At least 64 eligible full-contract EAGLE cycles per cell-run and 192 across three timing repetitions.</td><td>Repeat only the deficient cell with a longer fixed output cap.</td></tr>
+              <tr><td>EAGLE comparability</td><td>Verification width, accepted-token count, global DP buffer length, and padding are recorded per cycle and matched or explicitly stratified.</td><td>Do not assign physical-row variation to <span class="math-var sym-request">N</span> or <span class="math-var sym-context">L</span>.</td></tr>
+              <tr><td>Envelope closure</td><td>Mutually exclusive phase envelopes cover at least 90% of median whole-step critical-path time.</td><td>Audit missing kernels, overlap attribution, host gaps, or cross-node clock alignment.</td></tr>
+              <tr><td>Shared-work control</td><td>At fixed logical lanes, measured MoE/collective envelopes vary by no more than 5% across accepted placements.</td><td>The near-constant shared-work hypothesis failed; model rows, expert load, and collective shape explicitly.</td></tr>
+              <tr><td>Held-out prediction</td><td>Leave-one-request-level-out error is at most 1 ms or 5% of median step time, whichever is larger.</td><td>Use a piecewise or bucketed surface; do not force the historical quadratic.</td></tr>
+              <tr><td>Physical-rank stability</td><td>Anchor coefficients agree within 10% across ranks 0, 3, 4, and 7.</td><td>Add rank/node fixed effects or repair a hardware/topology asymmetry.</td></tr>
+              <tr><td>Operational integrity</td><td>Zero HTTP/infrastructure failures, zero retries inside measured cells, validated checksums, and a complete observation inventory.</td><td>Rerun affected IDs; never average failed and clean attempts.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>Statistical unit:</strong>
+          <p>Bootstrap cell repetitions or profile shards, not thousands of adjacent decode cycles as if they were independent. Report the one-hot whole-step coefficient, one-hot attention-proxy coefficient, fixed-logical-load attention-proxy coefficient, and their ratios with uncertainty. That directly estimates how much shared synchronized work inflated the historical request term.</p>
+        </div>
       </section>
 
       <section id="limits">
@@ -1276,10 +1493,8 @@
         const n = Number(button.dataset.n);
         const length = Number(button.dataset.l);
         const total = Number(button.dataset.total);
-        button.setAttribute(
-          "aria-label",
-          `${format.format(n)} active request${n === 1 ? "" : "s"}, ${format.format(length)} cached tokens each, ${format.format(total)} logical cached-context tokens`,
-        );
+        const visibleTotal = button.querySelector(".cell-total").textContent;
+        button.title = `${visibleTotal} logical KV; ${format.format(n)} active request${n === 1 ? "" : "s"}, ${format.format(length)} cached tokens each, ${format.format(total)} logical cached-context tokens`;
         button.addEventListener("click", () => selectCell(button));
       });
     })();
