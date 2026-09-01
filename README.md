@@ -14,6 +14,7 @@ Folder convention:
 - `docs/index.html`: public catalog page.
 - `docs/<pack-slug>/index.html`: pack overview.
 - `docs/<pack-slug>/<topic>.html`: stable topic pages.
+- `docs/assets/maas-annotator.js`: shared browser-local drawing layer.
 - `docs/.nojekyll`: keeps GitHub Pages from filtering generated files.
 
 Expected public URLs:
@@ -53,6 +54,16 @@ python3 z_local/benchserving/mfu_metrics/build_kimi25_flops_static_docs.py
 rsync -a --delete z_local/benchserving/mfu_metrics/publish/kimi25-flops/ ~/maas_docs/docs/kimi25-flops/
 
 touch ~/maas_docs/docs/.nojekyll
+
+cd ~/maas_docs
+python3 tools/inject_maas_annotator.py
+python3 tools/inject_maas_annotator.py --check
 ```
 
 Then review, commit, and push.
+
+## Page Annotations
+
+Every published HTML page loads the shared annotator. The bottom-right pencil opens pen, highlighter, arrow, eraser, undo/redo, visibility, import/export, and clear controls.
+
+Drawings are stored per page in the current browser profile's `localStorage`; they are not uploaded to GitHub Pages. Use JSON export/import to move or share a set of drawings. Run `tools/inject_maas_annotator.py` after adding or regenerating HTML files.
