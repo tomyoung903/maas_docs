@@ -32,9 +32,7 @@
 <body>
   <nav class="topbar"><div class="topbar-inner"><a class="brand" href="../../">MaaS Docs</a><div class="pack-links"><a href="../glm52-gb300-eagle314-top-p-rejection-ab-20260828/">GLM-5.2 reviewer sheet</a><a href="../../glm52-flops/glm52_nextn_mtp_block.html#layer-78">EAGLE background</a><a href="report-data.json">Machine record</a></div></div></nav>
   <header class="hero"><div class="hero-inner">
-    <p class="eyebrow">Paired natural-output evidence · 1 September 2026</p>
     <h1>GLM-5.3 EAGLE<br>six-arm sampling matrix</h1>
-    <p class="hero-copy">Two production sampling policies × three rejection modes on NVIDIA GB300. One common cohort-local ordinal mask is applied across all six arms, so every primary result has the same displayed row count.</p>
     <div class="hero-stats">
       <div class="hero-stat"><span>Experiment arms</span><strong>6</strong><small>three modes × two cohorts</small></div>
       <div class="hero-stat"><span>Durable rows</span><strong>11,962</strong><small>of 12,000 intended</small></div>
@@ -44,7 +42,7 @@
   </div></header>
 
   <div class="layout">
-    <aside class="toc" aria-label="Page contents"><p class="toc-title">On this page</p><a href="#verdict">Bottom line</a><a href="#temp07_top_p07">0.7 / 0.7 cohort</a><a href="#temp1_top_p095">1.0 / 0.95 cohort</a><a href="#metric">Metric definition</a><a href="#mechanism">What changed</a><a href="#retention">Retention audit</a><a href="#contract">Fixed contract</a><a href="#evidence">Evidence</a></aside>
+    <aside class="toc" aria-label="Page contents"><p class="toc-title">On this page</p><a href="#verdict">Bottom line</a><a href="#temp07_top_p07">0.7 / 0.7 cohort</a><a href="#temp1_top_p095">1.0 / 0.95 cohort</a><a href="#contract">Fixed contract</a><a href="#evidence">Evidence</a></aside>
     <main>
       <section id="verdict" class="section-block">
         <div class="section-heading"><div><span class="section-number">01</span><h2>Bottom line</h2></div></div>
@@ -281,71 +279,8 @@
       </details>
     </section>
 
-      <section id="metric" class="section-block">
-        <div class="section-heading"><div><span class="section-number">04</span><h2>What the two acceptance numbers mean</h2></div></div>
-        <p class="section-lede">The report aggregates token counts, not per-request percentages. This gives long and short generations the same weight per proposed draft token.</p>
-        <div class="equation"><span><span class="math-var">α</span><sub>strict</sub></span><span>=</span><span><span class="math-op">Σ</span><sub>i</sub> <span class="math-var">C</span><sub>i</sub> / <span class="math-op">Σ</span><sub>i</sub> <span class="math-var">P</span><sub>i</sub></span></div>
-        <div class="equation"><span><span class="math-var">L</span><sub>accept</sub></span><span>=</span><span>(<span class="math-op">Σ</span><sub>i</sub> <span class="math-var">C</span><sub>i</sub> + <span class="math-op">Σ</span><sub>i</sub> <span class="math-var">V</span><sub>i</sub>) / <span class="math-op">Σ</span><sub>i</sub> <span class="math-var">V</span><sub>i</sub></span></div>
-        <div class="symbol-defs"><div class="symbol-def"><strong><span class="math-var">C</span><sub>i</sub></strong><br>accepted draft tokens for request <span class="math-var">i</span></div><div class="symbol-def"><strong><span class="math-var">P</span><sub>i</sub></strong><br>proposed draft tokens for request <span class="math-var">i</span></div><div class="symbol-def"><strong><span class="math-var">V</span><sub>i</sub></strong><br>target verification steps; each contributes one bonus token to accept length</div></div>
-      </section>
-
-      <section id="mechanism" class="section-block">
-        <div class="section-heading"><div><span class="section-number">05</span><h2>What changed between the three arms</h2></div></div>
-        <p class="section-lede">Model weights, EAGLE shape, thresholds, request seeds, and source requests were fixed. Only the acceptance path and the draft proposal distribution changed.</p>
-        <div class="mechanism-grid">
-          <div class="mechanism"><h3>RS off</h3><p>Runs SGLang’s stock non-rejection path. It is the policy baseline, not a claim that the draft model itself changed.</p></div>
-          <div class="mechanism"><h3>Stock RS</h3><p>Enables <code>--speculative-use-rejection-sampling</code>. The retained draft proposal <span class="math-var sym-draft">q</span> is temperature-scaled, but request top-p is not applied to that draft support.</p></div>
-          <div class="mechanism patch"><h3>Top-p-aware RS</h3><p>Applies temperature and then request top-p to the draft proposal; that exact normalized <span class="math-var sym-draft">q</span> is retained for rejection correction.</p></div>
-        </div>
-        <h3>Classical acceptance rule</h3>
-        <div class="equation"><span><span class="math-var">a</span>(<span class="math-var">x</span>)</span><span>=</span><span><span class="math-op">min</span>(1, <span class="math-var sym-target">p</span>(<span class="math-var">x</span>) / <span class="math-var sym-draft">q</span>(<span class="math-var">x</span>))</span></div>
-        <p><span class="math-var sym-target">p</span> is the target distribution after the request sampling policy; <span class="math-var sym-draft">q</span> is the draft proposal that actually generated the candidate. The patch’s purpose is internal consistency: proposal, saved probability, acceptance ratio, and residual correction must refer to the same filtered <span class="math-var sym-draft">q</span>.</p>
-      </section>
-
-      <section id="retention" class="section-block">
-        <div class="section-heading"><div><span class="section-number">06</span><h2>Retention and interruption audit</h2></div></div>
-        <p class="section-lede">The primary tables use one position mask retained and valid in all six arms. Missing requests and completions above 1,800 seconds therefore remove that cohort-local ordinal position from every arm.</p>
-        <div class="table-wrap"><table><thead><tr><th>Arm</th><th>Nodes seen</th><th>Durable</th><th>Missing</th><th>Over 30 min</th><th>Retained</th><th>Raw-tree SHA-256</th></tr></thead><tbody>
-                <tr>
-                  <th scope="row"><span class="arm-name">RS off</span><span class="arm-detail">temperature 0.7 · top-p 0.7</span></th>
-                  <td>132</td><td>1,999</td><td>1</td><td>2</td><td>1,997</td>
-                  <td><code>f760c2a2244c…</code></td>
-                </tr>
-
-                <tr>
-                  <th scope="row"><span class="arm-name">Stock RS</span><span class="arm-detail">temperature 0.7 · top-p 0.7</span></th>
-                  <td>129, 136</td><td>1,995</td><td>5</td><td>0</td><td>1,995</td>
-                  <td><code>81836f2719b5…</code></td>
-                </tr>
-
-                <tr>
-                  <th scope="row"><span class="arm-name">Top-p-aware RS</span><span class="arm-detail">temperature 0.7 · top-p 0.7</span></th>
-                  <td>169</td><td>1,992</td><td>8</td><td>1</td><td>1,991</td>
-                  <td><code>b10ee66e3c9c…</code></td>
-                </tr>
-
-                <tr>
-                  <th scope="row"><span class="arm-name">RS off</span><span class="arm-detail">temperature 1.0 · top-p 0.95</span></th>
-                  <td>129</td><td>1,993</td><td>7</td><td>7</td><td>1,986</td>
-                  <td><code>300a0610e05a…</code></td>
-                </tr>
-
-                <tr>
-                  <th scope="row"><span class="arm-name">Stock RS</span><span class="arm-detail">temperature 1.0 · top-p 0.95</span></th>
-                  <td>130</td><td>1,993</td><td>7</td><td>0</td><td>1,993</td>
-                  <td><code>45bf518eadd9…</code></td>
-                </tr>
-
-                <tr>
-                  <th scope="row"><span class="arm-name">Top-p-aware RS</span><span class="arm-detail">temperature 1.0 · top-p 0.95</span></th>
-                  <td>129, 131</td><td>1,990</td><td>10</td><td>8</td><td>1,982</td>
-                  <td><code>875667c0e671…</code></td>
-                </tr></tbody></table></div>
-        <div class="callout"><strong>Cross-cohort boundary:</strong> ordinal 100 in the two sampling cohorts is not the same source request. The global mask unifies eligibility and row count; true request identity is paired among the three modes within each cohort. Cohort-only paired results are preserved in the machine record.</div>
-      </section>
-
       <section id="contract" class="section-block">
-        <div class="section-heading"><div><span class="section-number">07</span><h2>Fixed execution contract</h2></div></div>
+        <div class="section-heading"><div><span class="section-number">04</span><h2>Fixed execution contract</h2></div></div>
         <div class="settings-grid">
           <div class="setting"><span>Model</span><strong>GLM-5.3-NVFP4</strong><p>served as <code>zai-org/glm-5.3</code></p></div>
           <div class="setting"><span>Hardware</span><strong>4× NVIDIA GB300 per arm</strong><p>one independent tray per original arm</p></div>
@@ -360,7 +295,7 @@
       </section>
 
       <section id="evidence" class="section-block">
-        <div class="section-heading"><div><span class="section-number">08</span><h2>Evidence and limits</h2></div></div>
+        <div class="section-heading"><div><span class="section-number">05</span><h2>Evidence and limits</h2></div></div>
         <p class="section-lede">The generated machine record contains every aggregate, exclusion ordinal, recovery epoch, selected-source hash, and raw-row tree hash needed to reproduce this page without publishing prompts or response text.</p>
         <ul class="checks"><li><span class="check">✓</span><span>all cohort metadata match</span></li><li><span class="check">✓</span><span>all existing censor manifests match</span></li><li><span class="check">✓</span><span>all shared validity patterns match</span></li><li><span class="check">✓</span><span>all six common valid positions above 1900</span></li><li><span class="check">✓</span><span>all top p gpu validations pass</span></li></ul>
         <h3>Patch identity</h3>
