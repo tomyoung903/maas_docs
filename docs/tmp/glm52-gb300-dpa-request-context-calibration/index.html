@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Experiment design for separating active-request cost from cached-context scan cost in GLM-5.2 DPA decode on Taiguo GB300.">
-  <meta property="og:title" content="DPA calibration · active requests × cached context">
-  <meta property="og:description" content="A 24-cell, fully cached decode sweep designed to isolate request-count, KV-scan, and shared-MoE contributions.">
+  <meta name="description" content="GLM-5.2 DPA calibration status: the cancelled 24-cell request-by-context sweep, the shared-MoE confound, and an author-recommended fixed-logical-load extension that was not selected or launched.">
+  <meta property="og:title" content="DPA calibration program · requests, context, and shared MoE">
+  <meta property="og:description" content="What was prepared, what was cancelled, what phase-separated timing can establish, and which causal validation remains only a recommendation.">
   <meta property="og:type" content="article">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-dpa-request-context-calibration/">
   <link rel="icon" href="data:,">
-  <title>DPA calibration · active requests × cached context</title>
+  <title>DPA calibration program · requests, context, and shared MoE</title>
   <style>
     :root {
       color-scheme: light;
@@ -554,6 +554,139 @@
     .callout p { color: #5c5347; font-size: 13px; }
     .callout.red p { color: #694946; }
 
+    .program-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 13px;
+      margin-top: 21px;
+    }
+    .program-card {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 19px;
+    }
+    .program-card.history { border-top: 4px solid var(--navy); }
+    .program-card.primary { border-top: 4px solid var(--request); }
+    .program-card.next { border-top: 4px solid var(--kv); }
+    .program-number {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .program-card h3 { margin-top: 7px; }
+    .program-card p { color: var(--muted); font-size: 13px; }
+    .status-badge {
+      display: inline-flex;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--soft);
+      padding: 4px 9px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .status-badge.done { border-color: #bbceda; background: var(--navy-soft); color: var(--navy); }
+    .status-badge.cancelled { border-color: #dfb6b3; background: var(--red-soft); color: var(--red); }
+    .status-badge.next { border-color: #aad4cc; background: var(--kv-soft); color: var(--kv); }
+    .status-badge code { margin: 0 3px; }
+
+    .method-verdict {
+      margin-top: 21px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 15px;
+      align-items: start;
+      border: 1px solid #dfc18f;
+      border-left: 5px solid var(--moe);
+      background: linear-gradient(100deg, var(--moe-soft), var(--paper));
+      padding: 19px;
+    }
+    .method-mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 50%;
+      background: #f0d5a7;
+      color: #744806;
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .method-verdict h3 { margin-top: 1px; }
+    .method-verdict p { color: #5c5347; font-size: 13px; }
+
+    .distribution-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 13px;
+      margin-top: 20px;
+    }
+    .distribution {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+      padding: 16px;
+    }
+    .distribution h3 { font-size: 16px; }
+    .distribution p { color: var(--muted); font-size: 12px; }
+    .rank-strip {
+      display: flex;
+      align-items: end;
+      gap: 4px;
+      height: 91px;
+      margin-top: 14px;
+      border-bottom: 1px solid var(--line-strong);
+      padding: 0 2px 5px;
+    }
+    .rank-segment {
+      display: flex;
+      min-width: 0;
+      flex: 1;
+      align-items: end;
+      justify-content: center;
+      border-radius: 4px 4px 0 0;
+      background: var(--request-soft);
+      color: var(--request);
+      font-size: 10px;
+      font-weight: 850;
+    }
+    .rank-segment.hot { background: #cfc4eb; }
+    .distribution-total {
+      margin-top: 8px;
+      color: var(--kv);
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .status-timeline {
+      margin-top: 20px;
+      border-left: 2px solid var(--line-strong);
+      padding-left: 20px;
+    }
+    .status-event { position: relative; padding: 0 0 20px 5px; }
+    .status-event:last-child { padding-bottom: 0; }
+    .status-event::before {
+      position: absolute;
+      top: 5px;
+      left: -28px;
+      width: 11px;
+      height: 11px;
+      border: 3px solid var(--ground);
+      border-radius: 50%;
+      background: var(--navy);
+      content: "";
+    }
+    .status-event.cancelled::before { background: var(--red); }
+    .status-time { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .status-title { margin-top: 2px; font-weight: 820; }
+    .status-event p { color: var(--muted); font-size: 13px; }
+
     details {
       margin-top: 16px;
       border: 1px solid var(--line);
@@ -584,14 +717,15 @@
         padding: 13px 15px;
       }
       .toc a { display: inline-block; margin-right: 15px; }
-      .metric-grid, .comparison-grid { grid-template-columns: 1fr 1fr; }
+      .metric-grid, .comparison-grid, .program-grid, .distribution-grid { grid-template-columns: 1fr 1fr; }
       .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 720px) {
       .topbar-inner, .hero-inner, .layout, .footer-inner { width: min(100% - 24px, 1440px); }
       .topbar-inner { align-items: flex-start; flex-direction: column; padding: 10px 0; }
       .lede { font-size: 16px; }
-      .question-grid, .isolation-grid, .inspector, .readout-grid { grid-template-columns: 1fr; }
+      .question-grid, .isolation-grid, .inspector, .readout-grid, .program-grid, .distribution-grid { grid-template-columns: 1fr; }
+      .method-verdict { grid-template-columns: 1fr; }
       .times { justify-self: center; transform: rotate(90deg); }
       .metric-grid, .comparison-grid, .flow { grid-template-columns: 1fr; }
       .equation-row { grid-template-columns: 1fr; gap: 2px; }
@@ -602,31 +736,32 @@
   </style>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to experiment design</a>
+  <a class="skip-link" href="#main">Skip to experiment program</a>
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="../../">MaaS Docs</a>
       <nav class="toplinks" aria-label="Pack navigation">
+        <a href="#program">Program status</a>
         <a href="#grid">24-cell grid</a>
-        <a href="#isolation">Isolation logic</a>
-        <a href="#execution">Execution</a>
+        <a href="#control">Proposed control</a>
+        <a href="#readout">Readout</a>
       </nav>
     </div>
   </header>
 
   <div class="hero">
     <div class="hero-inner">
-      <div class="eyebrow">GLM-5.2 · Taiguo GB300 · proposed DPA calibration</div>
-      <h1>DPA calibration: active requests × cached context</h1>
+      <div class="eyebrow">GLM-5.2 · Taiguo GB300 · current DPA calibration program</div>
+      <h1>DPA timing calibration: what was tried, what failed, and what comes next</h1>
       <p class="lede">
-        A two-dimensional decode sweep designed to distinguish the cost of carrying more active sequences from the cost of scanning more KV history. Each cell contains concurrent, equal-length, fully cached requests routed to one DPA rank.
+        The program is trying to separate rank-local DSA and sparse MLA cost from synchronized MoE work, then turn that separation into a safer request-aware routing policy. The first reproduction harness is preserved, but its cluster attempt was cancelled before model readiness and produced no measurements.
       </p>
       <div class="meta-row">
-        <span class="pill status">Design only · no measurements collected</span>
+        <span class="pill status">Not running · zero measurements</span>
         <span class="pill request">8 request-count levels</span>
         <span class="pill context">3 cached-context levels</span>
         <span class="pill">24 randomized cells</span>
-        <span class="pill">2026-09-01</span>
+        <span class="pill">Status verified 2026-09-01</span>
       </div>
     </div>
   </div>
@@ -634,20 +769,67 @@
   <main class="layout" id="main">
     <aside class="toc" aria-label="Page overview">
       <div class="toc-title">On this page</div>
-      <a href="#question">01 · Question</a>
-      <a href="#grid">02 · 24-cell grid</a>
-      <a href="#isolation">03 · Isolation logic</a>
-      <a href="#topology">04 · Rank topology</a>
-      <a href="#execution">05 · Execution</a>
-      <a href="#readout">06 · Intended readout</a>
-      <a href="#limits">07 · Guardrails</a>
+      <a href="#program">01 · Program status</a>
+      <a href="#question">02 · Question</a>
+      <a href="#grid">03 · 24-cell grid</a>
+      <a href="#isolation">04 · Isolation logic</a>
+      <a href="#topology">05 · One-hot topology</a>
+      <a href="#control">06 · Proposed control</a>
+      <a href="#execution">07 · Execution</a>
+      <a href="#readout">08 · Intended readout</a>
+      <a href="#limits">09 · Status &amp; guardrails</a>
     </aside>
 
     <article>
+      <section id="program">
+        <h2>01 · The experiment program at a glance</h2>
+        <p class="section-intro">Three stages answer different questions. Only the historical observation has numbers; the new calibration and causal control have not produced data.</p>
+        <div class="program-grid">
+          <div class="program-card history">
+            <div class="program-number">Stage A · historical input</div>
+            <h3>Siqin-style one-hot fit</h3>
+            <p>A prior DP16 calibration increased active logical KV and request count on one loaded rank, then fitted whole-step time. It produced the router penalty later summarized as a large linear request term plus a small negative quadratic term.</p>
+            <span class="status-badge done">Observed · raw 26-cell set not preserved</span>
+          </div>
+          <div class="program-card primary">
+            <div class="program-number">Stage B · selected reproduction</div>
+            <h3>24-cell phase-separated sweep</h3>
+            <p>Recreate the one-hot surface with controlled request count and cached length, but report DSA, sparse MLA, MoE, collectives, and whole-step envelopes separately.</p>
+            <span class="status-badge cancelled">Prepared, attempted, then cancelled · no data</span>
+          </div>
+          <div class="program-card next">
+            <div class="program-number">Stage C · author recommendation</div>
+            <h3>Fixed-logical-load placement control</h3>
+            <p>A future extension would keep the same 64 logical requests while redistributing them among eight ranks. It would test—not assume—whether observed decode rows, padding mode, and shared MoE/collective work remain comparable as the hot rank’s local attention load changes.</p>
+            <span class="status-badge next">Not selected in <code>optim_exp6</code> · not launched</span>
+          </div>
+        </div>
+        <div class="method-verdict">
+          <div class="method-mark" aria-hidden="true">≈</div>
+          <div>
+            <h3>Tom’s methodological warning is right; the exact “2×” is not measured</h3>
+            <p>When only one DPA rank receives requests, increasing its request count also increases the shared, synchronized MoE workload. Regressing whole-step time against that rank’s request count therefore mixes a local-attention slope with a group-shared MoE slope. If MoE is about half of decode time, a roughly twofold overstatement is plausible—but batching, graph buckets, collectives, overlap, and nonlinear kernel scaling mean the multiplier must be measured rather than assumed.</p>
+          </div>
+        </div>
+        <div class="equation-block" aria-label="Historical one-hot fit">
+          <div class="equation-row">
+            <span class="math-var">T̂<sub>step</sub></span>
+            <span class="equals">=</span>
+            <span>20.58 ms + 2.468 ms · <span class="math-var sym-kv">K<sub>M</sub></span> + 1.066 ms · <span class="math-var sym-request">N</span> − 0.012 ms · <span class="math-var sym-request">N<sup>2</sup></span></span>
+          </div>
+          <div class="equation-row">
+            <span class="math-var">p(N)</span>
+            <span class="equals">=</span>
+            <span>6,749<span class="math-var sym-request">N</span> − 76<span class="math-var sym-request">N<sup>2</sup></span> <span class="equation-note">historical router penalty in 64-token block units</span></span>
+          </div>
+        </div>
+        <p class="section-intro" style="margin-top:14px">Here <span class="math-var sym-kv">K<sub>M</sub></span> is the historical loaded-rank active logical KV term in millions of tokens, not an allocator-residency measurement. The historical fit reported <span class="math-var">R<sup>2</sup></span> = 0.988 and 0.80 ms RMSE, but the raw 26 cells and fitting script were not retained. Treat it as the hypothesis being reproduced, not as a new result. <a href="../glm53-taiguo-dpa-routing-balance-audit/#calibration">See the preserved calibration audit.</a></p>
+      </section>
+
       <section id="question">
-        <h2>01 · The question this grid answers</h2>
+        <h2>02 · The question this grid answers</h2>
         <div class="verdict">
-          <strong>One variable is not enough.</strong> Increasing request count at one fixed context length simultaneously adds queries, KV to scan, MoE tokens, and launch work. Crossing request count with context length gives the comparisons needed to separate those effects.
+          <strong>Two axes are necessary, but not sufficient.</strong> Increasing request count at one fixed context length simultaneously adds queries, DSA history to scan, MoE tokens, and launch work. Crossing request count with context length creates the right attention comparisons. Phase attribution and rank-local residual validation are required before fitting an attention proxy; the unselected matched-placement control is a recommended causal validation.
         </div>
         <div class="question-grid">
           <div class="axis-card request">
@@ -666,7 +848,7 @@
           <div class="equation-row">
             <span class="math-var sym-kv">K<sub>rank</sub></span>
             <span class="equals">=</span>
-            <span><span class="math-var sym-request">N</span> × <span class="math-var sym-context">L</span> <span class="equation-note">nominal cached tokens resident on the loaded rank</span></span>
+            <span><span class="math-var sym-request">N</span> × <span class="math-var sym-context">L</span> <span class="equation-note">active logical cached context on the loaded rank; not physical cache residency</span></span>
           </div>
           <div class="equation-row">
             <span class="math-fn">cell count</span>
@@ -687,8 +869,8 @@
           </div>
           <div class="metric">
             <div class="metric-value">8K → 2.62M</div>
-            <div class="metric-label">Total rank KV</div>
-            <div class="metric-note">320× nominal scan-volume span</div>
+            <div class="metric-label">Active logical context</div>
+            <div class="metric-note">320× nominal DSA-history span</div>
           </div>
           <div class="metric">
             <div class="metric-value">96</div>
@@ -699,18 +881,18 @@
       </section>
 
       <section id="grid">
-        <h2>02 · The 24-cell sweep</h2>
+        <h2>03 · The 24-cell one-hot sweep</h2>
         <p class="section-intro">
-          Every row fixes the cached length per request. Every column fixes the number of simultaneous requests. Each cell shows <span class="math-var sym-kv">K<sub>rank</sub></span>, the nominal total cached tokens assigned to the loaded DPA rank. Click a cell to inspect its exact values.
+          Every row fixes the cached length per request. Every column fixes the number of simultaneous requests. Each cell shows <span class="math-var sym-kv">K<sub>rank</sub></span>, the active logical cached context used by requests on the loaded DPA rank. It is not physical cache allocation: the preserved runner warms all 32 full-length lanes before visiting the cells. Click a cell to inspect its exact values.
         </p>
         <div class="matrix-card">
           <div class="matrix-head">
             <div>
               <h3>Request-count × context-length matrix</h3>
-              <p>The heat color represents total KV, not a measured latency. Compact K/M labels follow the 1,024-token prompt convention; clicking shows exact counts.</p>
+              <p>The heat color represents active logical context, not physical cache residency or measured latency. Compact K/M labels follow the 1,024-token prompt convention; clicking shows exact counts.</p>
             </div>
-            <div class="legend" aria-label="Total KV legend">
-              <span>less total KV</span><span class="legend-ramp"></span><span>more total KV</span>
+            <div class="legend" aria-label="Active logical context legend">
+              <span>less logical context</span><span class="legend-ramp"></span><span>more logical context</span>
             </div>
           </div>
           <div class="matrix-wrap">
@@ -731,36 +913,36 @@
               <tbody>
                 <tr>
                   <th class="l-head">8K<small>8,192 each</small></th>
-                  <td><button class="cell-button heat-1" data-n="1" data-l="8192" data-total="8192"><span class="cell-total">8K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-1" data-n="2" data-l="8192" data-total="16384"><span class="cell-total">16K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-1" data-n="4" data-l="8192" data-total="32768"><span class="cell-total">32K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-2" data-n="8" data-l="8192" data-total="65536"><span class="cell-total">64K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-2" data-n="12" data-l="8192" data-total="98304"><span class="cell-total">96K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-3" data-n="16" data-l="8192" data-total="131072"><span class="cell-total">128K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-3" data-n="24" data-l="8192" data-total="196608"><span class="cell-total">192K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-4" data-n="32" data-l="8192" data-total="262144"><span class="cell-total">256K</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-1" data-n="1" data-l="8192" data-total="8192"><span class="cell-total">8K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-1" data-n="2" data-l="8192" data-total="16384"><span class="cell-total">16K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-1" data-n="4" data-l="8192" data-total="32768"><span class="cell-total">32K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-2" data-n="8" data-l="8192" data-total="65536"><span class="cell-total">64K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-2" data-n="12" data-l="8192" data-total="98304"><span class="cell-total">96K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-3" data-n="16" data-l="8192" data-total="131072"><span class="cell-total">128K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-3" data-n="24" data-l="8192" data-total="196608"><span class="cell-total">192K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-4" data-n="32" data-l="8192" data-total="262144"><span class="cell-total">256K</span><span class="cell-label">logical KV</span></button></td>
                 </tr>
                 <tr>
                   <th class="l-head">32K<small>32,768 each</small></th>
-                  <td><button class="cell-button heat-1" data-n="1" data-l="32768" data-total="32768"><span class="cell-total">32K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-2" data-n="2" data-l="32768" data-total="65536"><span class="cell-total">64K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-3" data-n="4" data-l="32768" data-total="131072"><span class="cell-total">128K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-4 selected" data-n="8" data-l="32768" data-total="262144"><span class="cell-total">256K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-4" data-n="12" data-l="32768" data-total="393216"><span class="cell-total">384K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-5" data-n="16" data-l="32768" data-total="524288"><span class="cell-total">512K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-6" data-n="24" data-l="32768" data-total="786432"><span class="cell-total">768K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-6" data-n="32" data-l="32768" data-total="1048576"><span class="cell-total">1.00M</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-1" data-n="1" data-l="32768" data-total="32768"><span class="cell-total">32K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-2" data-n="2" data-l="32768" data-total="65536"><span class="cell-total">64K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-3" data-n="4" data-l="32768" data-total="131072"><span class="cell-total">128K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-4 selected" data-n="8" data-l="32768" data-total="262144"><span class="cell-total">256K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-4" data-n="12" data-l="32768" data-total="393216"><span class="cell-total">384K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-5" data-n="16" data-l="32768" data-total="524288"><span class="cell-total">512K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-6" data-n="24" data-l="32768" data-total="786432"><span class="cell-total">768K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-6" data-n="32" data-l="32768" data-total="1048576"><span class="cell-total">1.00M</span><span class="cell-label">logical KV</span></button></td>
                 </tr>
                 <tr>
                   <th class="l-head">80K<small>81,920 each</small></th>
-                  <td><button class="cell-button heat-2" data-n="1" data-l="81920" data-total="81920"><span class="cell-total">80K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-3" data-n="2" data-l="81920" data-total="163840"><span class="cell-total">160K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-4" data-n="4" data-l="81920" data-total="327680"><span class="cell-total">320K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-5" data-n="8" data-l="81920" data-total="655360"><span class="cell-total">640K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-6" data-n="12" data-l="81920" data-total="983040"><span class="cell-total">960K</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-7" data-n="16" data-l="81920" data-total="1310720"><span class="cell-total">1.25M</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-7" data-n="24" data-l="81920" data-total="1966080"><span class="cell-total">1.88M</span><span class="cell-label">total KV</span></button></td>
-                  <td><button class="cell-button heat-8" data-n="32" data-l="81920" data-total="2621440"><span class="cell-total">2.50M</span><span class="cell-label">total KV</span></button></td>
+                  <td><button class="cell-button heat-2" data-n="1" data-l="81920" data-total="81920"><span class="cell-total">80K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-3" data-n="2" data-l="81920" data-total="163840"><span class="cell-total">160K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-4" data-n="4" data-l="81920" data-total="327680"><span class="cell-total">320K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-5" data-n="8" data-l="81920" data-total="655360"><span class="cell-total">640K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-6" data-n="12" data-l="81920" data-total="983040"><span class="cell-total">960K</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-7" data-n="16" data-l="81920" data-total="1310720"><span class="cell-total">1.25M</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-7" data-n="24" data-l="81920" data-total="1966080"><span class="cell-total">1.88M</span><span class="cell-label">logical KV</span></button></td>
+                  <td><button class="cell-button heat-8" data-n="32" data-l="81920" data-total="2621440"><span class="cell-total">2.50M</span><span class="cell-label">logical KV</span></button></td>
                 </tr>
               </tbody>
             </table>
@@ -774,51 +956,51 @@
             <div class="inspector-item">
               <div class="inspector-label">Cached context each</div>
               <div class="inspector-value sym-context" id="inspect-l">32,768</div>
-              <div class="inspector-note">Prompt KV already resident before decode</div>
+              <div class="inspector-note">Requested cached prefix per active sequence</div>
             </div>
             <div class="inspector-item">
-              <div class="inspector-label">Nominal total KV</div>
+              <div class="inspector-label">Active logical context</div>
               <div class="inspector-value sym-kv" id="inspect-total">262,144</div>
               <div class="inspector-note" id="inspect-formula">8 requests × 32,768 tokens</div>
             </div>
           </div>
         </div>
 
-        <h3 style="margin-top:28px">Built-in equal-total-KV comparisons</h3>
-        <p class="section-intro">These pairs keep nominal total KV fixed while changing the number of active sequences by 4×. They are the cleanest direct checks for a request-count effect that is not merely more KV.</p>
+        <h3 style="margin-top:28px">Built-in equal-logical-context comparisons</h3>
+        <p class="section-intro">These pairs keep active logical context fixed while changing the number of active sequences by 4×. They directly test request-count effects in the phase-separated attention proxy; they do not equalize sparse-MLA work, physical cache pages, EAGLE row geometry, or shared MoE work.</p>
         <div class="comparison-grid">
           <div class="comparison">
-            <div class="comparison-total">32K total</div>
+            <div class="comparison-total">32K logical total</div>
             <div class="comparison-pair">1 × 32K<br>versus<br>4 × 8K</div>
-            <p>Same KV; four times as many sequence states.</p>
+            <p>Same logical context; four times as many sequence states.</p>
           </div>
           <div class="comparison">
-            <div class="comparison-total">64K total</div>
+            <div class="comparison-total">64K logical total</div>
             <div class="comparison-pair">2 × 32K<br>versus<br>8 × 8K</div>
-            <p>Repeats the contrast at twice the KV volume.</p>
+            <p>Repeats the contrast at twice the logical-context volume.</p>
           </div>
           <div class="comparison">
-            <div class="comparison-total">128K total</div>
+            <div class="comparison-total">128K logical total</div>
             <div class="comparison-pair">4 × 32K<br>versus<br>16 × 8K</div>
             <p>Tests whether the request penalty changes with batch geometry.</p>
           </div>
           <div class="comparison">
-            <div class="comparison-total">256K total</div>
+            <div class="comparison-total">256K logical total</div>
             <div class="comparison-pair">8 × 32K<br>versus<br>32 × 8K</div>
-            <p>Largest equal-KV pair in the proposed grid.</p>
+            <p>Largest equal-logical-context pair in the proposed grid.</p>
           </div>
         </div>
       </section>
 
       <section id="isolation">
-        <h2>03 · How the two axes isolate the costs</h2>
+        <h2>04 · How the two axes isolate the costs</h2>
         <p class="section-intro">
-          The matrix supports two complementary slices. Neither slice alone is perfect; together with kernel-family timing they make the coefficient identifiable.
+          The matrix supports two complementary slices. Neither slice alone is sufficient; together with critical-path attribution they support estimating an attention proxy, subject to physical-work checks and rank-local residual validation.
         </p>
         <div class="isolation-grid">
           <div class="isolation context">
             <h3>Hold <span class="math-var sym-request">N</span> fixed; increase <span class="math-var sym-context">L</span></h3>
-            <p>The number of active sequences stays constant while each sequence exposes more cached history. DSA indexer and MLA attention must inspect more KV; ordinary per-position MoE token count should remain approximately fixed.</p>
+            <p>The number of active sequences stays constant while each sequence exposes more cached history. The DSA indexer scans the longer history; above the sparse threshold, sparse MLA should remain near its selected-position budget and be much less context-sensitive. Both must be measured separately. Logical MoE token count should remain approximately fixed, while physical EAGLE rows and padding still need verification.</p>
             <div class="mini-sequence" aria-label="Context length slice">
               <span class="mini-node context">8K each</span><span class="mini-arrow">→</span>
               <span class="mini-node context">32K each</span><span class="mini-arrow">→</span>
@@ -826,34 +1008,34 @@
             </div>
           </div>
           <div class="isolation request">
-            <h3>Hold total KV fixed; increase <span class="math-var sym-request">N</span></h3>
-            <p>Equal-total-KV pairs keep nominal scan volume constant while changing sequence count. The difference exposes per-sequence launch geometry, query-side work, scheduler state, and—unless removed—shared MoE work.</p>
-            <div class="mini-sequence" aria-label="Equal total KV slice">
+            <h3>Hold logical context fixed; increase <span class="math-var sym-request">N</span></h3>
+            <p>Equal-logical-context pairs keep nominal DSA history input constant while changing sequence count. They do not equalize sparse-MLA work or physical allocation. The difference also includes per-sequence launch geometry, query-side work, scheduler/graph effects, and—unless controlled—shared model work.</p>
+            <div class="mini-sequence" aria-label="Equal logical context slice">
               <span class="mini-node request">1 × 32K</span><span class="mini-arrow">↔</span>
               <span class="mini-node request">4 × 8K</span>
             </div>
           </div>
         </div>
-        <div class="equation-block" aria-label="Timing decomposition">
+        <div class="equation-block" aria-label="Critical-path attribution">
           <div class="equation-row">
             <span class="math-var">T<sub>step</sub></span>
-            <span class="equals">=</span>
-            <span><span class="math-var sym-kv">T<sub>DSA</sub></span> + <span class="math-var sym-context">T<sub>MLA</sub></span> + <span class="math-var sym-moe">T<sub>MoE</sub></span> + <span class="math-var">T<sub>other</sub></span></span>
+            <span class="equals">←</span>
+            <span>critical-path interval union of <span class="math-var sym-kv">DSA</span>, <span class="math-var sym-context">sparse MLA</span>, <span class="math-var sym-moe">MoE</span>, collectives, and other work <span class="equation-note">raw kernel durations can overlap and must not be added</span></span>
           </div>
           <div class="equation-row">
-            <span class="math-var">T<sub>rank-sensitive</sub></span>
-            <span class="equals">=</span>
-            <span><span class="math-var sym-kv">T<sub>DSA</sub></span> + <span class="math-var sym-context">T<sub>MLA</sub></span> <span class="equation-note">the quantity most relevant when choosing among DPA ranks</span></span>
+            <span class="math-var">T<sub>rank-local proxy</sub></span>
+            <span class="equals">≈</span>
+            <span>interval union of <span class="math-var sym-kv">DSA</span> and <span class="math-var sym-context">sparse MLA</span> <span class="equation-note">audit residual rank-sensitive work from projections, norms, KV writes, EAGLE/MTP, graph padding, and scheduling</span></span>
           </div>
         </div>
         <div class="callout">
           <strong>Why total step time is not the desired coefficient:</strong>
-          <p>MoE is synchronized across the TP/EP participants. Loading one DPA rank increases the shared MoE batch seen by every rank. If total step time is regressed directly against active requests, that shared work is incorrectly assigned to the loaded rank’s routing penalty.</p>
+          <p>MoE is synchronized across the TP/EP participants. Loading one DPA rank can increase shared MoE work and can also change EAGLE row geometry or padding. Regressing whole-step time directly against that rank’s request count assigns those group effects to its routing penalty. Phase attribution must therefore use critical-path intervals or mutually exclusive wall-clock envelopes, not subtraction of overlapping raw kernel time.</p>
         </div>
       </section>
 
       <section id="topology">
-        <h2>04 · One loaded attention rank, eight-rank shared model work</h2>
+        <h2>05 · One loaded attention rank, eight-rank shared model work</h2>
         <p class="section-intro">All synthetic requests are explicitly routed to rank 0. Ranks 1–7 receive no requests for their local DSA/MLA path, but they are not idle for the entire model step: synchronized MoE and collectives still involve the full group.</p>
         <div class="rank-card">
           <h3>Planned DPA8 topology across two four-GPU GB300 nodes</h3>
@@ -871,8 +1053,72 @@
         </div>
       </section>
 
+      <section id="control">
+        <h2>06 · Author-recommended control: keep logical request total fixed</h2>
+        <p class="section-intro">This is a future extension recommended from the methodological review; it was not selected or launched in <code>optim_exp6</code>. It would replay the same 64 deterministic logical request lanes and change only their rank assignment. Rank 0 receives the target count; the remaining lanes are spread across ranks 1–7. Every rank remains active. Token identities stay fixed, but physical EAGLE rows, graph padding, expert routing, and collective shapes must be observed rather than assumed equal.</p>
+        <div class="equation-block" aria-label="Fixed logical-request control">
+          <div class="equation-row">
+            <span class="math-var sym-request">G</span>
+            <span class="equals">=</span>
+            <span><span class="math-fn">∑</span><sub><span class="math-var">i</span>=0</sub><sup>7</sup> <span class="math-var sym-request">N<sub>i</sub></span> = 64 <span class="equation-note">fixed logical request total; physical rows and padding are measured controls</span></span>
+          </div>
+          <div class="equation-row">
+            <span class="math-var sym-moe">T<sub>shared MoE</sub></span>
+            <span class="equals">≈</span>
+            <span>constant while <span class="math-var sym-request">N<sub>0</sub></span> changes <span class="equation-note">hypothesis only; verify row count, padding mode, expert load, and the measured shared-work envelope</span></span>
+          </div>
+          <div class="equation-row">
+            <span class="math-var">T<sub>local proxy,0</sub></span>
+            <span class="equals">≈</span>
+            <span>interval union of <span class="math-var sym-kv">DSA<sub>0</sub></span> and <span class="math-var sym-context">sparse MLA<sub>0</sub></span> <span class="equation-note">targeted proxy; audit other rank-sensitive work before fitting a router coefficient</span></span>
+          </div>
+        </div>
+        <div class="distribution-grid">
+          <div class="distribution">
+            <h3>Balanced control</h3>
+            <p>Eight requests on every rank.</p>
+            <div class="rank-strip" aria-label="Balanced distribution: 8, 8, 8, 8, 8, 8, 8, 8">
+              <span class="rank-segment" style="height:36px">8</span><span class="rank-segment" style="height:36px">8</span><span class="rank-segment" style="height:36px">8</span><span class="rank-segment" style="height:36px">8</span><span class="rank-segment" style="height:36px">8</span><span class="rank-segment" style="height:36px">8</span><span class="rank-segment" style="height:36px">8</span><span class="rank-segment" style="height:36px">8</span>
+            </div>
+            <div class="distribution-total">Global total: 64 requests</div>
+          </div>
+          <div class="distribution">
+            <h3>Illustrative skew</h3>
+            <p>An example uneven layout, not an observed production vector.</p>
+            <div class="rank-strip" aria-label="Illustrative skewed distribution: 12, 6, 6, 8, 11, 10, 5, 6">
+              <span class="rank-segment hot" style="height:55px">12</span><span class="rank-segment" style="height:28px">6</span><span class="rank-segment" style="height:28px">6</span><span class="rank-segment" style="height:36px">8</span><span class="rank-segment" style="height:50px">11</span><span class="rank-segment" style="height:46px">10</span><span class="rank-segment" style="height:24px">5</span><span class="rank-segment" style="height:28px">6</span>
+            </div>
+            <div class="distribution-total">Global total: 64 requests</div>
+          </div>
+          <div class="distribution">
+            <h3>Concentrated control</h3>
+            <p>Rank 0 reaches the original grid’s maximum.</p>
+            <div class="rank-strip" aria-label="Concentrated distribution: 32, 8, 4, 4, 4, 4, 4, 4">
+              <span class="rank-segment hot" style="height:82px">32</span><span class="rank-segment" style="height:30px">8</span><span class="rank-segment" style="height:19px">4</span><span class="rank-segment" style="height:19px">4</span><span class="rank-segment" style="height:19px">4</span><span class="rank-segment" style="height:19px">4</span><span class="rank-segment" style="height:19px">4</span><span class="rank-segment" style="height:19px">4</span>
+            </div>
+            <div class="distribution-total">Global total: 64 requests</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Control</th><th>Held fixed</th><th>Changed</th><th>Why it matters</th></tr></thead>
+            <tbody>
+              <tr><td>Request identities</td><td>The same 64 token-ID lanes and deterministic decode settings</td><td>Only <code>routed_dp_rank</code></td><td>Makes token content and expert demand more comparable; actual expert routing still must be checked.</td></tr>
+              <tr><td>Logical group size</td><td><span class="math-var sym-request">G</span> = 64 in every cell</td><td><span class="math-var sym-request">N<sub>0</sub></span> = 1, 2, 4, 8, 12, 16, 24, or 32</td><td>Removes logical group request count as an input; it does not guarantee equal physical rows.</td></tr>
+              <tr><td>Context row</td><td>Every lane uses the same cached length within a row</td><td><span class="math-var sym-context">L</span> = 8,192, 32,768, or 81,920 across rows</td><td>Separates request placement from cached-history length.</td></tr>
+              <tr><td>Rank effects</td><td>Same requested allocation shape and request set</td><td>Rotate the hot assignment across physical ranks</td><td>Prevents one GPU, rank, or node from becoming the coefficient.</td></tr>
+              <tr><td>Physical work</td><td>Nothing assumed</td><td>Record <code>global_dp_buffer_len</code>, <code>dp_padding_mode</code>, verification rows, expert load, graph bucket, and collective shape</td><td>Stratify or reject cells when the logical control does not preserve physical work.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>Decisive pattern:</strong>
+          <p>If observed physical row geometry and the shared MoE/collective envelope remain comparable while the target-rank attention proxy changes with the hottest local batch—and other rank-local residuals remain small or explicitly modeled—the request-distribution effect is identified without borrowing the one-hot run’s shared-work slope. After that, a natural-traffic A/B can compare <code>total_tokens</code>, <code>total_requests</code>, and a request-first policy with a projected-KV safety guard.</p>
+        </div>
+      </section>
+
       <section id="execution">
-        <h2>05 · Exact execution sequence</h2>
+        <h2>07 · Exact execution sequence for the preserved sweep</h2>
         <p class="section-intro">The preserved runner makes every cell a cached-decode workload and prevents prefill latency from entering the measured region.</p>
         <div class="flow">
           <div class="flow-step">
@@ -912,18 +1158,18 @@
       </section>
 
       <section id="readout">
-        <h2>06 · What the completed experiment should report</h2>
-        <p class="section-intro">Each cell should produce per-step distributions, not merely one request-level duration. The same 24-cell panel should be reported for the three timing views below.</p>
+        <h2>08 · What the completed experiments should report</h2>
+        <p class="section-intro">Each cell should produce per-step distributions, not merely one request-level duration. Report the same 24-cell panel for the three views below. Construct component views as critical-path interval unions or mutually exclusive wall-clock envelopes; do not sum overlapping raw kernel residency.</p>
         <div class="readout-grid">
           <div class="readout attention">
             <h3>DSA + MLA</h3>
-            <p>Rank-sensitive attention time. This is the primary surface for calibrating rank selection against active requests and resident KV.</p>
-            <span class="readout-tag">router-relevant</span>
+            <p>Targeted attention proxy for rank selection against active requests and active logical context. Validate residual rank-local work before calling its coefficient router-complete.</p>
+            <span class="readout-tag">proxy to validate</span>
           </div>
           <div class="readout moe">
             <h3>MoE + collectives</h3>
-            <p>Shared synchronized work. Report it explicitly so its request-count slope is not silently attributed to one candidate rank.</p>
-            <span class="readout-tag">confound to subtract</span>
+            <p>Shared synchronized-work envelope. Report it with physical row, padding, expert-load, graph-bucket, and collective-shape metadata so its slope is not silently attributed to one candidate rank.</p>
+            <span class="readout-tag">confound to model</span>
           </div>
           <div class="readout total">
             <h3>Whole step</h3>
@@ -933,32 +1179,66 @@
         </div>
         <div class="equation-block" aria-label="Proposed fit">
           <div class="equation-row">
-            <span class="math-var">T<sub>attention</sub></span>
+            <span class="math-var">T<sub>attention proxy</sub></span>
             <span class="equals">≈</span>
             <span><span class="math-var">β<sub>0</sub></span> + <span class="math-var sym-request">β<sub>N</sub>N</span> + <span class="math-var sym-kv">β<sub>K</sub>K<sub>rank</sub></span> + <span class="math-var sym-request">β<sub>N²</sub>N<sup>2</sup></span></span>
           </div>
           <div class="equation-row">
-            <span class="math-var">residual check</span>
+            <span class="math-var">closure check</span>
             <span class="equals">=</span>
-            <span><span class="math-var">T<sub>step</sub></span> − (<span class="math-var">T<sub>attention</sub></span> + <span class="math-var sym-moe">T<sub>MoE</sub></span> + <span class="math-var">T<sub>collective</sub></span>)</span>
+            <span>critical-path coverage by mutually exclusive phase envelopes <span class="equation-note">report uncovered intervals; never subtract overlapping raw kernel durations</span></span>
           </div>
         </div>
-        <p class="section-intro" style="margin-top:14px">The fitted request coefficient is defensible only if it predicts held-out cells and the equal-total-KV pairs. A high whole-surface fit alone is insufficient if MoE remains inside the numerator.</p>
+        <p class="section-intro" style="margin-top:14px">The fitted request coefficient is only an attention proxy. It becomes defensible for routing only if it predicts held-out cells and equal-logical-context pairs, observed physical work is controlled, and the remaining rank-local residual is small or explicitly modeled. A high whole-surface fit alone is insufficient.</p>
       </section>
 
       <section id="limits">
-        <h2>07 · Guardrails before treating it as production truth</h2>
+        <h2>09 · Current status and guardrails</h2>
         <div class="callout red">
           <strong>Status boundary:</strong>
-          <p>The cluster attempt was cancelled during NCCL initialization, before model readiness. Therefore this page contains an experiment design and exact proposed inputs—no measured step times, fitted coefficients, or performance conclusions.</p>
+          <p>This experiment is not running. The cluster attempt was cancelled during NCCL initialization, before model readiness. Both pods and the Service were released, no local runner or profiler remains active, and the preserved experiment bundle contains no sweep, trace, summary, or fitted result.</p>
+        </div>
+        <div class="status-timeline" aria-label="Experiment status timeline">
+          <div class="status-event">
+            <div class="status-time">2026-08-31 · design fixed</div>
+            <div class="status-title">The 8 × 3 cached-decode grid was selected</div>
+            <p>The runner, two pod manifests, distributed launch script, deterministic prompt lanes, cache probe, randomized cell order, and Nsight capture boundary were prepared.</p>
+          </div>
+          <div class="status-event">
+            <div class="status-time">2026-08-31 · cluster attempt</div>
+            <div class="status-title">The server entered NCCL initialization</div>
+            <p>The two-node DP8/TP8 path did not reach model readiness. A labeled single-node DP4/TP4 fallback also did not reach a measurement gate.</p>
+          </div>
+          <div class="status-event cancelled">
+            <div class="status-time">2026-08-31 · release requested</div>
+            <div class="status-title">All experiment resources were removed before data collection</div>
+            <p>The worker never scheduled; the head pod and Service were deleted. No Feishu result notification was sent because there was no result.</p>
+          </div>
+          <div class="status-event cancelled">
+            <div class="status-time">2026-09-01 · current verification</div>
+            <div class="status-title">Zero Kubernetes resources and zero measurement artifacts remain</div>
+            <p>Only the reusable local manifests and scripts remain. Possible empty startup residue on the former node-local host path was not re-audited and is not treated as evidence.</p>
+          </div>
         </div>
         <details open>
-          <summary>Three analysis checks required after a rerun</summary>
+          <summary>Analysis checks required after a rerun</summary>
           <div class="details-body">
             <ul>
               <li><strong>EAGLE work matching:</strong> group cycles by target verification width or accepted-token count. Different speculative outcomes can change per-cycle work even at the same <span class="math-var sym-request">N</span> and <span class="math-var sym-context">L</span>.</li>
+              <li><strong>Physical-work contract:</strong> record logical requests separately from <code>global_dp_buffer_len</code>, <code>dp_padding_mode</code>, graph bucket, verification rows, expert load, and collective shape. Fixed logical input is not proof of fixed shared work.</li>
               <li><strong>Steady-state selection:</strong> exclude graph capture, first-step setup, final partial batches, and cache-warm operations from the fitted window.</li>
+              <li><strong>Rank-local residual:</strong> after the DSA+sparse-MLA interval union, audit projections, norms, KV writes, EAGLE/MTP, scheduler, and graph-padding time before using the proxy as a routing coefficient.</li>
               <li><strong>Production validation:</strong> replay natural mixed-rank traffic after the one-hot microbenchmark. The calibration is useful only if it improves prediction of the rank-sensitive critical path online.</li>
+            </ul>
+          </div>
+        </details>
+        <details>
+          <summary>Downstream experiments that are still proposals</summary>
+          <div class="details-body">
+            <ul>
+              <li><strong>Author-recommended matched-placement control:</strong> run the fixed-64-logical-request layouts above and rotate the hot rank while matching observed physical work. It was not selected in <code>optim_exp6</code>, and no cells have been collected.</li>
+              <li><strong>Router A/B:</strong> replay the same natural trace with <code>total_tokens</code> and <code>total_requests</code> while KV headroom is demonstrably safe. Existing rank-count heatmaps do not prove a TPOT effect.</li>
+              <li><strong>Hybrid router:</strong> admit only ranks with safe projected KV headroom, then minimize projected active requests and use KV pressure as a tie-breaker. This requires implementation; the current startup flag selects one static method.</li>
             </ul>
           </div>
         </details>
@@ -968,7 +1248,7 @@
 
   <footer>
     <div class="footer-inner">
-      MaaS experiment note · GLM-5.2 DPA routing calibration · design reconstructed from the preserved 2026-08-31 runner.
+      MaaS experiment note · GLM-5.2 DPA routing calibration program · status and design reconstructed from the preserved 2026-08-31 runner and session record.
     </div>
   </footer>
 
@@ -998,7 +1278,7 @@
         const total = Number(button.dataset.total);
         button.setAttribute(
           "aria-label",
-          `${format.format(n)} active request${n === 1 ? "" : "s"}, ${format.format(length)} cached tokens each, ${format.format(total)} total KV tokens`,
+          `${format.format(n)} active request${n === 1 ? "" : "s"}, ${format.format(length)} cached tokens each, ${format.format(total)} logical cached-context tokens`,
         );
         button.addEventListener("click", () => selectCell(button));
       });
