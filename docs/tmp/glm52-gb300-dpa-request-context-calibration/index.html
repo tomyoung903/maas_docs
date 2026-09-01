@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="GLM-5.2 DPA calibration status: the cancelled 24-cell request-by-context sweep, the shared-MoE confound, and an author-recommended fixed-logical-load extension that was not selected or launched.">
-  <meta property="og:title" content="DPA calibration program · requests, context, and shared MoE">
-  <meta property="og:description" content="What was prepared, what was cancelled, what phase-separated timing can establish, and which causal validation remains only a recommendation.">
+  <meta name="description" content="GLM-5.2 DPA calibration results on GB300: 144 audited timing cells compare one-hot rank loading with a fixed-64 control; kernel attribution remains pending after nodes 129 and 131 were reclaimed.">
+  <meta property="og:title" content="DPA request cost · corrected timing and pending kernel attribution">
+  <meta property="og:description" content="5,499 validated responses, a provisional request-coefficient correction, uncertainty, and the exact boundary between completed timing evidence and pending Nsight attribution.">
   <meta property="og:type" content="article">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-dpa-request-context-calibration/">
   <link rel="icon" href="data:,">
-  <title>DPA calibration program · requests, context, and shared MoE</title>
+  <title>DPA request cost · corrected timing and pending kernel attribution</title>
   <style>
     :root {
       color-scheme: light;
@@ -437,6 +437,43 @@
     .comparison-pair { margin-top: 8px; color: var(--ink); font-weight: 760; line-height: 1.45; }
     .comparison p { color: var(--muted); font-size: 12px; }
 
+    .result-banner {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .result-verdict {
+      border: 1px solid #a9d2ca;
+      border-top: 5px solid var(--kv);
+      border-radius: 10px;
+      background: linear-gradient(120deg, var(--kv-soft), var(--paper) 75%);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+    .result-kicker { color: var(--kv); font-size: 11px; font-weight: 880; letter-spacing: .08em; text-transform: uppercase; }
+    .result-value { margin-top: 7px; color: var(--kv); font-size: clamp(35px, 5vw, 54px); font-weight: 900; letter-spacing: -.04em; line-height: 1; }
+    .result-verdict p { color: #49645f; font-size: 13px; }
+    .audit-stack { display: grid; gap: 10px; }
+    .audit-item { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 14px 15px; }
+    .audit-item strong { display: block; color: var(--navy); font-size: 20px; font-variant-numeric: tabular-nums; }
+    .audit-item span { color: var(--muted); font-size: 12px; }
+    .slope-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; margin-top: 20px; }
+    .slope-card { border: 1px solid var(--line); border-radius: 9px; background: var(--paper); padding: 17px; }
+    .slope-context { color: var(--context); font-size: 12px; font-weight: 850; letter-spacing: .05em; text-transform: uppercase; }
+    .slope-ratio { margin-top: 3px; color: var(--ink); font-size: 28px; font-weight: 880; line-height: 1.1; }
+    .slope-ratio small { color: var(--muted); font-size: 12px; font-weight: 650; }
+    .slope-row { margin-top: 13px; }
+    .slope-label { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; }
+    .slope-label strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .slope-track { height: 10px; margin-top: 5px; overflow: hidden; border-radius: 999px; background: var(--soft); }
+    .slope-fill { display: block; height: 100%; border-radius: inherit; background: var(--request); }
+    .slope-fill.fixed { background: var(--kv); }
+    .slope-correction { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 11px; color: var(--muted); font-size: 12px; }
+    .slope-correction strong { color: var(--moe); font-size: 18px; }
+    .uncertainty { margin-top: 20px; border-left: 4px solid var(--moe); background: var(--moe-soft); padding: 15px 17px; }
+    .uncertainty p { color: #6d501f; font-size: 13px; }
+
     .isolation-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -795,14 +832,14 @@
         padding: 13px 15px;
       }
       .toc a { display: inline-block; margin-right: 15px; }
-      .metric-grid, .comparison-grid, .program-grid, .distribution-grid, .checkpoint-grid { grid-template-columns: 1fr 1fr; }
+      .metric-grid, .comparison-grid, .program-grid, .distribution-grid, .checkpoint-grid, .slope-grid { grid-template-columns: 1fr 1fr; }
       .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 720px) {
       .topbar-inner, .hero-inner, .layout, .footer-inner { width: min(100% - 24px, 1440px); }
       .topbar-inner { align-items: flex-start; flex-direction: column; padding: 10px 0; }
       .lede { font-size: 16px; }
-      .question-grid, .isolation-grid, .inspector, .readout-grid, .program-grid, .distribution-grid, .estimate-banner, .phase-grid, .checkpoint-grid { grid-template-columns: 1fr; }
+      .question-grid, .isolation-grid, .inspector, .readout-grid, .program-grid, .distribution-grid, .estimate-banner, .result-banner, .slope-grid, .phase-grid, .checkpoint-grid { grid-template-columns: 1fr; }
       .method-verdict { grid-template-columns: 1fr; }
       .times { justify-self: center; transform: rotate(90deg); }
       .metric-grid, .comparison-grid, .flow { grid-template-columns: 1fr; }
@@ -821,10 +858,10 @@
     <div class="topbar-inner">
       <a class="brand" href="../../">MaaS Docs</a>
       <nav class="toplinks" aria-label="Pack navigation">
-        <a href="#time-budget">Time budget</a>
+        <a href="#results">Results</a>
         <a href="#program">Program status</a>
         <a href="#grid">24-cell grid</a>
-        <a href="#control">Proposed control</a>
+        <a href="#control">Fixed-64 control</a>
         <a href="#readout">Readout</a>
       </nav>
     </div>
@@ -832,18 +869,19 @@
 
   <div class="hero">
     <div class="hero-inner">
-      <div class="eyebrow">GLM-5.2 · Taiguo GB300 · current DPA calibration program</div>
-      <h1>DPA timing calibration: what was tried, what failed, and what comes next</h1>
+      <div class="eyebrow">GLM-5.2 · Taiguo GB300 · corrected DPA calibration</div>
+      <h1>DPA request cost: 144 timing cells complete, kernel attribution pending</h1>
       <p class="lede">
-        The program is trying to separate rank-local DSA and sparse MLA cost from synchronized MoE work, then turn that separation into a safer request-aware routing policy. The first reproduction harness is preserved, but its cluster attempt was cancelled before model readiness and produced no measurements.
+        A corrected TP8/DP8 run on nodes 129 and 131 compared one-hot rank loading against a fixed-64-request placement control. All timing cells passed cache, output, and EAGLE checks. The data does not support a universal 2× request-cost correction; it gives a provisional 5.0–6.0k range for the historical 6,749 term, but uncertainty and context dependence prevent a final scalar until component traces are collected.
       </p>
       <div class="meta-row">
-        <span class="pill status">Not running · zero measurements</span>
+        <span class="pill status">Timing complete · profiling interrupted by node reclaim</span>
+        <span class="pill">144 / 144 cells</span>
+        <span class="pill">5,499 audited responses</span>
         <span class="pill request">8 request-count levels</span>
         <span class="pill context">3 cached-context levels</span>
-        <span class="pill">24 randomized cells</span>
-        <span class="pill">90-minute recommended reservation</span>
-        <span class="pill">Status verified 2026-09-01</span>
+        <span class="pill">2 modes · 3 repetitions</span>
+        <span class="pill">Evidence updated 2026-09-01 20:02 CST</span>
       </div>
     </div>
   </div>
@@ -851,62 +889,83 @@
   <main class="layout" id="main">
     <aside class="toc" aria-label="Page overview">
       <div class="toc-title">On this page</div>
-      <a href="#time-budget">00 · Time budget first</a>
+      <a href="#results">00 · Measured result</a>
       <a href="#program">01 · Program status</a>
       <a href="#question">02 · Question</a>
       <a href="#grid">03 · 24-cell grid</a>
       <a href="#isolation">04 · Isolation logic</a>
       <a href="#topology">05 · One-hot topology</a>
-      <a href="#control">06 · Proposed control</a>
+      <a href="#control">06 · Fixed-64 control</a>
       <a href="#execution">07 · Execution</a>
-      <a href="#readout">08 · Intended readout</a>
+      <a href="#readout">08 · Timing vs kernels</a>
       <a href="#limits">09 · Status &amp; guardrails</a>
     </aside>
 
     <article>
-      <section id="time-budget">
-        <h2>00 · Estimate total experiment time first</h2>
-        <p class="section-intro">The recommended run is larger than the preserved 24-cell attempt: it adds repetitions, a fixed-logical-load control, physical-rank anchors, short two-node profiler shards, validation, and restart-safe artifacts.</p>
-        <div class="estimate-banner">
-          <div class="estimate-primary">
-            <div class="estimate-kicker">Expected · image already present · no reclaim</div>
-            <div class="estimate-time">55–75<span class="estimate-unit">minutes</span></div>
-            <p>Use two four-GPU GB300 nodes for one production-shaped TP8/DP8/EP8 server. The fixed-output GPU cells are bounded; readiness, cache placement, profiler export, and analysis dominate elapsed time.</p>
+      <section id="results">
+        <h2>00 · Measured timing result</h2>
+        <p class="section-intro">The corrected server admitted 32 concurrent requests on one DPA rank, then completed both timing surfaces. Each point below is the pooled model’s marginal critical-request cycle time at <span class="math-var sym-request">N</span> = 16. “Critical-request cycle” divides request E2E by that request’s exact EAGLE verification count; it is a timing proxy, not a kernel-only duration.</p>
+        <div class="result-banner">
+          <div class="result-verdict">
+            <div class="result-kicker">Result boundary</div>
+            <div class="result-value">not 2×</div>
+            <p>The point estimates put one-hot inflation at 1.12×, 1.20×, and 1.34× as cached context rises from 8K to 80K. That maps the historical 6,749 request term to roughly 6,021, 5,612, and 5,040—not to half. The bootstrap interval is wide, however, so these are provisional context-specific estimates rather than a production coefficient.</p>
           </div>
-          <div class="estimate-side">
-            <div class="estimate-side-row"><strong>90 minutes</strong><span>recommended reservation for one clean attempt</span></div>
-            <div class="estimate-side-row"><strong>2 hours</strong><span>safe window for a cold pull or one reclaim/restart</span></div>
-            <div class="estimate-side-row"><strong>35–45 minutes</strong><span>minimal one-hot reproduction only</span></div>
+          <div class="audit-stack" aria-label="Timing audit summary">
+            <div class="audit-item"><strong>144 / 144</strong><span>unique timing cells committed</span></div>
+            <div class="audit-item"><strong>5,499</strong><span>unique validated responses</span></div>
+            <div class="audit-item"><strong>0</strong><span>missing cells, retries, or audit violations</span></div>
           </div>
         </div>
-        <div class="budget-track" aria-label="Expected warm-image time budget">
-          <div class="budget-segment budget-preflight">preflight<br>4–6 min</div>
-          <div class="budget-segment budget-startup">ready gate<br>6–8 min</div>
-          <div class="budget-segment budget-cache">cache + smoke<br>3–5 min</div>
-          <div class="budget-segment budget-onehot">one-hot<br>10–14 min</div>
-          <div class="budget-segment budget-control">control + rotation<br>18–27 min</div>
-          <div class="budget-segment budget-analysis">export + fit<br>8–12 min</div>
+
+        <div class="slope-grid" aria-label="Pooled marginal request slopes at sixteen target-rank requests">
+          <div class="slope-card">
+            <div class="slope-context">8,192 cached tokens</div>
+            <div class="slope-ratio">1.12× <small>one-hot / fixed64</small></div>
+            <div class="slope-row"><div class="slope-label"><span>one-hot</span><strong>0.585 ms/request</strong></div><div class="slope-track"><span class="slope-fill" style="width:70%"></span></div></div>
+            <div class="slope-row"><div class="slope-label"><span>fixed64</span><strong>0.521 ms/request</strong></div><div class="slope-track"><span class="slope-fill fixed" style="width:62%"></span></div></div>
+            <div class="slope-correction">Provisional historical correction<br><strong>6,749 → 6,021</strong></div>
+          </div>
+          <div class="slope-card">
+            <div class="slope-context">32,768 cached tokens</div>
+            <div class="slope-ratio">1.20× <small>one-hot / fixed64</small></div>
+            <div class="slope-row"><div class="slope-label"><span>one-hot</span><strong>0.668 ms/request</strong></div><div class="slope-track"><span class="slope-fill" style="width:80%"></span></div></div>
+            <div class="slope-row"><div class="slope-label"><span>fixed64</span><strong>0.556 ms/request</strong></div><div class="slope-track"><span class="slope-fill fixed" style="width:67%"></span></div></div>
+            <div class="slope-correction">Provisional historical correction<br><strong>6,749 → 5,612</strong></div>
+          </div>
+          <div class="slope-card">
+            <div class="slope-context">81,920 cached tokens</div>
+            <div class="slope-ratio">1.34× <small>one-hot / fixed64</small></div>
+            <div class="slope-row"><div class="slope-label"><span>one-hot</span><strong>0.836 ms/request</strong></div><div class="slope-track"><span class="slope-fill" style="width:100%"></span></div></div>
+            <div class="slope-row"><div class="slope-label"><span>fixed64</span><strong>0.624 ms/request</strong></div><div class="slope-track"><span class="slope-fill fixed" style="width:75%"></span></div></div>
+            <div class="slope-correction">Provisional historical correction<br><strong>6,749 → 5,040</strong></div>
+          </div>
         </div>
-        <div class="budget-caption">Some export and preparation work can overlap. The 55–75 minute estimate is an end-to-end planning range, not a sum of every independent worst case.</div>
+
+        <div class="uncertainty">
+          <strong>Why this is not yet the router coefficient:</strong>
+          <p>The 5,000-sample within-cell bootstrap gives very wide 95% intervals for the implied historical term: 3,551–8,581 at 8K, 3,557–7,748 at 32K, and 3,372–6,810 at 80K. Modes were executed sequentially, and EAGLE acceptance makes the fixed-64 instantaneous load shrink as requests retire. The context-dependent point ratio therefore cannot be labeled “MoE overhead” without Nsight phase attribution. It does establish that simply dividing 6,749 by two is unsupported.</p>
+        </div>
+
         <div class="table-wrap">
           <table class="data">
-            <thead><tr><th>Scenario</th><th>Model readiness</th><th>Whole program</th><th>Operational decision</th></tr></thead>
+            <thead><tr><th>Measured contract</th><th>Accepted value</th><th>Evidence</th></tr></thead>
             <tbody>
-              <tr><td>Warm image, clean run</td><td>6–8 minutes</td><td>55–75 minutes</td><td>Normal expected path; reserve 90 minutes.</td></tr>
-              <tr><td>Cold image on one node</td><td>15–18 minutes</td><td>65–85 minutes</td><td>Continue if the pull is healthy; do not restart only because it is slow.</td></tr>
-              <tr><td>One node reclaimed</td><td>6–18 minutes after replacement</td><td>75–105 minutes</td><td>Re-prime cache state and resume only missing observation IDs.</td></tr>
-              <tr><td>Minimal one-hot only</td><td>Same startup gate</td><td>35–45 minutes</td><td>Useful for reproduction, insufficient for a causal router coefficient.</td></tr>
+              <tr><td>Hardware</td><td>Two four-GPU NVIDIA GB300 nodes: 129 and 131</td><td>Same MNNVL clique; zero pod restarts during timing.</td></tr>
+              <tr><td>Runtime</td><td>TP8 · DP8 · NVFP4 model · FP8 KV · EAGLE 5 steps / 6 draft tokens</td><td>Immutable server-info and launch-command contracts.</td></tr>
+              <tr><td>Rank capacity</td><td>Global <code>--max-running-requests 256</code> → 32 per DPA rank</td><td>Scheduler admitted 18 running + 14 new = 32 before any completion; CUDA graphs captured from batch 32.</td></tr>
+              <tr><td>Timing cells</td><td>2 modes × 8 request counts × 3 contexts × 3 repetitions</td><td>384 output tokens, temperature 0, EOS ignored, no measured-cell retry.</td></tr>
+              <tr><td>Cache contract</td><td>Page-aware reusable prefix floor on every request</td><td>8K: 8,128; 32K: 32,704; 80K: 81,856 cached tokens minimum.</td></tr>
+              <tr><td>Profiler status</td><td>0 / 12 bounded ranges captured</td><td>Both experiment pods were externally deleted before range 0; Kimi then occupied both nodes.</td></tr>
             </tbody>
           </table>
         </div>
-        <div class="evidence-note">
-          <strong>Operational basis from <span class="mono">optim_exp7</span>, not a direct performance transfer.</strong> Recent Taiguo GB300 servers passed their full contract about 6–8 minutes after a warm-image start; one healthy cold path spent roughly 11 minutes pulling and about 17 minutes total before readiness. That different GLM-5.3 workload also proved the value of atomic progress and bounded recovery. These observations set the startup and safety envelope here; they do not predict this GLM-5.2 kernel surface. Unlike the earlier natural-output run, this protocol uses fixed output caps and ignores EOS, so an unbounded completion tail cannot determine wall time.
-        </div>
+        <p class="section-intro" style="margin-top:14px">Download the machine-readable <a href="timing-analysis.json">analysis</a>, <a href="timing-median-grid.csv">median grid</a>, and <a href="timing-audit.json">independent audit</a>. The observation-file-set digest is <code>089036d8…c704503</code>.</p>
       </section>
 
       <section id="program">
         <h2>01 · The experiment program at a glance</h2>
-        <p class="section-intro">Three stages answer different questions. Only the historical observation has numbers; the new calibration and causal control have not produced data.</p>
+        <p class="section-intro">The historical fit, corrected one-hot reproduction, and fixed-64 control now all have timing evidence. The remaining missing layer is component-level DSA, MLA, MoE, and collective attribution.</p>
         <div class="program-grid">
           <div class="program-card history">
             <div class="program-number">Stage A · historical input</div>
@@ -915,23 +974,23 @@
             <span class="status-badge done">Observed · raw 26-cell set not preserved</span>
           </div>
           <div class="program-card primary">
-            <div class="program-number">Stage B · selected reproduction</div>
-            <h3>24-cell phase-separated sweep</h3>
-            <p>Recreate the one-hot surface with controlled request count and cached length, but report DSA, sparse MLA, MoE, collectives, and whole-step envelopes separately.</p>
-            <span class="status-badge cancelled">Prepared, attempted, then cancelled · no data</span>
+            <div class="program-number">Stage B · corrected reproduction</div>
+            <h3>One-hot timing surface</h3>
+            <p>All 24 request-by-context shapes ran three times with 384 fixed outputs after the per-rank capacity bug was corrected. The pooled cycle-time fit reaches <span class="math-var">R<sup>2</sup></span> = 0.964 with 1.44 ms RMSE.</p>
+            <span class="status-badge done">72 / 72 timing cells · audited</span>
           </div>
           <div class="program-card next">
-            <div class="program-number">Stage C · author recommendation</div>
+            <div class="program-number">Stage C · causal timing control</div>
             <h3>Fixed-logical-load placement control</h3>
-            <p>A future extension would keep the same 64 logical requests while redistributing them among eight ranks. It would test—not assume—whether observed decode rows, padding mode, and shared MoE/collective work remain comparable as the hot rank’s local attention load changes.</p>
-            <span class="status-badge next">Not selected in <code>optim_exp6</code> · not launched</span>
+            <p>The same 64 logical lanes were redistributed among eight ranks while rank 0 received 1–32 requests. This removes the first-order change in total logical request count, but asynchronous EAGLE retirement still prevents calling it a perfectly fixed physical workload.</p>
+            <span class="status-badge done">72 / 72 timing cells · traces pending</span>
           </div>
         </div>
         <div class="method-verdict">
           <div class="method-mark" aria-hidden="true">≈</div>
           <div>
-            <h3>Tom’s methodological warning is right; the exact “2×” is not measured</h3>
-            <p>When only one DPA rank receives requests, increasing its request count also increases the shared, synchronized MoE workload. Regressing whole-step time against that rank’s request count therefore mixes a local-attention slope with a group-shared MoE slope. If MoE is about half of decode time, a roughly twofold overstatement is plausible—but batching, graph buckets, collectives, overlap, and nonlinear kernel scaling mean the multiplier must be measured rather than assumed.</p>
+            <h3>Tom’s confound is real; the timing point estimate is smaller and context-dependent</h3>
+            <p>One-hot loading mixes local-attention and group-work growth. The fixed-64 comparison reduces the pooled marginal slope by about 11–25% at <span class="math-var sym-request">N</span> = 16, not 50%. But the bootstrap is wide, modes were sequential, and EAGLE requests retire at different times. Timing therefore rules out treating “2×” as established; it does not yet isolate a universal MoE correction.</p>
           </div>
         </div>
         <div class="equation-block" aria-label="Historical one-hot fit">
@@ -952,7 +1011,7 @@
       <section id="question">
         <h2>02 · The question this grid answers</h2>
         <div class="verdict">
-          <strong>Two axes are necessary, but not sufficient.</strong> Increasing request count at one fixed context length simultaneously adds queries, DSA history to scan, MoE tokens, and launch work. Crossing request count with context length creates the right attention comparisons. Phase attribution and rank-local residual validation are required before fitting an attention proxy; the unselected matched-placement control is a recommended causal validation.
+          <strong>Two axes are necessary, but not sufficient.</strong> Increasing request count at one fixed context length simultaneously adds queries, DSA history to scan, MoE tokens, and launch work. Crossing request count with context length creates the right attention comparisons. The completed fixed-64 surface adds the placement control; phase attribution and rank-local residual validation are still required before fitting a production attention proxy.
         </div>
         <div class="question-grid">
           <div class="axis-card request">
@@ -1004,7 +1063,7 @@
       </section>
 
       <section id="grid">
-        <h2>03 · The 24-cell one-hot sweep</h2>
+        <h2>03 · The measured 24-cell one-hot sweep</h2>
         <p class="section-intro">
           Every row fixes the cached length per request. Every column fixes the number of simultaneous requests. Each cell shows <span class="math-var sym-kv">K<sub>rank</sub></span>, the active logical cached context used by requests on the loaded DPA rank. It is not physical cache allocation: the preserved runner warms all 32 full-length lanes before visiting the cells. Click a cell to inspect its exact values.
         </p>
@@ -1161,7 +1220,7 @@
         <h2>05 · One loaded attention rank, eight-rank shared model work</h2>
         <p class="section-intro">All synthetic requests are explicitly routed to rank 0. Ranks 1–7 receive no requests for their local DSA/MLA path, but they are not idle for the entire model step: synchronized MoE and collectives still involve the full group.</p>
         <div class="rank-card">
-          <h3>Planned DPA8 topology across two four-GPU GB300 nodes</h3>
+          <h3>Observed DPA8 topology across two four-GPU GB300 nodes</h3>
           <div class="rank-row">
             <div class="rank loaded"><div class="rank-name">rank 0</div><div class="rank-state"><span class="sym-request">N requests</span><br><span class="sym-context">L cached each</span></div></div>
             <div class="rank"><div class="rank-name">rank 1</div><div class="rank-state">no local<br>attention batch</div></div>
@@ -1177,8 +1236,8 @@
       </section>
 
       <section id="control">
-        <h2>06 · Author-recommended control: keep logical request total fixed</h2>
-        <p class="section-intro">This is a future extension recommended from the methodological review; it was not selected or launched in <code>optim_exp6</code>. It would replay the same 64 deterministic logical request lanes and change only their rank assignment. Rank 0 receives the target count; the remaining lanes are spread across ranks 1–7. Every rank remains active. Token identities stay fixed, but physical EAGLE rows, graph padding, expert routing, and collective shapes must be observed rather than assumed equal.</p>
+        <h2>06 · Executed control: keep logical request total fixed</h2>
+        <p class="section-intro">The corrected run replayed the same 64 deterministic logical request lanes and changed only their rank assignment. Rank 0 received the target count; the remaining lanes were spread across ranks 1–7. Every rank remained logically active at submission. Token identities stayed fixed, but physical EAGLE rows, graph padding, expert routing, and collective shapes still require trace evidence because requests retire at different verification cycles.</p>
         <div class="equation-block" aria-label="Fixed logical-request control">
           <div class="equation-row">
             <span class="math-var sym-request">G</span>
@@ -1222,7 +1281,7 @@
             <div class="distribution-total">Global total: 64 requests</div>
           </div>
         </div>
-        <h3 style="margin-top:28px">Planned nested placement schedule</h3>
+        <h3 style="margin-top:28px">Executed nested placement schedule</h3>
         <p class="section-intro">The residual counts are deterministic and as even as possible. Lane ownership is nested: as <span class="math-var sym-request">N<sub>0</sub></span> rises, lanes move from ranks 1–7 to rank 0 but do not move among residual ranks. This limits rank-local prefix copies while keeping the same 64 logical lanes.</p>
         <div class="table-wrap">
           <table class="data">
@@ -1262,28 +1321,28 @@
       </section>
 
       <section id="execution">
-        <h2>07 · Operational execution plan</h2>
-        <p class="section-intro">The preserved runner is the starting point, not the final protocol. The expanded run separates high-sample timing from short profiler captures, observes physical EAGLE and MoE work in the logical-load control, and makes every completed observation independently resumable.</p>
+        <h2>07 · Execution record and resumable remainder</h2>
+        <p class="section-intro">Qualification and both timing surfaces completed. Component traces and physical-rank anchors remain pending because nodes 129 and 131 were reclaimed before profiler range 0. Every accepted timing cell is durable and will not be repeated.</p>
         <div class="flow">
           <div class="flow-step">
             <div class="flow-title">Freeze contract</div>
-            <p>Write image, model, SGLang commit, launch arguments, nodes, seeds, cell inventory, and output path before reserving GPUs.</p>
+            <p>Complete: image, model, SGLang commit, launch arguments, nodes, seeds, cell inventory, and output path were recorded.</p>
           </div>
           <div class="flow-step">
             <div class="flow-title">Pass ready gate</div>
-            <p>Require all eight ranks, exact server configuration, EAGLE, routed-rank control, metrics, and a one-cell decode smoke test.</p>
+            <p>Complete: all eight ranks, EAGLE, rank routing, cache reporting, and the corrected 32-request rank capacity passed.</p>
           </div>
           <div class="flow-step">
             <div class="flow-title">Prime placements</div>
-            <p>Warm deterministic 80K lane–rank pairs, then prove every measured request reports the expected cached prefix.</p>
+            <p>Complete for timing: all 95 deterministic placements passed the 81,856-token cache probe.</p>
           </div>
           <div class="flow-step">
             <div class="flow-title">Run timing blocks</div>
-            <p>Collect three seeded repetitions of both 24-cell surfaces with 384 fixed output tokens per request.</p>
+            <p>Complete: 144 cells and 5,499 responses passed the independent audit.</p>
           </div>
           <div class="flow-step">
             <div class="flow-title">Trace and close</div>
-            <p>Capture 96-token cells in six-cell shards on both nodes; export, checksum, classify, fit, and release.</p>
+            <p>Pending: resume on one idle two-node GB300 pair; capture 12 bounded Nsight ranges, export, classify, and close.</p>
           </div>
         </div>
 
@@ -1292,40 +1351,40 @@
             <div class="phase-id">Phase 0 · qualification</div>
             <h3>Server and instrumentation gate</h3>
             <p>Start outside the profiler range. Verify model identity, TP8/DP8/EP8 topology, rank capacity, EAGLE settings, rank pinning, cache reporting, two-node timestamp alignment, and shared-storage writes.</p>
-            <span class="phase-count">no measurement admitted yet</span>
+            <span class="phase-count">passed · corrected global max-running 256</span>
           </div>
           <div class="phase-card">
             <div class="phase-id">Phase 1 · timing surfaces</div>
             <h3>144 bounded cell-runs</h3>
             <p>Run 24 one-hot cells and 24 fixed-logical-load cells, each three times. Independent seeded permutations and 384 fixed outputs provide a long steady window without a natural-output tail.</p>
-            <span class="phase-count">2 modes × 24 cells × 3 repeats</span>
+            <span class="phase-count">complete · 144 / 144</span>
           </div>
           <div class="phase-card">
             <div class="phase-id">Phase 2 · component traces</div>
             <h3>48 short profiled cells</h3>
             <p>Repeat every shape once at 96 outputs with Nsight on both nodes. Split each mode into four six-cell shards and derive interval unions or mutually exclusive phase envelopes—never sums of overlapping raw residency.</p>
-            <span class="phase-count">8 shards · 6 cells each</span>
+            <span class="phase-count">blocked by node reclaim · 0 / 48</span>
           </div>
           <div class="phase-card">
             <div class="phase-id">Phase 3 · rank anchors</div>
             <h3>24 physical-rank checks</h3>
             <p>Use <span class="math-var sym-request">N</span> ∈ {1, 8, 32} and <span class="math-var sym-context">L</span> ∈ {8K, 80K}; rotate the target over ranks 0, 3, 4, and 7 with 192 fixed outputs. Re-prime each rotation and profile its 32 × 80K endpoint.</p>
-            <span class="phase-count">6 shapes × 4 target ranks</span>
+            <span class="phase-count">blocked by node reclaim · 0 / 24 accepted</span>
           </div>
         </div>
 
         <div class="table-wrap">
           <table class="data">
-            <thead><tr><th>Property</th><th>Final planned value</th><th>Reason</th></tr></thead>
+            <thead><tr><th>Property</th><th>Measured or planned value</th><th>Status / reason</th></tr></thead>
             <tbody>
               <tr><td>Prompt lanes</td><td>64 distinct deterministic token-ID sequences, each 81,920 tokens long</td><td>Avoid tokenizer work, preserve identity across placements, and expose 8K/32K as cached prefixes.</td></tr>
               <tr><td>Request axis</td><td>1, 2, 4, 8, 12, 16, 24, 32 active requests on the target rank</td><td>Match the historical supported range and cross graph/batch geometry changes.</td></tr>
               <tr><td>Context axis</td><td>8,192; 32,768; 81,920 cached tokens per request</td><td>Give a 10× per-request context span and a 320× target-rank logical-context span.</td></tr>
               <tr><td>Timing pass</td><td>Three repetitions; 384 outputs; temperature 0; EOS ignored</td><td>Bound wall time while obtaining a long full-batch steady window.</td></tr>
               <tr><td>Trace pass</td><td>One repetition; 96 outputs; six cells per profiler shard</td><td>Obtain phase attribution without one huge, fragile trace.</td></tr>
-              <tr><td>Cell order</td><td>Independent seeded permutation per mode and repetition</td><td>Reduce warm-up, clock, thermal, and time-order bias.</td></tr>
+              <tr><td>Cell order</td><td>Independent seeded permutation inside each mode and repetition</td><td>Measured, but modes were sequential. A precision rerun should interleave one-hot and fixed64 cells.</td></tr>
               <tr><td>Capture scope</td><td>Both nodes; process/rank IDs and synchronized cell IDs</td><td>Reconstruct group envelopes without inferring ranks 4–7 from ranks 0–3.</td></tr>
-              <tr><td>Admitted window</td><td>After every intended request is active and before the first request finishes</td><td>Fit the contracted logical batch, not the partial tail.</td></tr>
+              <tr><td>Admitted window</td><td>Planned trace window: after all requests are active and before the first finishes</td><td>Not available in client timing; required for the pending component fit.</td></tr>
             </tbody>
           </table>
         </div>
@@ -1356,23 +1415,23 @@
       </section>
 
       <section id="readout">
-        <h2>08 · What the completed experiments should report</h2>
-        <p class="section-intro">Each cell should produce per-step distributions, not merely one request-level duration. Report the same 24-cell panel for the three views below. Construct component views as critical-path interval unions or mutually exclusive wall-clock envelopes; do not sum overlapping raw kernel residency.</p>
+        <h2>08 · Timing readout versus pending kernel readout</h2>
+        <p class="section-intro">The completed client pass provides EAGLE-normalized critical-request cycle proxies. It does not provide per-step kernel envelopes. The pending trace pass must report the same 24-cell panel for the three views below, using critical-path interval unions or mutually exclusive wall-clock envelopes—never sums of overlapping raw residency.</p>
         <div class="readout-grid">
           <div class="readout attention">
             <h3>DSA + MLA</h3>
             <p>Targeted attention proxy for rank selection against active requests and active logical context. Validate residual rank-local work before calling its coefficient router-complete.</p>
-            <span class="readout-tag">proxy to validate</span>
+            <span class="readout-tag">pending Nsight attribution</span>
           </div>
           <div class="readout moe">
             <h3>MoE + collectives</h3>
             <p>Shared synchronized-work envelope. Report it with physical row, padding, expert-load, graph-bucket, and collective-shape metadata so its slope is not silently attributed to one candidate rank.</p>
-            <span class="readout-tag">confound to model</span>
+            <span class="readout-tag">pending Nsight attribution</span>
           </div>
           <div class="readout total">
             <h3>Whole step</h3>
             <p>Observed critical-path time, including gaps. Useful as a reconciliation check: component timing must explain the end-to-end step.</p>
-            <span class="readout-tag">reconciliation</span>
+            <span class="readout-tag">client proxy complete · trace closure pending</span>
           </div>
         </div>
         <div class="equation-block" aria-label="Proposed fit">
@@ -1413,49 +1472,52 @@
         <h2>09 · Current status and guardrails</h2>
         <div class="callout red">
           <strong>Status boundary:</strong>
-          <p>This experiment is not running. The cluster attempt was cancelled during NCCL initialization, before model readiness. Both pods and the Service were released, no local runner or profiler remains active, and the preserved experiment bundle contains no sweep, trace, summary, or fitted result.</p>
+          <p>The timing experiment is complete and durable; the kernel experiment is not. No Nsight range was captured. At 11:54:27 UTC, both profiler pods were externally deleted during uncaptured cache priming. A Kimi 1P1D deployment then occupied all four GPUs on node 129 and all four on node 131. Only one other GB300 node was idle, so the experiment did not preempt, collide, or silently switch hardware.</p>
         </div>
         <div class="status-timeline" aria-label="Experiment status timeline">
           <div class="status-event">
-            <div class="status-time">2026-08-31 · design fixed</div>
-            <div class="status-title">The 8 × 3 cached-decode grid was selected</div>
-            <p>The runner, two pod manifests, distributed launch script, deterministic prompt lanes, cache probe, randomized cell order, and Nsight capture boundary were prepared.</p>
+            <div class="status-time">2026-09-01 10:50 UTC · contract correction</div>
+            <div class="status-title">The first 144-cell pass was rejected for a per-rank capacity error</div>
+            <p><code>--max-running-requests 128</code> was divided by DP8, allowing only 16 per rank. All old cells were retained for audit but marked superseded; none enter this report’s fit.</p>
           </div>
           <div class="status-event">
-            <div class="status-time">2026-08-31 · cluster attempt</div>
-            <div class="status-title">The server entered NCCL initialization</div>
-            <p>The two-node DP8/TP8 path did not reach model readiness. A labeled single-node DP4/TP4 fallback also did not reach a measurement gate.</p>
+            <div class="status-time">2026-09-01 11:16 UTC · corrected capacity gate</div>
+            <div class="status-title">One DPA rank admitted all 32 intended requests</div>
+            <p>The scheduler log showed 18 already running plus 14 newly admitted with queue zero. All 32 responses returned 96 tokens, valid cache hits, and EAGLE metadata.</p>
+          </div>
+          <div class="status-event">
+            <div class="status-time">2026-09-01 11:18–11:35 UTC · accepted timing</div>
+            <div class="status-title">144 corrected cells completed in 16m44s</div>
+            <p>The independent audit found 5,499 unique responses, zero missing cells, zero retries, and zero HTTP, output-length, cache-floor, or EAGLE violations.</p>
           </div>
           <div class="status-event cancelled">
-            <div class="status-time">2026-08-31 · release requested</div>
-            <div class="status-title">All experiment resources were removed before data collection</div>
-            <p>The worker never scheduled; the head pod and Service were deleted. No Feishu result notification was sent because there was no result.</p>
-          </div>
-          <div class="status-event cancelled">
-            <div class="status-time">2026-09-01 · current verification</div>
-            <div class="status-title">Zero Kubernetes resources and zero measurement artifacts remain</div>
-            <p>Only the reusable local manifests and scripts remain. Possible empty startup residue on the former node-local host path was not re-audited and is not treated as evidence.</p>
+            <div class="status-time">2026-09-01 11:54 UTC · profiler interruption</div>
+            <div class="status-title">Nodes 129 and 131 were reclaimed before range 0</div>
+            <p>The cache-prime client exited 137 when both pods were deleted. No profile manifest was committed as complete and no trace is treated as evidence. Replacement pods were removed after the Kimi workload claimed both nodes.</p>
           </div>
         </div>
         <details open>
-          <summary>Analysis checks required after a rerun</summary>
+          <summary>What the completed timing evidence can and cannot say</summary>
           <div class="details-body">
             <ul>
-              <li><strong>EAGLE work matching:</strong> group cycles by target verification width or accepted-token count. Different speculative outcomes can change per-cycle work even at the same <span class="math-var sym-request">N</span> and <span class="math-var sym-context">L</span>.</li>
-              <li><strong>Physical-work contract:</strong> record logical requests separately from <code>global_dp_buffer_len</code>, <code>dp_padding_mode</code>, graph bucket, verification rows, expert load, and collective shape. Fixed logical input is not proof of fixed shared work.</li>
-              <li><strong>Steady-state selection:</strong> exclude graph capture, first-step setup, final partial batches, and cache-warm operations from the fitted window.</li>
-              <li><strong>Rank-local residual:</strong> after the DSA+sparse-MLA interval union, audit projections, norms, KV writes, EAGLE/MTP, scheduler, and graph-padding time before using the proxy as a routing coefficient.</li>
-              <li><strong>Production validation:</strong> replay natural mixed-rank traffic after the one-hot microbenchmark. The calibration is useful only if it improves prediction of the rank-sensitive critical path online.</li>
+              <li><strong>Supported:</strong> a universal 2× correction is not measured and is inconsistent with the timing point estimates.</li>
+              <li><strong>Supported provisionally:</strong> at <span class="math-var sym-request">N</span> = 16, pooled point ratios imply a historical linear term around 5.0–6.0k across the tested contexts.</li>
+              <li><strong>Not supported:</strong> selecting 5,612—or any other single point—as the production router coefficient. Bootstrap intervals are wide and include the original coefficient for some contexts.</li>
+              <li><strong>Not measured:</strong> DSA, sparse MLA, MoE, collective, host-gap, or graph-padding envelopes. Client timing cannot assign the observed excess to a kernel family.</li>
+              <li><strong>Design limitation:</strong> one-hot ran before fixed64. Within-mode cells were randomized, but mode order was not interleaved; drift is visible across fixed64 repetitions.</li>
             </ul>
           </div>
         </details>
         <details>
-          <summary>Downstream experiments that are still proposals</summary>
+          <summary>Exact resumable remainder</summary>
           <div class="details-body">
             <ul>
-              <li><strong>Author-recommended matched-placement control:</strong> run the fixed-64-logical-request layouts above and rotate the hot rank while matching observed physical work. It was not selected in <code>optim_exp6</code>, and no cells have been collected.</li>
-              <li><strong>Router A/B:</strong> replay the same natural trace with <code>total_tokens</code> and <code>total_requests</code> while KV headroom is demonstrably safe. Existing rank-count heatmaps do not prove a TPOT effect.</li>
-              <li><strong>Hybrid router:</strong> admit only ranks with safe projected KV headroom, then minimize projected active requests and use KV pressure as a tie-breaker. This requires implementation; the current startup flag selects one static method.</li>
+              <li><strong>Resources:</strong> wait for two idle four-GPU GB300 nodes in one MNNVL clique; do not use the single idle node or preempt another namespace.</li>
+              <li><strong>Server:</strong> launch the same image digest and corrected global max-running value 256, then require CUDA graphs through per-rank batch 32.</li>
+              <li><strong>Cache:</strong> flush, warm all 95 lane–rank placements at concurrency 8, and verify the page-aware cache floor before capture.</li>
+              <li><strong>Component ranges:</strong> collect eight six-cell ranges—four one-hot and four fixed64—with 96 outputs per request.</li>
+              <li><strong>Rank anchors:</strong> collect four endpoint ranges for target ranks 0, 3, 4, and 7, plus the declared unprofiled anchor cells.</li>
+              <li><strong>Precision timing option:</strong> if coefficient uncertainty remains dominant, rerun only paired one-hot/fixed64 cells in an interleaved order rather than repeating accepted cells unchanged.</li>
             </ul>
           </div>
         </details>
@@ -1465,7 +1527,7 @@
 
   <footer>
     <div class="footer-inner">
-      MaaS experiment note · GLM-5.2 DPA routing calibration program · status and design reconstructed from the preserved 2026-08-31 runner and session record.
+      MaaS experiment note · GLM-5.2 DPA routing calibration · corrected timing evidence from 2026-09-01 · kernel attribution explicitly pending.
     </div>
   </footer>
 
