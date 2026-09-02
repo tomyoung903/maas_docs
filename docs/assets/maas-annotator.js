@@ -18,17 +18,21 @@
     var PREFS_KEY = "maas-docs:annotator-prefs:v1";
     var MAX_HISTORY = 50;
     var MAX_EDITS = 500;
+    var MAX_REMOVALS = 500;
     var MAX_EDIT_HTML = 200000;
     var DEFAULT_COLOR = "#d94b3d";
     var COLORS = ["#d94b3d", "#f2b84b", "#0f8278", "#2f6feb", "#20262d"];
     var WIDTHS = [2, 4, 7];
-    var TOOLS = ["pointer", "edit", "pen", "highlighter", "arrow", "text", "eraser"];
+    var TOOLS = ["pointer", "edit", "remove", "pen", "highlighter", "arrow", "text", "eraser"];
     var DRAW_TOOLS = ["pen", "highlighter", "arrow", "text", "eraser"];
     var TEXT_SIZES = { 2: 16, 4: 22, 7: 30 };
     var EDITABLE_BLOCKS = "h1,h2,h3,h4,h5,h6,p,li,dt,dd,figcaption,caption,th,td,blockquote,pre";
     var EDIT_EXCLUDED_ANCESTORS = "a,button,input,textarea,select,option,[role=button],[role=link],[role=tab],[role=menuitem],[contenteditable],[data-maas-annotator-ui],[data-maas-text-editor]";
     var EDIT_UNSAFE_DESCENDANTS = "script,style,noscript,iframe,object,embed,form,input,textarea,select,button,svg,math,canvas,video,audio";
     var EDIT_BLOCK_DESCENDANTS = "address,article,aside,blockquote,div,dl,fieldset,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hr,main,nav,ol,p,pre,section,table,ul";
+    var REMOVE_DIRECT_TARGETS = "a,button,input,textarea,select,img,picture,figure,video,audio,canvas,svg,iframe,object,embed,table,details,form,hr";
+    var REMOVE_SECTION_TARGETS = "section,article,aside,header,footer,nav,[role=region],[role=figure]";
+    var REMOVE_FORBIDDEN = "html,body,head,main,script,style,link,meta,title,base,[data-maas-annotator-ui],[data-maas-text-editor],[data-maas-annotation-layer],[data-maas-object-removed]";
 
     var icons = {
       pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
@@ -36,6 +40,7 @@
       arrow: '<path d="M13 5H19V11"/><path d="M19 5L5 19"/>',
       text: '<path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>',
       edit: '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"/>',
+      remove: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/>',
       eraser: '<path d="M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21"/><path d="m5.082 11.09 8.828 8.828"/>',
       pointer: '<path d="M12.586 12.586 19 19"/><path d="M3.5 2.5 10 18l2.5-5.5L18 10Z"/>',
       undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11"/>',
@@ -58,6 +63,7 @@
       width: 4,
       items: [],
       edits: [],
+      removals: [],
       undo: [],
       redo: [],
       draft: null,
@@ -65,6 +71,8 @@
       editDraft: null,
       editHover: null,
       editIssueCount: 0,
+      removeHover: null,
+      removalIssueCount: 0,
       applyingEdits: false,
       applyEditsFrame: 0,
       storageOkay: true
@@ -96,7 +104,9 @@
     editStyle.textContent =
       "html[data-maas-page-edit-mode] [data-maas-edit-hover]{outline:2px dashed #0f8278!important;outline-offset:3px!important;cursor:text!important}" +
       "[data-maas-edit-active]{outline:3px solid #0f8278!important;outline-offset:3px!important;cursor:text!important;caret-color:#0f8278!important}" +
-      "@media print{[data-maas-edit-hover],[data-maas-edit-active]{outline:none!important}}";
+      "html[data-maas-remove-mode] [data-maas-remove-hover]{outline:3px dashed #d94b3d!important;outline-offset:3px!important;cursor:pointer!important}" +
+      "[data-maas-object-removed]{display:none!important;visibility:hidden!important}" +
+      "@media print{[data-maas-edit-hover],[data-maas-edit-active],[data-maas-remove-hover]{outline:none!important}}";
     document.head.appendChild(editStyle);
 
     var textEditorHost = document.createElement("div");
@@ -141,6 +151,7 @@
     bindDrawing();
     bindKeyboard();
     applySavedEdits();
+    applySavedRemovals();
     updateOverlaySize();
     render();
     refreshUi();
@@ -161,7 +172,7 @@
 
     var editObserver = typeof MutationObserver === "function"
       ? new MutationObserver(function () {
-          if (state.edits.length && !state.applyingEdits && !state.editDraft) scheduleApplyEdits();
+          if ((state.edits.length || state.removals.length) && !state.applyingEdits && !state.editDraft) scheduleApplyEdits();
         })
       : null;
     if (editObserver) editObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
@@ -179,13 +190,16 @@
           width: state.width,
           items: state.items,
           edits: state.edits,
-          editIssueCount: state.editIssueCount
+          removals: state.removals,
+          editIssueCount: state.editIssueCount,
+          removalIssueCount: state.removalIssueCount
         });
       },
       setOpen: setOpen,
       setTool: setTool,
       clear: clearAll,
       resetEdits: resetEdits,
+      resetPageChanges: resetPageChanges,
       downloadEditedHtml: downloadEditedHtml,
       exportData: exportData
     };
@@ -254,6 +268,7 @@
             '<div class="row tools">' +
               toolButton("pointer", "pointer", "Use page") +
               toolButton("edit", "edit", "Edit Page") +
+              toolButton("remove", "remove", "Remove Object") +
               toolButton("pen", "pencil", "Pen") +
               toolButton("highlighter", "highlighter", "Highlighter") +
               toolButton("arrow", "arrow", "Arrow") +
@@ -269,8 +284,8 @@
               actionButton("export", "download", "Export page changes") +
               actionButton("import", "upload", "Import page changes") +
               actionButton("download-html", "fileCode", "Download edited HTML") +
-              actionButton("reset-edits", "reset", "Reset page text edits") +
-              actionButton("clear", "trash", "Clear annotations and text edits") +
+              actionButton("reset-changes", "reset", "Reset text edits and removed objects") +
+              actionButton("clear", "trash", "Clear annotations and page changes") +
               '<span class="status" id="status" role="status" aria-live="polite"></span>' +
             '</div>' +
           '</div>' +
@@ -353,7 +368,7 @@
         if (action.dataset.action === "export") downloadExport();
         if (action.dataset.action === "import") importInput.click();
         if (action.dataset.action === "download-html") downloadEditedHtml();
-        if (action.dataset.action === "reset-edits") resetEdits();
+        if (action.dataset.action === "reset-changes") resetPageChanges();
         if (action.dataset.action === "clear") clearAll();
       });
 
@@ -369,18 +384,30 @@
 
     function bindPageEditing() {
       document.addEventListener("pointerover", function (event) {
-        if (!pageEditMode() || state.editDraft || isAnnotatorTarget(event.target)) return;
-        setEditHover(findEditableTarget(event.target));
+        if (isAnnotatorTarget(event.target)) return;
+        if (pageEditMode() && !state.editDraft) setEditHover(findEditableTarget(event.target));
+        if (removeMode()) setRemoveHover(findRemovableTarget(event.target));
       }, true);
 
       document.addEventListener("pointerout", function (event) {
-        if (!state.editHover) return;
         var related = event.relatedTarget;
-        if (!related || !state.editHover.contains(related)) setEditHover(null);
+        if (state.editHover && (!related || !state.editHover.contains(related))) setEditHover(null);
+        if (state.removeHover && (!related || !state.removeHover.contains(related))) setRemoveHover(null);
       }, true);
 
       document.addEventListener("click", function (event) {
-        if (!pageEditMode() || isAnnotatorTarget(event.target)) return;
+        if (isAnnotatorTarget(event.target)) return;
+
+        if (removeMode()) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          var removable = findRemovableTarget(event.target);
+          if (removable) removePageObject(removable);
+          else setStatus("That object cannot be removed safely");
+          return;
+        }
+
+        if (!pageEditMode()) return;
 
         if (state.editDraft && state.editDraft.element.contains(event.target)) {
           if (event.target.closest && event.target.closest("a")) event.preventDefault();
@@ -766,9 +793,115 @@
       return state.open && state.tool === "edit";
     }
 
+    function removeMode() {
+      return state.open && state.tool === "remove";
+    }
+
     function isAnnotatorTarget(target) {
       var element = target instanceof Element ? target : target && target.parentElement;
       return Boolean(element && element.closest("[data-maas-annotator-ui],[data-maas-text-editor]"));
+    }
+
+    function findRemovableTarget(target) {
+      var element = target instanceof Element ? target : target && target.parentElement;
+      if (!element || isAnnotatorTarget(element) || element.closest("[data-maas-object-removed]")) return null;
+
+      var direct = element.closest(REMOVE_DIRECT_TARGETS);
+      if (isRemovableCandidate(direct)) return direct;
+
+      var textBlock = element.closest(EDITABLE_BLOCKS);
+      if (isRemovableCandidate(textBlock)) return textBlock;
+
+      var section = element.closest(REMOVE_SECTION_TARGETS);
+      if (isRemovableCandidate(section)) return section;
+
+      var container = element.closest("div");
+      return isRemovableCandidate(container) ? container : null;
+    }
+
+    function isRemovableCandidate(element) {
+      if (!(element instanceof Element) || !element.parentElement || !document.body.contains(element)) return false;
+      if (isAnnotatorTarget(element) || element.matches(REMOVE_FORBIDDEN) || element.closest("[data-maas-object-removed]")) return false;
+      return element.getClientRects().length > 0;
+    }
+
+    function setRemoveHover(element) {
+      if (state.removeHover === element) return;
+      if (state.removeHover && state.removeHover.isConnected) state.removeHover.removeAttribute("data-maas-remove-hover");
+      state.removeHover = element || null;
+      if (state.removeHover) state.removeHover.setAttribute("data-maas-remove-hover", "");
+      if (removeMode()) {
+        setStatus(state.removeHover ? "Click to remove " + describeRemovalTarget(state.removeHover) : removalModeStatus());
+      }
+    }
+
+    function describeRemovalTarget(element) {
+      var tagName = element.tagName.toLowerCase();
+      var labels = {
+        a: "link",
+        article: "article",
+        aside: "side section",
+        audio: "audio",
+        button: "button",
+        canvas: "canvas",
+        details: "details section",
+        figure: "figure",
+        footer: "footer section",
+        form: "form",
+        header: "header section",
+        iframe: "embedded object",
+        img: "image",
+        input: "input",
+        nav: "navigation section",
+        picture: "image",
+        section: "section",
+        select: "selection control",
+        svg: "graphic",
+        table: "table",
+        textarea: "text area",
+        video: "video"
+      };
+      return labels[tagName] || (/^h[1-6]$/.test(tagName) ? "heading" : (tagName === "p" ? "text area" : tagName + " object"));
+    }
+
+    function removePageObject(element) {
+      if (!removeMode() || !isRemovableCandidate(element)) return;
+      if (state.removals.length >= MAX_REMOVALS) {
+        setStatus("Removed-object limit reached");
+        return;
+      }
+      var selector = selectorForElement(element);
+      if (!selector) {
+        setStatus("This object cannot be tracked safely");
+        return;
+      }
+      var before = snapshotState();
+      var removal = {
+        id: newId(),
+        selector: selector,
+        tagName: element.tagName.toLowerCase(),
+        signature: removalSignature(element),
+        label: describeRemovalTarget(element),
+        updatedAt: new Date().toISOString()
+      };
+      element.removeAttribute("data-maas-remove-hover");
+      element.setAttribute("data-maas-object-removed", removal.id);
+      state.removeHover = null;
+      state.removals.push(removal);
+      applySavedRemovals();
+      pushUndo(before);
+      state.redo = [];
+      persist();
+      render();
+      refreshUi();
+      scheduleOverlaySize();
+      setStatus("Removed " + removal.label + " | Undo available");
+    }
+
+    function removalModeStatus() {
+      return state.removalIssueCount
+        ? state.removalIssueCount + " removal(s) need review"
+        : "Click an object to remove | " + state.removals.length + " removed";
     }
 
     function findEditableTarget(target) {
@@ -1042,7 +1175,9 @@
       overlay.style.pointerEvents = drawing ? "auto" : "none";
       overlay.style.cursor = state.tool === "text" ? "text" : "crosshair";
       document.documentElement.toggleAttribute("data-maas-page-edit-mode", pageEditMode());
+      document.documentElement.toggleAttribute("data-maas-remove-mode", removeMode());
       if (!pageEditMode()) setEditHover(null);
+      if (!removeMode()) setRemoveHover(null);
     }
 
     function toggleVisibility() {
@@ -1091,18 +1226,22 @@
     function clearAll(skipConfirmation) {
       if (state.textDraft) commitTextEditing();
       if (state.editDraft) commitPageEdit();
-      if (!state.items.length && !state.edits.length) return;
-      if (!skipConfirmation && !window.confirm("Clear all annotations and page text edits saved for this page?")) return;
+      if (!state.items.length && !state.edits.length && !state.removals.length) return;
+      if (!skipConfirmation && !window.confirm("Clear all annotations, text edits, and removed objects saved for this page?")) return;
       var before = snapshotState();
+      restoreAppliedRemovals(state.removals);
       restoreAppliedEdits(state.edits);
       state.items = [];
       state.edits = [];
+      state.removals = [];
       state.editIssueCount = 0;
+      state.removalIssueCount = 0;
       pushUndo(before);
       state.redo = [];
       persist();
       render();
       refreshUi();
+      scheduleOverlaySize();
     }
 
     function resetEdits(skipConfirmation) {
@@ -1117,6 +1256,25 @@
       state.redo = [];
       persist();
       refreshUi();
+      scheduleOverlaySize();
+    }
+
+    function resetPageChanges(skipConfirmation) {
+      if (state.editDraft) commitPageEdit();
+      if (!state.edits.length && !state.removals.length) return;
+      if (!skipConfirmation && !window.confirm("Reset all saved text edits and removed objects on this page?")) return;
+      var before = snapshotState();
+      restoreAppliedRemovals(state.removals);
+      restoreAppliedEdits(state.edits);
+      state.edits = [];
+      state.removals = [];
+      state.editIssueCount = 0;
+      state.removalIssueCount = 0;
+      pushUndo(before);
+      state.redo = [];
+      persist();
+      refreshUi();
+      scheduleOverlaySize();
     }
 
     function pushUndo(snapshot) {
@@ -1125,14 +1283,18 @@
     }
 
     function snapshotState() {
-      return clone({ items: state.items, edits: state.edits });
+      return clone({ items: state.items, edits: state.edits, removals: state.removals });
     }
 
     function applyStateSnapshot(snapshot) {
+      restoreAppliedRemovals(state.removals);
       restoreAppliedEdits(state.edits);
       state.items = clone(snapshot && Array.isArray(snapshot.items) ? snapshot.items : []);
       state.edits = clone(snapshot && Array.isArray(snapshot.edits) ? snapshot.edits : []);
+      state.removals = clone(snapshot && Array.isArray(snapshot.removals) ? snapshot.removals : []);
       applySavedEdits();
+      applySavedRemovals();
+      scheduleOverlaySize();
     }
 
     function exportData() {
@@ -1143,7 +1305,8 @@
         updatedAt: new Date().toISOString(),
         visible: state.visible,
         items: clone(state.items),
-        edits: clone(state.edits)
+        edits: clone(state.edits),
+        removals: clone(state.removals)
       };
     }
 
@@ -1165,13 +1328,18 @@
       if (state.textDraft) commitTextEditing();
       if (state.editDraft) commitPageEdit();
       var page = document.documentElement.cloneNode(true);
+      Array.prototype.forEach.call(page.querySelectorAll("[data-maas-object-removed]"), function (element) {
+        element.remove();
+      });
       Array.prototype.forEach.call(page.querySelectorAll("[data-maas-annotation-layer],[data-maas-annotator-ui],[data-maas-text-editor],[data-maas-edit-style]"), function (element) {
         element.remove();
       });
       page.removeAttribute("data-maas-page-edit-mode");
-      Array.prototype.forEach.call(page.querySelectorAll("[data-maas-edit-hover],[data-maas-edit-active]"), function (element) {
+      page.removeAttribute("data-maas-remove-mode");
+      Array.prototype.forEach.call(page.querySelectorAll("[data-maas-edit-hover],[data-maas-edit-active],[data-maas-remove-hover]"), function (element) {
         element.removeAttribute("data-maas-edit-hover");
         element.removeAttribute("data-maas-edit-active");
+        element.removeAttribute("data-maas-remove-hover");
       });
       var html = serializeDoctype() + "\n" + page.outerHTML + "\n";
       var blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -1203,25 +1371,30 @@
         setStatus("Invalid JSON");
         return;
       }
-      if (!payload || payload.version !== 1 || (!Array.isArray(payload.items) && !Array.isArray(payload.edits))) {
+      if (!payload || payload.version !== 1 || (!Array.isArray(payload.items) && !Array.isArray(payload.edits) && !Array.isArray(payload.removals))) {
         setStatus("Unsupported file");
         return;
       }
       if (payload.pageKey && payload.pageKey !== PAGE_KEY && !window.confirm("These page changes belong to " + payload.pageKey + ". Import them on this page?")) return;
       var normalizedItems = (Array.isArray(payload.items) ? payload.items : []).map(normalizeItem).filter(Boolean);
       var normalizedEdits = normalizeEdits(payload.edits);
-      if (!window.confirm("Replace this page's " + state.items.length + " saved mark(s) and " + state.edits.length + " text edit(s) with " + normalizedItems.length + " mark(s) and " + normalizedEdits.length + " text edit(s)?")) return;
+      var normalizedRemovals = normalizeRemovals(payload.removals);
+      if (!window.confirm("Replace this page's " + state.items.length + " mark(s), " + state.edits.length + " text edit(s), and " + state.removals.length + " removed object(s) with " + normalizedItems.length + " mark(s), " + normalizedEdits.length + " text edit(s), and " + normalizedRemovals.length + " removed object(s)?")) return;
       var before = snapshotState();
+      restoreAppliedRemovals(state.removals);
       restoreAppliedEdits(state.edits);
       state.items = normalizedItems;
       state.edits = normalizedEdits;
+      state.removals = normalizedRemovals;
       state.visible = payload.visible !== false;
       pushUndo(before);
       state.redo = [];
       applySavedEdits();
+      applySavedRemovals();
       persist();
       render();
       refreshUi();
+      scheduleOverlaySize();
       setStatus("Imported");
     }
 
@@ -1245,7 +1418,7 @@
         button.setAttribute("aria-label", textMode ? button.dataset.textLabel : button.dataset.strokeLabel);
         button.setAttribute("title", textMode ? button.dataset.textLabel : button.dataset.strokeLabel);
       });
-      shadow.getElementById("options-row").hidden = state.tool === "edit";
+      shadow.getElementById("options-row").hidden = state.tool === "edit" || state.tool === "remove";
       shadow.getElementById("edit-actions").hidden = !state.editDraft;
       shadow.querySelector(".widths").setAttribute("aria-label", state.tool === "text" ? "Text size" : "Stroke width");
       var visibility = shadow.querySelector('button[data-action="visibility"]');
@@ -1254,18 +1427,20 @@
       visibility.setAttribute("title", state.visible ? "Hide annotations" : "Show annotations");
       shadow.querySelector('button[data-action="undo"]').disabled = !state.undo.length;
       shadow.querySelector('button[data-action="redo"]').disabled = !state.redo.length;
-      shadow.querySelector('button[data-action="reset-edits"]').disabled = !state.edits.length;
-      shadow.querySelector('button[data-action="clear"]').disabled = !state.items.length && !state.edits.length;
+      shadow.querySelector('button[data-action="reset-changes"]').disabled = !state.edits.length && !state.removals.length;
+      shadow.querySelector('button[data-action="clear"]').disabled = !state.items.length && !state.edits.length && !state.removals.length;
       if (state.textDraft) {
         setStatus("Type text, then add");
       } else if (state.editDraft) {
         setStatus("Ctrl/⌘+Enter saves | Esc cancels");
       } else if (state.open && state.tool === "edit") {
         setStatus(state.editIssueCount ? state.editIssueCount + " edit(s) need review" : "Click existing text | " + state.edits.length + " saved");
+      } else if (state.open && state.tool === "remove") {
+        setStatus(removalModeStatus());
       } else if (state.open && state.tool === "text") {
         setStatus("Click page for text");
       } else {
-        setStatus(state.items.length + (state.items.length === 1 ? " mark" : " marks") + " | " + state.edits.length + (state.edits.length === 1 ? " edit" : " edits") + (state.storageOkay ? " | saved" : " | unsaved"));
+        setStatus(state.items.length + (state.items.length === 1 ? " mark" : " marks") + " | " + state.edits.length + (state.edits.length === 1 ? " edit" : " edits") + " | " + state.removals.length + " removed" + (state.storageOkay ? " | saved" : " | unsaved"));
       }
     }
 
@@ -1281,7 +1456,8 @@
           visible: state.visible,
           updatedAt: new Date().toISOString(),
           items: state.items,
-          edits: state.edits
+          edits: state.edits,
+          removals: state.removals
         }));
         state.storageOkay = true;
       } catch (error) {
@@ -1297,6 +1473,7 @@
         if (!payload || payload.version !== 1) return;
         state.items = (Array.isArray(payload.items) ? payload.items : []).map(normalizeItem).filter(Boolean);
         state.edits = normalizeEdits(payload.edits);
+        state.removals = normalizeRemovals(payload.removals);
         state.visible = payload.visible !== false;
       } catch (error) {
         state.storageOkay = false;
@@ -1327,7 +1504,7 @@
       var type = ["path", "highlight", "arrow", "text"].indexOf(raw.type) !== -1 ? raw.type : null;
       if (!type) return null;
       var item = {
-        id: typeof raw.id === "string" && raw.id.length <= 100 ? raw.id : newId(),
+        id: typeof raw.id === "string" && raw.id && raw.id.length <= 100 ? raw.id : newId(),
         type: type,
         color: /^#[0-9a-f]{6}$/i.test(raw.color || "") ? raw.color : DEFAULT_COLOR,
         width: clampNumber(raw.width, 1, 48, 4),
@@ -1376,13 +1553,64 @@
       var html = sanitizeEditableHtml(raw.html);
       if (originalHtml === html) return null;
       return {
-        id: typeof raw.id === "string" && raw.id.length <= 100 ? raw.id : newId(),
+        id: typeof raw.id === "string" && raw.id && raw.id.length <= 100 ? raw.id : newId(),
         selector: raw.selector,
         tagName: raw.tagName,
         originalHtml: originalHtml,
         html: html,
         updatedAt: typeof raw.updatedAt === "string" && raw.updatedAt.length <= 100 ? raw.updatedAt : new Date().toISOString()
       };
+    }
+
+    function normalizeRemovals(rawRemovals) {
+      var seen = Object.create(null);
+      return (Array.isArray(rawRemovals) ? rawRemovals : []).slice(0, MAX_REMOVALS).map(normalizeRemoval).filter(function (removal) {
+        if (!removal || seen[removal.selector]) return false;
+        seen[removal.selector] = true;
+        return true;
+      });
+    }
+
+    function normalizeRemoval(raw) {
+      if (!raw || typeof raw !== "object") return null;
+      if (typeof raw.selector !== "string" || !raw.selector || raw.selector.length > 2000) return null;
+      if (raw.selector.indexOf("\u0000") !== -1 || /[\r\n]/.test(raw.selector) || hasUnescapedComma(raw.selector)) return null;
+      if (raw.selector.charAt(0) !== "#" && raw.selector.indexOf("body > ") !== 0) return null;
+      if (typeof raw.tagName !== "string" || !/^[a-z][a-z0-9:-]{0,49}$/.test(raw.tagName)) return null;
+      if (typeof raw.signature !== "string" || !/^[0-9a-f]{8}:[0-9]{1,12}$/.test(raw.signature)) return null;
+      var label = normalizeText(raw.label).replace(/\s+/g, " ").slice(0, 80);
+      return {
+        id: typeof raw.id === "string" && raw.id && raw.id.length <= 100 ? raw.id : newId(),
+        selector: raw.selector,
+        tagName: raw.tagName,
+        signature: raw.signature,
+        label: label || raw.tagName + " object",
+        updatedAt: typeof raw.updatedAt === "string" && raw.updatedAt.length <= 100 ? raw.updatedAt : new Date().toISOString()
+      };
+    }
+
+    function removalSignature(element) {
+      var copy = element.cloneNode(true);
+      Array.prototype.forEach.call(copy.querySelectorAll("[data-maas-object-removed],[data-maas-remove-hover],[data-maas-edit-hover],[data-maas-edit-active]"), stripRuntimeAttributes);
+      stripRuntimeAttributes(copy);
+      var serialized = copy.outerHTML || "";
+      var sampleLimit = 200000;
+      var sampled = serialized.length > sampleLimit * 2
+        ? serialized.slice(0, sampleLimit) + serialized.slice(-sampleLimit)
+        : serialized;
+      var hash = 2166136261;
+      for (var index = 0; index < sampled.length; index += 1) {
+        hash ^= sampled.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+      }
+      return ("00000000" + (hash >>> 0).toString(16)).slice(-8) + ":" + serialized.length;
+    }
+
+    function stripRuntimeAttributes(element) {
+      element.removeAttribute("data-maas-object-removed");
+      element.removeAttribute("data-maas-remove-hover");
+      element.removeAttribute("data-maas-edit-hover");
+      element.removeAttribute("data-maas-edit-active");
     }
 
     function hasUnescapedComma(value) {
@@ -1496,13 +1724,72 @@
       }
     }
 
+    function findRemovalElement(removal) {
+      if (!removal || typeof removal.selector !== "string") return null;
+      var matches;
+      try {
+        matches = document.querySelectorAll(removal.selector);
+      } catch (error) {
+        return null;
+      }
+      if (matches.length !== 1) return null;
+      var element = matches[0];
+      if (!(element instanceof Element) || !document.body.contains(element) || isAnnotatorTarget(element)) return null;
+      if (element.tagName.toLowerCase() !== removal.tagName || element.matches("html,body,head,main,script,style,link,meta,title,base")) return null;
+      return element;
+    }
+
+    function applySavedRemovals() {
+      var issueCount = 0;
+      var wasApplying = state.applyingEdits;
+      state.applyingEdits = true;
+      try {
+        state.removals.forEach(function (removal) {
+          var element = findRemovalElement(removal);
+          if (!element) {
+            issueCount += 1;
+            return;
+          }
+          var appliedId = element.getAttribute("data-maas-object-removed");
+          if (appliedId && appliedId !== removal.id) {
+            issueCount += 1;
+            return;
+          }
+          if (removalSignature(element) !== removal.signature) {
+            issueCount += 1;
+            return;
+          }
+          if (!appliedId) element.setAttribute("data-maas-object-removed", removal.id);
+        });
+      } finally {
+        state.applyingEdits = wasApplying;
+      }
+      state.removalIssueCount = issueCount;
+    }
+
+    function restoreAppliedRemovals(removals) {
+      var wasApplying = state.applyingEdits;
+      state.applyingEdits = true;
+      try {
+        (Array.isArray(removals) ? removals : []).slice().reverse().forEach(function (removal) {
+          var element = findRemovalElement(removal);
+          if (!element) return;
+          if (element.getAttribute("data-maas-object-removed") === removal.id) element.removeAttribute("data-maas-object-removed");
+        });
+      } finally {
+        state.applyingEdits = wasApplying;
+      }
+    }
+
     function scheduleApplyEdits() {
-      if (state.applyEditsFrame || !state.edits.length) return;
+      if (state.applyEditsFrame || (!state.edits.length && !state.removals.length)) return;
       state.applyEditsFrame = requestAnimationFrame(function () {
         state.applyEditsFrame = 0;
         var previousIssueCount = state.editIssueCount;
+        var previousRemovalIssueCount = state.removalIssueCount;
         applySavedEdits();
-        if (previousIssueCount !== state.editIssueCount) refreshUi();
+        applySavedRemovals();
+        if (previousIssueCount !== state.editIssueCount || previousRemovalIssueCount !== state.removalIssueCount) refreshUi();
       });
     }
 

@@ -64,8 +64,10 @@ Then review, commit, and push.
 
 ## Page Annotations and Local Editing
 
-Every published HTML page loads the shared page tools. The single bottom-right pencil opens the toolbar; **Edit Page** stays inside that toolbar alongside pen, highlighter, arrow, text, eraser, undo/redo, visibility, import/export, and reset controls.
+Every published HTML page loads the shared page tools. The single bottom-right pencil opens the toolbar; **Edit Page** and **Remove Object** stay inside that toolbar alongside pen, highlighter, arrow, text, eraser, undo/redo, visibility, import/export, and reset controls.
 
 To revise existing content, choose **Edit Page**, click a heading, paragraph, list item, table cell, caption, or other outlined text, and edit it inline. Use **Save edit** or Ctrl/Command+Enter to save; Escape cancels. Saved text edits can be undone, redone, reset, exported with annotations, or downloaded as an edited standalone HTML file.
 
-Annotations and edits are stored per page in the current browser profile's `localStorage`; they are not uploaded to GitHub Pages. Use JSON export/import to move or share a set of page changes. Run `tools/inject_maas_annotator.py` after adding or regenerating HTML files.
+To remove existing content, choose **Remove Object** and click the red-outlined text area, image, link, form control, table, figure, section, or other page object. Removal is immediate but reversible with **Undo** or the reset control. Removed objects are omitted entirely from downloaded edited HTML.
+
+Annotations, edits, and removed objects are stored per page in the current browser profile's `localStorage`; they are not uploaded to GitHub Pages. Use JSON export/import to move or share a set of page changes. Run `tools/inject_maas_annotator.py` after adding or regenerating HTML files.
