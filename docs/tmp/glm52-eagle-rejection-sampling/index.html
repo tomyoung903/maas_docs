@@ -560,8 +560,7 @@ code { overflow-wrap: anywhere; word-break: break-word; }
 <div class="doc-shell">
 <aside class="content-overview" aria-label="Content overview">
   <div class="content-overview-title">On this page</div>
-  <a class="depth-1" href="#cycle">Spec-Dec Cycle</a>
-<a class="depth-1" href="#flag-change">What the Flag Changes</a>
+  <a class="depth-1" href="#flag-change">What the Flag Changes</a>
 <a class="depth-1" href="#overlap">Overlap Identity</a>
 <a class="depth-1" href="#worked-example">Worked Example</a>
 <a class="depth-1" href="#boundaries">Benefit Boundaries</a>
@@ -571,18 +570,6 @@ code { overflow-wrap: anywhere; word-break: break-word; }
 
 <h1>Why <code>--speculative-use-rejection-sampling</code> Can Help</h1>
 <p class="lead">A focused explanation of what SGLang changes when the flag is enabled, why draft-target probability overlap controls acceptance, and why a mathematically correct mechanism may still yield only a modest measured gain.</p>
-
-<section id="cycle">
-  <h2>What speculative decoding is trying to save</h2>
-  <p>Ordinary autoregressive decoding runs the expensive 78-layer target once for every new token. Speculative decoding lets the cheap one-layer MTP sidecar propose a short chain, then runs the target once over the whole chain. The target accepts the longest valid prefix and contributes one target-sampled <em>bonus token</em> at the boundary. More accepted drafts can therefore amortize one target verification over more output tokens.</p>
-  <div class="rs-cycle" aria-label="One speculative decoding cycle">
-    <section class="rs-cycle-step"><span class="rs-step-num">1</span><strong>Draft cheaply</strong><p>Layer 78 runs recurrently and proposes tokens <span class="math-var">d</span><sub>1</sub> through <span class="math-var">d</span><sub>5</sub>.</p></section>
-    <section class="rs-cycle-step"><span class="rs-step-num">2</span><strong>Verify together</strong><p>The full target evaluates the proposal chain in one batched forward pass.</p></section>
-    <section class="rs-cycle-step"><span class="rs-step-num">3</span><strong>Accept a prefix</strong><p>Verification stops at the first rejected draft; later proposals depended on that rejected prefix.</p></section>
-    <section class="rs-cycle-step"><span class="rs-step-num">4</span><strong>Correct and continue</strong><p>The target supplies a correctly distributed boundary token, and drafting begins again.</p></section>
-  </div>
-  <div class="note"><strong>Acceptance length is not strict draft acceptance.</strong> SGLang's <code>avg_spec_accept_length</code> includes the target's one bonus token. In a five-proposal cycle, a displayed length of 3.8 means about 2.8 accepted draft tokens plus one bonus—not 3.8 accepted drafts.</div>
-</section>
 
 <section id="flag-change">
   <h2>What the flag changes</h2>
@@ -643,10 +630,8 @@ code { overflow-wrap: anywhere; word-break: break-word; }
   <table><tr><th>Situation</th><th>Expected effect</th></tr><tr><td>stochastic decoding and <span class="sym sym-draft math-var">q</span> closely tracks <span class="sym sym-target math-var">p</span></td><td>higher acceptance can amortize target verification over more output tokens</td></tr>
 <tr><td>greedy decoding</td><td>the runtime takes the greedy verification branch; rejection sampling has no probability-overlap advantage</td></tr>
 <tr><td><span class="sym sym-draft math-var">q</span> and <span class="sym sym-target math-var">p</span> disagree strongly</td><td>little acceptance gain; improve or realign the drafter instead</td></tr>
-<tr><td>high batch or expensive verification</td><td>higher acceptance may still fail to improve throughput because speculative work is not free</td></tr>
-<tr><td>this pinned downstream implementation</td><td>requires EAGLE/EAGLE3/NEXTN, EAGLE top-k=1, one shared vocabulary, default acceptance thresholds, and non-deterministic sampling</td></tr></table>
+  </table>
   </div>
-  <div class="note"><strong>Bottom line.</strong> The flag is a better coupling rule between two distributions, not a better draft model. It can turn existing draft-target agreement into more accepted tokens while preserving the target law. Its production value still requires a stable, fixed-output throughput A/B.</div>
 </section>
 
 <section id="related-evidence">
