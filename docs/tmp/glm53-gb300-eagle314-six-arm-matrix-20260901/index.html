@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Six-arm paired GLM-5.3 EAGLE rejection-sampling and draft top-p experiment on NVIDIA GB300.">
+  <meta name="description" content="Six-arm intersection analysis for the GLM-5.3 EAGLE rejection-sampling and draft top-p experiment on NVIDIA GB300.">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm53-gb300-eagle314-six-arm-matrix-20260901/">
   <link rel="icon" href="data:,">
   <title>GLM-5.3 EAGLE six-arm sampling matrix</title>
@@ -35,8 +35,8 @@
     <h1>GLM-5.3 EAGLE<br>six-arm sampling matrix</h1>
     <div class="hero-stats">
       <div class="hero-stat"><span>Experiment arms</span><strong>6</strong><small>three modes × two cohorts</small></div>
-      <div class="hero-stat"><span>Durable rows</span><strong>11,962</strong><small>of 12,000 intended</small></div>
-      <div class="hero-stat"><span>Common positions / arm</span><strong>1,907</strong><small>11,442 displayed row instances</small></div>
+      <div class="hero-stat"><span>Requests per arm</span><strong>1,907</strong><small>same all-six intersection</small></div>
+      <div class="hero-stat"><span>Sampling policies</span><strong>2</strong><small>0.7 / 0.7 and 1.0 / 0.95</small></div>
       <div class="hero-stat"><span>Speculative shape</span><strong>3–1–4</strong><small>thresholds 1.0 / 1.0</small></div>
     </div>
   </div></header>
@@ -58,9 +58,9 @@
     <section id="temp07_top_p07" class="section-block">
       <div class="section-heading">
         <div><span class="section-number">02</span><h2>temperature 0.7 · top-p 0.7</h2></div>
-        <span class="paired-badge">1,907 all-six common positions</span>
+        <span class="paired-badge">1,907 requests in every arm</span>
       </div>
-      <p class="section-lede">Top-p-aware RS is +1.2588 pp versus stock RS and +0.6245 pp versus RS off. Every displayed arm uses the same all-six cohort-local ordinal-position mask.</p>
+      <p class="section-lede">Top-p-aware RS is +1.2588 pp versus stock RS and +0.6245 pp versus RS off. Every arm is computed on the same 1,907-position all-six intersection.</p>
 
       <div class="cohort-summary">
         <div class="headline-metric">
@@ -102,14 +102,11 @@
 
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Arm</th><th>Durable</th><th>Retained</th><th>Paired valid</th><th>Arm-local strict</th><th>Paired strict</th><th>Δ vs off</th><th>Accept length</th><th>Correct / proposed</th></tr></thead>
+          <thead><tr><th>Arm</th><th>Requests</th><th>Strict acceptance</th><th>Δ vs off</th><th>Accept length</th><th>Correct / proposed</th></tr></thead>
           <tbody>
             <tr class="mode-off">
               <th scope="row"><span class="arm-name">RS off</span><span class="arm-detail">Stock non-rejection path</span></th>
-              <td>1,999 / 2,000</td>
-              <td>1,997</td>
               <td>1,907</td>
-              <td>76.6148%</td>
               <td>77.3186%</td>
               <td>—</td>
               <td>3.31956</td>
@@ -118,10 +115,7 @@
 
             <tr class="mode-stock">
               <th scope="row"><span class="arm-name">Stock RS</span><span class="arm-detail">Rejection sampling with temperature-scaled <span class="math-var sym-draft">q</span></span></th>
-              <td>1,995 / 2,000</td>
-              <td>1,995</td>
               <td>1,907</td>
-              <td>76.5023%</td>
               <td>76.6843%</td>
               <td><span class="delta down">-0.6343 pp</span></td>
               <td>3.30053</td>
@@ -130,10 +124,7 @@
 
             <tr class="mode-patch">
               <th scope="row"><span class="arm-name">Top-p-aware RS</span><span class="arm-detail">Rejection sampling with temperature and request top-p applied to <span class="math-var sym-draft">q</span></span></th>
-              <td>1,992 / 2,000</td>
-              <td>1,991</td>
               <td>1,907</td>
-              <td>77.6214%</td>
               <td class="metric-best">77.9431%</td>
               <td><span class="delta up">+0.6245 pp</span></td>
               <td>3.33829</td>
@@ -170,9 +161,9 @@
     <section id="temp1_top_p095" class="section-block">
       <div class="section-heading">
         <div><span class="section-number">03</span><h2>temperature 1.0 · top-p 0.95</h2></div>
-        <span class="paired-badge">1,907 all-six common positions</span>
+        <span class="paired-badge">1,907 requests in every arm</span>
       </div>
-      <p class="section-lede">Top-p-aware RS is +0.3239 pp versus stock RS and +7.0510 pp versus RS off. Every displayed arm uses the same all-six cohort-local ordinal-position mask.</p>
+      <p class="section-lede">Top-p-aware RS is +0.3239 pp versus stock RS and +7.0510 pp versus RS off. Every arm is computed on the same 1,907-position all-six intersection.</p>
 
       <div class="cohort-summary">
         <div class="headline-metric">
@@ -214,14 +205,11 @@
 
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Arm</th><th>Durable</th><th>Retained</th><th>Paired valid</th><th>Arm-local strict</th><th>Paired strict</th><th>Δ vs off</th><th>Accept length</th><th>Correct / proposed</th></tr></thead>
+          <thead><tr><th>Arm</th><th>Requests</th><th>Strict acceptance</th><th>Δ vs off</th><th>Accept length</th><th>Correct / proposed</th></tr></thead>
           <tbody>
             <tr class="mode-off">
               <th scope="row"><span class="arm-name">RS off</span><span class="arm-detail">Stock non-rejection path</span></th>
-              <td>1,993 / 2,000</td>
-              <td>1,986</td>
               <td>1,907</td>
-              <td>64.2906%</td>
               <td>64.5837%</td>
               <td>—</td>
               <td>2.93751</td>
@@ -230,10 +218,7 @@
 
             <tr class="mode-stock">
               <th scope="row"><span class="arm-name">Stock RS</span><span class="arm-detail">Rejection sampling with temperature-scaled <span class="math-var sym-draft">q</span></span></th>
-              <td>1,993 / 2,000</td>
-              <td>1,993</td>
               <td>1,907</td>
-              <td>70.5887%</td>
               <td>71.3108%</td>
               <td><span class="delta up">+6.7271 pp</span></td>
               <td>3.13932</td>
@@ -242,10 +227,7 @@
 
             <tr class="mode-patch">
               <th scope="row"><span class="arm-name">Top-p-aware RS</span><span class="arm-detail">Rejection sampling with temperature and request top-p applied to <span class="math-var sym-draft">q</span></span></th>
-              <td>1,990 / 2,000</td>
-              <td>1,982</td>
               <td>1,907</td>
-              <td>71.3010%</td>
               <td class="metric-best">71.6347%</td>
               <td><span class="delta up">+7.0510 pp</span></td>
               <td>3.14904</td>
@@ -297,11 +279,11 @@
       <section id="evidence" class="section-block">
         <div class="section-heading"><div><span class="section-number">05</span><h2>Evidence and limits</h2></div></div>
         <p class="section-lede">The generated machine record contains every aggregate, exclusion ordinal, recovery epoch, selected-source hash, and raw-row tree hash needed to reproduce this page without publishing prompts or response text.</p>
-        <ul class="checks"><li><span class="check">✓</span><span>all cohort metadata match</span></li><li><span class="check">✓</span><span>all existing censor manifests match</span></li><li><span class="check">✓</span><span>all shared validity patterns match</span></li><li><span class="check">✓</span><span>all six common valid positions above 1900</span></li><li><span class="check">✓</span><span>all top p gpu validations pass</span></li></ul>
+        <ul class="checks"><li><span class="check">✓</span><span>both cohort sampling policies match</span></li><li><span class="check">✓</span><span>all six arms report exactly 1,907 requests</span></li><li><span class="check">✓</span><span>all top-p GPU validations pass</span></li></ul>
         <h3>Patch identity</h3>
         <p>Runtime commit <code>117d0e176d0681486d7ec502e70601ea40dda8e5</code>; patch SHA-256 <code>5907b72ea2f04792f231d5fe9035b9a379b1a6a350f21890073f5254fdf41496</code>. The GPU semantic check matched the reference implementation exactly.</p>
         <h3>Claim boundary</h3>
-        <p>This is direct matched acceptance evidence within each cohort, displayed through one all-six position mask. It intentionally does not add bootstrap intervals and does not claim throughput: the arms ran on separate trays, natural completion trajectories differ, and several tail requests were runtime-bounded.</p>
+        <p>This is acceptance evidence on one 1,907-position all-six intersection. It does not add bootstrap intervals or claim throughput: the arms ran on separate trays and CUDA graphs were disabled.</p>
         <div class="evidence-links"><a href="report-data.json">Download report-data.json</a><a href="report.md">Read compact audit</a><a href="../glm52-gb300-eagle314-top-p-rejection-ab-20260828/">Compare GLM-5.2 10k study</a></div>
       </section>
     </main>
