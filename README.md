@@ -64,6 +64,6 @@ Then review, commit, and push.
 
 ## Page Annotations
 
-Every published HTML page loads the shared annotator. The bottom-right pencil opens pen, highlighter, arrow, eraser, undo/redo, visibility, import/export, and clear controls.
+Every published HTML page loads the shared annotator. The bottom-right pencil opens pen, highlighter, arrow, text, eraser, undo/redo, visibility, import/export, and clear controls. For text, select **Add text**, click the page, type, then use the button or Ctrl/Command+Enter to save.
 
-Drawings are stored per page in the current browser profile's `localStorage`; they are not uploaded to GitHub Pages. Use JSON export/import to move or share a set of drawings. Run `tools/inject_maas_annotator.py` after adding or regenerating HTML files.
+Annotations are stored per page in the current browser profile's `localStorage`; they are not uploaded to GitHub Pages. Use JSON export/import to move or share a set of annotations. Run `tools/inject_maas_annotator.py` after adding or regenerating HTML files.
