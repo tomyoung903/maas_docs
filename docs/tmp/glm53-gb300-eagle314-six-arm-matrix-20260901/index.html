@@ -41,7 +41,7 @@
   </div></header>
 
   <div class="layout">
-    <aside class="toc" aria-label="Page contents"><p class="toc-title">On this page</p><a href="#experiment">Experiment settings</a><a href="#verdict">Bottom line</a><a href="#temp07_top_p07">0.7 / 0.7 cohort</a><a href="#temp1_top_p095">1.0 / 0.95 cohort</a><a href="#contract">Fixed contract</a><a href="#evidence">Evidence</a></aside>
+    <aside class="toc" aria-label="Page contents"><p class="toc-title">On this page</p><a href="#experiment">Experiment settings</a><a href="#verdict">Bottom line</a><a href="#temp1_top_p095">1.0 / 0.95 cohort</a><a href="#temp07_top_p07">0.7 / 0.7 cohort</a><a href="#contract">Fixed contract</a><a href="#evidence">Evidence</a></aside>
     <main>
       <section id="experiment" class="section-block">
         <div class="section-heading"><div><span class="section-number">01</span><h2>Experiment settings</h2></div></div>
@@ -49,8 +49,8 @@
 
         <h3>Two request cohorts</h3>
         <div class="cohort-definition-grid">
-          <article class="cohort-definition"><span class="definition-kicker">≈40% of observed online requests</span><h3>temperature 0.7 · top-p 0.7</h3><p>Lower temperature and a stronger top-p cutoff produce the more restricted target distribution.</p></article>
           <article class="cohort-definition"><span class="definition-kicker">≈60% of observed online requests</span><h3>temperature 1.0 · top-p 0.95</h3><p>Higher temperature and a wider top-p cutoff retain more of the target distribution.</p></article>
+          <article class="cohort-definition"><span class="definition-kicker">≈40% of observed online requests</span><h3>temperature 0.7 · top-p 0.7</h3><p>Lower temperature and a stronger top-p cutoff produce the more restricted target distribution.</p></article>
         </div>
 
         <h3>Three configurations in each cohort</h3>
@@ -65,95 +65,15 @@
         <div class="section-heading"><div><span class="section-number">02</span><h2>Bottom line</h2></div></div>
         <p class="section-lede">Rejection sampling is not a fixed acceptance multiplier. Its measured benefit depends strongly on the target sampling policy; draft top-p alignment is a smaller, policy-dependent correction. In the observed online request distribution, approximately 60% use temperature 1.0 / top-p 0.95 and approximately 40% use temperature 0.7 / top-p 0.7.</p>
         <div class="verdict">
-          <div class="verdict-card primary"><span class="tag">temperature 1.0 · top-p 0.95</span><strong class="big">+6.7271 pp</strong><p>Current SGLang RS versus off. Our top-p-aware proposal adds another <strong>+0.3239 pp</strong>, reaching <strong>71.6347%</strong>.</p></div>
+          <div class="verdict-card primary"><span class="tag">temperature 1.0 · top-p 0.95</span><strong class="big">+7.0510 pp</strong><p>Our proposed RS versus off. It is also <strong>+0.3239 pp</strong> above current SGLang RS, reaching <strong>71.6347%</strong>.</p></div>
           <div class="verdict-card"><span class="tag">temperature 0.7 · top-p 0.7</span><strong class="big" style="color:var(--amber)">+1.2588 pp</strong><p>Our proposed RS versus current SGLang RS. Current SGLang RS itself is <strong>-0.6343 pp</strong> versus off; our proposal returns essentially to parity with off.</p></div>
         </div>
       </section>
 
 
-    <section id="temp07_top_p07" class="section-block">
-      <div class="section-heading">
-        <div><span class="section-number">03</span><h2>temperature 0.7 · top-p 0.7</h2></div>
-        <span class="paired-badge">1,907 requests in every arm</span>
-      </div>
-      <p class="section-lede">This sampling policy represents approximately 40% of the observed online request distribution. Our proposed RS is +1.2588 pp versus current SGLang RS and +0.6245 pp versus RS off. Every arm is computed on the same 1,907-position all-six intersection.</p>
-
-      <div class="cohort-summary">
-        <div class="headline-metric">
-          <span class="kicker">Our proposed RS · strict acceptance</span>
-          <strong>77.9431%</strong>
-          <span>+1.2588 pp vs current SGLang · +0.6245 pp vs off</span>
-        </div>
-        <div class="sampling-card">
-          <span>Target sampling policy</span>
-          <div><span class="math-label">temperature</span> <strong>0.7</strong></div>
-          <div><span class="math-label">top-p</span> <strong>0.7</strong></div>
-          <div><span class="math-label">top-k</span> <strong>not supplied</strong></div>
-        </div>
-      </div>
-
-      <div class="bars" aria-label="Strict draft acceptance comparison">
-
-            <div class="bar-row mode-off">
-              <div class="bar-label"><strong>RS off</strong><span>77.3186%</span></div>
-              <div class="bar-track" aria-label="RS off: 77.3186% strict acceptance">
-                <span style="width:77.318581%"></span>
-              </div>
-            </div>
-
-            <div class="bar-row mode-stock">
-              <div class="bar-label"><strong>Current SGLang RS</strong><span>76.6843%</span></div>
-              <div class="bar-track" aria-label="Current SGLang RS: 76.6843% strict acceptance">
-                <span style="width:76.684304%"></span>
-              </div>
-            </div>
-
-            <div class="bar-row mode-patch">
-              <div class="bar-label"><strong>Our proposed RS</strong><span>77.9431%</span></div>
-              <div class="bar-track" aria-label="Our proposed RS: 77.9431% strict acceptance">
-                <span style="width:77.943062%"></span>
-              </div>
-            </div>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Arm</th><th>Requests</th><th>Strict acceptance</th><th>Δ vs off</th><th>Accept length</th><th>Correct / proposed</th></tr></thead>
-          <tbody>
-            <tr class="mode-off">
-              <th scope="row"><span class="arm-name">RS off</span><span class="arm-detail">Rejection sampling disabled</span></th>
-              <td>1,907</td>
-              <td>77.3186%</td>
-              <td>—</td>
-              <td>3.31956</td>
-              <td>419,710 / 542,832</td>
-            </tr>
-
-            <tr class="mode-stock">
-              <th scope="row"><span class="arm-name">Current SGLang RS</span><span class="arm-detail">Current SGLang: temperature-scaled <span class="math-var sym-draft">q</span></span></th>
-              <td>1,907</td>
-              <td>76.6843%</td>
-              <td><span class="delta down">-0.6343 pp</span></td>
-              <td>3.30053</td>
-              <td>420,003 / 547,704</td>
-            </tr>
-
-            <tr class="mode-patch">
-              <th scope="row"><span class="arm-name">Our proposed RS</span><span class="arm-detail">MR !226: temperature and request top-p applied to <span class="math-var sym-draft">q</span></span></th>
-              <td>1,907</td>
-              <td class="metric-best">77.9431%</td>
-              <td><span class="delta up">+0.6245 pp</span></td>
-              <td>3.33829</td>
-              <td>383,073 / 491,478</td>
-            </tr></tbody>
-        </table>
-      </div>
-
-    </section>
-
     <section id="temp1_top_p095" class="section-block">
       <div class="section-heading">
-        <div><span class="section-number">04</span><h2>temperature 1.0 · top-p 0.95</h2></div>
+        <div><span class="section-number">03</span><h2>temperature 1.0 · top-p 0.95</h2></div>
         <span class="paired-badge">1,907 requests in every arm</span>
       </div>
       <p class="section-lede">This sampling policy represents approximately 60% of the observed online request distribution. Our proposed RS is +0.3239 pp versus current SGLang RS and +7.0510 pp versus RS off. Every arm is computed on the same 1,907-position all-six intersection.</p>
@@ -225,6 +145,86 @@
               <td><span class="delta up">+7.0510 pp</span></td>
               <td>3.14904</td>
               <td>1,311,313 / 1,830,555</td>
+            </tr></tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <section id="temp07_top_p07" class="section-block">
+      <div class="section-heading">
+        <div><span class="section-number">04</span><h2>temperature 0.7 · top-p 0.7</h2></div>
+        <span class="paired-badge">1,907 requests in every arm</span>
+      </div>
+      <p class="section-lede">This sampling policy represents approximately 40% of the observed online request distribution. Our proposed RS is +1.2588 pp versus current SGLang RS and +0.6245 pp versus RS off. Every arm is computed on the same 1,907-position all-six intersection.</p>
+
+      <div class="cohort-summary">
+        <div class="headline-metric">
+          <span class="kicker">Our proposed RS · strict acceptance</span>
+          <strong>77.9431%</strong>
+          <span>+1.2588 pp vs current SGLang · +0.6245 pp vs off</span>
+        </div>
+        <div class="sampling-card">
+          <span>Target sampling policy</span>
+          <div><span class="math-label">temperature</span> <strong>0.7</strong></div>
+          <div><span class="math-label">top-p</span> <strong>0.7</strong></div>
+          <div><span class="math-label">top-k</span> <strong>not supplied</strong></div>
+        </div>
+      </div>
+
+      <div class="bars" aria-label="Strict draft acceptance comparison">
+
+            <div class="bar-row mode-off">
+              <div class="bar-label"><strong>RS off</strong><span>77.3186%</span></div>
+              <div class="bar-track" aria-label="RS off: 77.3186% strict acceptance">
+                <span style="width:77.318581%"></span>
+              </div>
+            </div>
+
+            <div class="bar-row mode-stock">
+              <div class="bar-label"><strong>Current SGLang RS</strong><span>76.6843%</span></div>
+              <div class="bar-track" aria-label="Current SGLang RS: 76.6843% strict acceptance">
+                <span style="width:76.684304%"></span>
+              </div>
+            </div>
+
+            <div class="bar-row mode-patch">
+              <div class="bar-label"><strong>Our proposed RS</strong><span>77.9431%</span></div>
+              <div class="bar-track" aria-label="Our proposed RS: 77.9431% strict acceptance">
+                <span style="width:77.943062%"></span>
+              </div>
+            </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Arm</th><th>Requests</th><th>Strict acceptance</th><th>Δ vs off</th><th>Accept length</th><th>Correct / proposed</th></tr></thead>
+          <tbody>
+            <tr class="mode-off">
+              <th scope="row"><span class="arm-name">RS off</span><span class="arm-detail">Rejection sampling disabled</span></th>
+              <td>1,907</td>
+              <td>77.3186%</td>
+              <td>—</td>
+              <td>3.31956</td>
+              <td>419,710 / 542,832</td>
+            </tr>
+
+            <tr class="mode-stock">
+              <th scope="row"><span class="arm-name">Current SGLang RS</span><span class="arm-detail">Current SGLang: temperature-scaled <span class="math-var sym-draft">q</span></span></th>
+              <td>1,907</td>
+              <td>76.6843%</td>
+              <td><span class="delta down">-0.6343 pp</span></td>
+              <td>3.30053</td>
+              <td>420,003 / 547,704</td>
+            </tr>
+
+            <tr class="mode-patch">
+              <th scope="row"><span class="arm-name">Our proposed RS</span><span class="arm-detail">MR !226: temperature and request top-p applied to <span class="math-var sym-draft">q</span></span></th>
+              <td>1,907</td>
+              <td class="metric-best">77.9431%</td>
+              <td><span class="delta up">+0.6245 pp</span></td>
+              <td>3.33829</td>
+              <td>383,073 / 491,478</td>
             </tr></tbody>
         </table>
       </div>

@@ -5,20 +5,6 @@ The two sampling cohorts contain different source requests; mode comparisons are
 Observed online request mix: approximately 60% temperature 1.0 / top-p 0.95 and approximately 40% temperature 0.7 / top-p 0.7.
 The proposed behavior is tracked in [Draft GitLab MR !226](https://git.luchentech.com/platform/sglang/-/merge_requests/226), which ports the tested semantics to current `dev`.
 
-## temperature 0.7 · top-p 0.7
-
-Requests in every arm: 1,907.
-
-| Arm | Requests | Strict acceptance | Accept length incl. bonus |
-|---|---:|---:|---:|
-| Rejection sampling off | 1,907 | 77.3186% | 3.31956 |
-| Current SGLang rejection sampling | 1,907 | 76.6843% | 3.30053 |
-| Our proposed top-p-aware rejection sampling | 1,907 | 77.9431% | 3.33829 |
-
-- Current SGLang rejection sampling minus off: -0.6343 pp.
-- Our proposal minus current SGLang rejection sampling: +1.2588 pp.
-- Our proposal minus off: +0.6245 pp.
-
 ## temperature 1.0 · top-p 0.95
 
 Requests in every arm: 1,907.
@@ -32,3 +18,17 @@ Requests in every arm: 1,907.
 - Current SGLang rejection sampling minus off: +6.7271 pp.
 - Our proposal minus current SGLang rejection sampling: +0.3239 pp.
 - Our proposal minus off: +7.0510 pp.
+
+## temperature 0.7 · top-p 0.7
+
+Requests in every arm: 1,907.
+
+| Arm | Requests | Strict acceptance | Accept length incl. bonus |
+|---|---:|---:|---:|
+| Rejection sampling off | 1,907 | 77.3186% | 3.31956 |
+| Current SGLang rejection sampling | 1,907 | 76.6843% | 3.30053 |
+| Our proposed top-p-aware rejection sampling | 1,907 | 77.9431% | 3.33829 |
+
+- Current SGLang rejection sampling minus off: -0.6343 pp.
+- Our proposal minus current SGLang rejection sampling: +1.2588 pp.
+- Our proposal minus off: +0.6245 pp.
