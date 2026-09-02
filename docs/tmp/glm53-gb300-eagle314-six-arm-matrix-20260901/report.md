@@ -2,6 +2,7 @@
 
 Every arm reports the same 1,907-position all-six intersection.
 The two sampling cohorts contain different source requests; mode comparisons are within each cohort.
+Observed online request mix: approximately 60% temperature 1.0 / top-p 0.95 and approximately 40% temperature 0.7 / top-p 0.7.
 
 ## temperature 0.7 · top-p 0.7
 
