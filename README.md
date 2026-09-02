@@ -14,7 +14,7 @@ Folder convention:
 - `docs/index.html`: public catalog page.
 - `docs/<pack-slug>/index.html`: pack overview.
 - `docs/<pack-slug>/<topic>.html`: stable topic pages.
-- `docs/assets/maas-annotator.js`: shared browser-local drawing layer.
+- `docs/assets/maas-annotator.js`: shared browser-local annotation and page-editing layer.
 - `docs/.nojekyll`: keeps GitHub Pages from filtering generated files.
 
 Expected public URLs:
@@ -62,8 +62,10 @@ python3 tools/inject_maas_annotator.py --check
 
 Then review, commit, and push.
 
-## Page Annotations
+## Page Annotations and Local Editing
 
-Every published HTML page loads the shared annotator. The bottom-right pencil opens pen, highlighter, arrow, text, eraser, undo/redo, visibility, import/export, and clear controls. For text, select **Add text**, click the page, type, then use the button or Ctrl/Command+Enter to save.
+Every published HTML page loads the shared page tools. The single bottom-right pencil opens the toolbar; **Edit Page** stays inside that toolbar alongside pen, highlighter, arrow, text, eraser, undo/redo, visibility, import/export, and reset controls.
 
-Annotations are stored per page in the current browser profile's `localStorage`; they are not uploaded to GitHub Pages. Use JSON export/import to move or share a set of annotations. Run `tools/inject_maas_annotator.py` after adding or regenerating HTML files.
+To revise existing content, choose **Edit Page**, click a heading, paragraph, list item, table cell, caption, or other outlined text, and edit it inline. Use **Save edit** or Ctrl/Command+Enter to save; Escape cancels. Saved text edits can be undone, redone, reset, exported with annotations, or downloaded as an edited standalone HTML file.
+
+Annotations and edits are stored per page in the current browser profile's `localStorage`; they are not uploaded to GitHub Pages. Use JSON export/import to move or share a set of page changes. Run `tools/inject_maas_annotator.py` after adding or regenerating HTML files.
