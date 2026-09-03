@@ -14,6 +14,29 @@
     "dynamo_commit": "c10054b92a98b3b13f4c852739adf3cbff62dedd",
     "sglang_commit": "117d0e176d0681486d7ec502e70601ea40dda8e5"
   },
+  "provenance": {
+    "long_context_curve_and_backlog_time": {
+      "origin": "Luchen downstream Dynamo MR !119",
+      "url": "https://git.luchentech.com/platform/dynamo/-/merge_requests/119",
+      "squash_commit": "2f1ff081711feb2193580eca68e4f451d48d3675",
+      "upstream_default": false,
+      "defaults_off": true,
+      "calibration": "GB300 GLM-5.2 NVFP4 measurements; reused by the observed GLM-5.3 deployment without a documented GLM-5.3 refit"
+    },
+    "prefill_load_scoring": {
+      "origin": "upstream Dynamo PR #9267",
+      "url": "https://github.com/ai-dynamo/dynamo/pull/9267"
+    },
+    "tier_aware_local_cache": {
+      "origin": "upstream Dynamo PR #8380",
+      "url": "https://github.com/ai-dynamo/dynamo/pull/8380"
+    },
+    "shared_cache_routing_interface": {
+      "origin": "upstream Dynamo PR #7536",
+      "url": "https://github.com/ai-dynamo/dynamo/pull/7536",
+      "taiguo_multiplier_is_deployment_specific": true
+    }
+  },
   "topology": {
     "frontend_replicas": 3,
     "prefill": {
@@ -89,6 +112,12 @@
   },
   "score_models": {
     "prefill": {
+      "cache_symbols": {
+        "D": "candidate-local Prefill L1 device-prefix blocks in GPU HBM",
+        "H": "private Prefill L2 host-pinned extension blocks after the device prefix",
+        "X": "generic Dynamo Disk or External extension blocks; absent from the observed Taiguo HiCache deployment",
+        "S_beyond_D": "shared Mooncake L3 hit blocks strictly beyond the candidate's device prefix; routing metadata, with payload restore via L3 to L2 to L1"
+      },
       "cache_credit_blocks": "1.00*device + 0.75*host_pinned + 0.25*disk_external + 0.50*shared_beyond_device",
       "base_blocks": "max((active_prefill_tokens + prompt_tokens)/64 - cache_credit_blocks, 0)",
       "position_surcharge_blocks": "integral from prompt_tokens-uncached_tokens to prompt_tokens of 12.25*(x/1e6)^1.45 dx / 64",
@@ -161,6 +190,7 @@
     "Candidate-evaluation means are not selected-request hit rates.",
     "The likely shared-cache key/tag mismatch is source-derived inference, not packet-level proof.",
     "Router replicas synchronize state but make decisions from their latest local snapshots.",
-    "Topology, worker IDs, flags, and weights may change at the next rollout."
+    "Topology, worker IDs, flags, and weights may change at the next rollout.",
+    "The long-context curve constants were calibrated on GLM-5.2 NVFP4 on GB300 and reused by this GLM-5.3 deployment; they are not an upstream Dynamo default or a documented GLM-5.3 refit."
   ]
 }

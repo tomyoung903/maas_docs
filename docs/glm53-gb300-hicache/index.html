@@ -359,7 +359,7 @@
           </div>
 
           <div class="tier-grid">
-            <article class="tier-card l1">
+            <article class="tier-card l1" id="tier-l1">
               <div class="tier-title"><span class="tier-level">L1</span><span class="micro-pill">private · fastest</span></div>
               <h3>Prefill + Decode GPU HBM</h3>
               <p>所有 engine 都有私有 device pages；只有 Prefill L1 接入 HiCache。Attention 只能直接消费 L1，因此 Prefill 的任何 L2/L3 hit 最终都必须回到这里。</p>
@@ -371,7 +371,7 @@
                 <li><strong>Eviction</strong><span>Radix-aware LRU，释放 device copy</span></li>
               </ul>
             </article>
-            <article class="tier-card l2">
+            <article class="tier-card l2" id="tier-l2">
               <div class="tier-title"><span class="tier-level">L2</span><span class="micro-pill">private · persistent cache mode</span></div>
               <h3>Prefill local Host DRAM</h3>
               <p>与对应 rank 私有绑定的 pinned/CUDA Host NUMA pool。即使两个 Prefill 在同一物理主机，L2 也不是自动共享的。</p>
@@ -382,7 +382,7 @@
                 <li><strong>Not disk</strong><span><code>/mnt/disk0/sglang-cache</code> 不是 L2</span></li>
               </ul>
             </article>
-            <article class="tier-card l3">
+            <article class="tier-card l3" id="tier-l3">
               <div class="tier-title"><span class="tier-level">L3</span><span class="micro-pill">shared · volatile</span></div>
               <h3>Mooncake object cache</h3>
               <p>所有五个 Prefill 共享的逻辑第三层。Master/etcd 管理 metadata 与 placement；KV payload 在 SGLang 和四个 Store segments 之间直传。</p>

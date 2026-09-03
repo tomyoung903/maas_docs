@@ -188,22 +188,90 @@
             </div>
           </div>
 
+          <div class="cache-map-head">
+            <span class="section-kicker">Four cache symbols · three deployed tiers</span>
+            <h3 id="cache-symbol-title">What <i>D</i>, <i>H</i>, <i>X</i>, and <i>S</i><sub>beyond D</sub> physically mean</h3>
+            <p>The letters describe routing metadata in the generic Dynamo scorer. Only three of them map to storage that exists in this Taiguo deployment. All counts below are 64-token blocks.</p>
+          </div>
+
+          <div class="cache-symbol-map" role="group" aria-labelledby="cache-symbol-title">
+            <article class="cache-symbol-card device">
+              <div class="cache-symbol-top"><strong><i>D</i></strong><span>L1 · deployed</span></div>
+              <h4>Candidate-local GPU prefix</h4>
+              <p>The contiguous prefix already resident in this Prefill worker's GPU HBM. It receives full credit because attention can consume it without a restore. This is the <strong>Prefill L1</strong> in the memory map—not the separate Decode L1 pool.</p>
+              <a href="../glm53-gb300-hicache/#tier-l1">Locate L1 in the tiered system →</a>
+            </article>
+            <article class="cache-symbol-card host">
+              <div class="cache-symbol-top"><strong><i>H</i></strong><span>L2 · deployed</span></div>
+              <h4>Private host-only extension</h4>
+              <p>Additional contiguous pages known to the same Prefill worker in pinned Host DRAM, after its device prefix. They still require an L2→L1 load-back, so one block earns 0.75 rather than 1.00 credit.</p>
+              <a href="../glm53-gb300-hicache/#tier-l2">Locate L2 in the tiered system →</a>
+            </article>
+            <article class="cache-symbol-card disk">
+              <div class="cache-symbol-top"><strong><i>X</i></strong><span>generic slot · absent</span></div>
+              <h4>Disk or external extension</h4>
+              <p>Dynamo merges its generic <code>Disk</code> and <code>External</code> worker-local matches into this term. Taiguo has no SSD/NVMe HiCache offload, so <i>X</i> has no physical tier in the current L1/L2/L3 deployment and should be zero.</p>
+              <a href="../glm53-gb300-hicache/#scope">Compare with the deployed scope →</a>
+            </article>
+            <article class="cache-symbol-card shared">
+              <div class="cache-symbol-top"><strong><i>S</i><sub>beyond D</sub></strong><span>L3 · deployed</span></div>
+              <h4>Shared Mooncake hits after L1</h4>
+              <p>Globally reported Mooncake hit blocks strictly beyond this candidate's device prefix. This is a metadata credit at routing time; an actual hit later travels L3→L2→L1. The multiplier is 0.50, although the live router currently observes zero such blocks.</p>
+              <a href="../glm53-gb300-hicache/#tier-l3">Locate L3 in the tiered system →</a>
+            </article>
+          </div>
+
           <ul class="symbol-grid" aria-label="Equation definitions">
             <li><strong><i>L</i></strong><span>prompt length in tokens</span></li>
-            <li><strong><i>U</i></strong><span>uncached tail in tokens for this worker</span></li>
+            <li><strong><i>U</i></strong><span>effective tail after weighted worker-local tiers; shared L3 is not subtracted here</span></li>
             <li><strong><i>Q</i></strong><span>worker's active Prefill backlog in tokens</span></li>
-            <li><strong><i>D</i></strong><span>device-local prefix blocks</span></li>
-            <li><strong><i>H</i></strong><span>host-pinned extension blocks</span></li>
-            <li><strong><i>X</i></strong><span>disk/external extension blocks</span></li>
-            <li><strong><i>S</i><sub>beyond D</sub></strong><span>shared hits after this worker's device prefix</span></li>
             <li><strong><i>t</i><sub>remaining</sub></strong><span>curve-model estimate of existing backlog time</span></li>
+            <li><strong><i>x</i></strong><span>absolute token position while integrating across the effective tail</span></li>
           </ul>
 
-          <div class="why-time-card">
-            <div class="why-time-icon" aria-hidden="true">Q→t</div>
-            <div>
-              <h3>Why the router replaces raw backlog with modeled time</h3>
-              <p>The same remaining token count is not equally expensive at every context position. The deployed <code>curve</code> model estimates how long the current queue has left, then expresses that duration as an equivalent amount of position-zero work using <strong>30,762 tokens/s</strong>. The correction removes the raw <i>Q</i>/64 already present in the base term and inserts the time-equivalent value once.</p>
+          <div class="term-detail-grid">
+            <article class="term-detail depth-detail">
+              <div class="term-detail-title"><span>01</span><div><small>Deep-tail surcharge</small><h3>Charge only the new work, at the depth where it runs</h3></div></div>
+              <ol class="term-steps">
+                <li><strong>Find the effective tail.</strong> The candidate-specific span starts at <i>L</i>−<i>U</i> and ends at <i>L</i>. A larger worker-local prefix makes <i>U</i> shorter.</li>
+                <li><strong>Price every token position.</strong> At position <i>x</i>, the extra multiplier is 12.25 · (<i>x</i>/1,000,000)<sup>1.45</sup>. The base score already charges the ordinary 1× work, so this integral adds only the depth-dependent excess.</li>
+                <li><strong>Integrate, then divide by 64.</strong> Summing over the span avoids charging a long cold request as though every token were its final, most expensive token. Division converts token-equivalent work into the score's block unit.</li>
+              </ol>
+              <div class="term-example">
+                <span>Isolated sanity check</span>
+                <p>A cold 8K prompt has 125 base tail blocks and only <strong>0.57 surcharge blocks</strong>. A 100K effective tail ending at position 1M has 1,562.5 base tail blocks and <strong>17,774 surcharge blocks</strong>. Depth—not merely tail length—changes the predicted work.</p>
+              </div>
+              <p class="term-caveat">The curve is empirical, not a theoretical FLOP identity. It absorbs the measured GLM sparse-attention/indexer and runtime behavior at different context positions.</p>
+            </article>
+
+            <article class="term-detail time-detail">
+              <div class="term-detail-title"><span>02</span><div><small>Backlog correction</small><h3>Replace raw queued tokens with predicted remaining time</h3></div></div>
+              <ol class="term-steps">
+                <li><strong>Start with what is already counted.</strong> <i>C</i><sub>base</sub> contains <i>Q</i>/64 for the worker's currently tracked Prefill tokens.</li>
+                <li><strong>Predict how long that work remains busy.</strong> At admission, every Prefill receives a duration from the same position curve. The tracker sums those durations and subtracts elapsed wall time from the oldest active anchor to produce <i>t</i><sub>remaining</sub>.</li>
+                <li><strong>Express time in the common unit.</strong> Multiplying remaining seconds by 30,762 baseline tokens/s and dividing by 64 yields position-zero-equivalent blocks.</li>
+                <li><strong>Subtract the old copy.</strong> The final −<i>Q</i>/64 removes the raw backlog already in <i>C</i><sub>base</sub>. This is a replacement, not a second backlog charge.</li>
+              </ol>
+              <div class="replacement-flow" role="group" aria-label="Backlog replacement example">
+                <div><small>Raw term already in base</small><strong>64K / 64 = 1,000 blocks</strong></div>
+                <span aria-hidden="true">→</span>
+                <div><small>If modeled time remaining is 4 s</small><strong>4 × 30,762 / 64 = 1,922.6</strong></div>
+                <span aria-hidden="true">→</span>
+                <div><small>Correction added</small><strong>+922.6 blocks</strong></div>
+              </div>
+              <p class="term-caveat">The correction may be positive or negative. If no valid modeled duration is available, the implementation falls back to the raw <i>Q</i>/64 value, making the correction exactly zero.</p>
+            </article>
+          </div>
+
+          <div class="provenance-band">
+            <div class="provenance-main">
+              <span class="proof-label">Implementation provenance</span>
+              <h3>These two correction terms came from our MR—not from upstream Dynamo defaults</h3>
+              <p><a href="https://git.luchentech.com/platform/dynamo/-/merge_requests/119">Luchen Dynamo MR !119</a>, squash commit <code>2f1ff081711</code>, introduced the position integral, the <code>curve</code> load estimator, modeled-time tracking, and the raw-token-to-time backlog replacement. All new knobs defaulted off; Taiguo explicitly enables them.</p>
+            </div>
+            <div class="provenance-split">
+              <p><strong>Calibration origin.</strong> The 30,762 tokens/s, 12.25 coefficient, and 1.45 exponent were fitted from GB300 GLM-5.2 NVFP4 measurements in MR !119. The current GLM-5.3 production deployment reuses them; this page does not claim a fresh GLM-5.3 fit.</p>
+              <p><strong>Upstream lineage.</strong> The surrounding Prefill load-minus-cache scorer is upstream Dynamo work: <a href="https://github.com/ai-dynamo/dynamo/pull/9267">PR #9267</a> refined load accounting, <a href="https://github.com/ai-dynamo/dynamo/pull/8380">PR #8380</a> added tier-aware local credits, and <a href="https://github.com/ai-dynamo/dynamo/pull/7536">PR #7536</a> added the shared-cache interface. Taiguo's 0.50 shared multiplier is deployment configuration, not the upstream default.</p>
             </div>
           </div>
         </section>
@@ -425,6 +493,9 @@
 
           <ul class="source-list">
             <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/lib/kv-router/src/scheduling/selector.rs#L241">Dynamo selector</a>: tier credits, context-position integral, curve correction, Decode score, argmin/tie handling, and the eight-second escape.</li>
+            <li><a href="https://git.luchentech.com/platform/dynamo/-/merge_requests/119">Luchen Dynamo MR !119</a>: introduces the deep-tail integral and modeled-time backlog replacement; its description contains the GB300 GLM-5.2 calibration sweep.</li>
+            <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/lib/kv-router/src/scheduling/prefill_load.rs#L12">Measured curve load estimator</a>: converts an effective tail at a given prefix depth into expected duration.</li>
+            <li><a href="https://github.com/ai-dynamo/dynamo/pull/9267">Upstream Dynamo PR #9267</a>, <a href="https://github.com/ai-dynamo/dynamo/pull/8380">PR #8380</a>, and <a href="https://github.com/ai-dynamo/dynamo/pull/7536">PR #7536</a>: refined Prefill load scoring, tier-aware local-cache weights, and the shared-cache routing interface, respectively.</li>
             <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/lib/llm/src/kv_router/route_lookup.rs#L44">Parallel route lookup</a>: worker-local tier index and shared-cache metadata query.</li>
             <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/lib/llm/src/kv_router/prefill_router/mod.rs#L157">Prefill → Decode orchestration</a>: phase transition, bootstrap dispatch, Decode override, and nonblocking Prefill task.</li>
             <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/components/src/dynamo/sglang/llm_engine.py#L373">SGLang rank handoff</a>: forced global DP rank validation and <code>data_parallel_rank</code>.</li>
