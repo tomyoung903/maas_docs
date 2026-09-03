@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <meta name="description" content="Production-grounded explanation of how the GLM-5.3 Taiguo GB300 Dynamo router weighs prefill backlog, local KV cache, shared HiCache, and decode DP-rank load.">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm53-gb300-router-decisions/">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm53-gb300-router-decisions/">
+  <meta property="og:title" content="GLM-5.3 on GB300: How the Router Chooses Prefill and Decode">
+  <meta property="og:description" content="The exact production score, candidate set, and decision timing for five PP4 prefill workers and sixteen TP8/DP-attention decode ranks.">
+  <title>GLM-5.3 on GB300: How the Router Chooses Prefill and Decode</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <nav class="topbar" aria-label="Document navigation">
+    <div class="topbar-inner">
+      <a class="brand" href="../">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="brand-copy">
+          <strong>MaaS Docs</strong>
+          <small>Serving systems · production evidence</small>
+        </span>
+      </a>
+      <div class="toplinks">
+        <a href="../glm53-gb300-hicache/">HiCache memory map</a>
+        <a href="evidence.json">Evidence JSON</a>
+        <a href="#sources">Source anchors</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-shell">
+    <aside class="overview" aria-label="On this page">
+      <p class="overview-title">On this page</p>
+      <nav aria-label="Page sections">
+        <a href="#verdict">Mental model</a>
+        <a href="#timeline">Decision timing</a>
+        <a href="#prefill">Prefill score</a>
+        <a href="#tradeoffs">Weights in practice</a>
+        <a href="#shared-live">Shared-cache reality</a>
+        <a href="#decode">Decode + DP rank</a>
+        <a href="#gates">Gates and overrides</a>
+        <a href="#sources">Evidence boundary</a>
+      </nav>
+      <ul class="rail-key" aria-label="Color legend">
+        <li><i class="key-dot route"></i>Routing decision</li>
+        <li><i class="key-dot local"></i>Worker-local cache</li>
+        <li><i class="key-dot shared"></i>Shared HiCache</li>
+        <li><i class="key-dot decode"></i>Decode rank</li>
+      </ul>
+    </aside>
+
+    <main id="main">
+      <article>
+        <header class="page-header">
+          <p class="eyebrow">GLM-5.3 · Taiguo GB300 · live production routing</p>
+          <h1>One request, two placement decisions</h1>
+          <p class="lede">The frontend first chooses one of five Prefill PP4 workers. It then runs a separate contest over sixteen Decode DP-rank candidates. Both scores use 64-token block-equivalent units, but they deliberately optimize different work.</p>
+          <div class="meta-row">
+            <span class="pill">snapshot · 2026-09-03 14:15 CST</span>
+            <span class="pill">namespace · maas-prod-zhipu</span>
+            <span class="pill">Dynamo · c10054b92</span>
+            <span class="pill">SGLang · 117d0e176</span>
+            <span class="pill">read-only audit</span>
+          </div>
+        </header>
+
+        <section id="verdict">
+          <div class="verdict-band">
+            <span class="verdict-label">The compact answer</span>
+            <h2>Prefill subtracts reusable cache from projected work; Decode ignores that cache score and balances each rank's live batch.</h2>
+            <p><strong>Smaller score wins.</strong> With router temperature zero, there is no probabilistic softmax choice. Exact equal-score ties are randomized uniformly. A request is not permanently assigned to one “pod” at ingress: Prefill placement and Decode placement happen in sequence and may point to different machines.</p>
+          </div>
+
+          <div class="decision-pair" role="group" aria-label="Two independent routing decisions">
+            <article class="decision-card prefill-card">
+              <div class="decision-index">01</div>
+              <span class="decision-kicker">Prefill contest</span>
+              <h3>5 candidates</h3>
+              <p>One logical candidate per PP4 worker. Every worker publishes only DP rank 0, so this stage chooses a worker; the rank is always 0.</p>
+              <div class="decision-tags"><span>backlog</span><span>device L1</span><span>host L2</span><span>shared L3</span><span>context depth</span></div>
+            </article>
+            <div class="pair-arrow" aria-hidden="true"><span>then</span><i>→</i></div>
+            <article class="decision-card decode-card">
+              <div class="decision-index">02</div>
+              <span class="decision-kicker">Decode contest</span>
+              <h3>2 groups × 8 ranks</h3>
+              <p>Each candidate is a concrete <span class="mono">(worker_id, dp_rank)</span>. This stage uses active KV blocks plus a fitted active-request-count penalty.</p>
+              <div class="decision-tags"><span>active blocks</span><span>new footprint</span><span>request count</span><span>capacity gate</span></div>
+            </article>
+          </div>
+
+          <div class="plain-note"><strong>There are more than three signals.</strong> “Backlog, local cache, shared cache” is the useful headline. In the implementation, local cache is split into device, host-pinned, and disk/external tiers; the uncached tail also receives a context-depth surcharge, and existing backlog is converted from tokens into modeled time.</div>
+        </section>
+
+        <section id="timeline">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Figure 1 · when each choice is made</span>
+              <h2>Decode is selected before Prefill GPU work finishes</h2>
+            </div>
+          </div>
+          <p class="section-intro">The two router calls are close together in control-plane time, while Prefill compute and KV transfer continue asynchronously afterward. This early Decode choice gives the receiver time to establish the P→D transfer path.</p>
+
+          <figure class="route-timeline" aria-labelledby="timeline-title timeline-caption">
+            <figcaption>
+              <strong id="timeline-title">Request control path</strong>
+              <span id="timeline-caption">Selection points are diamonds; long-running data-plane work begins only after them.</span>
+            </figcaption>
+            <div class="timeline-grid">
+              <div class="timeline-step neutral">
+                <span class="time-badge">HTTP</span>
+                <strong>Accept + preprocess</strong>
+                <p>Validate, apply chat template, tokenize, and create the preprocessed request.</p>
+              </div>
+              <div class="timeline-connector" aria-hidden="true">→</div>
+              <div class="timeline-step query">
+                <span class="time-badge">parallel</span>
+                <strong>Read routing state</strong>
+                <p>Hash 64-token blocks. Query the per-worker tiered index and Mooncake shared-cache metadata concurrently; read latest worker load.</p>
+              </div>
+              <div class="timeline-connector" aria-hidden="true">→</div>
+              <div class="timeline-step select">
+                <span class="decision-diamond" aria-hidden="true"></span>
+                <strong>Select Prefill</strong>
+                <p>Score five PP4 workers, book the choice, encode worker + rank 0, create the Prefill bootstrap room, and dispatch.</p>
+              </div>
+              <div class="timeline-connector" aria-hidden="true">→</div>
+              <div class="timeline-step select decode-step">
+                <span class="decision-diamond" aria-hidden="true"></span>
+                <strong>Select Decode</strong>
+                <p>Switch request phase, erase Prefill/cache score terms, score sixteen rank candidates, then write the chosen global DP rank.</p>
+              </div>
+            </div>
+            <div class="async-lanes" role="group" aria-label="Asynchronous work after routing">
+              <div class="lane-label">Prefill data plane</div>
+              <div class="lane-track"><i class="lane-start"></i><span>PP4 Prefill compute → write-through cache updates → P→D KV send</span></div>
+              <div class="lane-label">Decode data plane</div>
+              <div class="lane-track decode-lane"><i class="lane-start"></i><span>Receiver setup → wait for transferred KV → EAGLE Decode on selected DP rank</span></div>
+            </div>
+          </figure>
+
+          <div class="timing-proof">
+            <span class="proof-label">One observed production example</span>
+            <div class="proof-times">
+              <div><strong>03:57:34.654931Z</strong><span>Prefill selected</span></div>
+              <i aria-hidden="true">+1.234 ms</i>
+              <div><strong>03:57:34.656165Z</strong><span>Decode selected</span></div>
+              <i aria-hidden="true">+0.210 ms</i>
+              <div><strong>03:57:34.656375Z</strong><span>Decode dispatch logged</span></div>
+            </div>
+            <p>This is evidence for ordering, not a latency SLO. Query and scheduling time varies by request and load. The deployed Prefill engine registers its transfer room before exposing bootstrap information, preventing Decode from connecting to a room that does not yet exist.</p>
+          </div>
+        </section>
+
+        <section id="prefill">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Figure 2 · exact Prefill objective</span>
+              <h2>Everything is converted to block-equivalent cost</h2>
+            </div>
+          </div>
+          <p class="section-intro">The unit is one 64-token KV block. Existing work and the incoming prompt add cost; reusable cache subtracts credit. The score is a ranking objective—not a promise that one block always equals the same wall-clock latency.</p>
+
+          <div class="equation-board" role="group" aria-label="Prefill routing score equations">
+            <div class="equation-line accent-local">
+              <span class="equation-name">Cache credit</span>
+              <span class="equation-body"><i>C</i><sub>credit</sub> = 1.00<i>D</i> + 0.75<i>H</i> + 0.25<i>X</i> + 0.50<i>S</i><sub>beyond&nbsp;D</sub></span>
+            </div>
+            <div class="equation-line accent-route">
+              <span class="equation-name">Base work</span>
+              <span class="equation-body"><i>C</i><sub>base</sub> = max(((<i>Q</i> + <i>L</i>) / 64) − <i>C</i><sub>credit</sub>, 0)</span>
+            </div>
+            <div class="equation-line accent-depth">
+              <span class="equation-name">Deep-tail surcharge</span>
+              <span class="equation-body"><i>C</i><sub>depth</sub> = (1 / 64) ∫<sub><i>L</i>−<i>U</i></sub><sup><i>L</i></sup> 12.25 · (<i>x</i> / 1,000,000)<sup>1.45</sup> d<i>x</i></span>
+            </div>
+            <div class="equation-line accent-time">
+              <span class="equation-name">Backlog correction</span>
+              <span class="equation-body"><i>C</i><sub>time</sub> = (<i>t</i><sub>remaining</sub> / 1000) · (30,762 / 64) − (<i>Q</i> / 64)</span>
+            </div>
+            <div class="equation-line result">
+              <span class="equation-name">Final Prefill score</span>
+              <span class="equation-body"><i>S</i><sub>prefill</sub> = max(<i>C</i><sub>base</sub> + <i>C</i><sub>depth</sub> + <i>C</i><sub>time</sub>, 0) · 1.0</span>
+            </div>
+          </div>
+
+          <ul class="symbol-grid" aria-label="Equation definitions">
+            <li><strong><i>L</i></strong><span>prompt length in tokens</span></li>
+            <li><strong><i>U</i></strong><span>uncached tail in tokens for this worker</span></li>
+            <li><strong><i>Q</i></strong><span>worker's active Prefill backlog in tokens</span></li>
+            <li><strong><i>D</i></strong><span>device-local prefix blocks</span></li>
+            <li><strong><i>H</i></strong><span>host-pinned extension blocks</span></li>
+            <li><strong><i>X</i></strong><span>disk/external extension blocks</span></li>
+            <li><strong><i>S</i><sub>beyond D</sub></strong><span>shared hits after this worker's device prefix</span></li>
+            <li><strong><i>t</i><sub>remaining</sub></strong><span>curve-model estimate of existing backlog time</span></li>
+          </ul>
+
+          <div class="why-time-card">
+            <div class="why-time-icon" aria-hidden="true">Q→t</div>
+            <div>
+              <h3>Why the router replaces raw backlog with modeled time</h3>
+              <p>The same remaining token count is not equally expensive at every context position. The deployed <code>curve</code> model estimates how long the current queue has left, then expresses that duration as an equivalent amount of position-zero work using <strong>30,762 tokens/s</strong>. The correction removes the raw <i>Q</i>/64 already present in the base term and inserts the time-equivalent value once.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="tradeoffs">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Reading the weights</span>
+              <h2>What one extra block of backlog can buy</h2>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="weight-ledger">
+              <caption class="sr-only">Production Prefill routing weights</caption>
+              <thead>
+                <tr class="ledger-head"><th scope="col">Signal</th><th scope="col">Score effect per block</th><th scope="col">Meaning</th><th scope="col">Live status</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row"><i class="signal-dot backlog"></i>Raw backlog / prompt</th><td class="cost">+1.00</td><td>Adds work before depth/time adjustment.</td><td><b class="status live">active</b></td></tr>
+                <tr><th scope="row"><i class="signal-dot device"></i>Device-local L1</th><td class="credit">−1.00</td><td>Already in that worker's HBM; full credit.</td><td><b class="status live">active</b></td></tr>
+                <tr><th scope="row"><i class="signal-dot host"></i>Host-pinned L2</th><td class="credit">−0.75</td><td>Worker-local restore is slower than HBM.</td><td><b class="status live">active</b></td></tr>
+                <tr><th scope="row"><i class="signal-dot shared"></i>Shared HiCache L3</th><td class="credit">−0.50</td><td>Only hit positions beyond this candidate's device prefix.</td><td><b class="status inert">configured; observed zero</b></td></tr>
+                <tr><th scope="row"><i class="signal-dot disk"></i>Disk / external tier</th><td class="credit">−0.25</td><td>Slowest per-worker restore path.</td><td><b class="status quiet">not separately observed</b></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="equivalence-strip" role="group" aria-label="Equivalent cache credits">
+            <div class="eq-unit"><strong>+1</strong><span>backlog block</span></div>
+            <span class="eq-sign">is offset by</span>
+            <div class="eq-unit device"><strong>1</strong><span>device block</span></div>
+            <span class="eq-or">or</span>
+            <div class="eq-unit host"><strong>1⅓</strong><span>host blocks</span></div>
+            <span class="eq-or">or</span>
+            <div class="eq-unit shared"><strong>2</strong><span>shared blocks</span></div>
+            <span class="eq-or">or</span>
+            <div class="eq-unit disk"><strong>4</strong><span>disk blocks</span></div>
+          </div>
+
+          <div class="worked-grid">
+            <article class="worked-card">
+              <span class="worked-label">Case A · device locality is strong enough</span>
+              <h3>A carries +1.2 backlog blocks but has +3 device blocks</h3>
+              <div class="mini-math"><span class="cost">+1.2</span><span>−</span><span class="credit">3 × 1.0</span><span>=</span><strong>−1.8</strong></div>
+              <p>Relative to B, A still scores 1.8 blocks lower and wins before depth/time differences.</p>
+            </article>
+            <article class="worked-card shared-case">
+              <span class="worked-label">Case B · shared locality is not enough</span>
+              <h3>A carries +1.2 backlog blocks but has only +2 shared blocks</h3>
+              <div class="mini-math"><span class="cost">+1.2</span><span>−</span><span class="credit">2 × 0.5</span><span>=</span><strong>+0.2</strong></div>
+              <p>A remains 0.2 blocks more expensive, so B wins before depth/time differences.</p>
+            </article>
+          </div>
+
+          <div class="no-double-count">
+            <strong>No double credit.</strong>
+            <p>If a block is both in candidate A's device prefix and in the global shared cache, A receives the 1.0 device credit—not 1.0 + 0.5. A candidate without that local prefix can receive 0.5 shared credit for the same position. This is why global shared cache can narrow a locality disadvantage without erasing the preference for device-local KV.</p>
+          </div>
+        </section>
+
+        <section id="shared-live">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Configured behavior versus observed contribution</span>
+              <h2>The shared-cache wire is live; its routing credit is currently zero</h2>
+            </div>
+          </div>
+          <p class="section-intro">This distinction matters. A configured multiplier says what the router would do with valid shared-hit metadata. It does not prove that metadata is producing hits.</p>
+
+          <div class="live-metrics">
+            <article><span>Shared queries</span><strong>89,709</strong><small>three frontend lifetimes</small></article>
+            <article><span>Mean query time</span><strong>9.736 ms</strong><small>local + shared queries run concurrently</small></article>
+            <article><span>Query errors</span><strong>0</strong><small>endpoint reachable</small></article>
+            <article class="zero"><span>Shared blocks beyond L1</span><strong>0</strong><small>zero routing credit</small></article>
+          </div>
+
+          <div class="observed-split">
+            <div>
+              <h3>What did contribute</h3>
+              <p>Across <strong>227,044 Prefill candidate evaluations</strong>, the mean device-local credit was <strong>243.79 blocks</strong> and the mean lower-tier per-worker credit was <strong>5.41 blocks</strong>. The latter combines weighted host/disk/shared terms; the independently observed shared contribution was zero, so the nonzero portion came from local lower tiers.</p>
+            </div>
+            <div class="caution-panel">
+              <span class="caution-icon" aria-hidden="true">!</span>
+              <p><strong>Operational reading:</strong> in this snapshot, actual placement was driven by backlog, context depth, device locality, and a small local lower-tier signal. The 0.5 shared weight was wired but inert.</p>
+            </div>
+          </div>
+
+          <div class="inference-note">
+            <span>Source-derived inference</span>
+            <p>The companion HiCache audit found a likely key/tag-schema mismatch between Dynamo's shared-cache query and SGLang's GLM-5.3 Mooncake objects. That explains the zero router credit while SGLang itself reports real L3 reads, but it is not a packet-level proof. See <a href="../glm53-gb300-hicache/#caveats">the detailed caveat and evidence boundary</a>.</p>
+          </div>
+        </section>
+
+        <section id="decode">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Figure 3 · the second contest</span>
+              <h2>Decode chooses one of sixteen global DP ranks</h2>
+            </div>
+          </div>
+          <p class="section-intro">The two TP8/DP-attention groups expose eight rank candidates each. A rank is the request's attention/KV owner, not an independent copy of the full model: TP/MoE collectives still involve the eight-GPU group.</p>
+
+          <div class="decode-map" role="group" aria-label="Decode group and DP rank placement">
+            <article class="decode-group">
+              <header><span>Decode group 0</span><strong>worker 8618870496470090</strong></header>
+              <div class="node-rank-row"><span class="node-label">gpu-worker-gb300-134 · leader</span><div class="rank-chips"><i>dp0</i><i>dp1</i><i>dp2</i><i>dp3</i></div></div>
+              <div class="node-rank-row"><span class="node-label">gpu-worker-gb300-122 · worker</span><div class="rank-chips"><i>dp4</i><i>dp5</i><i>dp6</i><i>dp7</i></div></div>
+            </article>
+            <article class="decode-group group-one">
+              <header><span>Decode group 1</span><strong>worker 1325978184269730</strong></header>
+              <div class="node-rank-row"><span class="node-label">gpu-worker-gb300-137 · leader</span><div class="rank-chips"><i>dp0</i><i>dp1</i><i>dp2</i><i>dp3</i></div></div>
+              <div class="node-rank-row"><span class="node-label">gpu-worker-gb300-126 · worker</span><div class="rank-chips"><i>dp4</i><i>dp5</i><i>dp6</i><i>dp7</i></div></div>
+            </article>
+          </div>
+
+          <div class="decode-equation" role="group" aria-label="Decode rank score">
+            <div class="decode-eq-main"><span><i>S</i><sub>decode</sub></span><b>=</b><span><i>A</i><sub>blocks</sub> + Δ<i>A</i><sub>request</sub> + <i>g</i>(<i>N</i>)</span></div>
+            <div class="decode-eq-piece"><span><i>g</i>(<i>N</i>)</span><b>=</b><span>6,749<i>m</i> − 76<i>m</i><sup>2</sup> + 1,885 · max(<i>N</i> − 32, 0)</span></div>
+            <div class="decode-eq-def"><span><i>m</i> = min(<i>N</i>, 32)</span><span><i>N</i> = active requests on this rank</span></div>
+          </div>
+
+          <div class="decode-explain-grid">
+            <article>
+              <span class="number-chip">1</span>
+              <h3>Existing active KV blocks</h3>
+              <p>Unique KV blocks currently held by active sequences on that rank. More blocks raise the score one-for-one.</p>
+            </article>
+            <article>
+              <span class="number-chip">2</span>
+              <h3>Incoming active footprint</h3>
+              <p>Blocks this request would add beyond blocks already shared with active sequences. This is active-footprint accounting, not a statement that inactive cache is missing.</p>
+            </article>
+            <article>
+              <span class="number-chip">3</span>
+              <h3>Active request count</h3>
+              <p>A fitted concave penalty captures batch cost that raw KV volume misses. The fit is used through 32 requests, then extended linearly with a nonnegative marginal cost.</p>
+            </article>
+          </div>
+
+          <div class="decode-live-proof">
+            <strong>Production metrics confirm the split.</strong>
+            <p>Across 703,704 Decode candidate evaluations, cache and Prefill terms were exactly zero. Mean active-request penalty was 40,135 block-equivalents; mean total Decode score was 43,931. The request-count term dominates this deployed fit.</p>
+          </div>
+
+          <div class="rank-handoff">
+            <div class="handoff-source"><span>Router result</span><strong>(worker 1…, dp6)</strong></div>
+            <div class="handoff-arrow" aria-hidden="true">→</div>
+            <div class="handoff-middle"><span>request.routing.dp_rank</span><strong>6</strong></div>
+            <div class="handoff-arrow" aria-hidden="true">→</div>
+            <div class="handoff-target"><span>SGLang async_generate</span><strong>data_parallel_rank=6</strong></div>
+          </div>
+          <p class="rank-caption">The frontend dispatches to the group's single <code>generate</code> endpoint and carries the rank as request metadata. The leader validates that the global rank belongs to the group's published range, then passes it to SGLang. SGLang does not get to silently choose a different rank.</p>
+        </section>
+
+        <section id="gates">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Selection is not only an argmin</span>
+              <h2>Eligibility, queueing, and overload can change the candidate set</h2>
+            </div>
+          </div>
+
+          <div class="gate-stack">
+            <article class="gate-card">
+              <span class="gate-num">A</span>
+              <div><h3>Prefill admission filter</h3><p>A Prefill worker can be removed when active Prefill tokens exceed <strong>3,000,000</strong>. Each Prefill worker has DP size 1, so this applies directly to its only rank.</p></div>
+            </article>
+            <article class="gate-card">
+              <span class="gate-num">B</span>
+              <div><h3>Global Prefill queue</h3><p>An empty queue starts parking arrivals when every eligible Prefill worker is above <strong>256 × 8,192 = 2,097,152 active tokens</strong>. Once backlog exists, later arrivals also queue until it drains. The deployed policy is WSPT; final selection occurs on admission.</p></div>
+            </article>
+            <article class="gate-card">
+              <span class="gate-num">C</span>
+              <div><h3>Eight-second affinity escape</h3><p>If the cache-score winner has more than <strong>8,000 ms</strong> of modeled Prefill work left, the router replaces it with the eligible worker predicted to free soonest. Cache affinity is therefore a preference, not an obligation.</p></div>
+            </article>
+            <article class="gate-card">
+              <span class="gate-num">D</span>
+              <div><h3>Decode capacity filter</h3><p>The threshold is <strong>93%</strong> of 48,994 KV blocks per rank. A decoder group is filtered only when all of its known ranks are overloaded; otherwise all ranks stay candidates and their individual scores steer traffic away from hot ranks.</p></div>
+            </article>
+            <article class="gate-card">
+              <span class="gate-num">E</span>
+              <div><h3>Prediction and replica synchronization</h3><p>Three frontend replicas synchronize router state. Each still decides from its latest local snapshot. The 12-second predict-on-route index fills the delay before KV events arrive; it does not make the selection a centralized transaction.</p></div>
+            </article>
+          </div>
+
+          <div class="decision-summary">
+            <h3>The exact answer to “when is routing decided?”</h3>
+            <ol>
+              <li><strong>Prefill worker:</strong> after preprocessing/tokenization and any admission wait, after local and shared cache metadata queries complete, immediately before the Prefill RPC is dispatched.</li>
+              <li><strong>Decode group and global DP rank:</strong> immediately after Prefill routing has created the bootstrap metadata and dispatched the Prefill stream; it does not wait for Prefill GPU completion or KV transfer completion.</li>
+              <li><strong>Execution begins later:</strong> the selected Decode rank prepares the receive side, waits for the request's transferred KV, and then owns subsequent Decode attention/cache state.</li>
+            </ol>
+          </div>
+        </section>
+
+        <section id="sources">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Configuration and evidence chain</span>
+              <h2>What is observed, what is code-derived, and what may change</h2>
+            </div>
+          </div>
+
+          <div class="source-boundary">
+            <article>
+              <span class="source-type live">Live production</span>
+              <p>DGD generation 6 was Ready; 3 frontend, 5 Prefill PP4, and 2 two-node Decode groups were running. Flags, pod placement, worker metadata, and Prometheus counters were read through the explicit Taiguo kubeconfig at the snapshot time.</p>
+            </article>
+            <article>
+              <span class="source-type code">Deployed source</span>
+              <p>The formulas and ordering were traced at Dynamo <code>c10054b92a98b3b13f4c852739adf3cbff62dedd</code> and the SGLang handoff at <code>117d0e176d0681486d7ec502e70601ea40dda8e5</code>.</p>
+            </article>
+            <article>
+              <span class="source-type inference">Inference</span>
+              <p>Only the likely reason for zero shared routing credit is inferential. The zero counters, successful queries, configured endpoint, weights, candidate score terms, and decision ordering are directly observed or code-derived.</p>
+            </article>
+          </div>
+
+          <ul class="source-list">
+            <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/lib/kv-router/src/scheduling/selector.rs#L241">Dynamo selector</a>: tier credits, context-position integral, curve correction, Decode score, argmin/tie handling, and the eight-second escape.</li>
+            <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/lib/llm/src/kv_router/route_lookup.rs#L44">Parallel route lookup</a>: worker-local tier index and shared-cache metadata query.</li>
+            <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/lib/llm/src/kv_router/prefill_router/mod.rs#L157">Prefill → Decode orchestration</a>: phase transition, bootstrap dispatch, Decode override, and nonblocking Prefill task.</li>
+            <li><a href="https://git.luchentech.com/platform/dynamo/-/blob/c10054b92a98b3b13f4c852739adf3cbff62dedd/components/src/dynamo/sglang/llm_engine.py#L373">SGLang rank handoff</a>: forced global DP rank validation and <code>data_parallel_rank</code>.</li>
+            <li><a href="https://docs.nvidia.com/dynamo/dev/knowledge-base/modular-components/router/routing-concepts">NVIDIA Dynamo routing concepts</a>: public conceptual background. Deployment-specific weights on this page come from Taiguo, not from public defaults.</li>
+          </ul>
+
+          <div class="evidence-footer">
+            <p><strong>Machine-readable snapshot:</strong> <a href="evidence.json">evidence.json</a>. Counters are process-lifetime values and continue to move; topology and flags can change at the next rollout.</p>
+          </div>
+        </section>
+      </article>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <span>GLM-5.3 · Taiguo GB300 · router decision anatomy</span>
+      <span>Production snapshot · 2026-09-03 14:15 CST</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script defer src="../assets/maas-annotator.js" data-maas-annotator data-page-key="/glm53-gb300-router-decisions/"></script>
+</body>
+</html>

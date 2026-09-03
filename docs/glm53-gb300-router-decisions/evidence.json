@@ -1,0 +1,166 @@
+{
+  "title": "GLM-5.3 Taiguo GB300 production router decision anatomy",
+  "snapshot": {
+    "captured_at": "2026-09-03T14:15:00+08:00",
+    "cluster": "prod-maas GB300 Taiguo",
+    "namespace": "maas-prod-zhipu",
+    "deployment": "glm53-nvfp4-gb300-pp-prod",
+    "deployment_generation": 6,
+    "deployment_ready": true,
+    "method": "read-only Kubernetes, live Prometheus metrics, and deployed-source audit"
+  },
+  "versions": {
+    "runtime_image": "image.hpc-ai.com/platform/dynamo-sglang-runtime:c10054b9-commit-117d0e17-arm64-0830-2356",
+    "dynamo_commit": "c10054b92a98b3b13f4c852739adf3cbff62dedd",
+    "sglang_commit": "117d0e176d0681486d7ec502e70601ea40dda8e5"
+  },
+  "topology": {
+    "frontend_replicas": 3,
+    "prefill": {
+      "replicas": 5,
+      "parallelism": "TP1 / DP1 / PP4",
+      "candidate_dp_ranks_per_worker": [0],
+      "nodes": [
+        "gpu-master-gb300-139",
+        "gpu-worker-gb300-136",
+        "gpu-worker-gb300-141",
+        "gpu-worker-gb300-169",
+        "gpu-worker-gb300-175"
+      ]
+    },
+    "decode": {
+      "groups": 2,
+      "parallelism": "TP8 / DP8 / EP8 with DP attention",
+      "candidates": 16,
+      "groups_detail": [
+        {
+          "worker_id": "8618870496470090",
+          "leader_node": "gpu-worker-gb300-134",
+          "leader_dp_ranks": [0, 1, 2, 3],
+          "worker_node": "gpu-worker-gb300-122",
+          "worker_dp_ranks": [4, 5, 6, 7]
+        },
+        {
+          "worker_id": "1325978184269730",
+          "leader_node": "gpu-worker-gb300-137",
+          "leader_dp_ranks": [0, 1, 2, 3],
+          "worker_node": "gpu-worker-gb300-126",
+          "worker_dp_ranks": [4, 5, 6, 7]
+        }
+      ],
+      "total_kv_blocks_per_rank": 48994,
+      "max_sequences_per_rank": 48
+    }
+  },
+  "router_config": {
+    "mode": "kv",
+    "temperature": 0,
+    "kv_cache_block_size_tokens": 64,
+    "kv_events": true,
+    "replica_sync": true,
+    "disaggregated": true,
+    "track_prefill_tokens": true,
+    "track_active_blocks": true,
+    "prefill_load_scale": 1,
+    "device_overlap_score_credit": 1,
+    "device_overlap_score_credit_decay": 0,
+    "host_cache_hit_weight": 0.75,
+    "disk_external_cache_hit_weight": 0.25,
+    "shared_cache_type": "hicache",
+    "shared_cache_multiplier": 0.5,
+    "prefill_position_penalty": 12.25,
+    "prefill_position_exponent": 1.45,
+    "prefill_load_model": "curve",
+    "prefill_throughput_at_origin_tokens_per_second": 30762,
+    "prefill_overload_escape_ms": 8000,
+    "decode_active_request_weight_blocks": 6749,
+    "decode_active_request_weight_quadratic_blocks": -76,
+    "decode_fit_max_requests": 32,
+    "decode_marginal_above_fit_blocks_per_request": 1885,
+    "queue_threshold_multiplier": 256,
+    "prefill_max_num_batched_tokens": 8192,
+    "derived_queue_threshold_active_prefill_tokens_per_worker": 2097152,
+    "queue_policy": "wspt",
+    "active_prefill_tokens_threshold": 3000000,
+    "active_decode_blocks_threshold_fraction": 0.93,
+    "router_ttl_seconds": 1800,
+    "router_predicted_ttl_seconds": 12,
+    "migration_limit": 0
+  },
+  "score_models": {
+    "prefill": {
+      "cache_credit_blocks": "1.00*device + 0.75*host_pinned + 0.25*disk_external + 0.50*shared_beyond_device",
+      "base_blocks": "max((active_prefill_tokens + prompt_tokens)/64 - cache_credit_blocks, 0)",
+      "position_surcharge_blocks": "integral from prompt_tokens-uncached_tokens to prompt_tokens of 12.25*(x/1e6)^1.45 dx / 64",
+      "remaining_time_correction_blocks": "remaining_ms/1000*30762/64 - active_prefill_tokens/64",
+      "final": "max(base + position_surcharge + remaining_time_correction, 0) * 1.0",
+      "selection": "minimum score; uniformly random among exact ties"
+    },
+    "decode": {
+      "prefill_and_cache_terms": "forced to zero by disaggregated decode override",
+      "potential_decode_blocks": "active_decode_blocks + additional_active_blocks",
+      "request_penalty": "6749*m - 76*m^2 + 1885*max(N-32,0), m=min(N,32)",
+      "final": "potential_decode_blocks + request_penalty",
+      "selection": "minimum score across eligible (worker_id, dp_rank) candidates"
+    }
+  },
+  "live_metrics": {
+    "frontend_processes": 3,
+    "shared_cache": {
+      "query_count": 89709,
+      "query_duration_ms_sum": 873418.8485019961,
+      "query_duration_ms_mean": 9.736134038970405,
+      "errors": 0,
+      "beyond_device_blocks_sum": 0,
+      "beyond_device_blocks_count": 89709,
+      "selected_request_shared_hit_rate_sum": 0,
+      "selected_request_shared_hit_rate_count": 84787,
+      "interpretation": "Configured and queried successfully, but contributed zero routing credit in this snapshot."
+    },
+    "prefill_candidate_evaluations": {
+      "count": 227044,
+      "mean_device_cache_credit_blocks": 243.78614277408784,
+      "mean_lower_tier_cache_credit_blocks": 5.410297123024612,
+      "mean_adjusted_prefill_blocks": 3399.640141062966,
+      "mean_position_surcharge_blocks": 384.9545754950776,
+      "mean_positive_remaining_time_correction_blocks": 4773.092873312139,
+      "mean_total_score_blocks": 8557.623117791334
+    },
+    "decode_candidate_evaluations": {
+      "count": 703704,
+      "mean_active_request_penalty_blocks": 40135.1849982379,
+      "mean_additional_active_blocks": 550.8354762797994,
+      "mean_total_score_blocks": 43931.126855893956,
+      "cache_and_prefill_terms_sum": 0
+    }
+  },
+  "observed_timing_example": {
+    "prefill_selected_utc": "2026-09-03T03:57:34.654931Z",
+    "decode_selected_utc": "2026-09-03T03:57:34.656165Z",
+    "decode_dispatch_logged_utc": "2026-09-03T03:57:34.656375Z",
+    "prefill_to_decode_selection_ms": 1.234,
+    "decode_selection_to_dispatch_log_ms": 0.21,
+    "caveat": "Single example proves ordering, not a latency distribution or SLO."
+  },
+  "source_anchors": [
+    "lib/kv-router/src/scheduling/selector.rs:241",
+    "lib/kv-router/src/scheduling/selector.rs:315",
+    "lib/kv-router/src/scheduling/selector.rs:352",
+    "lib/kv-router/src/scheduling/selector.rs:395",
+    "lib/kv-router/src/scheduling/selector.rs:458",
+    "lib/kv-router/src/scheduling/selector.rs:893",
+    "lib/kv-router/src/scheduling/selector.rs:985",
+    "lib/llm/src/kv_router/route_lookup.rs:44",
+    "lib/llm/src/kv_router/prefill_router/mod.rs:157",
+    "lib/llm/src/kv_router/prefill_router/mod.rs:310",
+    "components/src/dynamo/sglang/capacity.py:19",
+    "components/src/dynamo/sglang/llm_engine.py:373"
+  ],
+  "caveats": [
+    "Prometheus counters are process-lifetime values and continue to change.",
+    "Candidate-evaluation means are not selected-request hit rates.",
+    "The likely shared-cache key/tag mismatch is source-derived inference, not packet-level proof.",
+    "Router replicas synchronize state but make decisions from their latest local snapshots.",
+    "Topology, worker IDs, flags, and weights may change at the next rollout."
+  ]
+}
