@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "document": {
+    "title": "GLM-5.3 on GB300: HiCache Memory Map and Data Flow",
+    "slug": "glm53-gb300-hicache",
+    "canonical_url": "https://tomyoung903.github.io/maas_docs/glm53-gb300-hicache/"
+  },
+  "snapshot": {
+    "observed_at": "2026-09-03T10:04:00+08:00",
+    "timezone": "Asia/Shanghai",
+    "method": "read-only Kubernetes, nvidia-smi, SGLang metrics/logs, Mooncake metrics, and deployed-source audit",
+    "mutable_fields": [
+      "GPU usage",
+      "L2 logical occupancy",
+      "L3 allocation and key count",
+      "lifetime hit counters"
+    ]
+  },
+  "cluster": {
+    "name": "prod-maas-gb300-taiguo",
+    "ready_nodes": 18,
+    "gpu_product": "NVIDIA GB300",
+    "gpus_per_node": 4,
+    "gpu_count": 72,
+    "gpu_memory_mib_per_gpu": 284208,
+    "gpu_memory_gib_per_gpu": 277.546875,
+    "hbm_tib_per_node": 1.08416748046875,
+    "hbm_tib_total": 19.5150146484375,
+    "host_memory_gib_per_node_approx": 956.819,
+    "host_memory_tib_total": 16.8191,
+    "capacity_note": "Physical cluster capacity is not equivalent to capacity available to this deployment. Nodes outside the deployment are not claimed to be idle."
+  },
+  "deployment": {
+    "namespace": "maas-prod-zhipu",
+    "name": "glm53-nvfp4-gb300-pp-prod",
+    "ready": true,
+    "ready_message": "All resources are ready",
+    "sglang_commit": "117d0e176d0681486d7ec502e70601ea40dda8e5",
+    "dynamo_commit": "c10054b92a98b3b13f4c852739adf3cbff62dedd",
+    "worker_image_tag": "c10054b9-commit-117d0e17-arm64-0830-2356",
+    "nodes": 9,
+    "gpus": 36,
+    "hbm_tib_raw": 9.75750732421875,
+    "host_memory_tib_raw": 8.40954,
+    "topology": {
+      "frontend_replicas": 3,
+      "frontend_gpus": 0,
+      "prefill_replicas": 5,
+      "prefill_pipeline_parallel": 4,
+      "prefill_gpus": 20,
+      "decode_groups": 2,
+      "decode_tensor_parallel": 8,
+      "decode_gpus": 16,
+      "mooncake_store_processes": 4
+    },
+    "placement": [
+      {"node": "gpu-master-gb300-139", "role": "Prefill PP4"},
+      {"node": "gpu-worker-gb300-136", "role": "Prefill PP4"},
+      {"node": "gpu-worker-gb300-141", "role": "Prefill PP4"},
+      {"node": "gpu-worker-gb300-169", "role": "Prefill PP4"},
+      {"node": "gpu-worker-gb300-175", "role": "Prefill PP4"},
+      {"node": "gpu-worker-gb300-134", "role": "Decode group 0 leader + Mooncake Store"},
+      {"node": "gpu-worker-gb300-122", "role": "Decode group 0 worker + Mooncake Store"},
+      {"node": "gpu-worker-gb300-137", "role": "Decode group 1 leader + Mooncake Store"},
+      {"node": "gpu-worker-gb300-126", "role": "Decode group 1 worker + Mooncake Store"}
+    ]
+  },
+  "memory_accounting": {
+    "unit_convention": "GiB and TiB are binary units",
+    "accounted_target_cache_address_space_tib": 10.67235,
+    "prefill_hicache_subset_tib": 8.15247,
+    "excludes": [
+      "separately measured speculative or EAGLE working allocations",
+      "runtime and active-request workspace",
+      "model weights",
+      "CUDA and NCCL allocations"
+    ],
+    "interpretation": "These values are physical allocations in different memory domains, not unique cached model context. Prefill HiCache is inclusive and may retain the same logical page at L1, L2, and L3 simultaneously.",
+    "l1": {
+      "medium": "GPU HBM",
+      "target_cache_tib_total": 4.84337,
+      "prefill": {
+        "connected_to_hicache": true,
+        "target_cache_tib_total": 2.32349,
+        "target_cache_gib_per_pp4_replica": 475.851,
+        "logical_token_slots_per_pp4_engine": 9252096,
+        "page_size_tokens": 64,
+        "ranks": [
+          {"rank": 0, "layers": 19, "main_kv_gib_rounded": 94.302, "dsa_indexer_gib_rounded": 21.611, "combined_gib": 115.912},
+          {"rank": 1, "layers": 19, "main_kv_gib_rounded": 94.302, "dsa_indexer_gib_rounded": 21.611, "combined_gib": 115.912},
+          {"rank": 2, "layers": 20, "main_kv_gib_rounded": 99.265, "dsa_indexer_gib_rounded": 22.748, "combined_gib": 122.013},
+          {"rank": 3, "layers": 20, "main_kv_gib_rounded": 99.265, "dsa_indexer_gib_rounded": 22.748, "combined_gib": 122.013}
+        ],
+        "logical_capacity_note": "PP ranks hold different layer shards for the same token positions; do not multiply the logical slot count by PP=4."
+      },
+      "decode": {
+        "connected_to_hicache": false,
+        "target_cache_tib_total": 2.51988,
+        "target_cache_gib_per_gpu": 161.272,
+        "target_cache_gib_per_four_gpu_node": 645.088,
+        "main_kv_gib_per_gpu_rounded": 131.205,
+        "dsa_indexer_gib_per_gpu_rounded": 30.068,
+        "logical_token_slots_per_dp_rank": 3135616,
+        "page_size_tokens": 64,
+        "note": "Decode has request-local target KV only and no hierarchical-cache L2 or L3 write-back. Rounded component values may not sum exactly to the unrounded combined metric."
+      }
+    },
+    "l2": {
+      "medium": "Prefill-local pinned Host DRAM",
+      "owner": "private rank-local pools on five Prefill nodes",
+      "host_memory_mode": "cache",
+      "hicache_ratio": 1.5,
+      "target_cache_tib_total": 3.48523,
+      "target_cache_gib_per_pp4_replica": 713.776,
+      "logical_token_slots_per_pp4_engine": 13878208,
+      "ranks": [
+        {"rank": 0, "main_kv_gib_rounded": 141.452, "dsa_indexer_gib_rounded": 32.416, "combined_gib": 173.868},
+        {"rank": 1, "main_kv_gib_rounded": 141.452, "dsa_indexer_gib_rounded": 32.416, "combined_gib": 173.868},
+        {"rank": 2, "main_kv_gib_rounded": 148.897, "dsa_indexer_gib_rounded": 34.122, "combined_gib": 183.019},
+        {"rank": 3, "main_kv_gib_rounded": 148.897, "dsa_indexer_gib_rounded": 34.122, "combined_gib": 183.019}
+      ],
+      "share_of_prefill_node_host_memory_percent": 74.6,
+      "not_disk": true
+    },
+    "l3": {
+      "medium": "volatile distributed Host DRAM/EGM",
+      "owner": "shared Mooncake object-cache namespace used by all five Prefill replicas",
+      "store_count": 4,
+      "configured_gib_per_store": 600,
+      "capacity_bytes": 2576980377600,
+      "capacity_gib": 2400,
+      "capacity_tib": 2.34375,
+      "allocated_bytes": 2289888399360,
+      "allocated_gib": 2132.625,
+      "allocated_tib": 2.08264,
+      "occupancy_percent": 88.859,
+      "keys": 5182960,
+      "active_stores": 4,
+      "allocation_failures": 0,
+      "eviction_high_watermark_percent": 90,
+      "eviction_target_percent": 5,
+      "ssd_or_nvme_offload": false,
+      "per_store_occupancy_percent": {
+        "gpu-worker-gb300-122": 88.98,
+        "gpu-worker-gb300-126": 88.96,
+        "gpu-worker-gb300-134": 88.68,
+        "gpu-worker-gb300-137": 88.8
+      }
+    }
+  },
+  "hbm_composition": {
+    "known_static_tib_deployment": 8.26504,
+    "nvidia_smi_used_tib_snapshot": 9.208,
+    "nvidia_smi_capacity_tib_deployment": 9.758,
+    "prefill_per_pp4_replica_gib": {
+      "weights": 417.578,
+      "target_l1": 475.851,
+      "cuda_graphs": 6.143,
+      "known_static_total": 899.572,
+      "startup_residual": 194.224
+    },
+    "decode_per_gpu_gib": {
+      "weights": 78.93,
+      "target_l1": 161.272,
+      "eagle_graphs": 7.645,
+      "known_static_total": 247.846
+    },
+    "note": "mem-fraction-static is not the fraction devoted only to KV cache."
+  },
+  "live_prefill_signals": {
+    "counter_scope": "current-process lifetime counters, one PP0 logical counter per PP4 engine",
+    "classified_tokens_total": 3661199488,
+    "device_hit": {"tokens": 3315067456, "percent": 90.5459},
+    "host_hit": {"tokens": 13714304, "percent": 0.3746},
+    "storage_hit": {"tokens": 76058624, "percent": 2.0774},
+    "computed": {"tokens": 256359104, "percent": 7.0021},
+    "l2_logical_slots_used": 68726016,
+    "l2_logical_slots_total": 69391040,
+    "l2_logical_occupancy_percent": 99.0416,
+    "host_pressure_dropped_tokens": 0,
+    "l3_evicted_keys_lifetime": 34157969,
+    "l3_evicted_bytes_lifetime": 15087076164352
+  },
+  "data_flow_invariants": [
+    "Attention directly consumes only L1 device pages.",
+    "The normal storage-hit path is L3 to L2 to L1; there is no direct L3-to-GPU path.",
+    "Reads reuse only the longest continuous prefix; a missing earlier page truncates later reuse.",
+    "A usable GLM-5.3 DSA page requires both primary KV and INDEXER objects, with the continuous hit length minimized across PP ranks.",
+    "write_through asynchronously backs new complete L1 pages to L2 and then L3 before ordinary eviction.",
+    "Eviction normally removes one inclusive copy rather than moving the only copy down a tier.",
+    "Mooncake P-to-D transfer is request-scoped and bypasses the L3 object-cache lifecycle.",
+    "Decode-generated continuation is not automatically written to Prefill HiCache."
+  ],
+  "configuration": {
+    "cache_implementation": "UnifiedRadixCache",
+    "enable_hierarchical_cache_prefill": true,
+    "enable_hierarchical_cache_decode": false,
+    "hicache_io_backend": "direct",
+    "hicache_mem_layout": "page_first_direct",
+    "hicache_write_policy": "write_through",
+    "hicache_storage_backend": "mooncake",
+    "hicache_storage_prefetch_policy": "wait_complete",
+    "l3_prefetch_threshold_tokens": 256,
+    "mooncake_local_buffer_bytes": 3221225472,
+    "mooncake_local_buffer_note": "3 GiB transfer workspace, not L3 capacity"
+  },
+  "operational_observations": [
+    {
+      "kind": "observed",
+      "summary": "All three Mooncake master pods pass Kubernetes readiness, but only the active leader serves the admin segment endpoint; standby responses were HTTP 503."
+    },
+    {
+      "kind": "source-derived inference",
+      "summary": "The deployed legacy Dynamo shared-cache query checks primary PP MLA KV keys but not DSA INDEXER sidecars, and its tag metadata does not appear to match SGLang's automatic model prefix. This explains zero router shared-cache credit alongside real engine L3 hits; it affects routing optimization, not cache correctness."
+    }
+  ]
+}

@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <meta name="description" content="GLM-5.3 在泰国 GB300 生产集群上的 HiCache 内存版图：物理容量、L1/L2/L3 分配、读写与淘汰路径，以及独立的 Prefill-to-Decode KV 传输。">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/glm53-gb300-hicache/">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/glm53-gb300-hicache/">
+  <meta property="og:title" content="GLM-5.3 on GB300: HiCache Memory Map and Data Flow">
+  <meta property="og:description" content="A production-grounded visual map of GPU L1, private host L2, shared Mooncake L3, and the separate P-to-D transfer path.">
+  <title>GLM-5.3 on GB300: HiCache Memory Map and Data Flow</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+
+  <nav class="topbar" aria-label="文档导航">
+    <div class="topbar-inner">
+      <a class="brand" href="../">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="brand-copy">
+          <strong>MaaS Docs</strong>
+          <small>Serving systems · production evidence</small>
+        </span>
+      </a>
+      <div class="toplinks">
+        <a href="evidence.json">Evidence JSON</a>
+        <a href="https://github.com/sgl-project/sglang/blob/99b910955377375a1385122680e0daefcf706f79/docs/docs/advanced_features/hicache_design.mdx">SGLang HiCache design</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-shell">
+    <aside class="overview" aria-label="本页目录">
+      <p class="overview-title">On this page</p>
+      <nav>
+        <a href="#verdict">先看结论</a>
+        <a href="#scope">三个容量范围</a>
+        <a href="#memory-map">内存版图</a>
+        <a href="#accounting">容量账本</a>
+        <a href="#tiers">三层的所有权</a>
+        <a href="#data-flow">数据流</a>
+        <a href="#live-signals">实时证据</a>
+        <a href="#caveats">运维观察</a>
+        <a href="#sources">配置与证据</a>
+      </nav>
+      <div class="rail-key" aria-label="颜色图例">
+        <span><i class="key-dot l1"></i>L1 · GPU HBM</span>
+        <span><i class="key-dot l2"></i>L2 · Host DRAM</span>
+        <span><i class="key-dot l3"></i>L3 · Mooncake</span>
+        <span><i class="key-dot decode"></i>Decode / P→D</span>
+      </div>
+    </aside>
+
+    <main id="main">
+      <article>
+        <header class="page-header">
+          <p class="eyebrow">GLM-5.3 · Taiguo GB300 · production snapshot</p>
+          <h1>36 张 GPU 如何组成三层 KV 记忆</h1>
+          <p class="lede">这不是一张抽象的 HiCache 架构图。它把当前生产部署实际覆盖的节点、GPU HBM、Host DRAM、Mooncake Store、PP4 分片和 GLM-5.3 DSA INDEXER 放到同一张可核算的地图里，并把 L3 对象缓存与 P→D 请求传输彻底分开。</p>
+          <div class="meta-row">
+            <span class="pill">snapshot · 2026-09-03 10:04 CST</span>
+            <span class="pill">namespace · maas-prod-zhipu</span>
+            <span class="pill">SGLang · 117d0e176</span>
+            <span class="pill">Dynamo · c10054b92</span>
+            <span class="pill">read-only audit</span>
+          </div>
+        </header>
+
+        <section id="verdict">
+          <div class="verdict-band">
+            <h2>先看结论</h2>
+            <p><strong>当前三层 HiCache 只属于五个 Prefill PP4 实例。</strong>它们各自拥有私有的 GPU L1 和 Host L2，并共同使用一个 2.344 TiB 的 Mooncake L3。Decode 的 16 张 GPU 另有 2.520 TiB request-local target L1，但没有启用 HiCache，也不会把 decode-generated continuation 自动写入 L2/L3。因此，全服务的 L1 是 4.843 TiB；真正接入 L2/L3 的 Prefill L1 是其中 2.323 TiB。</p>
+          </div>
+
+          <div class="rule-grid" aria-label="四条阅读规则">
+            <article class="rule-card">
+              <span class="rule-number">1</span>
+              <strong>三层不是同一种介质</strong>
+              <p>L1 消耗 GPU HBM；L2 和 L3 消耗不同节点上的 Host DRAM。不能把它们堆到同一条“集群内存利用率”上。</p>
+            </article>
+            <article class="rule-card">
+              <span class="rule-number">2</span>
+              <strong>这是 inclusive cache</strong>
+              <p>同一页可同时存在于 L1、L2 和 L3。三层物理 footprint 的和，不等于唯一 KV 数据量。</p>
+            </article>
+            <article class="rule-card">
+              <span class="rule-number">3</span>
+              <strong>PP 只放大物理 bytes</strong>
+              <p>PP0–PP3 保存相同 token positions 的不同 layer shards；逻辑 token 容量不能再乘以 4。</p>
+            </article>
+            <article class="rule-card">
+              <span class="rule-number">4</span>
+              <strong>P→D 不是 L3 read</strong>
+              <p>它使用 Mooncake TransferEngine 搬运一次请求的 KV，但绕过 MooncakeStore 对象生命周期。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="scope">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Scope before arithmetic</span>
+              <h2>“整个集群”有三个不同范围</h2>
+            </div>
+          </div>
+          <p class="section-intro">下面所有容量都明确标注分母。物理集群容量不是当前服务可自由使用的容量；GLM-5.3 的九节点 footprint 也不等于 HiCache 实际分配。</p>
+
+          <div class="scope-grid">
+            <article class="scope-card cluster">
+              <span class="scope-label">Physical Taiguo cluster</span>
+              <div class="scope-value">18 nodes · 72 GPUs</div>
+              <p>19.515 TiB 驱动报告 HBM；16.819 TiB Kubernetes node Host memory。其他工作负载仍可能占用其中资源。</p>
+            </article>
+            <article class="scope-card service">
+              <span class="scope-label">GLM-5.3 service footprint</span>
+              <div class="scope-value">9 nodes · 36 GPUs</div>
+              <p>五个 Prefill 节点加四个 Decode 节点：9.758 TiB 原始 HBM，8.410 TiB node Host memory。</p>
+            </article>
+            <article class="scope-card cache">
+              <span class="scope-label">Accounted target KV cache address space</span>
+              <div class="scope-value">≈ 10.672 TiB</div>
+              <p>L1 4.843 TiB HBM、L2 3.485 TiB Host、L3 2.344 TiB Host。严格的 Prefill HiCache footprint 是其中 8.152 TiB；不含另计的 EAGLE/speculative 工作区与 runtime workspace。</p>
+            </article>
+          </div>
+
+          <div class="unit-note"><strong>单位约定：</strong>图中统一使用二进制 GiB/TiB。GB300 标称 288 GB HBM，而驱动报告每卡 284,208 MiB，也就是 277.547 GiB。SGLang GPU allocation log 虽打印 “GB”，其常量实际是 2<sup>30</sup>；Host allocation log 则打印十进制 GB，本文已经换算。</div>
+        </section>
+
+        <section id="memory-map">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Figure 1 · ownership and capacity</span>
+              <h2>每一份缓存 bytes 到底住在哪里</h2>
+            </div>
+          </div>
+          <p class="section-intro">先看十八个节点的服务落位，再展开一个 Prefill PP4 节点和一个 Decode + Mooncake 节点。颜色表示角色，节点卡上的四个小方块表示四张 GB300。</p>
+
+          <figure class="atlas-frame" aria-labelledby="atlas-title atlas-desc">
+            <figcaption class="atlas-head">
+              <span>
+                <strong id="atlas-title">Taiguo GB300 · GLM-5.3 memory atlas</strong>
+                <span id="atlas-desc">九个服务节点都有 GPU L1；只有五个蓝色 Prefill 节点的 L1 接入 L2/L3。四个橙色 Decode 节点同时托管共享 Mooncake Store；灰色节点不属于这次 GLM-5.3 deployment footprint。</span>
+              </span>
+              <span class="atlas-badge">18 × (4 GB300 + 956.819 GiB Host)</span>
+            </figcaption>
+
+            <div class="topology-ribbon" aria-label="服务拓扑摘要">
+              <div class="topology-chip control"><span>Control</span><strong>Frontend × 3</strong><small>routing + metadata · 0 GPU</small></div>
+              <div class="topology-chip prefill"><span>Compute</span><strong>Prefill × 5 · PP4</strong><small>20 GPUs · HiCache L1/L2 owners</small></div>
+              <div class="topology-chip decode"><span>Compute</span><strong>Decode × 2 · TP8</strong><small>16 GPUs · request-local L1</small></div>
+              <div class="topology-chip l3"><span>Shared cache</span><strong>Mooncake Store × 4</strong><small>Host DRAM/EGM · logical L3</small></div>
+            </div>
+
+            <div class="atlas-block">
+              <div class="atlas-block-title">
+                <strong>全物理集群与当前服务落位</strong>
+                <span>9 / 18 nodes belong to this deployment</span>
+              </div>
+              <div class="cluster-node-grid">
+                <div class="node-tile prefill"><span class="node-name">master-139</span><span class="node-role">Prefill · PP4</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 + L2</span></div>
+                <div class="node-tile prefill"><span class="node-name">worker-136</span><span class="node-role">Prefill · PP4</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 + L2</span></div>
+                <div class="node-tile prefill"><span class="node-name">worker-141</span><span class="node-role">Prefill · PP4</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 + L2</span></div>
+                <div class="node-tile prefill"><span class="node-name">worker-169</span><span class="node-role">Prefill · PP4</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 + L2</span></div>
+                <div class="node-tile prefill"><span class="node-name">worker-175</span><span class="node-role">Prefill · PP4</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 + L2</span></div>
+                <div class="node-tile decode"><span class="node-name">worker-134</span><span class="node-role">Decode group 0 · leader</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 · L3 host</span></div>
+                <div class="node-tile decode"><span class="node-name">worker-122</span><span class="node-role">Decode group 0 · worker</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 · L3 host</span></div>
+                <div class="node-tile decode"><span class="node-name">worker-137</span><span class="node-role">Decode group 1 · leader</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 · L3 host</span></div>
+                <div class="node-tile decode"><span class="node-name">worker-126</span><span class="node-role">Decode group 1 · worker</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span><span class="node-mini-badge">L1 · L3 host</span></div>
+                <div class="node-tile other"><span class="node-name">master-130</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+                <div class="node-tile other"><span class="node-name">master-132</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+                <div class="node-tile other"><span class="node-name">worker-119</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+                <div class="node-tile other"><span class="node-name">worker-129</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+                <div class="node-tile other"><span class="node-name">worker-131</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+                <div class="node-tile other"><span class="node-name">worker-143</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+                <div class="node-tile other"><span class="node-name">worker-150</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+                <div class="node-tile other"><span class="node-name">worker-151</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+                <div class="node-tile other"><span class="node-name">worker-192</span><span class="node-role">Outside this service</span><span class="gpu-dots" role="img" aria-label="4 GPUs"><i></i><i></i><i></i><i></i></span></div>
+              </div>
+              <div class="atlas-legend">
+                <span class="legend-item"><i class="legend-dot l1"></i>Prefill · 5 nodes / 20 GPUs</span>
+                <span class="legend-item"><i class="legend-dot decode"></i>Decode + Store · 4 nodes / 16 GPUs</span>
+                <span class="legend-item"><i class="legend-dot"></i>不属于本服务，不表示空闲</span>
+              </div>
+            </div>
+
+            <div class="atlas-block">
+              <div class="atlas-block-title">
+                <strong>两种节点原型</strong>
+                <span>两边都有 L1；只有 Prefill L1 进入 HiCache；共享 L3 在 Decode hosts 的 Host memory</span>
+              </div>
+              <div class="archetype-grid">
+                <article class="archetype-card">
+                  <div class="archetype-top">
+                    <div>
+                      <h3>Prefill PP4 node</h3>
+                      <p>每个节点一份 PP4 replica；四个 rank 的 L1/L2 均私有</p>
+                    </div>
+                    <span class="count-badge">× 5 nodes</span>
+                  </div>
+
+                  <div class="memory-ledger">
+                    <div class="ledger-row">
+                      <div class="ledger-label"><span>GPU plane · 1.084 TiB raw HBM</span><strong>475.851 GiB L1 / node</strong></div>
+                      <div class="ledger-track" role="img" aria-label="Prefill node raw HBM: 42.86 percent L1 KV cache, remainder model weights, CUDA graphs, runtime, activations, workspace and headroom">
+                        <i class="ledger-segment l1" style="width:42.86%"></i><i class="ledger-segment other" style="width:57.14%"></i>
+                      </div>
+                    </div>
+                    <div class="ledger-row">
+                      <div class="ledger-label"><span>Host plane · 956.819 GiB node memory</span><strong>713.776 GiB L2 / node</strong></div>
+                      <div class="ledger-track" role="img" aria-label="Prefill node Host memory: 74.6 percent configured for L2, remainder operating system, process memory and headroom">
+                        <i class="ledger-segment l2" style="width:74.60%"></i><i class="ledger-segment other" style="width:25.40%"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="rank-grid" aria-label="一个 Prefill PP4 replica 的分 rank 缓存">
+                    <div class="rank-card"><strong>PP0 · L1 115.912 GiB</strong><span>≈ KV 94.302 + INDEXER 21.611</span><span>L2 · 173.868 GiB</span></div>
+                    <div class="rank-card"><strong>PP1 · L1 115.912 GiB</strong><span>≈ KV 94.302 + INDEXER 21.611</span><span>L2 · 173.868 GiB</span></div>
+                    <div class="rank-card"><strong>PP2 · L1 122.013 GiB</strong><span>≈ KV 99.265 + INDEXER 22.748</span><span>L2 · 183.019 GiB</span></div>
+                    <div class="rank-card"><strong>PP3 · L1 122.013 GiB</strong><span>≈ KV 99.265 + INDEXER 22.748</span><span>L2 · 183.019 GiB</span></div>
+                  </div>
+                  <p class="atlas-footnote">每个 L2 rank 仍按同样的主 KV + INDEXER 比例放大到 L1 的 1.5 倍。上面的 L1 总数已经包含 INDEXER，不能再加一次；组件数值分别四舍五入，因此显示的小数相加可能与 unrounded total 相差 0.001 GiB。</p>
+                </article>
+
+                <article class="archetype-card">
+                  <div class="archetype-top">
+                    <div>
+                      <h3>Decode + Mooncake node</h3>
+                      <p>四张 GPU 服务 Decode；同一主机另划 600 GiB Host DRAM/EGM 给 L3</p>
+                    </div>
+                    <span class="count-badge">× 4 nodes</span>
+                  </div>
+
+                  <div class="memory-ledger">
+                    <div class="ledger-row">
+                      <div class="ledger-label"><span>GPU plane · 1.084 TiB raw HBM</span><strong>645.088 GiB target L1 / node</strong></div>
+                      <div class="ledger-track" role="img" aria-label="Decode node raw HBM: 58.10 percent target L1 including primary KV and DSA INDEXER; remainder is model weights, EAGLE graphs, runtime, workspace and headroom">
+                        <i class="ledger-segment l1" style="width:58.10%"></i><i class="ledger-segment decode" style="width:31.19%"></i><i class="ledger-segment other" style="width:10.71%"></i>
+                      </div>
+                    </div>
+                    <div class="ledger-row">
+                      <div class="ledger-label"><span>Host plane · 956.819 GiB node memory</span><strong>600 GiB L3 segment</strong></div>
+                      <div class="ledger-track" role="img" aria-label="Decode node Host memory: 62.7 percent configured as Mooncake L3 segment">
+                        <i class="ledger-segment l3" style="width:62.71%"></i><i class="ledger-segment other" style="width:37.29%"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="store-grid" aria-label="四个 Mooncake store segments">
+                    <div class="store-card"><strong>node 122 · 600 GiB</strong><span>Store segment · shared L3</span><span class="store-meter"><i style="width:88.98%"></i></span></div>
+                    <div class="store-card"><strong>node 126 · 600 GiB</strong><span>Store segment · shared L3</span><span class="store-meter"><i style="width:88.96%"></i></span></div>
+                    <div class="store-card"><strong>node 134 · 600 GiB</strong><span>Store segment · shared L3</span><span class="store-meter"><i style="width:88.68%"></i></span></div>
+                    <div class="store-card"><strong>node 137 · 600 GiB</strong><span>Store segment · shared L3</span><span class="store-meter"><i style="width:88.80%"></i></span></div>
+                  </div>
+                  <p class="atlas-footnote">蓝色是可核算的 target L1：每个 GPU 161.272 GiB（≈ 主 KV 131.205 + INDEXER 30.068），16 张 GPU 合计 2.520 TiB。橙色合并表示已知 weights + EAGLE graph；斜纹是 runtime、workspace 与 headroom。每个 DP rank 有 3,135,616 个独立逻辑 slots。</p>
+                </article>
+              </div>
+            </div>
+          </figure>
+        </section>
+
+        <section id="accounting">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Physical ledger · not unique content</span>
+              <h2>三层 allocation footprint 如何核算</h2>
+            </div>
+          </div>
+          <p class="section-intro">Prefill L1/L2 先在一个 PP4 replica 内按 rank 的物理 bytes 相加，再乘五个独立 replicas；Decode 的 16 个 DP ranks 则是独立 request pools。逻辑 token positions 不能在 Prefill PP ranks 之间重复相加。</p>
+
+          <div class="equation-stack" aria-label="缓存容量计算">
+            <div class="equation-row l1">
+              <span class="eq-lhs"><span class="math-var">M</span><sub>L1,P</sub></span>
+              <span class="eq-sign">=</span>
+              <span class="eq-expression">5 × [2 × 115.912 GiB + 2 × 122.013 GiB]</span>
+              <span class="eq-sign">≈</span>
+              <span class="eq-result">2.323 TiB</span>
+            </div>
+            <div class="equation-row decode">
+              <span class="eq-lhs"><span class="math-var">M</span><sub>L1,D</sub></span>
+              <span class="eq-sign">=</span>
+              <span class="eq-expression">16 independent DP ranks × 161.272 GiB</span>
+              <span class="eq-sign">≈</span>
+              <span class="eq-result">2.520 TiB</span>
+            </div>
+            <div class="equation-row l1-total">
+              <span class="eq-lhs"><span class="math-var">M</span><sub>L1,total</sub></span>
+              <span class="eq-sign">=</span>
+              <span class="eq-expression">2.323 TiB Prefill + 2.520 TiB Decode</span>
+              <span class="eq-sign">≈</span>
+              <span class="eq-result">4.843 TiB</span>
+            </div>
+            <div class="equation-row l2">
+              <span class="eq-lhs"><span class="math-var">M</span><sub>L2</sub></span>
+              <span class="eq-sign">=</span>
+              <span class="eq-expression">5 × [2 × 173.868 GiB + 2 × 183.019 GiB]</span>
+              <span class="eq-sign">≈</span>
+              <span class="eq-result">3.485 TiB</span>
+            </div>
+            <div class="equation-row l3">
+              <span class="eq-lhs"><span class="math-var">M</span><sub>L3</sub></span>
+              <span class="eq-sign">=</span>
+              <span class="eq-expression">4 stores × 600 GiB</span>
+              <span class="eq-sign">=</span>
+              <span class="eq-result">2.34375 TiB</span>
+            </div>
+          </div>
+
+          <div class="footprint-comparison" aria-label="全服务物理缓存地址空间的分类比较">
+            <div class="footprint-head">
+              <span><strong>10.672 TiB accounted target-cache address space</strong><small>分类比较，不是同一介质的 utilization bar，也不是唯一 KV 容量；不含另计的 speculative/EAGLE 与 runtime workspace</small></span>
+              <span class="footprint-badge">Prefill HiCache subset · 8.152 TiB</span>
+            </div>
+            <div class="footprint-track" role="img" aria-label="10.672 TiB physical cache address space consists of 2.323 TiB Prefill L1, 2.520 TiB Decode L1, 3.485 TiB Prefill L2, and 2.344 TiB shared L3">
+              <div class="footprint-segment l1" style="width:21.77%"><strong>2.323</strong><span>Prefill L1</span></div>
+              <div class="footprint-segment decode" style="width:23.61%"><strong>2.520</strong><span>Decode L1</span></div>
+              <div class="footprint-segment l2" style="width:32.66%"><strong>3.485</strong><span>Prefill L2</span></div>
+              <div class="footprint-segment l3" style="width:21.96%"><strong>2.344</strong><span>shared L3</span></div>
+            </div>
+            <div class="footprint-media"><span>HBM · 4.843 TiB</span><span>Host DRAM · 5.829 TiB</span></div>
+          </div>
+
+          <div class="capacity-ledger-grid">
+            <article class="capacity-panel">
+              <h3>GPU HBM ledger</h3>
+              <p>把原始 HBM、服务 footprint 和全服务 target L1 分开看。</p>
+              <div class="light-ledger">
+                <div class="ledger-row"><div class="ledger-label"><span>Physical cluster · 72 GPUs</span><strong>19.515 TiB</strong></div><div class="ledger-track"><i class="ledger-segment other" style="width:100%"></i></div></div>
+                <div class="ledger-row"><div class="ledger-label"><span>GLM-5.3 workers · 36 GPUs</span><strong>9.758 TiB</strong></div><div class="ledger-track"><i class="ledger-segment decode" style="width:50%"></i></div></div>
+                <div class="ledger-row"><div class="ledger-label"><span>Target L1 · Prefill blue + Decode orange</span><strong>4.843 TiB</strong></div><div class="ledger-track"><i class="ledger-segment l1" style="width:11.91%"></i><i class="ledger-segment decode" style="width:12.91%"></i></div></div>
+              </div>
+            </article>
+            <article class="capacity-panel">
+              <h3>Host memory ledger</h3>
+              <p>L2 和 L3 位于互不重叠的五个 Prefill 与四个 Decode nodes。</p>
+              <div class="light-ledger">
+                <div class="ledger-row"><div class="ledger-label"><span>Physical cluster · 18 nodes</span><strong>16.819 TiB</strong></div><div class="ledger-track"><i class="ledger-segment other" style="width:100%"></i></div></div>
+                <div class="ledger-row"><div class="ledger-label"><span>GLM-5.3 footprint · 9 nodes</span><strong>8.410 TiB</strong></div><div class="ledger-track"><i class="ledger-segment decode" style="width:50%"></i></div></div>
+                <div class="ledger-row"><div class="ledger-label"><span>L2 private + L3 shared</span><strong>5.829 TiB</strong></div><div class="ledger-track"><i class="ledger-segment l2" style="width:20.72%"></i><i class="ledger-segment l3" style="width:13.93%"></i></div></div>
+              </div>
+            </article>
+          </div>
+
+          <p class="ledger-denominator">两张 ledger 的条形长度都以全物理集群为 100% 分母：HBM 以 19.515 TiB 为分母，Host 以 16.819 TiB 为分母；它们不是当前使用率。</p>
+
+          <div class="warning-box"><strong>不要把 10.672 TiB 写成“可缓存多少唯一 tokens”。</strong>其中 2.520 TiB 是 HiCache 之外的 Decode request pools；其余 8.152 TiB 是 inclusive Prefill HiCache，热页会在三层重复。一个 GLM-5.3 DSA logical page 还包含四个 PP stage 的主 KV 与 INDEXER objects；L3 有跨 replica 去重、不同 stage payload 大小、元数据和碎片，因此无法从 2.344 TiB 稳定反推固定 token capacity。</div>
+        </section>
+
+        <section id="tiers">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">The hierarchy is about ownership</span>
+              <h2>L1、L2、L3 分别意味着什么</h2>
+            </div>
+          </div>
+
+          <div class="tier-grid">
+            <article class="tier-card l1">
+              <div class="tier-title"><span class="tier-level">L1</span><span class="micro-pill">private · fastest</span></div>
+              <h3>Prefill + Decode GPU HBM</h3>
+              <p>所有 engine 都有私有 device pages；只有 Prefill L1 接入 HiCache。Attention 只能直接消费 L1，因此 Prefill 的任何 L2/L3 hit 最终都必须回到这里。</p>
+              <ul class="tier-facts">
+                <li><strong>Owner</strong><span>one Prefill PP rank or Decode DP rank</span></li>
+                <li><strong>Content</strong><span>MLA KV + DSA INDEXER</span></li>
+                <li><strong>Physical</strong><span>2.323 TiB Prefill + 2.520 TiB Decode</span></li>
+                <li><strong>Logical</strong><span>9.252M / PP4 engine；3.136M / Decode DP rank</span></li>
+                <li><strong>Eviction</strong><span>Radix-aware LRU，释放 device copy</span></li>
+              </ul>
+            </article>
+            <article class="tier-card l2">
+              <div class="tier-title"><span class="tier-level">L2</span><span class="micro-pill">private · persistent cache mode</span></div>
+              <h3>Prefill local Host DRAM</h3>
+              <p>与对应 rank 私有绑定的 pinned/CUDA Host NUMA pool。即使两个 Prefill 在同一物理主机，L2 也不是自动共享的。</p>
+              <ul class="tier-facts">
+                <li><strong>Owner</strong><span>same Prefill rank as its L1</span></li>
+                <li><strong>Mode</strong><span><code>host-memory-mode=cache</code></span></li>
+                <li><strong>Capacity</strong><span>13,878,208 logical slots / engine</span></li>
+                <li><strong>Not disk</strong><span><code>/mnt/disk0/sglang-cache</code> 不是 L2</span></li>
+              </ul>
+            </article>
+            <article class="tier-card l3">
+              <div class="tier-title"><span class="tier-level">L3</span><span class="micro-pill">shared · volatile</span></div>
+              <h3>Mooncake object cache</h3>
+              <p>所有五个 Prefill 共享的逻辑第三层。Master/etcd 管理 metadata 与 placement；KV payload 在 SGLang 和四个 Store segments 之间直传。</p>
+              <ul class="tier-facts">
+                <li><strong>Owner</strong><span>cluster-wide Mooncake namespace</span></li>
+                <li><strong>Capacity</strong><span>4 × 600 GiB = 2.344 TiB</span></li>
+                <li><strong>Storage</strong><span>Host DRAM/EGM；无 SSD/NVMe offload</span></li>
+                <li><strong>Failure</strong><span>作为 cache miss 回退重算，不影响正确性</span></li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="note-box"><strong>GLM-5.3 DSA 完整性门槛：</strong>一个 page 的主 KV 命中不足以独立使用；对应 INDEXER object 也必须存在。SGLang 对 KV、INDEXER 以及全部 PP ranks 取连续命中前缀的最小值，确保所有 layer shards 对同一 token 边界达成一致。</div>
+        </section>
+
+        <section id="data-flow">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Figure 2 · bytes versus control</span>
+              <h2>一次请求如何穿过三层缓存</h2>
+            </div>
+          </div>
+          <p class="section-intro">用上方按钮切换四条路径。实线表示实际 KV bytes；虚线表示 hash、metadata、ack 或路由信号。节点会保留在固定位置，让每种模式之间的差异可直接比较。</p>
+
+          <div class="flow-explorer" data-flow-explorer data-mode="read">
+            <div class="flow-top">
+              <div class="flow-title">
+                <strong>One prefix page through production HiCache</strong>
+                <span>64-token pages · UnifiedRadixCache · <code>legacy/page_first_direct</code> schema</span>
+              </div>
+              <div class="flow-tabs" role="tablist" aria-label="选择数据路径">
+                <button class="flow-tab" id="tab-read" type="button" role="tab" aria-selected="true" aria-controls="panel-read" data-mode="read">Read / promotion</button>
+                <button class="flow-tab" id="tab-write" type="button" role="tab" aria-selected="false" aria-controls="panel-write" data-mode="write" tabindex="-1">Write-through</button>
+                <button class="flow-tab" id="tab-evict" type="button" role="tab" aria-selected="false" aria-controls="panel-evict" data-mode="evict" tabindex="-1">Eviction</button>
+                <button class="flow-tab" id="tab-pd" type="button" role="tab" aria-selected="false" aria-controls="panel-pd" data-mode="pd" tabindex="-1">P→D transfer</button>
+              </div>
+            </div>
+
+            <div class="flow-canvas-scroll">
+              <div class="flow-canvas" role="img" aria-labelledby="flow-visual-title flow-visual-desc">
+                <span id="flow-visual-title" hidden>GLM-5.3 HiCache data-flow diagram</span>
+                <span id="flow-visual-desc" hidden>The diagram can show cache read and promotion, write-through, eviction, or the separate Prefill-to-Decode transfer. L3 data always enters L2 before L1.</span>
+                <span class="flow-plane-label control">Control plane</span>
+                <span class="flow-plane-label data">Prefill data plane</span>
+                <span class="flow-plane-label pd">Request-scoped P→D lane</span>
+
+                <svg class="flow-lines" viewBox="0 0 1080 555" aria-hidden="true">
+                  <defs>
+                    <marker id="arrow-read" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#70a1ff"></path></marker>
+                    <marker id="arrow-write" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#4fc2b3"></path></marker>
+                    <marker id="arrow-evict" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#d5a34a"></path></marker>
+                    <marker id="arrow-pd" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ef8c5e"></path></marker>
+                  </defs>
+
+                  <path class="route route-read" d="M176 102 H218" marker-end="url(#arrow-read)"></path>
+                  <path class="route route-read" d="M408 102 H452" marker-end="url(#arrow-read)"></path>
+                  <path class="route route-read control-line" d="M552 151 C552 205 332 196 332 256" marker-end="url(#arrow-read)"></path>
+                  <path class="route route-read control-line" d="M657 98 H727" marker-end="url(#arrow-read)"></path>
+                  <path class="route route-read control-line" d="M886 145 V246" marker-end="url(#arrow-read)"></path>
+                  <path class="route route-read" d="M758 320 H704" marker-end="url(#arrow-read)"></path>
+                  <path class="route route-read" d="M484 320 H435" marker-end="url(#arrow-read)"></path>
+                  <path class="route route-read" d="M230 320 H191" marker-end="url(#arrow-read)"></path>
+                  <text class="route-label read" x="707" y="307">R3a · L3 → L2</text>
+                  <text class="route-label read" x="438" y="307">R2/R3b · L2 → L1</text>
+                  <text class="route-label read" x="42" y="257">attention consumes L1</text>
+
+                  <path class="route route-write" d="M191 320 H230" marker-end="url(#arrow-write)"></path>
+                  <path class="route route-write" d="M435 320 H484" marker-end="url(#arrow-write)"></path>
+                  <path class="route route-write" d="M704 320 H758" marker-end="url(#arrow-write)"></path>
+                  <path class="route route-write control-line" d="M593 256 C593 207 886 210 886 145" marker-end="url(#arrow-write)"></path>
+                  <text class="route-label write" x="439" y="307">W1 · async D→H</text>
+                  <text class="route-label write" x="708" y="307">W2 · async storage write</text>
+                  <text class="route-label write" x="58" y="257">new complete page</text>
+
+                  <path class="route route-evict" d="M332 367 V424" marker-end="url(#arrow-evict)"></path>
+                  <path class="route route-evict" d="M593 367 V424" marker-end="url(#arrow-evict)"></path>
+                  <path class="route route-evict" d="M901 367 V424" marker-end="url(#arrow-evict)"></path>
+                  <text class="route-label evict" x="251" y="420">E1 · release HBM copy</text>
+                  <text class="route-label evict" x="505" y="420">E2 · release Host copy</text>
+                  <text class="route-label evict" x="815" y="420">E3 · backend-owned</text>
+
+                  <path class="route route-pd" d="M332 367 C332 425 424 421 471 455" marker-end="url(#arrow-pd)"></path>
+                  <path class="route route-pd" d="M589 505 H758" marker-end="url(#arrow-pd)"></path>
+                  <text class="route-label pd" x="603" y="492">P→D · request-scoped transfer</text>
+                </svg>
+
+                <div class="flow-node request" data-modes="read">
+                  <span class="node-chip">input</span>
+                  <strong>Client token IDs</strong>
+                  <span>prompt + prior turns</span>
+                  <small>输入是 token IDs，不是上一轮 Decode KV bytes</small>
+                </div>
+                <div class="flow-node router" data-modes="read">
+                  <span class="node-chip">routing</span>
+                  <strong>Dynamo KV Router</strong>
+                  <span>选择 Prefill replica</span>
+                  <small>shared-cache multiplier = 0.5；不搬 KV payload</small>
+                </div>
+                <div class="flow-node radix" data-modes="read">
+                  <span class="node-chip">metadata</span>
+                  <strong>Local Radix match</strong>
+                  <span>连续 prefix：先 L1，再 L2</span>
+                  <small>短于 256 tokens 的 L3 suffix 不触发 prefetch</small>
+                </div>
+                <div class="flow-node master" data-modes="read write evict">
+                  <span class="node-chip">control only</span>
+                  <strong>Mooncake master + etcd</strong>
+                  <span>hash existence · placement · allocation · eviction</span>
+                  <small>metadata plane；不承载实际 KV bytes</small>
+                </div>
+                <div class="flow-node compute" data-modes="read write">
+                  <span class="node-chip">compute</span>
+                  <strong>Prefill attention</strong>
+                  <span>消费 L1 / 计算缺失 tail</span>
+                  <small>partial final page 与不可连续 suffix 重新计算</small>
+                </div>
+                <div class="flow-node l1" data-modes="read write evict pd">
+                  <span class="node-chip">device bytes</span>
+                  <strong>L1 · GPU HBM</strong>
+                  <span>MLA KV + DSA INDEXER</span>
+                  <small>Attention 的唯一直接输入层</small>
+                </div>
+                <div class="flow-node l2" data-modes="read write evict">
+                  <span class="node-chip">host bytes</span>
+                  <strong>L2 · private Host DRAM</strong>
+                  <span>allocated pages · rank-local</span>
+                  <small>L3 fetch 先落在这里，再 load-back 至 L1</small>
+                </div>
+                <div class="flow-node l3" data-modes="read write evict">
+                  <span class="node-chip">shared object bytes</span>
+                  <strong>L3 · four Mooncake stores</strong>
+                  <span>2.344 TiB · deduplicated objects</span>
+                  <small>共享、易失；没有 SSD/NVMe fallback</small>
+                </div>
+                <div class="flow-node exporter" data-modes="pd">
+                  <span class="node-chip">separate lifecycle</span>
+                  <strong>Prefill P→D exporter</strong>
+                  <span>request handle + direct transfer</span>
+                  <small>它不是从 L3 object cache 读取</small>
+                </div>
+                <div class="flow-node decode" data-modes="pd">
+                  <span class="node-chip">decode GPU</span>
+                  <strong>Decode request KV</strong>
+                  <span>autoregressive generation</span>
+                  <small>本部署无 HiCache L2/L3 write-back</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="flow-legend">
+              <span><i class="line-sample"></i>actual KV bytes</span>
+              <span><i class="line-sample control"></i>metadata / hash / acknowledgement</span>
+              <span>所有 L3 hit 正常路径均为 <strong>L3 → L2 → L1</strong></span>
+            </div>
+
+            <div class="flow-panel-wrap">
+              <section class="flow-panel" id="panel-read" role="tabpanel" aria-labelledby="tab-read" data-panel="read">
+                <div class="flow-panel-head"><strong>Read / promotion · 最长连续可用 prefix</strong><span id="flow-status" aria-live="polite">当前显示读取与晋升路径</span></div>
+                <div class="step-strip">
+                  <div class="flow-step"><span class="step-no">1</span><b>Router 选 Prefill</b><small>本地 KV events 为主，共享缓存只作为折扣后的路由信号。</small></div>
+                  <div class="flow-step"><span class="step-no">2</span><b>Radix 查 L1/L2</b><small>返回一个连续 prefix：device pages 后面可接 host-only pages。</small></div>
+                  <div class="flow-step"><span class="step-no">3</span><b>检查 L3 suffix</b><small>只查剩余的 64-token page-aligned suffix；阈值为 256 tokens。</small></div>
+                  <div class="flow-step"><span class="step-no">4</span><b>验证 DSA + PP</b><small>KV 与 INDEXER 都存在；所有 ranks 对连续长度取最小值。</small></div>
+                  <div class="flow-step"><span class="step-no">5</span><b>L3 → L2 → L1</b><small><code>wait_complete</code> 在 admission 前等待已发起的 L3 操作结束。</small></div>
+                  <div class="flow-step"><span class="step-no">6</span><b>计算缺失 tail</b><small>早期缺页会截断后续复用；partial final page 重新计算。</small></div>
+                </div>
+                <p class="flow-note">L3 不直接进入 GPU。Mooncake fetch 先写入新分配的 L2 pages，重新插入本地 Radix metadata，再执行 Host→Device load-back。</p>
+              </section>
+
+              <section class="flow-panel" id="panel-write" role="tabpanel" aria-labelledby="tab-write" data-panel="write" hidden>
+                <div class="flow-panel-head"><strong>Write-through · 在淘汰之前建立下层副本</strong><span>当前显示写入路径</span></div>
+                <div class="step-strip">
+                  <div class="flow-step"><span class="step-no">1</span><b>产生完整 page</b><small>Prefill 新计算出一个或多个完整 64-token pages。</small></div>
+                  <div class="flow-step"><span class="step-no">2</span><b>L1 → L2</b><small><code>write_through</code> 异步执行 Device→Host；不是等到 eviction 才备份。</small></div>
+                  <div class="flow-step"><span class="step-no">3</span><b>D2H completion</b><small>完成后发布 Host residency，并允许安排 storage backup。</small></div>
+                  <div class="flow-step"><span class="step-no">4</span><b>L2 → L3</b><small>先查 object existence；缺失对象异步写入 Mooncake，已有对象去重。</small></div>
+                </div>
+                <p class="flow-note">每层都携带主 KV 与 DSA INDEXER sidecar；INDEXER 不是独立的“第四层”。</p>
+              </section>
+
+              <section class="flow-panel" id="panel-evict" role="tabpanel" aria-labelledby="tab-evict" data-panel="evict" hidden>
+                <div class="flow-panel-head"><strong>Eviction · 通常删除一份 inclusive copy</strong><span>当前显示回收路径</span></div>
+                <div class="step-strip">
+                  <div class="flow-step"><span class="step-no">E1</span><b>L1 回收</b><small>已有 L2 backup 时只释放 HBM copy；Host/Storage copy 保留。</small></div>
+                  <div class="flow-step"><span class="step-no">E2</span><b>L2 回收</b><small>释放本地 Host page 与 host-only metadata；L3 object 若存在仍保留。</small></div>
+                  <div class="flow-step"><span class="step-no">E3</span><b>L3 回收</b><small>Mooncake 在 90% high watermark 附近按约 5% target 自主管理淘汰。</small></div>
+                  <div class="flow-step"><span class="step-no">E4</span><b>无连续副本</b><small>缓存 miss 后 Prefill 重新计算；缓存从不作为 authoritative state。</small></div>
+                </div>
+                <p class="flow-note">当前五个 Prefill 的 host-pressure dropped tokens 为零；L3 已有成功 eviction history，且没有 SSD fallback。</p>
+              </section>
+
+              <section class="flow-panel" id="panel-pd" role="tabpanel" aria-labelledby="tab-pd" data-panel="pd" hidden>
+                <div class="flow-panel-head"><strong>P→D transfer · 同名技术，不同生命周期</strong><span>当前显示独立 Prefill-to-Decode 通道</span></div>
+                <div class="step-strip">
+                  <div class="flow-step"><span class="step-no">1</span><b>Prefill 完成</b><small>本次请求所需 prompt KV 与 DSA state 已在 Prefill GPU。</small></div>
+                  <div class="flow-step"><span class="step-no">2</span><b>发布 transfer handle</b><small>通过 Mooncake TransferEngine 建立 request-scoped 传输。</small></div>
+                  <div class="flow-step"><span class="step-no">3</span><b>直达 Decode GPU</b><small>通道绕过 L3 object-cache box；L3 不是中转站。</small></div>
+                  <div class="flow-step"><span class="step-no">4</span><b>Decode 生成</b><small>新生成 continuation 留在 Decode GPU，不自动 write-back 到 HiCache。</small></div>
+                </div>
+                <p class="flow-note">下一轮传回系统的是 token IDs。如果 continuation 尚未被 Prefill 缓存，Prefill 需要计算一次，之后才会由 write-through 进入 L1/L2/L3。</p>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section id="live-signals">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Fresh production evidence</span>
+              <h2>三层都在真实工作</h2>
+            </div>
+          </div>
+          <p class="section-intro">五个当前 Prefill 进程的 lifetime counters 从不同启动时间开始，适合证明路径是否活跃，不应当作某一分钟的实时 hit rate。</p>
+
+          <div class="signal-grid">
+            <article class="signal-card">
+              <h3>当前进程累计 prefix 分类</h3>
+              <p>只取每个 PP4 engine 的 PP0 logical counter，避免把同一 token 再乘四次。</p>
+              <div class="hit-layout">
+                <div class="hit-donut" role="img" aria-label="3.661 billion classified prompt tokens: 90.5459 percent L1 hit, 0.3746 percent L2 hit, 2.0774 percent L3 hit, and 7.0021 percent computed"></div>
+                <div class="hit-list">
+                  <div class="hit-item"><i class="legend-dot l1"></i><span>L1 GPU hit</span><strong>90.546% · 3.315B</strong></div>
+                  <div class="hit-item"><i class="legend-dot l2"></i><span>L2 Host hit</span><strong>0.375% · 13.71M</strong></div>
+                  <div class="hit-item"><i class="legend-dot l3"></i><span>L3 storage hit</span><strong>2.077% · 76.06M</strong></div>
+                  <div class="hit-item"><i class="legend-dot"></i><span>Prefill compute</span><strong>7.002% · 256.36M</strong></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="signal-card">
+              <h3>L2 local occupancy</h3>
+              <p>五个私有 Host caches 的 logical slots 合计。</p>
+              <div class="meter-wrap">
+                <div class="meter-value l2">99.042%</div>
+                <div class="meter l2" role="img" aria-label="L2 occupancy 99.0416 percent"><i></i></div>
+                <div class="meter-labels"><span>68.726M used</span><span>69.391M total</span></div>
+              </div>
+              <div class="good-box"><strong>0 dropped tokens</strong><br>当前所有 Prefill 的 host-pressure drop counter 均为零。高 occupancy 是缓存稳态，不等于活动请求 OOM。</div>
+            </article>
+
+            <article class="signal-card">
+              <h3>L3 shared occupancy</h3>
+              <p>Mooncake leader 对四个 600 GiB segments 的汇总。</p>
+              <div class="meter-wrap">
+                <div class="meter-value l3">88.859%</div>
+                <div class="meter l3 has-watermark" role="img" aria-label="L3 occupancy 88.859 percent with a 90 percent high watermark"><i></i></div>
+                <div class="meter-labels"><span>2.0826 TiB allocated</span><span>2.3438 TiB total</span></div>
+              </div>
+              <div class="warning-box"><strong>距离 90% watermark 很近。</strong><br>5,182,960 keys；allocation failures 为零；累计成功回收 34.16M keys / 13.72 TiB。</div>
+            </article>
+          </div>
+        </section>
+
+        <section id="caveats">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">What deserves operational follow-up</span>
+              <h2>两个不能被“Pod 都 Ready”掩盖的问题</h2>
+            </div>
+          </div>
+
+          <div class="caveat-grid">
+            <article class="caveat-card">
+              <span class="caveat-label">HA service routing</span>
+              <h3>Admin Service 也会命中 standby master</h3>
+              <p>三个 master Pods 都通过 Kubernetes readiness，但只有 leader 的 service plane 提供 <code>/get_all_segments</code>。两个 standby 直接返回 503；Service selector 又包含三者，因此管理查询存在随机命中 standby 的风险。核心 SGLang data clients 通过 etcd 发现 leader，实际 L3 hit 已证明 payload path 正常。</p>
+            </article>
+            <article class="caveat-card inference">
+              <span class="caveat-label">Source-derived inference</span>
+              <h3>Router 的 shared-cache credit 很可能查错 key schema</h3>
+              <p>当前 legacy Dynamo 查询只检查 PP MLA KV key，不检查 DSA INDEXER；SGLang 则要求 KV + INDEXER 并自动给 Mooncake key 加 `zai-org/glm-5.3` prefix。部署参数没有显式匹配的 backend tag。这与 Router shared-cache credit 为零、而 engine 已有 76.06M L3 hit tokens 的现象一致。它影响路由优化，不否定 HiCache 实际读取。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="sources">
+          <div class="section-head">
+            <div>
+              <span class="section-kicker">Configuration and evidence chain</span>
+              <h2>这张图来自哪些生产事实</h2>
+            </div>
+          </div>
+
+          <div class="config-grid">
+            <article class="config-card">
+              <h3>Prefill HiCache</h3>
+              <ul>
+                <li><code>--enable-hierarchical-cache</code></li>
+                <li><code>--hicache-ratio 1.5</code></li>
+                <li><code>--hicache-io-backend direct</code></li>
+                <li><code>--hicache-mem-layout page_first_direct</code></li>
+                <li><code>--hicache-write-policy write_through</code></li>
+                <li><code>--hicache-storage-backend mooncake</code></li>
+                <li><code>--hicache-storage-prefetch-policy wait_complete</code></li>
+              </ul>
+            </article>
+            <article class="config-card">
+              <h3>Deployment shape</h3>
+              <ul>
+                <li>Model: GLM-5.3 NVFP4；KV dtype: FP8 E4M3</li>
+                <li>Prefill: 5 replicas × PP4 = 20 GPUs</li>
+                <li>Decode: 2 groups × TP8 = 16 GPUs</li>
+                <li>Page size: 64 tokens；L3 prefetch threshold: 256 tokens</li>
+                <li>Mooncake: 4 × 600 GiB；offload disabled</li>
+                <li><code>MOONCAKE_LOCAL_BUFFER_SIZE=3221225472</code> 是 3 GiB transfer workspace，不是 L3 capacity</li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="evidence-boundary">
+            <h3>Evidence boundary</h3>
+            <p><strong>Live：</strong>Kubernetes node/pod inventory、DGD status、容器参数、`nvidia-smi`、SGLang 9090 metrics、startup allocation logs、Mooncake master metrics/health，均通过显式 Taiguo kubeconfig 只读获取。</p>
+            <p><strong>Source：</strong>部署使用 SGLang commit <code>117d0e176d0681486d7ec502e70601ea40dda8e5</code> 与 Dynamo commit <code>c10054b92a98b3b13f4c852739adf3cbff62dedd</code>。重点核对 `UnifiedRadixCache`、DSA host/device pools、Mooncake key prefix、read/write/prefetch 以及 legacy shared-cache query。</p>
+            <p><strong>Static snapshot：</strong>occupancy、key count 和累计 counters 会继续变化；物理节点规格、部署拓扑与 flags 也可能在下一次 rollout 后变化。完整的机器可读快照见 <a href="evidence.json">evidence.json</a>。</p>
+          </div>
+
+          <ul class="source-list">
+            <li><a href="https://github.com/sgl-project/sglang/blob/99b910955377375a1385122680e0daefcf706f79/docs/docs/advanced_features/hicache_design.mdx">SGLang HiCache design</a>：L1/L2/L3 设计概念与数据移动原则。</li>
+            <li>部署源码锚点：<code>python/sglang/srt/mem_cache/unified_radix_cache.py</code>、<code>hybrid_cache/hybrid_pool_assembler.py</code>、<code>storage/mooncake_store/mooncake_store.py</code>。</li>
+            <li>Dynamo 源码锚点：<code>components/src/dynamo/sglang/register.py</code>、<code>lib/llm/src/kv_router/shared_cache.rs</code>、<code>route_lookup.rs</code>。</li>
+          </ul>
+        </section>
+      </article>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <span>GLM-5.3 · Taiguo GB300 · HiCache memory map</span>
+      <span>Production snapshot · 2026-09-03 CST</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script defer src="../assets/maas-annotator.js" data-maas-annotator data-page-key="/glm53-gb300-hicache/"></script>
+</body>
+</html>
