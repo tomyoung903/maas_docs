@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A token-exact analysis of 102,939 GLM-5.2 requests: what a 12-minute KV-cache turnover window preserves, what it costs, and why it is not a hard TTL.">
+  <meta property="og:title" content="GLM-5.2 KV retention · what 12 minutes really means">
+  <meta property="og:description" content="Taiguo and Europe request traces, exact 64-token prefix pages, inferred sessions, and a retention-time curve from one minute to infinite cache.">
+  <meta property="og:type" content="article">
+  <meta name="theme-color" content="#123d39">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-kv-cache-retention-12m/">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23123d39'/%3E%3Cpath d='M13 17h38v9H13zm0 12h38v9H13zm0 12h25v9H13z' fill='%2393ddcb'/%3E%3C/svg%3E">
+  <title>GLM-5.2 KV retention · what 12 minutes really means</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ground: #f1f5f3;
+      --paper: #ffffff;
+      --ink: #172521;
+      --muted: #5d6e68;
+      --line: #d7e1dd;
+      --line-strong: #b9cbc5;
+      --cache: #087c70;
+      --cache-dark: #075d56;
+      --cache-soft: #ddf2ec;
+      --time: #356b9a;
+      --time-soft: #e3eef7;
+      --miss: #a76018;
+      --miss-soft: #f8ead6;
+      --identity: #69518e;
+      --identity-soft: #eee8f6;
+      --danger: #a34742;
+      --danger-soft: #f7e7e5;
+      --navy: #183d57;
+      --shadow: 0 16px 42px rgb(25 53 44 / 8%);
+      --shadow-soft: 0 7px 23px rgb(25 53 44 / 6%);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.58;
+    }
+    a { color: #176698; text-underline-offset: 3px; }
+    button { font: inherit; }
+    code, .mono {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .91em;
+    }
+    .math, .math-var {
+      font-family: Cambria, Georgia, serif;
+      font-style: italic;
+    }
+    .math sub, .math sup { font-style: italic; }
+    .math-unit { font-family: Cambria, Georgia, serif; font-style: normal; }
+    .sym-capacity { color: var(--cache-dark); }
+    .sym-rate { color: var(--miss); }
+    .sym-time { color: var(--time); }
+    .tabular { font-variant-numeric: tabular-nums; }
+
+    .skip-link {
+      position: absolute;
+      top: -60px;
+      left: 18px;
+      z-index: 50;
+      border-radius: 7px;
+      background: var(--ink);
+      color: white;
+      padding: 8px 12px;
+    }
+    .skip-link:focus { top: 12px; }
+
+    .topbar {
+      position: relative;
+      z-index: 10;
+      border-bottom: 1px solid rgb(215 225 221 / 90%);
+      background: rgb(255 255 255 / 95%);
+      backdrop-filter: blur(12px);
+    }
+    .topbar-inner {
+      width: min(1440px, calc(100% - 44px));
+      min-height: 56px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .brand { color: var(--ink); font-weight: 880; text-decoration: none; letter-spacing: -.01em; }
+    .brand span { color: var(--cache); }
+    .toplinks { display: flex; flex-wrap: wrap; gap: 17px; font-size: 14px; }
+    .toplinks a { color: var(--muted); text-decoration: none; }
+    .toplinks a:hover { color: var(--cache-dark); }
+
+    .hero {
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 78% 20%, rgb(8 124 112 / 14%), transparent 27%),
+        radial-gradient(circle at 88% 86%, rgb(53 107 154 / 11%), transparent 24%),
+        linear-gradient(135deg, #ffffff 0%, #f8fbfa 56%, #eef6f3 100%);
+    }
+    .hero-inner {
+      width: min(1240px, calc(100% - 44px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(320px, .55fr);
+      gap: 52px;
+      align-items: center;
+      padding: 64px 0 54px;
+    }
+    .eyebrow {
+      color: var(--cache-dark);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { margin: 0; line-height: 1.17; letter-spacing: -.025em; }
+    h1 { max-width: 840px; margin-top: 11px; font-size: clamp(39px, 5.2vw, 62px); }
+    h1 em { color: var(--cache-dark); font-family: Cambria, Georgia, serif; font-weight: 600; }
+    h2 { font-size: clamp(27px, 3.1vw, 35px); }
+    h3 { font-size: 20px; }
+    p { margin: 10px 0 0; }
+    .lede { max-width: 880px; color: var(--muted); font-size: 18px; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 23px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 31px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgb(255 255 255 / 74%);
+      padding: 4px 11px;
+      color: #40534d;
+      font-size: 13px;
+      font-weight: 740;
+    }
+
+    .hero-gauge-card {
+      position: relative;
+      border: 1px solid #bfd9d2;
+      border-radius: 18px;
+      background: rgb(255 255 255 / 88%);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      text-align: center;
+    }
+    .gauge {
+      --gauge: 98.63%;
+      width: 204px;
+      aspect-ratio: 1;
+      margin: 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: conic-gradient(var(--cache) 0 var(--gauge), #dce8e4 var(--gauge) 100%);
+      transform: rotate(-90deg);
+      box-shadow: inset 0 0 0 1px rgb(7 93 86 / 8%);
+    }
+    .gauge::before {
+      content: "";
+      width: 156px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--paper);
+      box-shadow: 0 0 0 1px var(--line);
+    }
+    .gauge-label {
+      position: absolute;
+      top: 72px;
+      left: 50%;
+      width: 150px;
+      transform: translateX(-50%);
+    }
+    .gauge-value { color: var(--cache-dark); font-size: 38px; font-weight: 920; letter-spacing: -.05em; }
+    .gauge-name { margin-top: 1px; color: var(--muted); font-size: 12px; font-weight: 760; line-height: 1.25; }
+    .gauge-caption { margin-top: 18px; font-size: 14px; }
+    .gauge-caption strong { color: var(--cache-dark); }
+
+    .layout {
+      width: min(1440px, calc(100% - 44px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 218px minmax(0, 1fr);
+      gap: 42px;
+      padding: 38px 0 84px;
+    }
+    .toc {
+      position: sticky;
+      top: 20px;
+      align-self: start;
+      border-left: 3px solid var(--line);
+      padding-left: 16px;
+    }
+    .toc-title { margin: 0 0 9px; color: var(--muted); font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .toc a { display: block; padding: 5px 0; color: #51625d; font-size: 14px; text-decoration: none; transition: color .18s, transform .18s; }
+    .toc a:hover, .toc a.is-active { color: var(--cache-dark); transform: translateX(3px); }
+    .toc .rail-note { margin-top: 18px; border-radius: 8px; background: var(--cache-soft); padding: 12px; color: #42645d; font-size: 12px; }
+    main { min-width: 0; }
+    section { scroll-margin-top: 20px; }
+    section + section { margin-top: 60px; }
+    .section-head { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 13px; align-items: start; margin-bottom: 20px; }
+    .section-no { color: var(--cache); font-size: 13px; font-weight: 900; letter-spacing: .08em; }
+    .section-kicker { margin: 0 0 5px; color: var(--muted); font-size: 12px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+    .section-intro { max-width: 920px; color: var(--muted); }
+
+    .verdict {
+      border: 1px solid #b9d8d0;
+      border-top: 5px solid var(--cache);
+      border-radius: 13px;
+      background: linear-gradient(120deg, var(--cache-soft), var(--paper) 72%);
+      box-shadow: var(--shadow);
+      padding: 26px 28px;
+    }
+    .verdict-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: 24px; align-items: center; }
+    .verdict h2 { max-width: 760px; }
+    .verdict p { color: #49645e; }
+    .verdict-side { border-left: 1px solid #b9d8d0; padding-left: 24px; }
+    .verdict-side strong { display: block; color: var(--miss); font-size: 33px; line-height: 1.05; }
+    .verdict-side span { display: block; margin-top: 7px; color: var(--muted); font-size: 13px; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+      padding: 17px;
+    }
+    .metric-value { color: var(--navy); font-size: 29px; font-weight: 900; line-height: 1.05; letter-spacing: -.035em; }
+    .metric.cache .metric-value { color: var(--cache-dark); }
+    .metric.miss .metric-value { color: var(--miss); }
+    .metric-label { margin-top: 8px; font-size: 14px; font-weight: 790; }
+    .metric-note { margin-top: 4px; color: var(--muted); font-size: 12px; }
+
+    .turnover-board {
+      display: grid;
+      grid-template-columns: minmax(290px, .68fr) minmax(0, 1.32fr);
+      gap: 16px;
+    }
+    .equation-card, .pool-card, .chart-card, .table-card, .phase-card, .condition-card, .method-card {
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+    .equation-card { padding: 23px; }
+    .mini-kicker { margin: 0 0 7px; color: var(--muted); font-size: 11px; font-weight: 880; letter-spacing: .07em; text-transform: uppercase; }
+    .equation {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: 13px;
+      align-items: center;
+      margin-top: 20px;
+      font-family: Cambria, Georgia, serif;
+      font-size: 28px;
+    }
+    .fraction { display: inline-grid; grid-template-rows: auto 1px auto; gap: 4px; text-align: center; line-height: 1.1; }
+    .fraction-line { background: currentColor; }
+    .equation-result { margin-top: 18px; color: var(--time); font-size: 41px; font-weight: 900; letter-spacing: -.04em; }
+    .equation-result small { font-size: 15px; font-weight: 720; letter-spacing: 0; }
+    .equation-note { color: var(--muted); font-size: 13px; }
+
+    .pool-card { overflow: hidden; padding: 22px; }
+    .pool-visual { display: grid; grid-template-columns: 150px 72px minmax(240px, 1fr) 72px 120px; gap: 7px; align-items: center; min-height: 210px; }
+    .flow-label { text-align: center; }
+    .flow-label strong { display: block; color: var(--miss); font-size: 23px; }
+    .flow-label span { color: var(--muted); font-size: 12px; }
+    .flow-track { position: relative; height: 58px; overflow: hidden; }
+    .flow-track::before { content: ""; position: absolute; top: 28px; left: 2px; right: 2px; height: 2px; background: var(--line-strong); }
+    .flow-track::after { content: "›"; position: absolute; top: 7px; right: 0; color: var(--miss); font-size: 36px; }
+    .packet { position: absolute; top: 17px; left: 0; width: 20px; height: 20px; border: 2px solid white; border-radius: 5px; background: var(--miss); box-shadow: 0 3px 8px rgb(167 96 24 / 25%); animation: packet-flow 3.2s linear infinite; }
+    .packet:nth-child(2) { animation-delay: -1.05s; }
+    .packet:nth-child(3) { animation-delay: -2.1s; }
+    @keyframes packet-flow { from { transform: translateX(-24px) rotate(0); opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } to { transform: translateX(68px) rotate(90deg); opacity: 0; } }
+    .pool-shell {
+      position: relative;
+      min-height: 174px;
+      border: 3px solid var(--cache-dark);
+      border-top: 0;
+      border-radius: 0 0 16px 16px;
+      background: linear-gradient(to top, #dff2ed 0 78%, transparent 78%);
+      padding: 40px 15px 14px;
+    }
+    .pool-rim { position: absolute; top: -3px; left: -3px; right: -3px; height: 7px; border-radius: 8px; background: var(--cache-dark); }
+    .pool-title { position: absolute; top: 12px; left: 15px; right: 15px; display: flex; justify-content: space-between; gap: 8px; color: var(--cache-dark); font-size: 12px; font-weight: 850; }
+    .page-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; align-content: end; height: 112px; }
+    .cache-page { min-height: 25px; border: 1px solid #8bc5b8; border-radius: 5px; background: #73bcae; opacity: .82; }
+    .cache-page.hot { position: relative; background: var(--time); border-color: #75a2c7; animation: hot-refresh 2.2s ease-in-out infinite; }
+    .cache-page.hot::after { content: "↻"; display: grid; place-items: center; height: 100%; color: white; font-size: 15px; }
+    .cache-page.cold { background: #c8d9d4; border-color: #b1c6c0; animation: cold-fade 4.6s ease-in-out infinite; }
+    @keyframes hot-refresh { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgb(53 107 154 / 0%); } 50% { transform: scale(1.07); box-shadow: 0 0 0 5px rgb(53 107 154 / 13%); } }
+    @keyframes cold-fade { 0%, 55% { opacity: .72; } 80% { opacity: .25; } 100% { opacity: .72; } }
+    .eviction-label { text-align: center; }
+    .eviction-label strong { display: block; color: var(--danger); font-size: 18px; }
+    .eviction-label span { color: var(--muted); font-size: 12px; }
+    .pool-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .legend-dot { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 3px; }
+
+    .truth-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .truth-card { border: 1px solid var(--line); border-radius: 9px; background: var(--paper); padding: 16px; }
+    .truth-card strong { display: block; font-size: 15px; }
+    .truth-card span { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; }
+    .truth-card.good { border-top: 4px solid var(--cache); }
+    .truth-card.warn { border-top: 4px solid var(--miss); }
+    .truth-card.info { border-top: 4px solid var(--time); }
+
+    .chart-card { padding: 20px; }
+    .chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 15px; }
+    .chart-head p { max-width: 720px; color: var(--muted); font-size: 13px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 12px; }
+    .legend-key::before { content: ""; display: inline-block; width: 19px; height: 3px; margin: 0 6px 3px 0; border-radius: 3px; background: var(--cache); }
+    .legend-key.retained::before { background: var(--time); }
+    .chart-wrap { margin-top: 13px; overflow-x: auto; }
+    #retention-chart { display: block; width: 100%; min-width: 720px; height: auto; }
+    .grid-line { stroke: #dce5e2; stroke-width: 1; }
+    .axis-label { fill: #63746e; font-size: 12px; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .axis-title { fill: #40534d; font-size: 12px; font-weight: 750; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .focus-line { stroke: var(--miss); stroke-width: 2; stroke-dasharray: 5 5; }
+    .series-hit { fill: none; stroke: var(--cache); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .series-retained { fill: none; stroke: var(--time); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .series-area { fill: url(#area-gradient); }
+    .chart-point { stroke: white; stroke-width: 2; }
+    .chart-callout { fill: var(--paper); stroke: #d1b68f; stroke-width: 1; filter: drop-shadow(0 4px 7px rgb(30 50 43 / 10%)); }
+    .chart-callout-text { fill: #6d461b; font-size: 12px; font-weight: 780; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+
+    .quantile-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; }
+    .quantile { position: relative; border-top: 4px solid var(--time); border-radius: 7px; background: var(--time-soft); padding: 12px; }
+    .quantile:nth-child(4), .quantile:nth-child(5) { border-color: var(--miss); background: var(--miss-soft); }
+    .quantile strong { display: block; color: var(--navy); font-size: 20px; }
+    .quantile span { color: var(--muted); font-size: 11px; }
+
+    .table-card { overflow: hidden; margin-top: 16px; }
+    .table-title { padding: 16px 18px 0; }
+    .table-title p { color: var(--muted); font-size: 12px; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { border-bottom: 1px solid var(--line); padding: 11px 14px; text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    thead th { background: #f6f9f8; color: var(--muted); font-size: 11px; font-weight: 850; letter-spacing: .03em; text-transform: uppercase; }
+    tbody th { font-size: 14px; }
+    tbody td { font-size: 14px; }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    .focus-row { background: #fff8ec; }
+    .focus-row th { color: var(--miss); }
+
+    .identity-warning {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr);
+      gap: 14px;
+      border: 1px solid #d5c9e5;
+      border-left: 5px solid var(--identity);
+      border-radius: 10px;
+      background: var(--identity-soft);
+      padding: 18px;
+    }
+    .warning-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: var(--identity); color: white; font-weight: 900; }
+    .identity-warning p { color: #5a4c6d; }
+
+    .phase-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 17px; }
+    .phase-card { padding: 20px; }
+    .phase-card.root { border-top: 4px solid var(--identity); }
+    .phase-card.cont { border-top: 4px solid var(--cache); }
+    .phase-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+    .phase-stat { border-radius: 7px; background: #f5f8f7; padding: 10px; }
+    .phase-stat strong { display: block; color: var(--navy); font-size: 20px; }
+    .phase-stat span { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+    .composition { margin-top: 16px; }
+    .composition-label { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; }
+    .stacked-bar { display: flex; height: 15px; overflow: hidden; margin-top: 6px; border-radius: 999px; background: #e8eeec; }
+    .same-part { background: var(--cache); }
+    .outside-part { background: var(--identity); }
+    .root .outside-part { width: 100%; }
+    .overall-composition { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); padding: 18px; }
+    .overall-composition .stacked-bar { height: 20px; }
+    .bar-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 9px; color: var(--muted); font-size: 12px; }
+
+    .timing-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 15px; }
+    .age-card { border: 1px solid var(--line); border-radius: 11px; background: var(--paper); box-shadow: var(--shadow-soft); padding: 20px; }
+    .age-list { display: grid; gap: 10px; margin-top: 15px; }
+    .age-row { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; }
+    .age-row span { color: var(--muted); font-size: 12px; }
+    .age-track { height: 9px; overflow: hidden; border-radius: 999px; background: #e8efed; }
+    .age-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--cache), var(--time)); }
+    .age-row strong { min-width: 72px; text-align: right; font-size: 13px; }
+    .timing-note { margin-top: 13px; border-radius: 8px; background: var(--miss-soft); padding: 12px; color: #765126; font-size: 12px; }
+
+    .condition-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
+    .condition-card { position: relative; padding: 18px; }
+    .condition-card::after { content: "→"; position: absolute; top: 35px; right: -19px; z-index: 2; color: #9baca6; font-size: 22px; }
+    .condition-card:last-child::after { display: none; }
+    .condition-no { display: inline-grid; place-items: center; width: 27px; height: 27px; border-radius: 7px; background: var(--cache-soft); color: var(--cache-dark); font-size: 12px; font-weight: 900; }
+    .condition-card h3 { margin-top: 12px; font-size: 17px; }
+    .condition-card p { color: var(--muted); font-size: 13px; }
+
+    .method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+    .method-card { padding: 19px; }
+    .method-card ul { margin: 12px 0 0; padding-left: 20px; }
+    .method-card li { margin: 7px 0; color: var(--muted); font-size: 13px; }
+    .audit-line { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+    .audit-chip { border: 1px solid #b8d9d1; border-radius: 7px; background: var(--cache-soft); padding: 6px 9px; color: var(--cache-dark); font-size: 12px; font-weight: 760; }
+
+    .share-card {
+      border: 1px solid #bdd8d1;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f7fcfa, #ffffff);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    blockquote { margin: 17px 0 0; border-left: 4px solid var(--cache); padding: 3px 0 3px 18px; color: #304b44; font-size: 16px; }
+    .copy-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 18px; }
+    .copy-button { border: 1px solid var(--cache); border-radius: 8px; background: var(--cache); color: white; padding: 8px 12px; cursor: pointer; font-weight: 780; }
+    .copy-button:hover { background: var(--cache-dark); }
+    .data-link { color: var(--muted); font-size: 12px; }
+
+    footer { margin-top: 54px; border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 1080px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-gauge-card { max-width: 360px; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .turnover-board, .timing-layout { grid-template-columns: 1fr; }
+      .pool-visual { grid-template-columns: 120px 55px minmax(210px, 1fr) 55px 100px; }
+      .condition-flow { grid-template-columns: repeat(2, 1fr); }
+      .condition-card:nth-child(2)::after { display: none; }
+    }
+    @media (max-width: 780px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); padding: 14px; }
+      .toc a { display: inline-block; margin-right: 12px; }
+      .verdict-grid, .phase-grid, .method-grid { grid-template-columns: 1fr; }
+      .verdict-side { border-left: 0; border-top: 1px solid #b9d8d0; padding: 18px 0 0; }
+      .pool-visual { grid-template-columns: 1fr; }
+      .flow-track { width: 90px; margin: 0 auto; }
+      .pool-shell { width: min(360px, 100%); margin: 0 auto; }
+      .quantile-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to report</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../../"><span>MaaS</span> Docs</a>
+      <nav class="toplinks" aria-label="Pack navigation">
+        <a href="../">Temporary reports</a>
+        <a href="report-data.json">Aggregate data</a>
+        <a href="https://github.com/tomyoung903/maas_docs">Repository</a>
+      </nav>
+    </div>
+  </header>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div>
+        <p class="eyebrow">GLM-5.2 · Taiguo + Europe · exact prefix-page analysis</p>
+        <h1>Twelve minutes is a <em>turnover clock</em>, not a cache TTL.</h1>
+        <p class="lede">A token-exact analysis of 102,939 requests asks how long reusable KV was last touched, how much cache value a full pool retains, and what can—and cannot—be attributed to sessions or users.</p>
+        <div class="meta-row">
+          <span class="pill">100,974 rendered requests</span>
+          <span class="pill">7.612B prompt tokens</span>
+          <span class="pill">64-token pages</span>
+          <span class="pill">No GPU experiment</span>
+        </div>
+      </div>
+      <div class="hero-gauge-card" aria-label="A twelve-minute window preserves 98.63% of infinite-cache token reuse">
+        <div class="gauge" aria-hidden="true"></div>
+        <div class="gauge-label">
+          <div class="gauge-value tabular">98.63%</div>
+          <div class="gauge-name">of infinite-cache reuse retained</div>
+        </div>
+        <p class="gauge-caption"><strong>12-minute last-touch window</strong><br>89.70% prompt hit ratio</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc" aria-label="Page contents">
+      <p class="toc-title">On this page</p>
+      <a href="#verdict">00 · Verdict</a>
+      <a href="#turnover">01 · Turnover model</a>
+      <a href="#retention">02 · Retention curve</a>
+      <a href="#sessions">03 · Sessions &amp; identity</a>
+      <a href="#timing">04 · Time between reuse</a>
+      <a href="#conditions">05 · Reuse conditions</a>
+      <a href="#method">06 · Method &amp; limits</a>
+      <a href="#share">07 · Shareable wording</a>
+      <div class="rail-note"><strong>Reading rule</strong><br>“Outside session” means outside an inferred message-history lineage. It does not mean “different user.”</div>
+    </aside>
+
+    <main id="main">
+      <section id="verdict">
+        <div class="verdict">
+          <div class="verdict-grid">
+            <div>
+              <p class="mini-kicker">The answer in one sentence</p>
+              <h2>12 minutes preserves nearly all cache value, but misses still become meaningfully more expensive.</h2>
+              <p>The prompt hit ratio falls only <strong>1.25 percentage points</strong>, from 90.95% with infinite capacity to 89.70% under a strict 12-minute last-touch window.</p>
+            </div>
+            <div class="verdict-side">
+              <strong>+13.79%</strong>
+              <span>more uncached prompt work than the infinite-cache upper bound, because misses are the small denominator.</span>
+            </div>
+          </div>
+        </div>
+        <div class="metric-grid" aria-label="Key aggregate metrics">
+          <div class="metric cache"><div class="metric-value">98.63%</div><div class="metric-label">Cache value preserved</div><div class="metric-note">reusable token pages surviving 12 minutes</div></div>
+          <div class="metric"><div class="metric-value">89.70%</div><div class="metric-label">12-minute prompt hit</div><div class="metric-note">90.95% infinite-cache ceiling</div></div>
+          <div class="metric miss"><div class="metric-value">95.049M</div><div class="metric-label">Additional uncached tokens</div><div class="metric-note">784.323M total at 12 minutes</div></div>
+          <div class="metric"><div class="metric-value">22.87m</div><div class="metric-label">P99 reusable-page age</div><div class="metric-note">approximately 99% retention target</div></div>
+        </div>
+      </section>
+
+      <section id="turnover">
+        <header class="section-head">
+          <span class="section-no">01</span>
+          <div><p class="section-kicker">Capacity divided by insertion rate</p><h2>What the 12-minute number actually measures</h2><p class="section-intro">It is the time needed for new uncached KV to equal the nominal pool capacity at steady full load. It describes pressure on the pool, not a timer attached to every request.</p></div>
+        </header>
+        <div class="turnover-board">
+          <div class="equation-card">
+            <p class="mini-kicker">Northwest single-worker example</p>
+            <h3>Nominal turnover time</h3>
+            <div class="equation" aria-label="Turnover time equals capacity divided by uncached insertion rate">
+              <span class="math sym-time">τ<sub>turn</sub></span>
+              <span>=</span>
+              <span class="fraction"><span class="math sym-capacity"><i>C</i><sub>KV</sub></span><span class="fraction-line"></span><span class="math sym-rate"><i>r</i><sub>uncached</sub></span></span>
+            </div>
+            <div class="equation-result">12 <small>minutes</small></div>
+            <p class="equation-note"><span class="sym-capacity"><strong>24M tokens</strong></span> divided by <span class="sym-rate"><strong>2M tokens/min</strong></span>. Two homogeneous workers preserve the same aggregate ratio: 48M divided by 4M.</p>
+          </div>
+          <div class="pool-card">
+            <p class="mini-kicker">A page-level mental model</p>
+            <div class="pool-visual" role="img" aria-label="Uncached pages enter a finite KV pool; hot pages refresh while cold pages are evicted">
+              <div class="flow-label"><strong>2M/min</strong><span>new uncached KV</span></div>
+              <div class="flow-track" aria-hidden="true"><i class="packet"></i><i class="packet"></i><i class="packet"></i></div>
+              <div class="pool-shell">
+                <i class="pool-rim" aria-hidden="true"></i>
+                <div class="pool-title"><span>KV page pool</span><span>24M tokens</span></div>
+                <div class="page-grid" aria-hidden="true">
+                  <i class="cache-page"></i><i class="cache-page hot"></i><i class="cache-page"></i><i class="cache-page cold"></i><i class="cache-page"></i><i class="cache-page hot"></i>
+                  <i class="cache-page"></i><i class="cache-page"></i><i class="cache-page hot"></i><i class="cache-page"></i><i class="cache-page cold"></i><i class="cache-page"></i>
+                  <i class="cache-page cold"></i><i class="cache-page"></i><i class="cache-page"></i><i class="cache-page hot"></i><i class="cache-page"></i><i class="cache-page cold"></i>
+                </div>
+              </div>
+              <div class="flow-track" aria-hidden="true"><i class="packet"></i><i class="packet"></i></div>
+              <div class="eviction-label"><strong>eviction</strong><span>cold pages leave first</span></div>
+            </div>
+            <div class="pool-legend"><span><i class="legend-dot" style="background:#73bcae"></i>resident page</span><span><i class="legend-dot" style="background:#356b9a"></i>hot page refreshed</span><span><i class="legend-dot" style="background:#c8d9d4"></i>cold eviction candidate</span></div>
+          </div>
+        </div>
+        <div class="truth-grid">
+          <div class="truth-card good"><strong>Correct: a turnover timescale</strong><span>Useful for estimating how quickly full-load insertion pressure can cycle through nominal capacity.</span></div>
+          <div class="truth-card warn"><strong>Not: a hard TTL</strong><span>No global clock deletes every page at minute twelve. Recency and insertion pressure differ page by page.</span></div>
+          <div class="truth-card info"><strong>Hot pages can outlive it</strong><span>Every hit refreshes recency. Shared system and tool prefixes may remain resident far longer.</span></div>
+        </div>
+      </section>
+
+      <section id="retention">
+        <header class="section-head">
+          <span class="section-no">02</span>
+          <div><p class="section-kicker">Counterfactual last-touch windows</p><h2>How much cache value survives as memory time grows?</h2><p class="section-intro">The x-axis is logarithmic so seconds, minutes, and hours remain visible together. The teal line is prompt hit ratio; the blue line asks what fraction of the infinite-cache hits remain.</p></div>
+        </header>
+        <div class="chart-card">
+          <div class="chart-head">
+            <div><h3>Retention-time response</h3><p>Each source starts cold and keeps its own cache. A matched 64-token page survives a window only if its most recent prior touch is within that window.</p></div>
+            <div class="legend"><span class="legend-key">prompt hit ratio</span><span class="legend-key retained">infinite hits retained</span></div>
+          </div>
+          <div class="chart-wrap"><svg id="retention-chart" viewBox="0 0 980 420" role="img" aria-label="Prompt cache hit ratio and fraction of infinite-cache hits retained versus last-touch retention time"></svg></div>
+          <div class="quantile-strip" aria-label="Reusable-page age quantiles">
+            <div class="quantile"><span>P50 age</span><strong>5.16s</strong></div>
+            <div class="quantile"><span>P90 age</span><strong>33.58s</strong></div>
+            <div class="quantile"><span>P95 age</span><strong>1.11m</strong></div>
+            <div class="quantile"><span>P98 age</span><strong>5.60m</strong></div>
+            <div class="quantile"><span>P99 age</span><strong>22.87m</strong></div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-title"><h3>The numerical curve</h3><p>“Extra uncached work” is relative to the infinite-cache miss remainder, not relative to all prompt tokens.</p></div>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Last-touch window</th><th scope="col">Prompt hit</th><th scope="col">Infinite hits retained</th><th scope="col">Extra uncached work</th></tr></thead><tbody><tr><th scope="row">1 minute</th><td>85.05%</td><td>93.52%</td><td>+65.06%</td></tr>
+<tr><th scope="row">2 minutes</th><td>87.77%</td><td>96.51%</td><td>+35.07%</td></tr>
+<tr><th scope="row">5 minutes</th><td>88.99%</td><td>97.85%</td><td>+21.63%</td></tr>
+<tr><th scope="row">10 minutes</th><td>89.58%</td><td>98.50%</td><td>+15.08%</td></tr>
+<tr class="focus-row"><th scope="row">12 minutes</th><td>89.70%</td><td>98.63%</td><td>+13.79%</td></tr>
+<tr><th scope="row">15 minutes</th><td>89.83%</td><td>98.77%</td><td>+12.32%</td></tr>
+<tr><th scope="row">30 minutes</th><td>90.36%</td><td>99.35%</td><td>+6.50%</td></tr>
+<tr><th scope="row">60 minutes</th><td>90.63%</td><td>99.66%</td><td>+3.44%</td></tr>
+<tr><th scope="row">Infinite</th><td>90.95%</td><td>100.00%</td><td>baseline</td></tr></tbody></table></div>
+        </div>
+        <div class="table-card">
+          <div class="table-title"><h3>Source-level reconciliation</h3><p>Taiguo and Europe are never allowed to share pages in the simulation.</p></div>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Source</th><th scope="col">Requests</th><th scope="col">Prompt tokens</th><th scope="col">Infinite hit</th><th scope="col">12m hit</th><th scope="col">Infinite hits retained</th><th scope="col">Same-session last touch</th></tr></thead><tbody><tr><th scope="row">Taiguo</th><td>64,631</td><td>5.829B</td><td>92.66%</td><td>91.47%</td><td>98.71%</td><td>26.48%</td></tr>
+<tr><th scope="row">Europe</th><td>36,343</td><td>1.783B</td><td>85.33%</td><td>83.91%</td><td>98.34%</td><td>25.48%</td></tr><tr class="focus-row"><th scope="row">Combined</th><td>100,974</td><td>7.612B</td><td>90.95%</td><td>89.70%</td><td>98.63%</td><td>26.26%</td></tr></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="sessions">
+        <header class="section-head">
+          <span class="section-no">03</span>
+          <div><p class="section-kicker">Attribution boundary</p><h2>Session lineage is measurable. User identity is not.</h2><p class="section-intro">The envelope contains request ID, timestamp, metadata, and request body—but no stable user, account, tenant, session, or conversation key.</p></div>
+        </header>
+        <div class="identity-warning">
+          <div class="warning-icon" aria-hidden="true">!</div>
+          <div><h3>Do not rename “outside session” to “different user.”</h3><p>Same-user cross-session reuse and different-user reuse cannot be separated from this corpus. “Same session” below means an exact canonical message-history lineage; every other prior toucher is identity-unresolved.</p></div>
+        </div>
+        <div class="phase-grid">
+          <article class="phase-card root">
+            <p class="mini-kicker">First observed root in an inferred lineage</p>
+            <h3>New inferred-session root</h3>
+            <div class="phase-stats"><div class="phase-stat"><strong>50,249</strong><span>requests</span></div><div class="phase-stat"><strong>93.35%</strong><span>infinite hit</span></div><div class="phase-stat"><strong>91.90%</strong><span>12m hit</span></div></div>
+            <p>These requests carry 5.146B prompt tokens. Their very high reuse most plausibly reflects large shared system, tool, and template prefixes.</p>
+            <div class="composition"><div class="composition-label"><span>Last toucher attribution</span><span>100% identity-unresolved</span></div><div class="stacked-bar"><span class="outside-part"></span></div></div>
+          </article>
+          <article class="phase-card cont">
+            <p class="mini-kicker">Earlier complete history is an exact prefix</p>
+            <h3>Inferred-session continuation</h3>
+            <div class="phase-stats"><div class="phase-stat"><strong>50,725</strong><span>requests</span></div><div class="phase-stat"><strong>85.92%</strong><span>infinite hit</span></div><div class="phase-stat"><strong>85.09%</strong><span>12m hit</span></div></div>
+            <p>These requests carry 2.467B prompt tokens. Added conversation content lowers the total hit ratio, but most cached pages were last touched inside the lineage.</p>
+            <div class="composition"><div class="composition-label"><span>Same inferred session · 85.79%</span><span>unresolved · 14.21%</span></div><div class="stacked-bar"><span class="same-part" style="width:85.79%"></span><span class="outside-part" style="width:14.21%"></span></div></div>
+          </article>
+        </div>
+        <div class="overall-composition">
+          <div class="composition-label"><strong>All cached tokens · immediately preceding toucher</strong><span>6.923B total</span></div>
+          <div class="stacked-bar"><span class="same-part" style="width:26.26%"></span><span class="outside-part" style="width:73.74%"></span></div>
+          <div class="bar-legend"><span><i class="legend-dot" style="background:#087c70"></i>same inferred session · 26.26% · 1.818B</span><span><i class="legend-dot" style="background:#69518e"></i>identity-unresolved · 73.74% · 5.105B</span></div>
+        </div>
+        <p class="section-intro">The unresolved group can contain a same user starting a new session, a different user sharing static prefixes, or a page the current session touched earlier but another session refreshed more recently. No defensible finer split exists without a privacy-safe stable identity field.</p>
+      </section>
+
+      <section id="timing">
+        <header class="section-head">
+          <span class="section-no">04</span>
+          <div><p class="section-kicker">Arrival-time recency</p><h2>Most useful pages are much younger than twelve minutes</h2><p class="section-intro">Page-weighted recency and request-count session gaps answer different questions. Long, frequently reused prefixes carry more cache value than a short one-off request.</p></div>
+        </header>
+        <div class="timing-layout">
+          <div class="age-card">
+            <p class="mini-kicker">Among infinite-cache hit pages</p><h3>Most recent prior touch</h3>
+            <div class="age-list">
+              <div class="age-row"><span>P50</span><div class="age-track"><div class="age-fill" style="width:22%"></div></div><strong>5.16s</strong></div>
+              <div class="age-row"><span>P90</span><div class="age-track"><div class="age-fill" style="width:40%"></div></div><strong>33.58s</strong></div>
+              <div class="age-row"><span>P95</span><div class="age-track"><div class="age-fill" style="width:51%"></div></div><strong>1.11m</strong></div>
+              <div class="age-row"><span>P98</span><div class="age-track"><div class="age-fill" style="width:70%"></div></div><strong>5.60m</strong></div>
+              <div class="age-row"><span>P99</span><div class="age-track"><div class="age-fill" style="width:91%"></div></div><strong>22.87m</strong></div>
+            </div>
+            <div class="timing-note">P99 differs by attribution: 13.46m for same-session last touches and 28.05m for identity-unresolved last touches.</div>
+          </div>
+          <div class="table-card" style="margin-top:0">
+            <div class="table-title"><h3>Request-to-request gaps inside inferred sessions</h3><p>Twelve minutes is above P95 but below P99 in both traces.</p></div>
+            <div class="table-scroll"><table><thead><tr><th scope="col">Source</th><th scope="col">Sessions</th><th scope="col">Multi-request</th><th scope="col">P50 gap</th><th scope="col">P90</th><th scope="col">P95</th><th scope="col">P99</th></tr></thead><tbody><tr><th scope="row">Taiguo</th><td>30,821</td><td>2,571</td><td>4.57s</td><td>48.84s</td><td>1.82m</td><td>25.63m</td></tr>
+<tr><th scope="row">Europe</th><td>20,859</td><td>3,244</td><td>14.85s</td><td>2.81m</td><td>6.81m</td><td>33.98m</td></tr></tbody></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="conditions">
+        <header class="section-head">
+          <span class="section-no">05</span>
+          <div><p class="section-kicker">A cache hit is conditional</p><h2>When does reusable KV still exist?</h2><p class="section-intro">Recency is necessary only after the request is eligible to see the same cache. Four gates must all remain open.</p></div>
+        </header>
+        <div class="condition-flow">
+          <article class="condition-card"><span class="condition-no">1</span><h3>Exact token prefix</h3><p>Chat template, tools, model namespace, and token IDs must produce identical full pages from the root.</p></article>
+          <article class="condition-card"><span class="condition-no">2</span><h3>Reach its owner</h3><p>The request must route to a worker or shard that owns the pages, unless KV is shared or transferred.</p></article>
+          <article class="condition-card"><span class="condition-no">3</span><h3>Already committed</h3><p>The reusable boundary must have completed prefill and entered the page pool before this lookup occurs.</p></article>
+          <article class="condition-card"><span class="condition-no">4</span><h3>Survive pressure</h3><p>Newer evictable KV inserted since the last touch must not exceed the effective available capacity.</p></article>
+        </div>
+        <div class="truth-grid">
+          <div class="truth-card good"><strong>Hits refresh recency</strong><span>A popular shared header can remain resident through many nominal turnover cycles.</span></div>
+          <div class="truth-card warn"><strong>Bursts compress memory time</strong><span>Wall-clock retention shrinks when uncached insertion rises above its steady-load rate.</span></div>
+          <div class="truth-card info"><strong>Effective capacity is local</strong><span>Active pinning, allocator pages, output KV, and routing determine which nominal pool a request can actually use.</span></div>
+        </div>
+      </section>
+
+      <section id="method">
+        <header class="section-head">
+          <span class="section-no">06</span>
+          <div><p class="section-kicker">Evidence contract</p><h2>What was measured—and what remains an upper bound</h2><p class="section-intro">This is an offline dataset analysis. No model forward pass and no GPU benchmark were used.</p></div>
+        </header>
+        <div class="method-grid">
+          <article class="method-card"><h3>Exact accounting</h3><ul><li>Canonical dataset: 102,939 requests; 100,974 template-render successfully.</li><li>Exact GLM-5.2 runtime chat template and tokenizer; a preserved 4,810-request Europe total matched token-for-token.</li><li>Chained SHA-256 page identity over 64-token pages; final input token reserved at lookup.</li><li>Taiguo and Europe each start cold. No impossible cross-cluster reuse is counted.</li></ul></article>
+          <article class="method-card"><h3>Interpretation limits</h3><ul><li>Source-order commit before the next lookup is optimistic under concurrent execution.</li><li>Retention windows are strict last-touch counterfactuals, not a finite-capacity LRU replay.</li><li>Worker routing, active KV pinning, output-token KV, load imbalance, and allocator fragmentation are not modeled.</li><li>1,965 malformed tool-argument requests are excluded from cache insertion.</li></ul></article>
+        </div>
+        <div class="audit-line"><span class="audit-chip">record totals reconciled</span><span class="audit-chip">token totals reconciled</span><span class="audit-chip">page attribution closes exactly</span><span class="audit-chip">retention curves monotonic</span><span class="audit-chip">aggregate-only public output</span></div>
+      </section>
+
+      <section id="share">
+        <header class="section-head">
+          <span class="section-no">07</span>
+          <div><p class="section-kicker">Ready to send</p><h2>A more precise version of the peer message</h2></div>
+        </header>
+        <div class="share-card">
+          <blockquote id="share-text" lang="zh-CN">24M KV 容量 / 2M uncached TPM ≈ 12min，表示满载、稳态下单个 cache pool 的<strong>周转时间尺度</strong>，不是所有 KV 的固定 TTL。实际复用以 64-token page 为单位：新请求必须命中相同 token prefix、落到持有该 page 的 worker/shard，并且自上次访问后新增的可驱逐 KV 尚未超过可用容量。热门公共前缀会因持续命中而刷新，可能保留远超 12min；冷前缀在流量尖峰下可能更早被驱逐。对 Taiguo+Europe 样本做严格 12min last-touch 模拟，可保留无限缓存可复用 token 的 98.63%，prompt hit ratio 从 90.95% 降至 89.70%。但数据没有 user/session ID，因此无法把跨 session 命中进一步拆成“同用户”与“不同用户”。</blockquote>
+          <div class="copy-row"><button class="copy-button" id="copy-share" type="button">Copy message</button><a class="data-link" href="report-data.json">Download aggregate report data →</a></div>
+        </div>
+      </section>
+
+      <footer>Generated 2026-09-03T06:39:07+00:00 · aggregate-only analysis · dataset SHA-256 <span class="mono">08fd2106…c9c91e</span> · no raw prompts, request IDs, token IDs, or page hashes are published.</footer>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+      const points = [{"seconds":1,"hit":3.946815,"retained":4.339759},{"seconds":5,"hit":42.535177,"retained":46.769967},{"seconds":10,"hit":67.153859,"retained":73.839677},{"seconds":30,"hit":81.045585,"retained":89.11446},{"seconds":60,"hit":85.054331,"retained":93.522314},{"seconds":120,"hit":87.770135,"retained":96.508503},{"seconds":300,"hit":88.98688,"retained":97.846387},{"seconds":600,"hit":89.580019,"retained":98.498579},{"seconds":720,"hit":89.6969,"retained":98.627097},{"seconds":900,"hit":89.83036,"retained":98.773844},{"seconds":1200,"hit":89.984466,"retained":98.943293},{"seconds":1800,"hit":90.357033,"retained":99.352952},{"seconds":3600,"hit":90.634319,"retained":99.657845},{"seconds":7200,"hit":90.798419,"retained":99.838282},{"seconds":21600,"hit":90.941417,"retained":99.995517},{"seconds":43200,"hit":90.945494,"retained":100.0}];
+      const svg = document.querySelector("#retention-chart");
+      const namespace = "http://www.w3.org/2000/svg";
+      const width = 980;
+      const height = 420;
+      const margin = { top: 24, right: 26, bottom: 58, left: 64 };
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+      const minTime = 1;
+      const maxTime = 43200;
+
+      const make = (name, attributes = {}) => {
+        const node = document.createElementNS(namespace, name);
+        Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+        return node;
+      };
+      const x = (seconds) => margin.left + (Math.log10(seconds) - Math.log10(minTime)) / (Math.log10(maxTime) - Math.log10(minTime)) * innerWidth;
+      const y = (percent) => margin.top + (100 - percent) / 100 * innerHeight;
+      const pathFor = (key) => points.map((point, index) => `${index ? "L" : "M"}${x(point.seconds).toFixed(2)},${y(point[key]).toFixed(2)}`).join(" ");
+      const timeLabel = (seconds) => seconds < 60 ? `${seconds}s` : seconds < 3600 ? `${seconds / 60}m` : `${seconds / 3600}h`;
+
+      const defs = make("defs");
+      const gradient = make("linearGradient", { id: "area-gradient", x1: "0", y1: "0", x2: "0", y2: "1" });
+      gradient.append(make("stop", { offset: "0%", "stop-color": "#087c70", "stop-opacity": ".18" }), make("stop", { offset: "100%", "stop-color": "#087c70", "stop-opacity": "0" }));
+      defs.append(gradient);
+      svg.append(defs);
+
+      [0, 25, 50, 75, 100].forEach((tick) => {
+        svg.append(make("line", { x1: margin.left, x2: width - margin.right, y1: y(tick), y2: y(tick), class: "grid-line" }));
+        const label = make("text", { x: margin.left - 10, y: y(tick) + 4, "text-anchor": "end", class: "axis-label" });
+        label.textContent = `${tick}%`;
+        svg.append(label);
+      });
+      [1, 10, 60, 300, 720, 1800, 7200, 43200].forEach((tick) => {
+        const line = make("line", { x1: x(tick), x2: x(tick), y1: margin.top, y2: height - margin.bottom, class: tick === 720 ? "focus-line" : "grid-line" });
+        svg.append(line);
+        const label = make("text", { x: x(tick), y: height - margin.bottom + 23, "text-anchor": "middle", class: "axis-label" });
+        label.textContent = timeLabel(tick);
+        svg.append(label);
+      });
+      const axisTitle = make("text", { x: margin.left, y: 14, class: "axis-title" });
+      axisTitle.textContent = "percent of prompt tokens / infinite-cache hits";
+      svg.append(axisTitle);
+      const xTitle = make("text", { x: margin.left + innerWidth / 2, y: height - 10, "text-anchor": "middle", class: "axis-title" });
+      xTitle.textContent = "time since most recent page touch · logarithmic scale";
+      svg.append(xTitle);
+
+      const hitPath = pathFor("hit");
+      const areaPath = `${hitPath} L${x(points.at(-1).seconds).toFixed(2)},${y(0).toFixed(2)} L${x(points[0].seconds).toFixed(2)},${y(0).toFixed(2)} Z`;
+      svg.append(make("path", { d: areaPath, class: "series-area" }));
+      svg.append(make("path", { d: hitPath, class: "series-hit" }));
+      svg.append(make("path", { d: pathFor("retained"), class: "series-retained" }));
+
+      points.forEach((point) => {
+        if (![60, 300, 720, 1800, 3600].includes(point.seconds)) return;
+        [["hit", "#087c70", "Prompt hit"], ["retained", "#356b9a", "Infinite hits retained"]].forEach(([key, color, label]) => {
+          const circle = make("circle", { cx: x(point.seconds), cy: y(point[key]), r: point.seconds === 720 ? 6 : 4.5, fill: color, class: "chart-point" });
+          const title = make("title");
+          title.textContent = `${timeLabel(point.seconds)} · ${label}: ${point[key].toFixed(2)}%`;
+          circle.append(title);
+          svg.append(circle);
+        });
+      });
+
+      const focus = points.find((point) => point.seconds === 720);
+      const boxX = Math.min(width - margin.right - 170, x(720) + 12);
+      const boxY = Math.max(margin.top + 7, y(focus.retained) - 51);
+      svg.append(make("rect", { x: boxX, y: boxY, width: 164, height: 42, rx: 7, class: "chart-callout" }));
+      const lineOne = make("text", { x: boxX + 10, y: boxY + 17, class: "chart-callout-text" });
+      lineOne.textContent = `12m · ${focus.retained.toFixed(2)}% retained`;
+      const lineTwo = make("text", { x: boxX + 10, y: boxY + 33, class: "axis-label" });
+      lineTwo.textContent = `${focus.hit.toFixed(2)}% prompt hit`;
+      svg.append(lineOne, lineTwo);
+
+      const copyButton = document.querySelector("#copy-share");
+      copyButton.addEventListener("click", async () => {
+        const message = document.querySelector("#share-text").innerText.trim();
+        try {
+          await navigator.clipboard.writeText(message);
+          copyButton.textContent = "Copied";
+          window.setTimeout(() => { copyButton.textContent = "Copy message"; }, 1600);
+        } catch (_) {
+          copyButton.textContent = "Select and copy above";
+        }
+      });
+
+      const links = Array.from(document.querySelectorAll(".toc a"));
+      const sections = links.map((link) => document.querySelector(link.getAttribute("href"))).filter(Boolean);
+      const observer = new IntersectionObserver((entries) => {
+        const visible = entries.filter((entry) => entry.isIntersecting).sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+        if (!visible) return;
+        links.forEach((link) => link.classList.toggle("is-active", link.getAttribute("href") === `#${visible.target.id}`));
+      }, { rootMargin: "-15% 0px -70% 0px", threshold: [0, .2, .5] });
+      sections.forEach((section) => observer.observe(section));
+    })();
+  </script>
+  <script defer src="../../assets/maas-annotator.js" data-maas-annotator data-page-key="/tmp/glm52-kv-cache-retention-12m/"></script>
+</body>
+</html>
