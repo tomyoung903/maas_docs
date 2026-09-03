@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A token-exact analysis of 102,939 GLM-5.2 requests: what a 12-minute KV-cache turnover window preserves, what it costs, and why it is not a hard TTL.">
-  <meta property="og:title" content="GLM-5.2 KV retention · what 12 minutes really means">
-  <meta property="og:description" content="Taiguo and Europe request traces, exact 64-token prefix pages, inferred sessions, and a retention-time curve from one minute to infinite cache.">
+  <meta name="description" content="A token-exact request-level analysis of 102,939 GLM-5.2 requests across Taiguo and Europe: ideal prefix-cache reuse, request phases, recency, and attribution limits.">
+  <meta property="og:title" content="GLM-5.2 request-level prefix-cache analysis">
+  <meta property="og:description" content="Where reusable KV comes from across 100,974 rendered requests, exact 64-token prefix pages, inferred message-history lineages, and source-local cache histories.">
   <meta property="og:type" content="article">
   <meta name="theme-color" content="#123d39">
-  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-kv-cache-retention-12m/">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm52-request-prefix-cache-analysis/">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23123d39'/%3E%3Cpath d='M13 17h38v9H13zm0 12h38v9H13zm0 12h25v9H13z' fill='%2393ddcb'/%3E%3C/svg%3E">
-  <title>GLM-5.2 KV retention · what 12 minutes really means</title>
+  <title>GLM-5.2 request-level prefix-cache analysis</title>
   <style>
     :root {
       color-scheme: light;
@@ -152,7 +152,7 @@
       text-align: center;
     }
     .gauge {
-      --gauge: 98.63%;
+      --gauge: 90.95%;
       width: 204px;
       aspect-ratio: 1;
       margin: 0 auto;
@@ -462,23 +462,23 @@
   <header class="hero">
     <div class="hero-inner">
       <div>
-        <p class="eyebrow">GLM-5.2 · Taiguo + Europe · exact prefix-page analysis</p>
-        <h1>Twelve minutes is a <em>turnover clock</em>, not a cache TTL.</h1>
-        <p class="lede">A token-exact analysis of 102,939 requests asks how long reusable KV was last touched, how much cache value a full pool retains, and what can—and cannot—be attributed to sessions or users.</p>
+        <p class="eyebrow">GLM-5.2 · Taiguo + Europe · request-level cache analysis</p>
+        <h1>Where the <em>prefix-cache hits</em> come from.</h1>
+        <p class="lede">A token-exact analysis of 102,939 requests measures reusable prompt KV, separates first observed roots from conversation continuations, and traces when and where each matching page was last seen.</p>
         <div class="meta-row">
           <span class="pill">100,974 rendered requests</span>
           <span class="pill">7.612B prompt tokens</span>
           <span class="pill">64-token pages</span>
-          <span class="pill">No GPU experiment</span>
+          <span class="pill">Source-local cache histories</span>
         </div>
       </div>
-      <div class="hero-gauge-card" aria-label="A twelve-minute window preserves 98.63% of infinite-cache token reuse">
+      <div class="hero-gauge-card" aria-label="The source-local infinite-capacity prefix-cache hit ratio is 90.95%">
         <div class="gauge" aria-hidden="true"></div>
         <div class="gauge-label">
-          <div class="gauge-value tabular">98.63%</div>
-          <div class="gauge-name">of infinite-cache reuse retained</div>
+          <div class="gauge-value tabular">90.95%</div>
+          <div class="gauge-name">ideal prefix-cache hit ratio</div>
         </div>
-        <p class="gauge-caption"><strong>12-minute last-touch window</strong><br>89.70% prompt hit ratio</p>
+        <p class="gauge-caption"><strong>Source-local, infinite-capacity upper bound</strong><br>6.923B reusable prompt tokens</p>
       </div>
     </div>
   </header>
@@ -486,163 +486,121 @@
   <div class="layout">
     <aside class="toc" aria-label="Page contents">
       <p class="toc-title">On this page</p>
-      <a href="#verdict">00 · Verdict</a>
-      <a href="#turnover">01 · Turnover model</a>
-      <a href="#retention">02 · Retention curve</a>
-      <a href="#sessions">03 · Sessions &amp; identity</a>
-      <a href="#timing">04 · Time between reuse</a>
-      <a href="#conditions">05 · Reuse conditions</a>
-      <a href="#method">06 · Method &amp; limits</a>
-      <a href="#share">07 · Shareable wording</a>
+      <a href="#findings">00 · Main findings</a>
+      <a href="#corpus">01 · Corpus &amp; accounting</a>
+      <a href="#request-shape">02 · Request phases</a>
+      <a href="#attribution">03 · Reuse attribution</a>
+      <a href="#timing">04 · Reuse recency</a>
+      <a href="#retention">05 · Retention sensitivity</a>
+      <a href="#conditions">06 · Hit conditions</a>
+      <a href="#method">07 · Method &amp; limits</a>
+      <a href="#share">08 · Shareable wording</a>
       <div class="rail-note"><strong>Reading rule</strong><br>“Outside session” means outside an inferred message-history lineage. It does not mean “different user.”</div>
     </aside>
 
     <main id="main">
-      <section id="verdict">
+      <section id="findings">
         <div class="verdict">
           <div class="verdict-grid">
             <div>
-              <p class="mini-kicker">The answer in one sentence</p>
-              <h2>12 minutes preserves nearly all cache value, but misses still become meaningfully more expensive.</h2>
-              <p>The prompt hit ratio falls only <strong>1.25 percentage points</strong>, from 90.95% with infinite capacity to 89.70% under a strict 12-minute last-touch window.</p>
+              <p class="mini-kicker">The central result</p>
+              <h2>The request stream has a 90.95% ideal prefix-cache hit ceiling.</h2>
+              <p>With each source replayed into its own unlimited cache, <strong>6.923B of 7.612B prompt tokens</strong> fall on previously observed complete 64-token pages.</p>
             </div>
             <div class="verdict-side">
-              <strong>+13.79%</strong>
-              <span>more uncached prompt work than the infinite-cache upper bound, because misses are the small denominator.</span>
+              <strong>73.74%</strong>
+              <span>of reusable tokens were most recently touched outside the exact message-history lineage. User identity is unavailable, so this is not a cross-user estimate.</span>
             </div>
           </div>
         </div>
         <div class="metric-grid" aria-label="Key aggregate metrics">
-          <div class="metric cache"><div class="metric-value">98.63%</div><div class="metric-label">Cache value preserved</div><div class="metric-note">reusable token pages surviving 12 minutes</div></div>
-          <div class="metric"><div class="metric-value">89.70%</div><div class="metric-label">12-minute prompt hit</div><div class="metric-note">90.95% infinite-cache ceiling</div></div>
-          <div class="metric miss"><div class="metric-value">95.049M</div><div class="metric-label">Additional uncached tokens</div><div class="metric-note">784.323M total at 12 minutes</div></div>
-          <div class="metric"><div class="metric-value">22.87m</div><div class="metric-label">P99 reusable-page age</div><div class="metric-note">approximately 99% retention target</div></div>
+          <div class="metric cache"><div class="metric-value">90.95%</div><div class="metric-label">Ideal prompt-token hit</div><div class="metric-note">source-local infinite-capacity upper bound</div></div>
+          <div class="metric"><div class="metric-value">6.923B</div><div class="metric-label">Reusable prompt tokens</div><div class="metric-note">exact complete-page matches</div></div>
+          <div class="metric"><div class="metric-value">93.35%</div><div class="metric-label">New-root ideal hit</div><div class="metric-note">shared prefixes dominate first observed turns</div></div>
+          <div class="metric"><div class="metric-value">85.92%</div><div class="metric-label">Continuation ideal hit</div><div class="metric-note">conversation history adds unique tokens</div></div>
         </div>
       </section>
 
-      <section id="turnover">
+      <section id="corpus">
         <header class="section-head">
           <span class="section-no">01</span>
-          <div><p class="section-kicker">Capacity divided by insertion rate</p><h2>What the 12-minute number actually measures</h2><p class="section-intro">It is the time needed for new uncached KV to equal the nominal pool capacity at steady full load. It describes pressure on the pool, not a timer attached to every request.</p></div>
+          <div><p class="section-kicker">Corpus and accounting</p><h2>What exactly did the analysis count?</h2><p class="section-intro">Requests are the observations; prompt tokens are the cache-value denominator. The analysis renders each request exactly as the runtime would, partitions it into 64-token pages, and checks whether each complete page appeared earlier in the same source trace.</p></div>
         </header>
-        <div class="turnover-board">
-          <div class="equation-card">
-            <p class="mini-kicker">Northwest single-worker example</p>
-            <h3>Nominal turnover time</h3>
-            <div class="equation" aria-label="Turnover time equals capacity divided by uncached insertion rate">
-              <span class="math sym-time">τ<sub>turn</sub></span>
-              <span>=</span>
-              <span class="fraction"><span class="math sym-capacity"><i>C</i><sub>KV</sub></span><span class="fraction-line"></span><span class="math sym-rate"><i>r</i><sub>uncached</sub></span></span>
-            </div>
-            <div class="equation-result">12 <small>minutes</small></div>
-            <p class="equation-note"><span class="sym-capacity"><strong>24M tokens</strong></span> divided by <span class="sym-rate"><strong>2M tokens/min</strong></span>. Two homogeneous workers preserve the same aggregate ratio: 48M divided by 4M.</p>
-          </div>
-          <div class="pool-card">
-            <p class="mini-kicker">A page-level mental model</p>
-            <div class="pool-visual" role="img" aria-label="Uncached pages enter a finite KV pool; hot pages refresh while cold pages are evicted">
-              <div class="flow-label"><strong>2M/min</strong><span>new uncached KV</span></div>
-              <div class="flow-track" aria-hidden="true"><i class="packet"></i><i class="packet"></i><i class="packet"></i></div>
-              <div class="pool-shell">
-                <i class="pool-rim" aria-hidden="true"></i>
-                <div class="pool-title"><span>KV page pool</span><span>24M tokens</span></div>
-                <div class="page-grid" aria-hidden="true">
-                  <i class="cache-page"></i><i class="cache-page hot"></i><i class="cache-page"></i><i class="cache-page cold"></i><i class="cache-page"></i><i class="cache-page hot"></i>
-                  <i class="cache-page"></i><i class="cache-page"></i><i class="cache-page hot"></i><i class="cache-page"></i><i class="cache-page cold"></i><i class="cache-page"></i>
-                  <i class="cache-page cold"></i><i class="cache-page"></i><i class="cache-page"></i><i class="cache-page hot"></i><i class="cache-page"></i><i class="cache-page cold"></i>
-                </div>
-              </div>
-              <div class="flow-track" aria-hidden="true"><i class="packet"></i><i class="packet"></i></div>
-              <div class="eviction-label"><strong>eviction</strong><span>cold pages leave first</span></div>
-            </div>
-            <div class="pool-legend"><span><i class="legend-dot" style="background:#73bcae"></i>resident page</span><span><i class="legend-dot" style="background:#356b9a"></i>hot page refreshed</span><span><i class="legend-dot" style="background:#c8d9d4"></i>cold eviction candidate</span></div>
-          </div>
+        <div class="metric-grid" aria-label="Corpus totals">
+          <div class="metric"><div class="metric-value">102,939</div><div class="metric-label">Input request envelopes</div><div class="metric-note">Taiguo plus Europe</div></div>
+          <div class="metric cache"><div class="metric-value">100,974</div><div class="metric-label">Renderable requests</div><div class="metric-note">included in token and cache accounting</div></div>
+          <div class="metric miss"><div class="metric-value">1,965</div><div class="metric-label">Excluded requests</div><div class="metric-note">malformed tool arguments</div></div>
+          <div class="metric"><div class="metric-value">7.612B</div><div class="metric-label">Prompt tokens</div><div class="metric-note">cached plus uncached</div></div>
+        </div>
+        <div class="table-card">
+          <div class="table-title"><h3>Prompt-token reconciliation</h3><p>The hit rate is token-weighted: one long request contributes more cache work than one short request.</p></div>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Token class</th><th scope="col">Tokens</th><th scope="col">Share of prompt</th><th scope="col">Meaning</th></tr></thead><tbody>
+            <tr class="focus-row"><th scope="row">Reusable complete pages</th><td>6.923B</td><td>90.95%</td><td>Seen earlier in the same source</td></tr>
+            <tr><th scope="row">Ideal uncached work</th><td>689.273M</td><td>9.05%</td><td>New pages plus the reserved lookup boundary</td></tr>
+            <tr><th scope="row">All prompt tokens</th><td>7.612B</td><td>100.00%</td><td>Exact reconciliation</td></tr>
+          </tbody></table></div>
         </div>
         <div class="truth-grid">
-          <div class="truth-card good"><strong>Correct: a turnover timescale</strong><span>Useful for estimating how quickly full-load insertion pressure can cycle through nominal capacity.</span></div>
-          <div class="truth-card warn"><strong>Not: a hard TTL</strong><span>No global clock deletes every page at minute twelve. Recency and insertion pressure differ page by page.</span></div>
-          <div class="truth-card info"><strong>Hot pages can outlive it</strong><span>Every hit refreshes recency. Shared system and tool prefixes may remain resident far longer.</span></div>
+          <div class="truth-card good"><strong>Exact prefix pages</strong><span>A “hit” requires an identical full 64-token page from the prompt root—not semantic similarity.</span></div>
+          <div class="truth-card warn"><strong>Source-local history</strong><span>Taiguo and Europe start cold independently; no impossible cross-cluster reuse is credited.</span></div>
+          <div class="truth-card info"><strong>Ideal upper bound</strong><span>Unlimited capacity and deterministic source-order commits exclude routing, eviction, and concurrency losses.</span></div>
         </div>
       </section>
 
-      <section id="retention">
+      <section id="request-shape">
         <header class="section-head">
           <span class="section-no">02</span>
-          <div><p class="section-kicker">Counterfactual last-touch windows</p><h2>How much cache value survives as memory time grows?</h2><p class="section-intro">The x-axis is logarithmic so seconds, minutes, and hours remain visible together. The teal line is prompt hit ratio; the blue line asks what fraction of the infinite-cache hits remain.</p></div>
+          <div><p class="section-kicker">Request-phase decomposition</p><h2>First observed roots and continuations reuse KV differently</h2><p class="section-intro">The corpus divides almost evenly by request count. New roots mostly reuse shared system, tool, and template pages; continuations add conversation-specific history and expose strong within-lineage locality.</p></div>
         </header>
-        <div class="chart-card">
-          <div class="chart-head">
-            <div><h3>Retention-time response</h3><p>Each source starts cold and keeps its own cache. A matched 64-token page survives a window only if its most recent prior touch is within that window.</p></div>
-            <div class="legend"><span class="legend-key">prompt hit ratio</span><span class="legend-key retained">infinite hits retained</span></div>
-          </div>
-          <div class="chart-wrap"><svg id="retention-chart" viewBox="0 0 980 420" role="img" aria-label="Prompt cache hit ratio and fraction of infinite-cache hits retained versus last-touch retention time"></svg></div>
-          <div class="quantile-strip" aria-label="Reusable-page age quantiles">
-            <div class="quantile"><span>P50 age</span><strong>5.16s</strong></div>
-            <div class="quantile"><span>P90 age</span><strong>33.58s</strong></div>
-            <div class="quantile"><span>P95 age</span><strong>1.11m</strong></div>
-            <div class="quantile"><span>P98 age</span><strong>5.60m</strong></div>
-            <div class="quantile"><span>P99 age</span><strong>22.87m</strong></div>
-          </div>
+        <div class="phase-grid">
+          <article class="phase-card root">
+            <p class="mini-kicker">First observed request in an inferred lineage</p>
+            <h3>New inferred-session root</h3>
+            <div class="phase-stats"><div class="phase-stat"><strong>50,249</strong><span>requests</span></div><div class="phase-stat"><strong>93.35%</strong><span>ideal hit</span></div><div class="phase-stat"><strong>4.804B</strong><span>reusable tokens</span></div></div>
+            <p>These requests carry 5.146B prompt tokens. A 93.35% ideal hit rate before any observable conversation history strongly indicates large repeated system, tool, and request-template prefixes.</p>
+            <div class="composition"><div class="composition-label"><span>Most recent prior toucher</span><span>100% identity-unresolved</span></div><div class="stacked-bar"><span class="outside-part"></span></div></div>
+          </article>
+          <article class="phase-card cont">
+            <p class="mini-kicker">Earlier complete message history is an exact prefix</p>
+            <h3>Inferred-session continuation</h3>
+            <div class="phase-stats"><div class="phase-stat"><strong>50,725</strong><span>requests</span></div><div class="phase-stat"><strong>85.92%</strong><span>ideal hit</span></div><div class="phase-stat"><strong>2.119B</strong><span>reusable tokens</span></div></div>
+            <p>These requests carry 2.467B prompt tokens. Added conversation content lowers the overall hit ratio, while 85.79% of their reusable pages were most recently touched inside the same inferred lineage.</p>
+            <div class="composition"><div class="composition-label"><span>same inferred session · 85.79%</span><span>unresolved · 14.21%</span></div><div class="stacked-bar"><span class="same-part" style="width:85.79%"></span><span class="outside-part" style="width:14.21%"></span></div></div>
+          </article>
         </div>
-        <div class="table-card">
-          <div class="table-title"><h3>The numerical curve</h3><p>“Extra uncached work” is relative to the infinite-cache miss remainder, not relative to all prompt tokens.</p></div>
-          <div class="table-scroll"><table><thead><tr><th scope="col">Last-touch window</th><th scope="col">Prompt hit</th><th scope="col">Infinite hits retained</th><th scope="col">Extra uncached work</th></tr></thead><tbody><tr><th scope="row">1 minute</th><td>85.05%</td><td>93.52%</td><td>+65.06%</td></tr>
-<tr><th scope="row">2 minutes</th><td>87.77%</td><td>96.51%</td><td>+35.07%</td></tr>
-<tr><th scope="row">5 minutes</th><td>88.99%</td><td>97.85%</td><td>+21.63%</td></tr>
-<tr><th scope="row">10 minutes</th><td>89.58%</td><td>98.50%</td><td>+15.08%</td></tr>
-<tr class="focus-row"><th scope="row">12 minutes</th><td>89.70%</td><td>98.63%</td><td>+13.79%</td></tr>
-<tr><th scope="row">15 minutes</th><td>89.83%</td><td>98.77%</td><td>+12.32%</td></tr>
-<tr><th scope="row">30 minutes</th><td>90.36%</td><td>99.35%</td><td>+6.50%</td></tr>
-<tr><th scope="row">60 minutes</th><td>90.63%</td><td>99.66%</td><td>+3.44%</td></tr>
-<tr><th scope="row">Infinite</th><td>90.95%</td><td>100.00%</td><td>baseline</td></tr></tbody></table></div>
-        </div>
-        <div class="table-card">
-          <div class="table-title"><h3>Source-level reconciliation</h3><p>Taiguo and Europe are never allowed to share pages in the simulation.</p></div>
-          <div class="table-scroll"><table><thead><tr><th scope="col">Source</th><th scope="col">Requests</th><th scope="col">Prompt tokens</th><th scope="col">Infinite hit</th><th scope="col">12m hit</th><th scope="col">Infinite hits retained</th><th scope="col">Same-session last touch</th></tr></thead><tbody><tr><th scope="row">Taiguo</th><td>64,631</td><td>5.829B</td><td>92.66%</td><td>91.47%</td><td>98.71%</td><td>26.48%</td></tr>
-<tr><th scope="row">Europe</th><td>36,343</td><td>1.783B</td><td>85.33%</td><td>83.91%</td><td>98.34%</td><td>25.48%</td></tr><tr class="focus-row"><th scope="row">Combined</th><td>100,974</td><td>7.612B</td><td>90.95%</td><td>89.70%</td><td>98.63%</td><td>26.26%</td></tr></tbody></table></div>
-        </div>
+        <p class="section-intro">“New root” means first observable request in a reconstructed message-history lineage. It does not prove that the user—or even the conversation—was globally new.</p>
       </section>
 
-      <section id="sessions">
+      <section id="attribution">
         <header class="section-head">
           <span class="section-no">03</span>
-          <div><p class="section-kicker">Attribution boundary</p><h2>Session lineage is measurable. User identity is not.</h2><p class="section-intro">The envelope contains request ID, timestamp, metadata, and request body—but no stable user, account, tenant, session, or conversation key.</p></div>
+          <div><p class="section-kicker">Reuse attribution</p><h2>Which earlier request touched each reusable page most recently?</h2><p class="section-intro">Exact message-history lineage is measurable. User identity is not: the envelope contains request ID, timestamp, metadata, and request body, but no stable user, account, tenant, session, or conversation key.</p></div>
         </header>
         <div class="identity-warning">
           <div class="warning-icon" aria-hidden="true">!</div>
           <div><h3>Do not rename “outside session” to “different user.”</h3><p>Same-user cross-session reuse and different-user reuse cannot be separated from this corpus. “Same session” below means an exact canonical message-history lineage; every other prior toucher is identity-unresolved.</p></div>
         </div>
-        <div class="phase-grid">
-          <article class="phase-card root">
-            <p class="mini-kicker">First observed root in an inferred lineage</p>
-            <h3>New inferred-session root</h3>
-            <div class="phase-stats"><div class="phase-stat"><strong>50,249</strong><span>requests</span></div><div class="phase-stat"><strong>93.35%</strong><span>infinite hit</span></div><div class="phase-stat"><strong>91.90%</strong><span>12m hit</span></div></div>
-            <p>These requests carry 5.146B prompt tokens. Their very high reuse most plausibly reflects large shared system, tool, and template prefixes.</p>
-            <div class="composition"><div class="composition-label"><span>Last toucher attribution</span><span>100% identity-unresolved</span></div><div class="stacked-bar"><span class="outside-part"></span></div></div>
-          </article>
-          <article class="phase-card cont">
-            <p class="mini-kicker">Earlier complete history is an exact prefix</p>
-            <h3>Inferred-session continuation</h3>
-            <div class="phase-stats"><div class="phase-stat"><strong>50,725</strong><span>requests</span></div><div class="phase-stat"><strong>85.92%</strong><span>infinite hit</span></div><div class="phase-stat"><strong>85.09%</strong><span>12m hit</span></div></div>
-            <p>These requests carry 2.467B prompt tokens. Added conversation content lowers the total hit ratio, but most cached pages were last touched inside the lineage.</p>
-            <div class="composition"><div class="composition-label"><span>Same inferred session · 85.79%</span><span>unresolved · 14.21%</span></div><div class="stacked-bar"><span class="same-part" style="width:85.79%"></span><span class="outside-part" style="width:14.21%"></span></div></div>
-          </article>
-        </div>
         <div class="overall-composition">
-          <div class="composition-label"><strong>All cached tokens · immediately preceding toucher</strong><span>6.923B total</span></div>
+          <div class="composition-label"><strong>All reusable tokens · most recent prior toucher</strong><span>6.923B total</span></div>
           <div class="stacked-bar"><span class="same-part" style="width:26.26%"></span><span class="outside-part" style="width:73.74%"></span></div>
           <div class="bar-legend"><span><i class="legend-dot" style="background:#087c70"></i>same inferred session · 26.26% · 1.818B</span><span><i class="legend-dot" style="background:#69518e"></i>identity-unresolved · 73.74% · 5.105B</span></div>
         </div>
         <p class="section-intro">The unresolved group can contain a same user starting a new session, a different user sharing static prefixes, or a page the current session touched earlier but another session refreshed more recently. No defensible finer split exists without a privacy-safe stable identity field.</p>
+        <div class="table-card">
+          <div class="table-title"><h3>Source-level cacheability</h3><p>Each source has an independent cold start and cache history.</p></div>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Source</th><th scope="col">Requests</th><th scope="col">Prompt tokens</th><th scope="col">Reusable tokens</th><th scope="col">Ideal hit</th><th scope="col">Same-session touch</th><th scope="col">Identity-unresolved</th></tr></thead><tbody><tr><th scope="row">Taiguo</th><td>64,631</td><td>5.829B</td><td>5.401B</td><td>92.66%</td><td>26.48%</td><td>73.52%</td></tr>
+<tr><th scope="row">Europe</th><td>36,343</td><td>1.783B</td><td>1.522B</td><td>85.33%</td><td>25.48%</td><td>74.52%</td></tr><tr class="focus-row"><th scope="row">Combined</th><td>100,974</td><td>7.612B</td><td>6.923B</td><td>90.95%</td><td>26.26%</td><td>73.74%</td></tr></tbody></table></div>
+        </div>
       </section>
 
       <section id="timing">
         <header class="section-head">
           <span class="section-no">04</span>
-          <div><p class="section-kicker">Arrival-time recency</p><h2>Most useful pages are much younger than twelve minutes</h2><p class="section-intro">Page-weighted recency and request-count session gaps answer different questions. Long, frequently reused prefixes carry more cache value than a short one-off request.</p></div>
+          <div><p class="section-kicker">Arrival-time recency</p><h2>Most reusable pages are touched again quickly—with a long tail</h2><p class="section-intro">Page-weighted reuse ages and request-count session gaps answer different questions. Long, frequently reused prefixes carry more cache value than a short one-off request.</p></div>
         </header>
         <div class="timing-layout">
           <div class="age-card">
-            <p class="mini-kicker">Among infinite-cache hit pages</p><h3>Most recent prior touch</h3>
+            <p class="mini-kicker">Among ideal-hit pages</p><h3>Most recent prior touch</h3>
             <div class="age-list">
               <div class="age-row"><span>P50</span><div class="age-track"><div class="age-fill" style="width:22%"></div></div><strong>5.16s</strong></div>
               <div class="age-row"><span>P90</span><div class="age-track"><div class="age-fill" style="width:40%"></div></div><strong>33.58s</strong></div>
@@ -653,16 +611,53 @@
             <div class="timing-note">P99 differs by attribution: 13.46m for same-session last touches and 28.05m for identity-unresolved last touches.</div>
           </div>
           <div class="table-card" style="margin-top:0">
-            <div class="table-title"><h3>Request-to-request gaps inside inferred sessions</h3><p>Twelve minutes is above P95 but below P99 in both traces.</p></div>
+            <div class="table-title"><h3>Request-to-request gaps inside inferred sessions</h3><p>Europe has a visibly longer conversational return-time distribution than Taiguo.</p></div>
             <div class="table-scroll"><table><thead><tr><th scope="col">Source</th><th scope="col">Sessions</th><th scope="col">Multi-request</th><th scope="col">P50 gap</th><th scope="col">P90</th><th scope="col">P95</th><th scope="col">P99</th></tr></thead><tbody><tr><th scope="row">Taiguo</th><td>30,821</td><td>2,571</td><td>4.57s</td><td>48.84s</td><td>1.82m</td><td>25.63m</td></tr>
 <tr><th scope="row">Europe</th><td>20,859</td><td>3,244</td><td>14.85s</td><td>2.81m</td><td>6.81m</td><td>33.98m</td></tr></tbody></table></div>
           </div>
         </div>
       </section>
 
-      <section id="conditions">
+      <section id="retention">
         <header class="section-head">
           <span class="section-no">05</span>
+          <div><p class="section-kicker">Sensitivity, not a selected TTL</p><h2>How cacheability changes when reuse must be recent</h2><p class="section-intro">This counterfactual curve shows how much ideal reuse survives different last-touch limits. No point on the curve is asserted to be the deployment’s actual memory time.</p></div>
+        </header>
+        <div class="chart-card">
+          <div class="chart-head">
+            <div><h3>Retention-time response</h3><p>Each source starts cold and keeps its own cache. A matched 64-token page survives a window only if its most recent prior touch is within that window.</p></div>
+            <div class="legend"><span class="legend-key">prompt hit ratio</span><span class="legend-key retained">ideal hits retained</span></div>
+          </div>
+          <div class="chart-wrap"><svg id="retention-chart" viewBox="0 0 980 420" role="img" aria-label="Prompt cache hit ratio and fraction of ideal cache hits retained versus last-touch recency limit"></svg></div>
+          <div class="quantile-strip" aria-label="Reusable-page age quantiles">
+            <div class="quantile"><span>P50 age</span><strong>5.16s</strong></div>
+            <div class="quantile"><span>P90 age</span><strong>33.58s</strong></div>
+            <div class="quantile"><span>P95 age</span><strong>1.11m</strong></div>
+            <div class="quantile"><span>P98 age</span><strong>5.60m</strong></div>
+            <div class="quantile"><span>P99 age</span><strong>22.87m</strong></div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-title"><h3>Selected points on the sensitivity curve</h3><p>“Extra uncached work” is relative to the ideal miss remainder, not relative to all prompt tokens.</p></div>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Last-touch limit</th><th scope="col">Prompt hit</th><th scope="col">Ideal hits retained</th><th scope="col">Extra uncached work</th></tr></thead><tbody><tr><th scope="row">1 minute</th><td>85.05%</td><td>93.52%</td><td>+65.06%</td></tr>
+<tr><th scope="row">2 minutes</th><td>87.77%</td><td>96.51%</td><td>+35.07%</td></tr>
+<tr><th scope="row">5 minutes</th><td>88.99%</td><td>97.85%</td><td>+21.63%</td></tr>
+<tr><th scope="row">10 minutes</th><td>89.58%</td><td>98.50%</td><td>+15.08%</td></tr>
+<tr><th scope="row">15 minutes</th><td>89.83%</td><td>98.77%</td><td>+12.32%</td></tr>
+<tr><th scope="row">30 minutes</th><td>90.36%</td><td>99.35%</td><td>+6.50%</td></tr>
+<tr><th scope="row">60 minutes</th><td>90.63%</td><td>99.66%</td><td>+3.44%</td></tr>
+<tr><th scope="row">Infinite</th><td>90.95%</td><td>100.00%</td><td>baseline</td></tr></tbody></table></div>
+        </div>
+        <div class="truth-grid">
+          <div class="truth-card good"><strong>Use it for sensitivity</strong><span>Read across candidate recency limits to estimate how quickly ideal cache value decays.</span></div>
+          <div class="truth-card warn"><strong>Not an observed TTL</strong><span>The curve does not claim that production evicts every page after any fixed wall-clock duration.</span></div>
+          <div class="truth-card info"><strong>Not a finite-pool replay</strong><span>Routing, pinned KV, allocator state, and exact LRU pressure require separate online or simulator evidence.</span></div>
+        </div>
+      </section>
+
+      <section id="conditions">
+        <header class="section-head">
+          <span class="section-no">06</span>
           <div><p class="section-kicker">A cache hit is conditional</p><h2>When does reusable KV still exist?</h2><p class="section-intro">Recency is necessary only after the request is eligible to see the same cache. Four gates must all remain open.</p></div>
         </header>
         <div class="condition-flow">
@@ -672,7 +667,7 @@
           <article class="condition-card"><span class="condition-no">4</span><h3>Survive pressure</h3><p>Newer evictable KV inserted since the last touch must not exceed the effective available capacity.</p></article>
         </div>
         <div class="truth-grid">
-          <div class="truth-card good"><strong>Hits refresh recency</strong><span>A popular shared header can remain resident through many nominal turnover cycles.</span></div>
+          <div class="truth-card good"><strong>Hits refresh recency</strong><span>A popular shared header can remain resident through sustained insertion pressure.</span></div>
           <div class="truth-card warn"><strong>Bursts compress memory time</strong><span>Wall-clock retention shrinks when uncached insertion rises above its steady-load rate.</span></div>
           <div class="truth-card info"><strong>Effective capacity is local</strong><span>Active pinning, allocator pages, output KV, and routing determine which nominal pool a request can actually use.</span></div>
         </div>
@@ -680,7 +675,7 @@
 
       <section id="method">
         <header class="section-head">
-          <span class="section-no">06</span>
+          <span class="section-no">07</span>
           <div><p class="section-kicker">Evidence contract</p><h2>What was measured—and what remains an upper bound</h2><p class="section-intro">This is an offline dataset analysis. No model forward pass and no GPU benchmark were used.</p></div>
         </header>
         <div class="method-grid">
@@ -692,16 +687,16 @@
 
       <section id="share">
         <header class="section-head">
-          <span class="section-no">07</span>
-          <div><p class="section-kicker">Ready to send</p><h2>A more precise version of the peer message</h2></div>
+          <span class="section-no">08</span>
+          <div><p class="section-kicker">Ready to send</p><h2>A concise summary of the request analysis</h2></div>
         </header>
         <div class="share-card">
-          <blockquote id="share-text" lang="zh-CN">24M KV 容量 / 2M uncached TPM ≈ 12min，表示满载、稳态下单个 cache pool 的<strong>周转时间尺度</strong>，不是所有 KV 的固定 TTL。实际复用以 64-token page 为单位：新请求必须命中相同 token prefix、落到持有该 page 的 worker/shard，并且自上次访问后新增的可驱逐 KV 尚未超过可用容量。热门公共前缀会因持续命中而刷新，可能保留远超 12min；冷前缀在流量尖峰下可能更早被驱逐。对 Taiguo+Europe 样本做严格 12min last-touch 模拟，可保留无限缓存可复用 token 的 98.63%，prompt hit ratio 从 90.95% 降至 89.70%。但数据没有 user/session ID，因此无法把跨 session 命中进一步拆成“同用户”与“不同用户”。</blockquote>
+          <blockquote id="share-text" lang="zh-CN">对 Taiguo + Europe 的 102,939 个 GLM-5.2 request 做精确 chat-template 渲染和 64-token page 级 prefix-cache 分析后，100,974 个有效 request 共包含 7.612B prompt tokens；在每个 source 独立、容量无限的理想 cache 中，其中 6.923B 可复用，对应 <strong>90.95% ideal prompt-token hit ratio</strong>。首次观测到的 session root 命中率为 93.35%，说明公共 system/tool/template prefix 是主要复用来源；session continuation 命中率为 85.92%，且其中 85.79% 的可复用 page 最近一次由同一条 message-history lineage 触达。全体可复用 token 中有 73.74% 的最近触达者位于该 lineage 之外，但数据没有 user/session ID，因此不能把它解释为“不同用户命中”。复用 page 的 last-touch age 为 P50 5.16s、P95 1.11m、P99 22.87m。这些结果是离线 source-local 上界；线上实际命中还取决于 routing、容量、驱逐、并发提交和 worker/shard ownership。</blockquote>
           <div class="copy-row"><button class="copy-button" id="copy-share" type="button">Copy message</button><a class="data-link" href="report-data.json">Download aggregate report data →</a></div>
         </div>
       </section>
 
-      <footer>Generated 2026-09-03T06:39:07+00:00 · aggregate-only analysis · dataset SHA-256 <span class="mono">08fd2106…c9c91e</span> · no raw prompts, request IDs, token IDs, or page hashes are published.</footer>
+      <footer>Generated 2026-09-03T06:51:49+00:00 · aggregate-only analysis · dataset SHA-256 <span class="mono">08fd2106…c9c91e</span> · no raw prompts, request IDs, token IDs, or page hashes are published.</footer>
     </main>
   </div>
 
@@ -741,15 +736,15 @@
         label.textContent = `${tick}%`;
         svg.append(label);
       });
-      [1, 10, 60, 300, 720, 1800, 7200, 43200].forEach((tick) => {
-        const line = make("line", { x1: x(tick), x2: x(tick), y1: margin.top, y2: height - margin.bottom, class: tick === 720 ? "focus-line" : "grid-line" });
+      [1, 10, 60, 300, 1800, 7200, 43200].forEach((tick) => {
+        const line = make("line", { x1: x(tick), x2: x(tick), y1: margin.top, y2: height - margin.bottom, class: "grid-line" });
         svg.append(line);
         const label = make("text", { x: x(tick), y: height - margin.bottom + 23, "text-anchor": "middle", class: "axis-label" });
         label.textContent = timeLabel(tick);
         svg.append(label);
       });
       const axisTitle = make("text", { x: margin.left, y: 14, class: "axis-title" });
-      axisTitle.textContent = "percent of prompt tokens / infinite-cache hits";
+      axisTitle.textContent = "percent of prompt tokens / ideal cache hits";
       svg.append(axisTitle);
       const xTitle = make("text", { x: margin.left + innerWidth / 2, y: height - 10, "text-anchor": "middle", class: "axis-title" });
       xTitle.textContent = "time since most recent page touch · logarithmic scale";
@@ -762,25 +757,15 @@
       svg.append(make("path", { d: pathFor("retained"), class: "series-retained" }));
 
       points.forEach((point) => {
-        if (![60, 300, 720, 1800, 3600].includes(point.seconds)) return;
-        [["hit", "#087c70", "Prompt hit"], ["retained", "#356b9a", "Infinite hits retained"]].forEach(([key, color, label]) => {
-          const circle = make("circle", { cx: x(point.seconds), cy: y(point[key]), r: point.seconds === 720 ? 6 : 4.5, fill: color, class: "chart-point" });
+        if (![60, 300, 1800, 3600].includes(point.seconds)) return;
+        [["hit", "#087c70", "Prompt hit"], ["retained", "#356b9a", "Ideal hits retained"]].forEach(([key, color, label]) => {
+          const circle = make("circle", { cx: x(point.seconds), cy: y(point[key]), r: 4.5, fill: color, class: "chart-point" });
           const title = make("title");
           title.textContent = `${timeLabel(point.seconds)} · ${label}: ${point[key].toFixed(2)}%`;
           circle.append(title);
           svg.append(circle);
         });
       });
-
-      const focus = points.find((point) => point.seconds === 720);
-      const boxX = Math.min(width - margin.right - 170, x(720) + 12);
-      const boxY = Math.max(margin.top + 7, y(focus.retained) - 51);
-      svg.append(make("rect", { x: boxX, y: boxY, width: 164, height: 42, rx: 7, class: "chart-callout" }));
-      const lineOne = make("text", { x: boxX + 10, y: boxY + 17, class: "chart-callout-text" });
-      lineOne.textContent = `12m · ${focus.retained.toFixed(2)}% retained`;
-      const lineTwo = make("text", { x: boxX + 10, y: boxY + 33, class: "axis-label" });
-      lineTwo.textContent = `${focus.hit.toFixed(2)}% prompt hit`;
-      svg.append(lineOne, lineTwo);
 
       const copyButton = document.querySelector("#copy-share");
       copyButton.addEventListener("click", async () => {
@@ -804,6 +789,6 @@
       sections.forEach((section) => observer.observe(section));
     })();
   </script>
-  <script defer src="../../assets/maas-annotator.js" data-maas-annotator data-page-key="/tmp/glm52-kv-cache-retention-12m/"></script>
+  <script defer src="../../assets/maas-annotator.js" data-maas-annotator data-page-key="/tmp/glm52-request-prefix-cache-analysis/"></script>
 </body>
 </html>
