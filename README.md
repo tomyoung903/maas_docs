@@ -12,6 +12,7 @@ This repo publishes static HTML through GitHub Pages with:
 Folder convention:
 
 - `docs/index.html`: public catalog page.
+- `docs/catalog-metadata.json`: Git-derived last-change times for cataloged HTML pages.
 - `docs/<pack-slug>/index.html`: pack overview.
 - `docs/<pack-slug>/<topic>.html`: stable topic pages.
 - `docs/assets/maas-annotator.js`: shared browser-local annotation and page-editing layer.
@@ -61,6 +62,19 @@ python3 tools/inject_maas_annotator.py --check
 ```
 
 Then review, commit, and push.
+
+## Catalog Change Times
+
+The landing page validates every stored change time against the page's current Git blob SHA. After adding or editing HTML pages, stage the intended page changes first, then refresh and stage the catalog metadata in the same commit:
+
+```bash
+git add docs/<pack-slug>
+python3 tools/build_catalog_metadata.py
+git add docs/catalog-metadata.json
+python3 tools/build_catalog_metadata.py --check
+```
+
+If a newly deployed page does not yet have matching generated metadata, the browser retrieves its latest commit time from GitHub as a bounded fallback.
 
 ## Page Annotations and Local Editing
 

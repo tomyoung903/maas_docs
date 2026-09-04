@@ -241,6 +241,49 @@
       gap: 8px 12px;
     }
 
+    .catalog-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 12px;
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 12px;
+    }
+
+    .catalog-control {
+      display: grid;
+      gap: 5px;
+      min-width: 190px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .catalog-select {
+      min-height: 40px;
+      border: 1px solid #aebdc7;
+      border-radius: 7px;
+      background: var(--paper);
+      padding: 7px 34px 7px 10px;
+      color: var(--ink);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .catalog-select:focus {
+      border-color: var(--accent);
+      outline: 3px solid rgba(15, 118, 110, 0.18);
+    }
+
+    .catalog-select:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
     .document-toggle {
       min-height: 34px;
       border: 1px solid var(--line);
@@ -350,9 +393,23 @@
     }
 
     .doc-result-path {
-      align-self: end;
       color: #425361;
       font-size: 12px;
+    }
+
+    .doc-result-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-self: end;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 5px 12px;
+    }
+
+    .doc-result-changed {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
     }
 
     .catalog-message {
@@ -500,6 +557,10 @@
         justify-content: flex-start;
       }
 
+      .catalog-control {
+        width: 100%;
+      }
+
       .doc-results {
         grid-template-columns: minmax(0, 1fr);
       }
@@ -548,6 +609,27 @@
           <button id="show-all-docs" class="document-toggle" type="button" aria-controls="doc-results" aria-expanded="false" hidden>Show all documents</button>
         </div>
       </div>
+      <div class="catalog-toolbar" aria-label="Document filtering and ordering">
+        <label class="catalog-control" for="changed-within">
+          Changed
+          <select id="changed-within" class="catalog-select" disabled>
+            <option value="any">Any time</option>
+            <option value="1">Past 24 hours</option>
+            <option value="7">Past 7 days</option>
+            <option value="30">Past 30 days</option>
+            <option value="90">Past 90 days</option>
+            <option value="365">Past year</option>
+          </select>
+        </label>
+        <label class="catalog-control" for="document-order">
+          Order by
+          <select id="document-order" class="catalog-select" disabled>
+            <option value="changed-desc">Last changed: newest first</option>
+            <option value="changed-asc">Last changed: oldest first</option>
+            <option value="title-asc">Title: A–Z</option>
+          </select>
+        </label>
+      </div>
       <ul id="doc-results" class="doc-results" aria-busy="true">
         <li class="catalog-message">Loading the searchable document catalog…</li>
       </ul>
@@ -573,9 +655,13 @@
       "use strict";
 
       const treeUrl = "https://api.github.com/repos/tomyoung903/maas_docs/git/trees/main?recursive=1";
+      const catalogMetadataUrl = "./catalog-metadata.json";
+      const commitsUrl = "https://api.github.com/repos/tomyoung903/maas_docs/commits";
       const pathPrefix = "docs/";
       const metadataByteLimit = 32 * 1024;
       const metadataConcurrency = 6;
+      const changeTimeConcurrency = 4;
+      const changeTimeFallbackLimit = 20;
       const documentPreviewLimit = 8;
       const packGrid = document.querySelector("#pack-grid");
       const catalogMeta = document.querySelector("#catalog-meta");
@@ -584,12 +670,19 @@
       const searchStatus = document.querySelector("#search-status");
       const docResults = document.querySelector("#doc-results");
       const showAllDocumentsButton = document.querySelector("#show-all-docs");
+      const changedWithinSelect = document.querySelector("#changed-within");
+      const documentOrderSelect = document.querySelector("#document-order");
 
       let documents = [];
       let metadataLoading = false;
+      let changeTimesLoading = false;
       let showAllDocuments = false;
 
       const normalizeText = (value) => value.replace(/\s+/g, " ").trim();
+      const changedDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
 
       const wordNames = new Map([
         ["api", "API"],
@@ -755,6 +848,39 @@
         return results;
       };
 
+      const normalizeChangedAt = (value) => (
+        typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null
+      );
+
+      const loadCatalogMetadata = async (revision) => {
+        const response = await fetch(`${catalogMetadataUrl}?revision=${revision}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Catalog metadata request failed with ${response.status}`);
+        const payload = await response.json();
+        if (payload?.schemaVersion !== 1 || !payload.documents || typeof payload.documents !== "object") {
+          throw new Error("Catalog metadata has an unsupported format");
+        }
+        return payload.documents;
+      };
+
+      const changeTimeFromMetadata = (record, catalogMetadata) => {
+        const metadata = catalogMetadata?.[record.path];
+        if (!metadata || metadata.sha !== record.sha) return null;
+        return normalizeChangedAt(metadata.changedAt);
+      };
+
+      const loadDocumentChangeTime = async (record) => {
+        const url = new URL(commitsUrl);
+        url.searchParams.set("sha", "main");
+        url.searchParams.set("path", `${pathPrefix}${record.path}`);
+        url.searchParams.set("per_page", "1");
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Could not read change time for ${record.path}`);
+        const payload = await response.json();
+        const changedAt = normalizeChangedAt(payload?.[0]?.commit?.committer?.date);
+        if (!changedAt) throw new Error(`No change time found for ${record.path}`);
+        return changedAt;
+      };
+
       const loadPack = async (entry, tree) => {
         const slug = entry.path.slice(pathPrefix.length).split("/")[0];
         const href = `./${encodeURIComponent(slug)}/`;
@@ -823,14 +949,27 @@
         record.pack,
       ].join(" ")).toLowerCase();
 
-      const documentRank = (record, query) => {
-        const title = record.title.toLowerCase();
-        const path = record.path.toLowerCase();
-        if (title === query) return 0;
-        if (title.startsWith(query)) return 1;
-        if (title.includes(query)) return 2;
-        if (path.includes(query)) return 3;
-        return 4;
+      const compareChangeTimes = (left, right, direction) => {
+        const leftTime = Date.parse(left.changedAt);
+        const rightTime = Date.parse(right.changedAt);
+        const leftKnown = Number.isFinite(leftTime);
+        const rightKnown = Number.isFinite(rightTime);
+        if (leftKnown !== rightKnown) return leftKnown ? -1 : 1;
+        if (leftKnown && leftTime !== rightTime) {
+          return direction === "asc" ? leftTime - rightTime : rightTime - leftTime;
+        }
+        return left.title.localeCompare(right.title) || left.path.localeCompare(right.path);
+      };
+
+      const compareDocuments = (left, right) => {
+        if (documentOrderSelect.value === "title-asc") {
+          return left.title.localeCompare(right.title) || left.path.localeCompare(right.path);
+        }
+        return compareChangeTimes(
+          left,
+          right,
+          documentOrderSelect.value === "changed-asc" ? "asc" : "desc",
+        );
       };
 
       const renderDocuments = () => {
@@ -839,31 +978,40 @@
           : null;
         const query = normalizeText(searchInput.value).toLowerCase();
         const terms = query.split(" ").filter(Boolean);
+        const changedWithin = changedWithinSelect.value;
+        const changedWithinDays = changedWithin === "any" ? null : Number(changedWithin);
+        const changedAfter = Number.isFinite(changedWithinDays)
+          ? Date.now() - changedWithinDays * 24 * 60 * 60 * 1000
+          : null;
         const matches = documents
           .filter((record) => {
             const haystack = documentSearchText(record);
-            return terms.every((term) => haystack.includes(term));
+            if (!terms.every((term) => haystack.includes(term))) return false;
+            if (changedAfter === null) return true;
+            const changedAt = Date.parse(record.changedAt);
+            return Number.isFinite(changedAt) && changedAt >= changedAfter;
           })
-          .sort((left, right) => {
-            if (query) {
-              const rankDifference = documentRank(left, query) - documentRank(right, query);
-              if (rankDifference) return rankDifference;
-            }
-            return left.path.localeCompare(right.path);
-          });
-        const visibleMatches = !query && !showAllDocuments
+          .sort(compareDocuments);
+        const filtersActive = Boolean(query) || changedWithin !== "any";
+        const visibleMatches = !filtersActive && !showAllDocuments
           ? matches.slice(0, documentPreviewLimit)
           : matches;
 
         docResults.replaceChildren();
-        docResults.setAttribute("aria-busy", metadataLoading ? "true" : "false");
+        docResults.setAttribute("aria-busy", metadataLoading || changeTimesLoading ? "true" : "false");
 
         if (!matches.length) {
           const message = document.createElement("li");
           message.className = "catalog-message";
-          message.textContent = query
-            ? `No documents match “${searchInput.value.trim()}”.`
-            : "No published HTML documents were found.";
+          if (query && changedWithin !== "any") {
+            message.textContent = "No documents match the current search and change-time filter.";
+          } else if (query) {
+            message.textContent = `No documents match “${searchInput.value.trim()}”.`;
+          } else if (changedWithin !== "any") {
+            message.textContent = "No documents changed during the selected period.";
+          } else {
+            message.textContent = "No published HTML documents were found.";
+          }
           docResults.append(message);
         } else {
           visibleMatches.forEach((record) => {
@@ -898,20 +1046,41 @@
             path.className = "doc-result-path";
             path.textContent = record.path;
 
-            link.append(top, summary, path);
+            const footer = document.createElement("div");
+            footer.className = "doc-result-footer";
+            const changed = document.createElement(record.changedAt ? "time" : "span");
+            changed.className = "doc-result-changed";
+            if (record.changedAt) {
+              const date = new Date(record.changedAt);
+              changed.dateTime = record.changedAt;
+              changed.textContent = `Changed ${changedDateTimeFormatter.format(date)}`;
+              changed.title = `Last changed ${changedDateTimeFormatter.format(date)}`;
+            } else {
+              changed.textContent = changeTimesLoading ? "Checking change time…" : "Change time unavailable";
+            }
+            footer.append(path, changed);
+
+            link.append(top, summary, footer);
             item.append(link);
             docResults.append(item);
           });
         }
 
-        const count = query
+        const count = filtersActive
           ? `${matches.length} of ${documents.length} documents`
           : visibleMatches.length < documents.length
             ? `${visibleMatches.length} of ${documents.length} documents shown`
             : `${documents.length} ${documents.length === 1 ? "document" : "documents"}`;
-        searchStatus.textContent = metadataLoading ? `${count} · loading titles…` : count;
+        const loadingLabels = [];
+        if (metadataLoading) loadingLabels.push("loading titles");
+        if (changeTimesLoading) loadingLabels.push("loading change times");
+        const unavailableCount = documents.filter((record) => !record.changedAt).length;
+        if (!changeTimesLoading && unavailableCount) {
+          loadingLabels.push(`${unavailableCount} change ${unavailableCount === 1 ? "time" : "times"} unavailable`);
+        }
+        searchStatus.textContent = [count, ...loadingLabels].join(" · ");
 
-        const canToggle = !query && documents.length > documentPreviewLimit;
+        const canToggle = !filtersActive && documents.length > documentPreviewLimit;
         showAllDocumentsButton.hidden = !canToggle;
         showAllDocumentsButton.setAttribute("aria-expanded", String(showAllDocuments));
         showAllDocumentsButton.textContent = showAllDocuments
@@ -948,6 +1117,8 @@
         searchStatus.textContent = "Catalog unavailable";
         showAllDocumentsButton.hidden = true;
         searchInput.disabled = true;
+        changedWithinSelect.disabled = true;
+        documentOrderSelect.disabled = true;
         catalogMeta.replaceChildren();
         appendPill(catalogMeta, "Catalog unavailable");
         console.error(error);
@@ -960,6 +1131,13 @@
           const payload = await response.json();
           if (!Array.isArray(payload.tree) || payload.truncated) {
             throw new Error("GitHub returned an incomplete repository tree");
+          }
+
+          let catalogMetadata = {};
+          try {
+            catalogMetadata = await loadCatalogMetadata(payload.sha);
+          } catch (error) {
+            console.warn(error);
           }
 
           const pageEntries = payload.tree
@@ -982,10 +1160,26 @@
               title,
               summary: `Open ${title}.`,
               redirect: false,
+              changedAt: null,
             };
-          });
+          }).map((record) => ({
+            ...record,
+            changedAt: changeTimeFromMetadata(record, catalogMetadata),
+          }));
           searchInput.disabled = false;
+          changedWithinSelect.disabled = !documents.length;
+          documentOrderSelect.disabled = !documents.length;
           metadataLoading = true;
+          const unresolvedChangeTimes = documents.filter((record) => !record.changedAt);
+          changeTimesLoading = (
+            unresolvedChangeTimes.length > 0
+            && unresolvedChangeTimes.length <= changeTimeFallbackLimit
+          );
+          if (unresolvedChangeTimes.length > changeTimeFallbackLimit) {
+            console.warn(
+              `Skipping ${unresolvedChangeTimes.length} per-document change-time requests to avoid GitHub API rate limits.`,
+            );
+          }
           renderDocuments();
 
           const entries = payload.tree
@@ -1006,6 +1200,21 @@
               }
             },
           );
+
+          const changeTimesPromise = changeTimesLoading
+            ? mapWithConcurrency(
+              unresolvedChangeTimes,
+              changeTimeConcurrency,
+              async (record) => {
+                try {
+                  return [record.path, await loadDocumentChangeTime(record)];
+                } catch (error) {
+                  console.warn(error);
+                  return [record.path, null];
+                }
+              },
+            )
+            : Promise.resolve([]);
 
           const packs = await Promise.all(entries.map(async (entry) => {
             try {
@@ -1028,8 +1237,20 @@
           }));
 
           renderPacks(packs);
-          documents = await metadataPromise;
+          const [enrichedDocuments, resolvedChangeTimes] = await Promise.all([
+            metadataPromise,
+            changeTimesPromise,
+          ]);
+          const changeTimesByPath = new Map(
+            resolvedChangeTimes.filter(([, changedAt]) => changedAt),
+          );
+          documents = enrichedDocuments.map((record) => ({
+            ...record,
+            changedAt: changeTimesByPath.get(record.path) || record.changedAt,
+          }));
           metadataLoading = false;
+          changeTimesLoading = false;
+          changedWithinSelect.disabled = !documents.some((record) => record.changedAt);
           renderDocuments();
           updateCatalogMeta(packs.length, documents.length);
         } catch (error) {
@@ -1037,16 +1258,52 @@
         }
       };
 
-      const initialQuery = new URLSearchParams(window.location.search).get("q");
+      const initialParameters = new URLSearchParams(window.location.search);
+      const initialQuery = initialParameters.get("q");
       if (initialQuery) searchInput.value = initialQuery;
 
-      searchInput.addEventListener("input", () => {
-        renderDocuments();
+      const initialChangedWithin = initialParameters.get("changed");
+      if (Array.from(changedWithinSelect.options).some((option) => option.value === initialChangedWithin)) {
+        changedWithinSelect.value = initialChangedWithin;
+      }
+
+      const initialOrder = initialParameters.get("sort");
+      if (Array.from(documentOrderSelect.options).some((option) => option.value === initialOrder)) {
+        documentOrderSelect.value = initialOrder;
+      }
+
+      const updateCatalogUrl = () => {
         const url = new URL(window.location.href);
         const query = searchInput.value.trim();
         if (query) url.searchParams.set("q", query);
         else url.searchParams.delete("q");
+        if (changedWithinSelect.value !== "any") {
+          url.searchParams.set("changed", changedWithinSelect.value);
+        } else {
+          url.searchParams.delete("changed");
+        }
+        if (documentOrderSelect.value !== "changed-desc") {
+          url.searchParams.set("sort", documentOrderSelect.value);
+        } else {
+          url.searchParams.delete("sort");
+        }
         window.history.replaceState(null, "", url);
+      };
+
+      searchInput.addEventListener("input", () => {
+        renderDocuments();
+        updateCatalogUrl();
+      });
+
+      changedWithinSelect.addEventListener("change", () => {
+        showAllDocuments = false;
+        renderDocuments();
+        updateCatalogUrl();
+      });
+
+      documentOrderSelect.addEventListener("change", () => {
+        renderDocuments();
+        updateCatalogUrl();
       });
 
       showAllDocumentsButton.addEventListener("click", () => {
