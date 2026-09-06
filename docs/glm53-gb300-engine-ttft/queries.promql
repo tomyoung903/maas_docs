@@ -1,0 +1,116 @@
+# Frozen scope: 2026-08-30 19:30-21:30 UTC (2026-08-31 03:30-05:30 Asia/Shanghai)
+# All queries use Prefill PP rank 0 across the selected deployment.
+# Select Prometheus datasource; instant evaluation. @ pins historical end time.
+
+# Q1 Bootstrap admission: mean in milliseconds
+1000 * (
+  sum(increase(sglang:per_stage_req_latency_seconds_sum{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_bootstrap"
+  }[2h] @ 1788125400))
+  /
+  sum(increase(sglang:per_stage_req_latency_seconds_count{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_bootstrap"
+  }[2h] @ 1788125400))
+)
+
+# Q1 Bootstrap admission: P99 in seconds
+histogram_quantile(0.99,
+     sum by (le) (increase(sglang:per_stage_req_latency_seconds_bucket{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_bootstrap"
+  }[2h] @ 1788125400)))
+
+# Q2 Queueing and admission: mean in milliseconds
+1000 * (
+  sum(increase(sglang:queue_time_seconds_sum{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0"
+  }[2h] @ 1788125400))
+  /
+  sum(increase(sglang:queue_time_seconds_count{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0"
+  }[2h] @ 1788125400))
+)
+
+# Q2 Queueing and admission: P99 in seconds
+histogram_quantile(0.99,
+    sum by(le)(increase(sglang:queue_time_seconds_bucket{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0"
+  }[2h] @ 1788125400)))
+
+# Q3 The full Prefill wall-clock span: mean in milliseconds
+1000 * (
+  sum(increase(sglang:per_stage_req_latency_seconds_sum{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_forward"
+  }[2h] @ 1788125400))
+  /
+  sum(increase(sglang:per_stage_req_latency_seconds_count{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_forward"
+  }[2h] @ 1788125400))
+)
+
+# Q3 The full Prefill wall-clock span: P99 in seconds
+histogram_quantile(0.99,
+     sum by (le) (increase(sglang:per_stage_req_latency_seconds_bucket{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_forward"
+  }[2h] @ 1788125400)))
+
+# Q4 Post-final-send completion tail: mean in milliseconds
+1000 * (
+  sum(increase(sglang:per_stage_req_latency_seconds_sum{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_transfer_kv_cache"
+  }[2h] @ 1788125400))
+  /
+  sum(increase(sglang:per_stage_req_latency_seconds_count{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_transfer_kv_cache"
+  }[2h] @ 1788125400))
+)
+
+# Q4 Post-final-send completion tail: P99 in seconds
+histogram_quantile(0.99,
+     sum by (le) (increase(sglang:per_stage_req_latency_seconds_bucket{
+    namespace="maas-prod-zhipu",
+    dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+    engine_type="prefill",
+    pp_rank="0",
+    stage="prefill_transfer_kv_cache"
+  }[2h] @ 1788125400)))

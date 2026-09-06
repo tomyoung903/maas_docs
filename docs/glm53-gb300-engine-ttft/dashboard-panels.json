@@ -1,0 +1,1500 @@
+{
+  "status": 200,
+  "title": "Luchen Dynamo Runtime Operations",
+  "uid": "luchen-dynamo-runtime-operations",
+  "version": 3,
+  "variables": [
+    "datasource",
+    "namespace",
+    "worker_regex",
+    "cluster"
+  ],
+  "panel_count": 60,
+  "panels": [
+    {
+      "id": 202,
+      "title": "Frontend Desired / Ready",
+      "description": "Dynamo Frontend Deployment 的期望副本数与可用副本数。",
+      "targets": [
+        {
+          "refId": "desired",
+          "expr": "(sum(kube_deployment_spec_replicas{namespace=~\"$namespace\",deployment=~\".*frontend.*\"}) + count(kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\",pod=~\".*-frontend-.*\"})) or sum(kube_deployment_spec_replicas{namespace=~\"$namespace\",deployment=~\".*frontend.*\"}) or count(kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\",pod=~\".*-frontend-.*\"})",
+          "legend": "desired"
+        },
+        {
+          "refId": "available",
+          "expr": "(sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\",deployment=~\".*frontend.*\"}) + sum(kube_pod_status_ready{namespace=~\"$namespace\",condition=\"true\",pod=~\".*-frontend-.*\"} and on(namespace,pod) kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\"})) or sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\",deployment=~\".*frontend.*\"}) or sum(kube_pod_status_ready{namespace=~\"$namespace\",condition=\"true\",pod=~\".*-frontend-.*\"} and on(namespace,pod) kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\"})",
+          "legend": "ready"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "title": "Prefill Desired / Ready",
+      "description": "Dynamo Prefill Deployment 的期望副本数与可用副本数。",
+      "targets": [
+        {
+          "refId": "desired",
+          "expr": "(sum(kube_deployment_spec_replicas{namespace=~\"$namespace\",deployment=~\".*prefill.*\"}) + count(kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\",pod=~\".*-prefill-.*\"})) or sum(kube_deployment_spec_replicas{namespace=~\"$namespace\",deployment=~\".*prefill.*\"}) or count(kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\",pod=~\".*-prefill-.*\"})",
+          "legend": "desired"
+        },
+        {
+          "refId": "available",
+          "expr": "(sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\",deployment=~\".*prefill.*\"}) + sum(kube_pod_status_ready{namespace=~\"$namespace\",condition=\"true\",pod=~\".*-prefill-.*\"} and on(namespace,pod) kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\"})) or sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\",deployment=~\".*prefill.*\"}) or sum(kube_pod_status_ready{namespace=~\"$namespace\",condition=\"true\",pod=~\".*-prefill-.*\"} and on(namespace,pod) kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\"})",
+          "legend": "ready"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Decode Desired / Ready",
+      "description": "Dynamo Decode Deployment 的期望副本数与可用副本数。",
+      "targets": [
+        {
+          "refId": "desired",
+          "expr": "(sum(kube_deployment_spec_replicas{namespace=~\"$namespace\",deployment=~\".*decode.*\"}) + count(kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\",pod=~\".*-decode-.*\"})) or sum(kube_deployment_spec_replicas{namespace=~\"$namespace\",deployment=~\".*decode.*\"}) or count(kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\",pod=~\".*-decode-.*\"})",
+          "legend": "desired"
+        },
+        {
+          "refId": "available",
+          "expr": "(sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\",deployment=~\".*decode.*\"}) + sum(kube_pod_status_ready{namespace=~\"$namespace\",condition=\"true\",pod=~\".*-decode-.*\"} and on(namespace,pod) kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\"})) or sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\",deployment=~\".*decode.*\"}) or sum(kube_pod_status_ready{namespace=~\"$namespace\",condition=\"true\",pod=~\".*-decode-.*\"} and on(namespace,pod) kube_pod_owner{namespace=~\"$namespace\",owner_kind=\"PodClique\"})",
+          "legend": "ready"
+        }
+      ]
+    },
+    {
+      "id": 505,
+      "title": "Mooncake Master / Client",
+      "description": "Mooncake Master Deployment 的可用副本数与 Client DaemonSet 的 Ready Pod 数。",
+      "targets": [
+        {
+          "refId": "master",
+          "expr": "sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\",deployment=~\".*mooncake-master.*\"}) or vector(0)",
+          "legend": "master"
+        },
+        {
+          "refId": "client",
+          "expr": "sum(kube_daemonset_status_number_ready{namespace=~\"$namespace\",daemonset=~\".*mooncake-client.*\"}) or vector(0)",
+          "legend": "client"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Occupied GPU Nodes",
+      "description": "请求 NVIDIA GPU 的 Running Pod 所占用的 Kubernetes 节点去重数；排除纯 CPU 的 Frontend Pod，同一节点上的多个 GPU Pod 只计一次。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(count by (node) (kube_pod_info{namespace=~\"$namespace\"} and on(namespace,pod) (sum by (namespace,pod) (kube_pod_container_resource_requests{namespace=~\"$namespace\",resource=\"nvidia_com_gpu\",unit=\"integer\"}) > 0) and on(namespace,pod) (kube_pod_status_phase{namespace=~\"$namespace\",phase=\"Running\"} == 1)))",
+          "legend": "nodes"
+        }
+      ]
+    },
+    {
+      "id": 263,
+      "title": "Total Requests",
+      "description": "所选 namespace 中 Dynamo Frontend 接收的累计请求数。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(dynamo_frontend_requests_total{namespace=~\"$namespace\"}[$__range]))",
+          "legend": "requests"
+        }
+      ]
+    },
+    {
+      "id": 264,
+      "title": "Input Tokens",
+      "description": "Dynamo Frontend 观测到的累计输入 token 数。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(dynamo_frontend_input_sequence_tokens_sum{namespace=~\"$namespace\"}[$__range]))",
+          "legend": "tokens"
+        }
+      ]
+    },
+    {
+      "id": 265,
+      "title": "Output Tokens",
+      "description": "Dynamo Frontend 观测到的累计输出 token 数。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(dynamo_frontend_output_tokens_total{namespace=~\"$namespace\"}[$__range]))",
+          "legend": "tokens"
+        }
+      ]
+    },
+    {
+      "id": 201,
+      "title": "Service Success Rate",
+      "description": "Dynamo Frontend 服务成功率，固定使用最近 5 分钟窗口。分母排除明确由调用方造成的 validation、authentication、authorization、not_found、payload_too_large、unsupported_media_type、request_timeout，以及 failure_delivery=client_disconnect 的 cancelled；其他 cancelled、overload、unavailable、response_timeout、internal、not_implemented 及未来未知错误均计为服务失败。窗口内没有有效请求时留空，只有服务失败时显示真实 0%。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * (sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"success\"}[5m])) or vector(0)) / clamp_min((sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"success\"}[5m])) or vector(0)) + (sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"error\",error_type!~\"validation|authentication|authorization|not_found|payload_too_large|unsupported_media_type|cancelled|request_timeout\"}[5m])) or vector(0)) + (sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"error\",error_type=\"cancelled\",failure_delivery!=\"client_disconnect\"}[5m])) or vector(0)), 1e-9)) and on () (((sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"success\"}[5m])) or vector(0)) + (sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"error\",error_type!~\"validation|authentication|authorization|not_found|payload_too_large|unsupported_media_type|cancelled|request_timeout\"}[5m])) or vector(0)) + (sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"error\",error_type=\"cancelled\",failure_delivery!=\"client_disconnect\"}[5m])) or vector(0))) > 0)",
+          "legend": "service success"
+        }
+      ]
+    },
+    {
+      "id": 232,
+      "title": "SGLang Token Rate",
+      "description": "SGLang token 吞吐构成。堆叠区域依次为未缓存输入、已缓存输入和输出 token，三者之和为 total TPM；右轴 total TPS 是同一总量的秒级换算且不参与堆叠。输入取 Prefill/Unified Engine，输出取 Decode/Unified Engine，避免 PD 分离场景重复计数。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "60 * clamp_min(sum(rate(sglang:prompt_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])) - sum(rate(sglang:cached_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])), 0)",
+          "legend": "uncached input TPM"
+        },
+        {
+          "refId": "B",
+          "expr": "60 * sum(rate(sglang:cached_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval]))",
+          "legend": "cached input TPM"
+        },
+        {
+          "refId": "C",
+          "expr": "60 * sum(rate(sglang:generation_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(decode|unified)\"}[$__rate_interval]))",
+          "legend": "output TPM"
+        },
+        {
+          "refId": "D",
+          "expr": "60 * (sum(rate(sglang:prompt_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])) + sum(rate(sglang:generation_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(decode|unified)\"}[$__rate_interval])))",
+          "legend": "total TPM"
+        },
+        {
+          "refId": "E",
+          "expr": "sum(rate(sglang:prompt_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])) + sum(rate(sglang:generation_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(decode|unified)\"}[$__rate_interval]))",
+          "legend": "total TPS"
+        }
+      ]
+    },
+    {
+      "id": 233,
+      "title": "Request Rate",
+      "description": "Dynamo Frontend 观测到的总请求速率。使用 Frontend 指标，确保每个外部请求只计一次。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "60 * sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\"}[$__rate_interval]))",
+          "legend": "total RPM"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(dynamo_frontend_requests_total{namespace=~\"$namespace\"}[$__rate_interval]))",
+          "legend": "total RPS"
+        }
+      ]
+    },
+    {
+      "id": 258,
+      "title": "Input Length",
+      "description": "基于 SGLang prompt-token 直方图统计已完成请求的输入长度分布。只纳入 Prefill 和 Unified Engine，避免 PD 分离场景重复计数。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(sglang:prompt_tokens_histogram_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(sglang:prompt_tokens_histogram_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(sglang:prompt_tokens_histogram_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sglang:prompt_tokens_histogram_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(sglang:prompt_tokens_histogram_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(sglang:prompt_tokens_histogram_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])) / clamp_min(sum(rate(sglang:prompt_tokens_histogram_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 209,
+      "title": "TTFT",
+      "description": "Dynamo Frontend 观测到的 TTFT 分布，来自 dynamo_frontend_time_to_first_token_seconds；包含路由、排队、Prefill 和响应传递开销。avg 由每个 rate interval 内的 histogram sum/count 计算。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_time_to_first_token_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_time_to_first_token_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_time_to_first_token_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_time_to_first_token_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_time_to_first_token_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(dynamo_frontend_time_to_first_token_seconds_sum{namespace=~\"$namespace\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_time_to_first_token_seconds_count{namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        },
+        {
+          "refId": "G",
+          "expr": "vector(4)",
+          "legend": "Guide · 4s"
+        },
+        {
+          "refId": "H",
+          "expr": "vector(12)",
+          "legend": "Guide · 12s"
+        },
+        {
+          "refId": "I",
+          "expr": "vector(30)",
+          "legend": "Guide · 30s"
+        }
+      ]
+    },
+    {
+      "id": 210,
+      "title": "ITL",
+      "description": "Dynamo Frontend 观测到的、按输出 token 加权的 ITL 分布。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_inter_token_latency_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_inter_token_latency_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_inter_token_latency_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_inter_token_latency_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_inter_token_latency_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(dynamo_frontend_inter_token_latency_seconds_sum{namespace=~\"$namespace\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_inter_token_latency_seconds_count{namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        },
+        {
+          "refId": "G",
+          "expr": "vector(0.018)",
+          "legend": "Guide · 18ms"
+        },
+        {
+          "refId": "H",
+          "expr": "vector(0.033)",
+          "legend": "Guide · 33ms"
+        },
+        {
+          "refId": "I",
+          "expr": "vector(0.040)",
+          "legend": "Guide · 40ms"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "title": "KV Hit: Actual vs Predicted",
+      "description": "对比 SGLang 的 token 加权实际缓存复用率与 Dynamo Router 的请求加权预测命中率。Router 与 Worker series 通过共同的 workload Pod 名前缀匹配，该前缀在 Kubernetes 或 Grove 截断长 deployment 名时保持稳定。无 token 或无请求的窗口留空，存在流量时的真实 0% 保留。由于权重不同，两者差值只用于判断方向，不能视为严格预测误差。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * sum by (dynamo_namespace) (rate(sglang:cached_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])) / clamp_min(sum by (dynamo_namespace) (rate(sglang:prompt_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])), 1e-9)) and on (dynamo_namespace) (sum by (dynamo_namespace) (rate(sglang:prompt_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])) > 0)",
+          "legend": "actual · {{dynamo_namespace}}"
+        },
+        {
+          "refId": "B",
+          "expr": "label_replace(100 * sum by (namespace, pod) (rate(dynamo_component_router_kv_hit_rate_sum{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])) / clamp_min(sum by (namespace, pod) (rate(dynamo_component_router_kv_hit_rate_count{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])), 1e-9), \"deployment_key\", \"$1\", \"pod\", \"^(.+?)-[0-9]+-frontend-.*$\") and on (namespace, pod) (sum by (namespace, pod) (rate(dynamo_component_router_kv_hit_rate_count{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])) > 0) and on (namespace, deployment_key) label_replace(sum by (namespace, pod) (rate(sglang:prompt_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])), \"deployment_key\", \"$1\", \"pod\", \"^(.+?)-[0-9]+-(prefill|decode)-.*$\")",
+          "legend": "predicted · {{pod}}"
+        }
+      ]
+    },
+    {
+      "id": 413,
+      "title": "Frontend Errors by Type",
+      "description": "按 error_type、failure_delivery 和 http_status 展示已完成且 status=error 的 Frontend 请求。client_disconnect + cancelled + 499 表示 Frontend 检测到客户端主动断流；sse_stream 表示已建立 SSE 后的服务端流错误；backend_timeout 表示后端响应超时；http_response 表示 Frontend 以 HTTP 错误响应结束请求。这里的 499 是服务端内部归因，连接已断开时不代表客户端实际收到 499 响应。每根堆叠柱表示一个 Grafana 显示区间内的精确 counter 增量；新 series 或 counter reset 时回退到当前值，避免遗漏首批错误。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (error_type, failure_delivery, http_status) (((dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"error\",error_type!=\"\"} - dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"error\",error_type!=\"\"} offset $__interval) >= 0) or ignoring(__name__) dynamo_frontend_requests_total{namespace=~\"$namespace\",status=\"error\",error_type!=\"\"})",
+          "legend": "{{error_type}} · {{failure_delivery}} · HTTP {{http_status}}"
+        }
+      ]
+    },
+    {
+      "id": 212,
+      "title": "Speculative Decoding",
+      "description": "SGLang speculative decoding 质量：左轴为 accept rate，右轴为每个 draft step 的平均 accepted token 数。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg by (dynamo_namespace, model_name) (max by (namespace, dynamo_namespace, model_name, pod) (sglang:spec_accept_rate{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "{{model_name}} · {{dynamo_namespace}} · accept rate"
+        },
+        {
+          "refId": "B",
+          "expr": "avg by (dynamo_namespace, model_name) (max by (namespace, dynamo_namespace, model_name, pod) (sglang:spec_accept_length{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "{{model_name}} · {{dynamo_namespace}} · accept length"
+        }
+      ]
+    },
+    {
+      "id": 270,
+      "title": "Output Share",
+      "description": "按对齐的序列长度分位数计算输出占比：OSL_q / (ISL_q + OSL_q)。avg 使用 histogram sum 得到总体输出 token 占比；各 quantile 曲线是对齐长度之比，并非“单请求输出占比”的分位数。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) / clamp_min(histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_input_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) + histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))), 1e-9)",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "100 * histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) / clamp_min(histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_input_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) + histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))), 1e-9)",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "100 * histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) / clamp_min(histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_input_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) + histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))), 1e-9)",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "100 * histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) / clamp_min(histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_input_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) + histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))), 1e-9)",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "100 * histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) / clamp_min(histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_input_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) + histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval]))), 1e-9)",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(100 * sum(rate(dynamo_frontend_output_sequence_tokens_sum{namespace=~\"$namespace\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_input_sequence_tokens_sum{namespace=~\"$namespace\"}[$__rate_interval])) + sum(rate(dynamo_frontend_output_sequence_tokens_sum{namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 506,
+      "title": "Output Length",
+      "description": "Dynamo Frontend 已完成请求的输出长度分布，展示 p50、p75、p90、p99、p99.9 和平均值。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(dynamo_frontend_output_sequence_tokens_sum{namespace=~\"$namespace\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_output_sequence_tokens_count{namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 414,
+      "title": "Dynamo Token Rate",
+      "description": "Dynamo Frontend 侧的 token 吞吐构成，与 SGLang Token Rate 的 Engine 执行口径不同。堆叠区域为未缓存输入、已缓存输入和输出 token，三者之和为 total TPM；total TPS 是同一总量的右轴换算。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "60 * clamp_min(sum(rate(dynamo_frontend_input_sequence_tokens_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])) - sum(rate(dynamo_frontend_cached_tokens_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])), 0)",
+          "legend": "uncached input TPM"
+        },
+        {
+          "refId": "B",
+          "expr": "60 * sum(rate(dynamo_frontend_cached_tokens_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))",
+          "legend": "cached input TPM"
+        },
+        {
+          "refId": "C",
+          "expr": "60 * sum(rate(dynamo_frontend_output_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))",
+          "legend": "output TPM"
+        },
+        {
+          "refId": "D",
+          "expr": "60 * (sum(rate(dynamo_frontend_input_sequence_tokens_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])) + sum(rate(dynamo_frontend_output_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "total TPM"
+        },
+        {
+          "refId": "E",
+          "expr": "sum(rate(dynamo_frontend_input_sequence_tokens_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])) + sum(rate(dynamo_frontend_output_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))",
+          "legend": "total TPS"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Dynamo Request States",
+      "description": "汇总所有 Frontend replica 的 Dynamo 请求阶段。pending (route) 表示选择或等待 Worker 的路由阶段；waiting-first (dispatch) 表示选中 Worker 后到收到首个 Backend 响应之间的阶段；streaming 为 Frontend total 减去 preprocess、route 和 dispatch 后的非负余量。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(dynamo_frontend_stage_requests{namespace=~\"$namespace\",pod=~\".*-frontend-.*\",stage=\"preprocess\"})",
+          "legend": "preprocess"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(dynamo_frontend_stage_requests{namespace=~\"$namespace\",pod=~\".*-frontend-.*\",stage=\"route\"})",
+          "legend": "pending (route)"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(dynamo_frontend_stage_requests{namespace=~\"$namespace\",pod=~\".*-frontend-.*\",stage=\"dispatch\"})",
+          "legend": "waiting-first (dispatch)"
+        },
+        {
+          "refId": "D",
+          "expr": "clamp_min(sum(dynamo_frontend_active_requests{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}) - sum(dynamo_frontend_stage_requests{namespace=~\"$namespace\",pod=~\".*-frontend-.*\",stage=~\"preprocess|route|dispatch\"}), 0)",
+          "legend": "streaming"
+        }
+      ]
+    },
+    {
+      "id": 205,
+      "title": "Request End-to-End Latency",
+      "description": "Dynamo Frontend 端到端请求延迟分布，来自 dynamo_frontend_request_duration_seconds。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_request_duration_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_request_duration_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_request_duration_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_request_duration_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_request_duration_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(dynamo_frontend_request_duration_seconds_sum{namespace=~\"$namespace\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_request_duration_seconds_count{namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 268,
+      "title": "Predicted KV Hit Rate",
+      "description": "Dynamo Router 对 Frontend 请求预测的 KV cache hit rate 分布，数据来自 dynamo_component_router_kv_hit_rate 直方图。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * histogram_quantile(0.50, sum by (le) (rate(dynamo_component_router_kv_hit_rate_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "100 * histogram_quantile(0.75, sum by (le) (rate(dynamo_component_router_kv_hit_rate_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "100 * histogram_quantile(0.90, sum by (le) (rate(dynamo_component_router_kv_hit_rate_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "100 * histogram_quantile(0.99, sum by (le) (rate(dynamo_component_router_kv_hit_rate_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "100 * histogram_quantile(0.999, sum by (le) (rate(dynamo_component_router_kv_hit_rate_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(100 * sum(rate(dynamo_component_router_kv_hit_rate_sum{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_component_router_kv_hit_rate_count{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])), 1e-9)) and on () (sum(rate(dynamo_component_router_kv_hit_rate_count{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])) > 0)",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 503,
+      "title": "Queue (route) Time",
+      "description": "Dynamo Router 总耗时，包含 Worker 选择以及路由调度等待，并汇总所有 Frontend replica。它不是 HTTP admission queue，也不是 SGLang Engine scheduler queue。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "((sum(rate(dynamo_router_overhead_total_ms_sum{namespace=~\"$namespace\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_router_overhead_total_ms_count{namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)) / 1000) > 0",
+          "legend": "avg"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_router_overhead_total_ms_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) / 1000",
+          "legend": "p90"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_router_overhead_total_ms_bucket{namespace=~\"$namespace\"}[$__rate_interval]))) / 1000",
+          "legend": "p99"
+        }
+      ]
+    },
+    {
+      "id": 257,
+      "title": "Frontend Overhead",
+      "description": "汇总所有 Frontend Pod 的预处理耗时，分别展示完整 preprocess、tokenize 和 chat-template application。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(rate(dynamo_frontend_stage_duration_seconds_sum{namespace=~\"$namespace\",stage=\"preprocess\",pod=~\".*-frontend-.*\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_stage_duration_seconds_count{namespace=~\"$namespace\",stage=\"preprocess\",pod=~\".*-frontend-.*\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "preprocess · avg"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_stage_duration_seconds_bucket{namespace=~\"$namespace\",stage=\"preprocess\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "preprocess · p90"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_stage_duration_seconds_bucket{namespace=~\"$namespace\",stage=\"preprocess\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "preprocess · p99"
+        },
+        {
+          "refId": "D",
+          "expr": "(sum(rate(dynamo_frontend_tokenize_seconds_sum{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_tokenize_seconds_count{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "tokenize · avg"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_tokenize_seconds_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "tokenize · p90"
+        },
+        {
+          "refId": "F",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_tokenize_seconds_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "tokenize · p99"
+        },
+        {
+          "refId": "G",
+          "expr": "(sum(rate(dynamo_frontend_template_seconds_sum{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_template_seconds_count{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "template · avg"
+        },
+        {
+          "refId": "H",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_template_seconds_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "template · p90"
+        },
+        {
+          "refId": "I",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_template_seconds_bucket{namespace=~\"$namespace\",pod=~\".*-frontend-.*\"}[$__rate_interval])))",
+          "legend": "template · p99"
+        }
+      ]
+    },
+    {
+      "id": 266,
+      "title": "Output Length",
+      "description": "Dynamo Frontend 已完成请求的输出 token 长度分布。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_output_sequence_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(dynamo_frontend_output_sequence_tokens_sum{namespace=~\"$namespace\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_output_sequence_tokens_count{namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 267,
+      "title": "Cached Tokens",
+      "description": "Dynamo Frontend 已完成请求的 cached token 数分布。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(dynamo_frontend_cached_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(dynamo_frontend_cached_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(dynamo_frontend_cached_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(dynamo_frontend_cached_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(dynamo_frontend_cached_tokens_bucket{namespace=~\"$namespace\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(dynamo_frontend_cached_tokens_sum{namespace=~\"$namespace\"}[$__rate_interval])) / clamp_min(sum(rate(dynamo_frontend_cached_tokens_count{namespace=~\"$namespace\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Prefill Request Pipeline",
+      "description": "汇总所有 Prefill replica 的 SGLang 请求状态并堆叠展示：scheduler waiting、bootstrap queue 和 transfer/inflight queue。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max by (pod) (sglang:num_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}))",
+          "legend": "waiting"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(max by (pod) (sglang:num_prefill_bootstrap_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}))",
+          "legend": "bootstrap"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(max by (pod) (sglang:num_prefill_inflight_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}))",
+          "legend": "inflight"
+        }
+      ]
+    },
+    {
+      "id": 501,
+      "title": "Decode Request Pipeline",
+      "description": "汇总所有 Decode DP rank 的 SGLang 请求状态并堆叠展示：pre-allocation queue、KV-transfer queue 和正在运行的 Decode 请求。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max by (pod, dp_rank) (sglang:num_decode_prealloc_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "pre-alloc"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(max by (pod, dp_rank) (sglang:num_decode_transfer_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "transfer"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(max by (pod, dp_rank) (sglang:num_running_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "running"
+        }
+      ]
+    },
+    {
+      "id": 253,
+      "title": "Engine TTFT",
+      "description": "SGLang Engine 内部 TTFT 分布，来自 sglang:time_to_first_token_seconds；不包含 Frontend 开销。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(sglang:time_to_first_token_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(sglang:time_to_first_token_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(sglang:time_to_first_token_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sglang:time_to_first_token_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(sglang:time_to_first_token_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(sglang:time_to_first_token_seconds_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])) / clamp_min(sum(rate(sglang:time_to_first_token_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        },
+        {
+          "refId": "G",
+          "expr": "vector(4)",
+          "legend": "Guide · 4s"
+        },
+        {
+          "refId": "H",
+          "expr": "vector(12)",
+          "legend": "Guide · 12s"
+        },
+        {
+          "refId": "I",
+          "expr": "vector(30)",
+          "legend": "Guide · 30s"
+        }
+      ]
+    },
+    {
+      "id": 254,
+      "title": "Engine ITL",
+      "description": "Engine ITL 是 SGLang Engine 侧按输出 token 加权的相邻输出间隔分布：一个请求会按其生成 token 数贡献多个样本，并在所有匹配 Pod 合并 bucket 后计算分位数。网关 TPOT 是请求级指标，每个请求仅贡献一个样本，通常为首个到最后一个输出之间的生成时长除以输出 token 数。因此两者的 p99 不可直接等价比较；少量请求尖峰可能被 Engine ITL 的大量 token 样本及跨 Pod 聚合稀释。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(rate(sglang:inter_token_latency_seconds_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])) / clamp_min(sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 237,
+      "title": "Slow-token Ratio",
+      "description": "Decode Engine 中 ITL 分别超过 30ms、40ms、100ms 的输出 token 占比。该指标不依赖分位数阈值，可在异常 token 占比低于 1% 时仍显示尖峰；固定使用 1 分钟统计窗口。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(100 * (sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])) - sum(rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\",le=\"0.03\"}[1m]))) / clamp_min(sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])), 1e-9)) and on () (sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])) > 0)",
+          "legend": ">30ms"
+        },
+        {
+          "refId": "B",
+          "expr": "(100 * (sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])) - sum(rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\",le=\"0.04\"}[1m]))) / clamp_min(sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])), 1e-9)) and on () (sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])) > 0)",
+          "legend": ">40ms"
+        },
+        {
+          "refId": "C",
+          "expr": "(100 * (sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])) - sum(rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\",le=\"0.1\"}[1m]))) / clamp_min(sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])), 1e-9)) and on () (sum(rate(sglang:inter_token_latency_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[1m])) > 0)",
+          "legend": ">100ms"
+        }
+      ]
+    },
+    {
+      "id": 238,
+      "title": "ITL Distribution",
+      "description": "Decode Engine token 间延迟的原始直方图分布。每个色块表示对应 ITL bucket 内每秒观测到的 token 数，可直接观察占比低于 1%、不会反映在 p99 中的慢 token 长尾。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (le) (rate(sglang:inter_token_latency_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\",le!=\"+Inf\"}[$__rate_interval]))",
+          "legend": "{{le}}"
+        }
+      ]
+    },
+    {
+      "id": 261,
+      "title": "Queue Time",
+      "description": "展示 Prefill 和 Decode Engine scheduler queue 延迟的 avg、p90 和 p99，使用各自 Engine 的 sglang:queue_time_seconds。颜色区分阶段，线型区分统计量。",
+      "targets": [
+        {
+          "refId": "D",
+          "expr": "(sum(rate(sglang:queue_time_seconds_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}[$__rate_interval])) / clamp_min(sum(rate(sglang:queue_time_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "Prefill · avg"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(sglang:queue_time_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}[$__rate_interval])))",
+          "legend": "Prefill · p90"
+        },
+        {
+          "refId": "F",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sglang:queue_time_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}[$__rate_interval])))",
+          "legend": "Prefill · p99"
+        },
+        {
+          "refId": "G",
+          "expr": "(sum(rate(sglang:queue_time_seconds_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[$__rate_interval])) / clamp_min(sum(rate(sglang:queue_time_seconds_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[$__rate_interval])), 1e-9)) > 0",
+          "legend": "Decode · avg"
+        },
+        {
+          "refId": "H",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(sglang:queue_time_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[$__rate_interval])))",
+          "legend": "Decode · p90"
+        },
+        {
+          "refId": "I",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sglang:queue_time_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}[$__rate_interval])))",
+          "legend": "Decode · p99"
+        }
+      ]
+    },
+    {
+      "id": 216,
+      "title": "Decode GPU KV Pool — Average Rank",
+      "description": "对 scheduler series 按 Pod、Worker 和 DP rank 去重后，展示单个 Decode rank 的平均 KV token 构成。堆叠顶部是单个 Decode rank 的平均逻辑 KV 容量；混合模型中仅代表 full-attention pool。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg by (engine_type) (max by (engine_type, pod, worker_id_decimal, dp_rank) (sglang:kv_used_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "decode · used (locked)"
+        },
+        {
+          "refId": "B",
+          "expr": "avg by (engine_type) (max by (engine_type, pod, worker_id_decimal, dp_rank) (sglang:kv_evictable_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "decode · evictable (radix-cached)"
+        },
+        {
+          "refId": "C",
+          "expr": "avg by (engine_type) (max by (engine_type, pod, worker_id_decimal, dp_rank) (sglang:kv_available_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "decode · available (free)"
+        }
+      ]
+    },
+    {
+      "id": 500,
+      "title": "Prefill GPU KV Pool — Average Rank",
+      "description": "对 scheduler series 按 Pod、Worker 和 DP rank 去重后，展示单个 Prefill rank 的平均 KV token 构成。堆叠顶部是单个 Prefill rank 的平均逻辑 KV 容量；混合模型中仅代表 full-attention pool。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg by (engine_type) (max by (engine_type, pod, worker_id_decimal, dp_rank) (sglang:kv_used_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}))",
+          "legend": "prefill · used (locked)"
+        },
+        {
+          "refId": "B",
+          "expr": "avg by (engine_type) (max by (engine_type, pod, worker_id_decimal, dp_rank) (sglang:kv_evictable_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}))",
+          "legend": "prefill · evictable (radix-cached)"
+        },
+        {
+          "refId": "C",
+          "expr": "avg by (engine_type) (max by (engine_type, pod, worker_id_decimal, dp_rank) (sglang:kv_available_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}))",
+          "legend": "prefill · available (free)"
+        }
+      ]
+    },
+    {
+      "id": 222,
+      "title": "HiCache Host Pool",
+      "description": "HiCache Host 内存层的 token 容量构成：used + available = total；堆叠顶部即已注册的 Host tier 总容量。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(sglang:hicache_host_used_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"})",
+          "legend": "used (locked)"
+        },
+        {
+          "refId": "B",
+          "expr": "clamp_min(max(sglang:hicache_host_total_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}) - max(sglang:hicache_host_used_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}), 0)",
+          "legend": "available (free)"
+        }
+      ]
+    },
+    {
+      "id": 262,
+      "title": "Mooncake Capacity",
+      "description": "按 master instance 展示 Mooncake Store 已分配内存与已注册容量。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "master_allocated_bytes{namespace=~\"$namespace\"}",
+          "legend": "{{pod}} allocated"
+        },
+        {
+          "refId": "B",
+          "expr": "master_total_capacity_bytes{namespace=~\"$namespace\"}",
+          "legend": "{{pod}} capacity"
+        }
+      ]
+    },
+    {
+      "id": 504,
+      "title": "Cache Reuse by Tier",
+      "description": "Cached prompt-token reuse attributed by SGLang to L1 device, L2 host, and L3 storage. Prefill and Unified engines are included to count each external request once in PD and aggregated deployments. The stacked areas are mutually exclusive cache sources; total is their sum.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "60 * (sum(rate(sglang:cached_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\",cache_source=\"device\"}[$__rate_interval])) or vector(0))",
+          "legend": "L1 · device"
+        },
+        {
+          "refId": "B",
+          "expr": "60 * (sum(rate(sglang:cached_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\",cache_source=\"host\"}[$__rate_interval])) or vector(0))",
+          "legend": "L2 · host"
+        },
+        {
+          "refId": "C",
+          "expr": "60 * (sum(rate(sglang:cached_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\",cache_source=~\"storage_.*\"}[$__rate_interval])) or vector(0))",
+          "legend": "L3 · storage"
+        },
+        {
+          "refId": "D",
+          "expr": "60 * (sum(rate(sglang:cached_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\",cache_source=~\"(device|host|storage_.*)\"}[$__rate_interval])) or vector(0))",
+          "legend": "total"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Cache Churn & Reuse",
+      "description": "按 Worker 展示 HiCache churn 与复用。橙色实线为 rate(evicted tokens) / rate(prompt tokens)，值 1 表示每个输入 token 对应驱逐一个 GPU KV token；蓝色虚线为 100 × rate(load-back tokens) / rate(evicted tokens)。当前窗口加载的 token 可能在更早窗口被驱逐，因此后者可超过 100%。左轴看 churn，右轴看 load-back 比例。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum by (worker_id) (rate(sglang:evicted_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",dynamo_component=~\"(prefill|backend)\"}[$__rate_interval])) / clamp_min(sum by (worker_id) (rate(sglang:prompt_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])), 1e-9)) and on (worker_id) (sum by (worker_id) (rate(sglang:prompt_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(prefill|unified)\"}[$__rate_interval])) > 0)",
+          "legend": "eviction churn · {{worker_id}}"
+        },
+        {
+          "refId": "B",
+          "expr": "(100 * sum by (worker_id) (rate(sglang:load_back_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",dynamo_component=~\"(prefill|backend)\"}[$__rate_interval])) / clamp_min(sum by (worker_id) (rate(sglang:evicted_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",dynamo_component=~\"(prefill|backend)\"}[$__rate_interval])), 1e-9)) and on (worker_id) (sum by (worker_id) (rate(sglang:evicted_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",dynamo_component=~\"(prefill|backend)\"}[$__rate_interval])) > 0)",
+          "legend": "load-back / evicted · {{worker_id}}"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "title": "Token Movement",
+      "description": "展示 HiCache 各缓存层之间的 token 移动。GPU → Host 使用 evicted_tokens_total，Host → GPU 为 load-back，Mooncake → Host 为 storage prefetch，Host → Mooncake 为 storage backup。两个向下路径分开显示，因为 SGLang 以不同 counter 暴露，而不是同一 backup metric 的 label。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(sglang:evicted_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",dynamo_component=~\"(prefill|backend)\"}[$__rate_interval]))",
+          "legend": "GPU → Host · evict"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(sglang:load_back_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",dynamo_component=~\"(prefill|backend)\"}[$__rate_interval]))",
+          "legend": "Host → GPU · load-back"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(sglang:prefetched_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))",
+          "legend": "Mooncake → Host · prefetch"
+        },
+        {
+          "refId": "D",
+          "expr": "sum(rate(sglang:backuped_tokens_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))",
+          "legend": "Host → Mooncake · backup"
+        }
+      ]
+    },
+    {
+      "id": 217,
+      "title": "Cache Transfer Latency",
+      "description": "按 cache_type 展示 SGLang KV eviction 与 load-back 的 p99 延迟；橙色实线表示 eviction，蓝色虚线表示 load-back。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.99, sum by (le, cache_type) (rate(sglang:eviction_duration_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "eviction · {{cache_type}} p99"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.99, sum by (le, cache_type) (rate(sglang:load_back_duration_seconds_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval])))",
+          "legend": "load-back · {{cache_type}} p99"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "GPU Utilization",
+      "description": "按 Worker Pod 展示其关联 GPU 的平均 DCGM GPU 利用率。点击 series 可跳转到 GPU Detail、Fleet 或 Network，查看对应 Pod 和节点。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg by (Hostname, exported_pod) (DCGM_FI_DEV_GPU_UTIL{exported_namespace=~\"$namespace\",exported_pod=~\"$worker_regex\"})",
+          "legend": "{{exported_pod}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "GPU Memory",
+      "description": "按 Worker Pod 汇总其关联 GPU 的 DCGM framebuffer 已用显存；DCGM MiB 会转换为 bytes。点击 series 可跳转到 Pod/节点级 GPU 明细。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (Hostname, exported_pod) (DCGM_FI_DEV_FB_USED{exported_namespace=~\"$namespace\",exported_pod=~\"$worker_regex\"}) * 1024 * 1024",
+          "legend": "{{exported_pod}}"
+        },
+        {
+          "refId": "B",
+          "expr": "max(sum by (Hostname, exported_pod) ((DCGM_FI_DEV_FB_USED{exported_namespace=~\"$namespace\",exported_pod=~\"$worker_regex\"} + DCGM_FI_DEV_FB_FREE{exported_namespace=~\"$namespace\",exported_pod=~\"$worker_regex\"} + DCGM_FI_DEV_FB_RESERVED{exported_namespace=~\"$namespace\",exported_pod=~\"$worker_regex\"}))) * 1024 * 1024",
+          "legend": "upper limit"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "CPU Usage",
+      "description": "按 Dynamo Worker 或 Mooncake Pod 展示最近 5 分钟平均 CPU core 使用量，包含 Mooncake client sidecar、master 和 etcd container，并补充其 Kubernetes 节点信息以支持 GPU 下钻。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (node, pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod=~\"$worker_regex\",container=~\"main|mooncake-client|master|etcd\"}[5m]) * on (namespace, pod) group_left(node) max by (namespace, pod, node) (kube_pod_info{namespace=~\"$namespace\",pod=~\"$worker_regex\"}))",
+          "legend": "{{pod}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Container Memory",
+      "description": "按 Dynamo Worker 或 Mooncake Pod 汇总 working-set 内存，包含 Mooncake client sidecar、master 和 etcd container，并补充其 Kubernetes 节点信息以支持 GPU 下钻。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (node, pod) (container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"$worker_regex\",container=~\"main|mooncake-client|master|etcd\"} * on (namespace, pod) group_left(node) max by (namespace, pod, node) (kube_pod_info{namespace=~\"$namespace\",pod=~\"$worker_regex\"}))",
+          "legend": "{{pod}}"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Host Memory Used (Includes EGM)",
+      "description": "展示所选 namespace 中运行 Pod 的各节点实际主机内存压力（MemTotal - MemAvailable）。当 EGM/pinned memory 降低 Linux MemAvailable 时会计入，同时也包含其他 workload 和主机自身用量。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (node) (((node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemAvailable_bytes{job=\"node-exporter\"}) * on (namespace, pod) group_left(node) max by (namespace, pod, node) (kube_pod_info{namespace=\"monitoring\",created_by_name=\"maas-obs-prometheus-node-exporter\"}))) and on (node) max by (node) (kube_pod_info{namespace=~\"$namespace\"})",
+          "legend": "{{node}}"
+        },
+        {
+          "refId": "B",
+          "expr": "max((max by (node) ((node_memory_MemTotal_bytes{job=\"node-exporter\"} * on (namespace, pod) group_left(node) max by (namespace, pod, node) (kube_pod_info{namespace=\"monitoring\",created_by_name=\"maas-obs-prometheus-node-exporter\"}))) and on (node) max by (node) (kube_pod_info{namespace=~\"$namespace\"})))",
+          "legend": "upper limit"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Host - Kubernetes Memory Gap (EGM)",
+      "description": "展示主机已用内存减去节点上 cAdvisor container working set 之和。该差值可暴露 Kubernetes container accounting 不可见的内存（包括 EGM/pinned memory），但也包含主机进程和统计口径差异，不能全部归因于所选 namespace。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "clamp_min((max by (node) (((node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemAvailable_bytes{job=\"node-exporter\"}) * on (namespace, pod) group_left(node) max by (namespace, pod, node) (kube_pod_info{namespace=\"monitoring\",created_by_name=\"maas-obs-prometheus-node-exporter\"}))) and on (node) max by (node) (kube_pod_info{namespace=~\"$namespace\"})) - on (node) (sum by (node) (container_memory_working_set_bytes{job=\"kubelet\",metrics_path=\"/metrics/cadvisor\",container!=\"\",image!=\"\"}) and on (node) max by (node) (kube_pod_info{namespace=~\"$namespace\"})), 0)",
+          "legend": "{{node}}"
+        },
+        {
+          "refId": "B",
+          "expr": "max((max by (node) ((node_memory_MemTotal_bytes{job=\"node-exporter\"} * on (namespace, pod) group_left(node) max by (namespace, pod, node) (kube_pod_info{namespace=\"monitoring\",created_by_name=\"maas-obs-prometheus-node-exporter\"}))) and on (node) max by (node) (kube_pod_info{namespace=~\"$namespace\"})))",
+          "legend": "upper limit"
+        }
+      ]
+    },
+    {
+      "id": 271,
+      "title": "Active Decode Blocks",
+      "description": "按 Decode Worker 和 DP rank 展示 Dynamo Frontend Router 跟踪的 active KV block。查询通过 worker_id_decimal 与 dp_rank 关联 SGLang Worker metadata，使 legend 可识别所属 Decode Pod；max() 用于去重多个 Frontend replica 观测到的同一 Worker 状态。KV total / DP 为 SGLang 上报的 Decode KV 容量。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (worker_id_decimal, dp_rank) (dynamo_frontend_worker_active_decode_blocks{namespace=~\"$namespace\",worker_type=\"decode\"}) * on (worker_id_decimal, dp_rank) group_left(pod) (max by (pod, worker_id_decimal, dp_rank) (sglang:num_running_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}) >= bool 0)",
+          "legend": "worker {{worker_id_decimal}} · dp{{dp_rank}}"
+        },
+        {
+          "refId": "B",
+          "expr": "max(sglang:num_pages{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"})",
+          "legend": "KV total / DP"
+        }
+      ]
+    },
+    {
+      "id": 272,
+      "title": "KV Used Blocks",
+      "description": "按 Pod 和 DP rank 展示 Decode Worker 当前使用的 KV block。Prometheus 未直接暴露 Router 的 NATS kv_used_blocks，本面板使用 ceil(sglang:kv_used_tokens / sglang:page_size) 重建同口径值。KV total / DP 为 SGLang 上报的 Decode KV 容量。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (pod, worker_id_decimal, dp_rank) (ceil(sglang:kv_used_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"} / sglang:page_size{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"}))",
+          "legend": "worker {{worker_id_decimal}} · dp{{dp_rank}}"
+        },
+        {
+          "refId": "B",
+          "expr": "max(sglang:num_pages{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"})",
+          "legend": "KV total / DP"
+        }
+      ]
+    },
+    {
+      "id": 273,
+      "title": "Decode Running Requests",
+      "description": "按 Decode Pod 和 DP rank 展示当前 running request，并与 Dynamo model runtime 配置声明的单 rank 最大并发对比。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (pod, worker_id_decimal, dp_rank) (sglang:num_running_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"decode\"})",
+          "legend": "worker {{worker_id_decimal}} · dp{{dp_rank}}"
+        },
+        {
+          "refId": "B",
+          "expr": "max(dynamo_frontend_model_max_num_seqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"})",
+          "legend": "Max running / DP"
+        }
+      ]
+    },
+    {
+      "id": 274,
+      "title": "Active Prefill Tokens",
+      "description": "按 Prefill Worker 和 DP rank 展示 Dynamo Router 跟踪的 active prefill token load。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (pod, worker_id_decimal, dp_rank) (max by (namespace, dynamo_namespace, worker_id_decimal, dp_rank) (dynamo_frontend_worker_active_prefill_tokens{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",worker_type=\"prefill\"}) * on (namespace, dynamo_namespace, worker_id_decimal) group_left (pod) (0 * max by (namespace, dynamo_namespace, worker_id_decimal, pod) (sglang:num_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"}) + 1))",
+          "legend": "worker {{worker_id_decimal}} · dp{{dp_rank}}"
+        }
+      ]
+    },
+    {
+      "id": 306,
+      "title": "Decode Request States by Pod",
+      "description": "按 Pod 和 Worker ID 展示 Decode/Unified scheduler 请求状态。每个 Pod 内汇总 DP-rank gauge，但不同 Pod 保持独立，以便观察负载不均并将 Pod 级 scheduler 状态关联到 Router Worker ID。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (pod, worker_id_decimal) (max by (pod, worker_id_decimal, dp_rank) (sglang:num_running_reqs{namespace=~\"$namespace\",engine_type=~\"(decode|unified)\"}))",
+          "legend": "worker {{worker_id_decimal}} · running"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (pod, worker_id_decimal) (max by (pod, worker_id_decimal, dp_rank) (sglang:num_queue_reqs{namespace=~\"$namespace\",engine_type=~\"(decode|unified)\"}))",
+          "legend": "worker {{worker_id_decimal}} · queued"
+        },
+        {
+          "refId": "C",
+          "expr": "sum by (pod, worker_id_decimal) (max by (pod, worker_id_decimal, dp_rank) (sglang:num_paused_reqs{namespace=~\"$namespace\",engine_type=~\"(decode|unified)\"}))",
+          "legend": "worker {{worker_id_decimal}} · paused"
+        }
+      ]
+    },
+    {
+      "id": 307,
+      "title": "Prefill Request States by Pod",
+      "description": "按 Pod 展示 Prefill scheduler queue。每个 Pod 内对重复的 PP-rank gauge 去重，不同 Pod 保持独立，以便观察负载不均。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (pod, worker_id_decimal) (sglang:num_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"})",
+          "legend": "worker {{worker_id_decimal}} · waiting"
+        },
+        {
+          "refId": "B",
+          "expr": "max by (pod, worker_id_decimal) (sglang:num_prefill_bootstrap_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"})",
+          "legend": "worker {{worker_id_decimal}} · bootstrap"
+        },
+        {
+          "refId": "C",
+          "expr": "max by (pod, worker_id_decimal) (sglang:num_prefill_inflight_queue_reqs{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=\"prefill\"})",
+          "legend": "worker {{worker_id_decimal}} · transfer"
+        }
+      ]
+    },
+    {
+      "id": 308,
+      "title": "CUDA Graph Passes",
+      "description": "展示 sglang:cuda_graph_passes_total 的 Decode forward-pass 速率。Graph 表示 CUDA Graph replay，Eager 表示未命中已捕获 graph 的 Decode pass。对导出的 rank 取平均，避免 DP/TP replica 倍增；该 metric 不包含所选 CUDA Graph batch-size bucket。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg(rate(sglang:cuda_graph_passes_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(decode|unified)\",mode=\"decode_cuda_graph\"}[$__rate_interval]))",
+          "legend": "Graph"
+        },
+        {
+          "refId": "B",
+          "expr": "avg(rate(sglang:cuda_graph_passes_total{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\",engine_type=~\"(decode|unified)\",mode=\"decode_none\"}[$__rate_interval]))",
+          "legend": "Eager"
+        }
+      ]
+    },
+    {
+      "id": 408,
+      "title": "PD KV Transfer Latency",
+      "description": "SGLang 上报的 Prefill-to-Decode KV transfer 延迟。计算 fleet-wide quantile 前，先按 Worker 对 PP/TP replica 去重。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_latency_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_latency_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_latency_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_latency_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_latency_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_latency_ms_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))) / clamp_min(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_latency_ms_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 409,
+      "title": "PD KV Allocation Latency",
+      "description": "Decode 侧在传输前分配 KV 的延迟。计算 fleet-wide quantile 前，先按 Worker 对 PP/TP replica 去重。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_alloc_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_alloc_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_alloc_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_alloc_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_alloc_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_alloc_ms_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))) / clamp_min(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_alloc_ms_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 410,
+      "title": "PD KV Bootstrap Latency",
+      "description": "PD KV transfer 的 Decode 侧 bootstrap/setup 延迟。计算 fleet-wide quantile 前，先按 Worker 对 PP/TP replica 去重。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_bootstrap_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_bootstrap_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_bootstrap_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_bootstrap_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_bootstrap_ms_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_bootstrap_ms_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))) / clamp_min(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_bootstrap_ms_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 411,
+      "title": "PD KV Transfer Speed",
+      "description": "观测到的 PD KV transfer 有效吞吐，单位 GB/s。计算 fleet-wide quantile 前，先按 Worker 对 PP/TP replica 去重。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_speed_gb_s_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_speed_gb_s_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_speed_gb_s_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_speed_gb_s_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_speed_gb_s_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_speed_gb_s_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))) / clamp_min(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_speed_gb_s_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    },
+    {
+      "id": 412,
+      "title": "PD KV Transfer Size",
+      "description": "单次 PD transfer 的 KV payload 大小，单位 MB。计算 fleet-wide quantile 前，先按 Worker 对 PP/TP replica 去重。",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_total_mb_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.75, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_total_mb_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p75"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.90, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_total_mb_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p90"
+        },
+        {
+          "refId": "D",
+          "expr": "histogram_quantile(0.99, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_total_mb_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99"
+        },
+        {
+          "refId": "E",
+          "expr": "histogram_quantile(0.999, sum by (le) (max by (le, pod, worker_id) (rate(sglang:kv_transfer_total_mb_bucket{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))))",
+          "legend": "p99.9"
+        },
+        {
+          "refId": "F",
+          "expr": "(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_total_mb_sum{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))) / clamp_min(sum(max by (pod, worker_id) (rate(sglang:kv_transfer_total_mb_count{namespace=~\"$namespace\",dynamo_namespace=~\"$cluster\"}[$__rate_interval]))), 1e-9)) > 0",
+          "legend": "avg"
+        }
+      ]
+    }
+  ]
+}
