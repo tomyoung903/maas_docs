@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Is PP0 Usually Highest? Prefill Inflight by Rank | MaaS Docs</title>
+  <meta name="description" content="Measured PP0 versus PP1-PP3 inflight counts: eight GB300 prefill pods, four hours, synchronized scrape checks, and an exact counterexample.">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm53-gb300-pp-inflight-rank-audit/">
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="report.css">
+  <script defer src="data.js"></script><script defer src="report.js"></script>
+</head>
+<body>
+<div class="topbar"><a href="../../">MaaS Docs</a><span>Serving systems / measured queue state</span><a href="evidence.json">Evidence JSON</a><a href="overview.png">PNG</a></div>
+<div class="layout">
+<aside><nav aria-label="On this page"><strong>In this report</strong><a href="#overview">The result</a><a href="#timelines">Eight pod timelines</a><a href="#counterexample">A counterexample</a><a href="#interpretation">What it means</a><a href="#method">Data &amp; method</a></nav></aside>
+<main>
+<div id="visual-report">
+<header id="overview">
+  <p class="eyebrow">GLM-5.3 / GB300 / prefill PP4</p>
+  <h1>Is PP0 usually the highest?</h1>
+  <p class="lede">Higher on average. <strong>Not always the largest queue.</strong></p>
+  <p class="scope">31 August 2026 &middot; 03:30&ndash;07:30 Beijing time &middot; 8 pods &middot; 4 PP ranks &middot; 15-second query grid</p>
+</header>
+<section class="summary" aria-labelledby="position-title">
+  <div class="section-heading"><h2 id="position-title">PP0's position within its own pod</h2><span>2,845 nonzero-inflight pod/time observations</span></div>
+  <div class="sharebar" role="img" aria-label="PP0 strictly highest 12.1%, tied highest 67.0%, below another rank 20.9%"><div class="strict" style="width:12.1265377856%">12.1%</div><div class="tied" style="width:66.9595782074%">67.0%</div><div class="below" style="width:20.9138840070%">20.9%</div></div>
+  <div class="share-labels"><span><i class="swatch strict"></i><b>Strictly highest</b> &middot; 345</span><span><i class="swatch tied"></i><b>Tied for highest</b> &middot; 1,905</span><span><i class="swatch below"></i><b>Below another rank</b> &middot; 595</span></div>
+  <div class="summary-detail"><p><strong>79.1%</strong> highest including ties.<br><span>All four ranks are equal in 48.9% of these observations.</span></p><div class="means"><div class="means-title">Average per rank on the same nonzero-inflight observations</div><div id="mean-bars"></div></div></div>
+  <p class="note">4,843 all-zero observations are excluded from these percentages and means. Zero inflight does not mean zero GPU work or zero KV transfer.</p>
+</section>
+<section id="timelines">
+  <div class="section-heading"><div><p class="eyebrow">01 / Time-resolved comparison</p><h2>Eight pods, four ranks each</h2></div></div>
+  <div class="toolbar"><label>Pod <select id="pod"><option value="all">All 8 pods</option></select></label><label>Window <select id="window"><option value="full">03:30&ndash;07:30 &middot; full window</option><option value="busy">05:30&ndash;06:30</option><option value="example">06:02&ndash;06:12</option></select></label><label>Zoom <select id="zoom"><option value="1">1&times;</option><option value="2">2&times;</option><option value="4">4&times;</option><option value="8">8&times;</option><option value="16">16&times;</option><option value="32">32&times;</option></select></label><label class="pan">Position <input id="pan" type="range" min="0" max="1000" value="0" aria-label="Time window position"></label><output id="window-label"></output></div>
+  <div class="legend" id="rank-legend"></div>
+  <p class="note">One shared y-axis range across pods. Counts are sampled gauges, not per-request traces. Step lines hold each 15-second observation until the next; transitions between samples are unresolved. Each pod's percentage refers to the full window, excluding all-zero observations.</p>
+  <div id="pod-charts" class="pod-grid"></div>
+  <div class="legend band-legend"><span class="band-title">Band below each plot: PP0's position</span><span><i class="swatch strict"></i>Strictly highest</span><span><i class="swatch tied"></i>Tied highest</span><span><i class="swatch below"></i>Below another rank</span><span><i class="swatch zero"></i>All zero</span></div>
+  <p class="source-line">Measured: sglang:num_prefill_inflight_queue_reqs &middot; maas-prod-zhipu &middot; glm53-nvfp4-gb300-pp-dev &middot; no rank summation</p>
+</section>
+</div>
+<section id="counterexample">
+  <p class="eyebrow">02 / One observed reversal</p><h2>At 06:06:45, PP3 has 26; PP0 has 12</h2>
+  <p>Pod <code>gl76d</code>. This is one observed sample, not a reconstruction of an individual request.</p>
+  <div id="example-values" class="value-strip"></div>
+  <div class="chart-box detail"><canvas id="detail" role="img" aria-label="Detailed rank inflight timeline for pod gl76d, 06:03 to 06:10 Beijing time"></canvas></div>
+  <p class="note">The vertical marker is 06:06:45. Red band: another rank exceeds PP0. All four displayed values came from the same Prometheus scrape. Scheduler gauge updates themselves are asynchronous.</p>
+</section>
+<section id="interpretation">
+  <p class="eyebrow">03 / Interpreting the result</p><h2>Queue size reflects both entry and removal</h2>
+  <div class="explanation-grid"><div><h3>What the measurements establish</h3><p>PP0 has the highest mean on each of the eight pods, but another rank exceeds it in about one fifth of nonzero-inflight observations. Grafana's maximum-over-ranks is not interchangeable with PP0.</p><p>The same request may be represented in multiple rank-local queues. Adding all PP ranks would count those representations repeatedly.</p></div><div><h3>What the code allows, not a measured cause</h3><p>Intermediate-chunk KV sending does not enter this queue. Final-result processing does. Completion-confirmation propagation can also let PP0 remove requests before later ranks do.</p><p>Earlier computation does not imply a permanently larger queue. These gauge samples cannot identify which request, transfer, or scheduler delay caused any particular reversal.</p></div></div>
+  <div class="source-links"><a href="https://git.luchentech.com/platform/sglang/-/blob/117d0e176d0681486d7ec502e70601ea40dda8e5/python/sglang/srt/disaggregation/prefill.py">Queue insertion / removal &middot; prefill.py:783, 999</a><a href="https://git.luchentech.com/platform/sglang/-/blob/117d0e176d0681486d7ec502e70601ea40dda8e5/python/sglang/srt/managers/scheduler_pp_mixin.py">Release propagation &middot; scheduler_pp_mixin.py:923</a></div>
+  <p class="note">Code explanation refers to the inspected revision 117d0e176d06. The historical gauge data independently establishes the ordering result; it does not prove a request-level causal explanation.</p>
+</section>
+<section id="method">
+  <p class="eyebrow">04 / Evidence boundary</p><h2>Complete coverage, explicit denominator</h2>
+  <table><tbody><tr><th>Window</th><td>2026-08-30 19:30&ndash;23:30 UTC / August 31 03:30&ndash;07:30 Beijing</td></tr><tr><th>Coverage</th><td>32 rank series &times; 961 observations = 30,752 scalar values; all ranks present at every grid point</td></tr><tr><th>Comparison unit</th><td>One pod at one evaluation time. 7,688 observations total; 2,845 with at least one nonzero inflight rank.</td></tr><tr><th>Weighting</th><td>Equal pod/time observations; not request-weighted, not transfer-weighted, and not independent statistical trials</td></tr><tr><th>Scrape alignment</th><td>Zero within-pod timestamp mismatches. Sample age: 0.355&ndash;4.692 seconds at evaluation time.</td></tr><tr><th>Time resolution</th><td>15-second query grid, including both endpoints. Sub-sample state transitions and exact kernel/KV timings are not measured.</td></tr><tr><th>Operational changes</th><td>None. Reuses read-only API data captured on September 7, 2026. No inference traffic or profiling.</td></tr></tbody></table>
+  <details><summary>Exact metric selector and dashboard aggregation</summary><pre><code>sglang:num_prefill_inflight_queue_reqs{
+  namespace="maas-prod-zhipu",
+  dynamo_namespace="maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev",
+  engine_type="prefill"
+}</code></pre><p>All observed series have <code>tp_rank="0"</code>. We retain <code>pod</code> and <code>pp_rank</code> separately. Grafana panel 22 instead applies <code>sum(max by (pod) (...))</code>, hiding which rank supplied each maximum.</p></details>
+  <p class="source-links"><a href="evidence.json">Sanitized series, summary &amp; source hash</a><a href="build_data.py">Data builder</a><a href="http://43.156.43.133:32101/d/luchen-dynamo-runtime-operations/luchen-dynamo-runtime-operations?orgId=1&amp;from=2026-08-30T19:30:00.000Z&amp;to=2026-08-30T23:30:00.000Z&amp;timezone=Asia%2FShanghai&amp;var-datasource=prometheus&amp;var-namespace=maas-prod-zhipu&amp;var-cluster=maas-prod-zhipu-glm53-nvfp4-gb300-pp-dev&amp;viewPanel=panel-22">Original Grafana window</a></p>
+</section>
+<footer>Historical production metrics &middot; MaaS Docs &middot; 2026-09-07</footer>
+</main></div>
+<div id="tooltip" role="status" hidden></div>
+<script defer src="../../assets/maas-annotator.js" data-maas-annotator data-page-key="/tmp/glm53-gb300-pp-inflight-rank-audit/"></script>
+</body></html>
