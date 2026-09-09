@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Source-audited HY4 100K uncached prefill execution tree, tensor flow and per-layer FLOP comparison with GLM-5.2.">
+<title>HY4: 100K Prefill Execution Tree | MaaS Docs</title>
+<style>@@CSS@@</style>
+</head>
+<body>
+<header class="top"><a href="../">MaaS Docs</a><span>Architecture / FLOP ledger</span><a href="@@GLM_URL@@">GLM-5.2 reference &#8599;</a></header>
+<div class="layout">
+<aside><nav aria-label="Page contents"><span class="label">Contents</span>
+<a href="#overview">Overview</a><a href="#scope">Counting contract</a><a href="#execution-tree">HY4 execution tree</a>
+<a href="#ihc">Four-stream carrier</a><a href="#comparison">GLM-5.2 comparison</a><a href="#layer-map">Layer-by-layer costs</a>
+<a href="#runtime">FLOPs versus runtime</a><a href="#sources">Sources and audit</a></nav>
+<div class="rail-note">Source-derived<br>100,000 input tokens<br>78 target-model layers<br>No benchmark timings</div></aside>
+<main>
+<section id="overview">
+<div class="eyebrow">HY4 / GLM-5.2 &middot; 09 September 2026</div>
+<h1>HY4: 100K prefill execution tree</h1>
+<p class="lead">The same absorbed sparse MLA backbone, with a new elementwise attention gate and a four-stream residual carrier. The gate projection, not iHC or the attention sink, dominates the extra useful arithmetic.</p>
+<div class="metrics"><div><span>HY4 logical work</span><strong>@@HY_TOTAL@@ <small>PFLOP</small></strong></div>
+<div><span>GLM-5.2, normalized ledger</span><strong>@@GLM_TOTAL@@ <small>PFLOP</small></strong></div>
+<div><span>HY4 minus GLM-5.2</span><strong>+@@PERCENT@@<small>%</small></strong><span>+@@DELTA@@ PFLOP</span></div></div>
+<figure class="comparison-figure">@@CHART@@<figcaption>Full-model useful arithmetic, not FLOP/s, precision-equivalent work, or a prediction of latency.</figcaption></figure>
+<p><strong>What was done:</strong> audited our SGLang <code>feat/hy4-preview-support</code> at <code>66ca0e3bda0c</code>, including inherited MLA, DSA and MoE code; read the pinned Tencent HY4 config; rebuilt the original GLM-5.2 ledger independently; reconciled every operation, layer and total. The current <code>dev</code> checkout did not contain HY4, so the feature branch was read without changing the checkout. No GPU or deployment was touched.</p>
+<p class="caution">This is a <strong>logical execution tree</strong>: a hierarchy of model operations and tensor dependencies. It is not a captured CUDA Graph, physical launch list, or timing trace. Parent totals include their descendants; do not add parents to children.</p>
+</section>
+
+<section id="scope"><h2>01 &nbsp; Counting contract</h2>
+<p>One causal, completely uncached prompt with <i>T</i> = 100,000 tokens. Count every target-model layer and one final next-token logits row. No decode loop, MTP/draft, prompt logprobs, cache hits, retries or batch duplication.</p>
+<div class="table-wrap"><table><thead><tr><th>Symbol / quantity</th><th>HY4</th><th>GLM-5.2 reference</th></tr></thead><tbody>
+<tr><th><i>H</i>, hidden width; <i>L</i>, layers</th><td>6,144; 78</td><td>Same</td></tr>
+<tr><th>MLA heads; query / KV latent width</th><td>64; 2,048 / 512</td><td>Same</td></tr>
+<tr><th>Non-RoPE / RoPE / head-value width</th><td>192 / 64 / 256</td><td>Same</td></tr>
+<tr><th>Indexer heads / width / top-k</th><td>32 / 128 / 2,048</td><td>Same</td></tr>
+<tr><th>Dense layers; intermediate width</th><td>Layer 0; 18,432</td><td>Layers 0-2; 12,288</td></tr>
+<tr><th>MoE layers; intermediate width</th><td>Layers 1-77; 2,048</td><td>Layers 3-77; 2,048</td></tr>
+<tr><th>Routed / active / shared experts</th><td>256 stored / 8 active / 1 shared</td><td>Same</td></tr>
+<tr><th>Residual representation</th><td>4 &times; 6,144 iHC carrier</td><td>6,144-wide residual state</td></tr>
+<tr><th>Elementwise attention gate / sink</th><td>Yes / yes</td><td>No / no</td></tr>
+<tr><th>Vocabulary</th><td>120,832</td><td>154,880</td></tr>
+</tbody></table></div>
+<p class="source">HY4 dimensions: <a href="@@HF_URL@@">Tencent config, pinned revision</a> (<a href="hy4-config.json">local snapshot</a>). GLM-5.2 dimensions and baseline: <a href="@@GLM_URL@@">the requested reference tree</a>, not a substituted GLM-5.3 model.</p>
+<div class="equations">
+<div><i>C</i><span>=</span><span><i>T</i>(<i>T</i> + 1) / 2 = <strong>@@C@@</strong> causal candidate pairs</span></div>
+<div><i>S</i><span>=</span><span>&sum;<sub>t=1</sub><sup>T</sup> min(<i>t</i>, 2,048) = <strong>@@S@@</strong> selected pairs</span></div>
+</div>
+<p><i>C</i> is used by the indexer on each of its 21 refresh layers. <i>S</i> is used by sparse MLA on <em>every</em> one of the 78 layers. A shared-index layer reuses selection IDs; it still computes its own queries, KV, attention outputs and FFN.</p>
+<p><strong>Arithmetic convention:</strong> GEMM = 2<i>mnk</i>; fused multiply-add = 2 FLOPs. Scalar exp, reciprocal, division and reciprocal square root each count as one logical operation; sign changes, comparisons, casts, indexing, memory movement and communication are excluded. This is an expanded mathematical ledger, not a hardware instruction counter. Softmax/RMSNorm use the same operation-count convention as the GLM page.</p>
+<p>The dimensions below are <strong>whole-model</strong> shapes before TP partitioning. A chunked implementation can process the 100K prompt in smaller pieces while retaining these useful arithmetic totals; it need not materialize a full 100K-by-100K matrix. Chunk boundaries, padding and scheduling can change executed work and wall time.</p>
+</section>
+
+<section id="execution-tree"><h2>02 &nbsp; HY4 execution tree</h2>
+<div class="toolbar"><label>Scope <select id="layer">@@OPTIONS@@</select></label>
+<fieldset class="segmented"><legend class="sr-only">Tree detail</legend><button type="button" data-depth="0">Stack</button><button type="button" data-depth="2" aria-pressed="true">Modules</button><button type="button" data-depth="all">Operations</button></fieldset>
+<label class="check"><input type="checkbox" id="hide-inactive" checked> Active operations</label><a href="ledger.json" download title="Download exact arithmetic ledger">&#8595; Ledger JSON</a></div>
+<div class="tree-heading"><span id="scope-label">Whole-model 100K prefill</span><strong id="scope-total">@@HY_TOTAL@@ PFLOP</strong></div>
+<div id="tree">@@TREE@@</div>
+<p class="source">Leaf formulas are for one active layer at 100K tokens, or one model-boundary invocation. Displayed totals multiply by the applicable layer count. Selecting a layer excludes embedding and final-head work.</p>
+</section>
+
+<section id="ihc"><h2>03 &nbsp; What the four-stream carrier actually does</h2>
+<p>Let <b class="matrix hidden">X</b> &isin; &#8477;<sup>T &times; 4 &times; 6,144</sup> be the carrier. The four vectors are residual <em>feature streams</em>, not CUDA streams and not four independent model forwards.</p>
+<div class="flow-band"><div><b>Carrier</b><span>4 &times; 6,144</span></div><span>&rarr;</span><div><b>iHC pre + RMSNorm</b><span>weighted reduction</span></div><span>&rarr;</span><div><b>Attention or FFN</b><span>6,144 wide</span></div><span>&rarr;</span><div><b>iHC post</b><span>4-stream writeback</span></div></div>
+<div class="equations">
+<div><b class="vector hidden">u</b><span>=</span><span>RMSNorm(&sum;<sub>s=1</sub><sup>4</sup> <i>a</i><sub>s</sub> <b class="vector hidden">x</b><sub>s</sub>)</span></div>
+<div><b class="vector">y</b><span>=</span><span>Attention(<b class="vector hidden">u</b>) or FFN(<b class="vector hidden">u</b>)</span></div>
+<div><span><b class="vector hidden">x</b><sub>s</sub><sup>new</sup></span><span>=</span><span><b class="vector hidden">x</b><sub>s</sub> + <i>b</i><sub>s</sub> <b class="vector">y</b>, &nbsp; <i>s</i> = 1, 2, 3, 4</span></div>
+</div>
+<p><i>a</i><sub>s</sub> and <i>b</i><sub>s</sub> are input-dependent learned pre/post gates from the flattened 24,576-wide carrier. Each attention/FFN sublayer owns its own gate projection. The source can fuse attention post with the next FFN pre and RMSNorm; the tree keeps the mathematical ownership separate.</p>
+<h3>The new expensive gate is a different gate</h3>
+<div class="equations">
+<div><b class="matrix gate">G</b><span>=</span><span>&sigma;(<b class="matrix hidden">U</b><b class="matrix gate">W</b><sub>gate</sub>), &nbsp; <b class="matrix gate">W</b><sub>gate</sub> &isin; &#8477;<sup>6,144 &times; 16,384</sup></span></div>
+<div><b class="matrix">O</b><span>=</span><span>(<b class="matrix">V</b><sub>expanded</sub> &odot; <b class="matrix gate">G</b>) <b class="matrix">W</b><sub>O</sub></span></div>
+</div>
+<p>This elementwise MLA output gate has <strong>100,663,296 weights per layer</strong> and costs <strong>20.132659 TFLOP per layer</strong> at 100K tokens. Across 78 layers its projection alone adds <strong>1.570347 PFLOP</strong>. It is applied after 512-to-256 value expansion and before the 16,384-to-6,144 output projection. The iHC projections, by contrast, have only eight outputs per sublayer.</p>
+</section>
+
+<section id="comparison"><h2>04 &nbsp; Where the FLOPs differ from GLM-5.2</h2>
+<p>All numbers below are <strong>PFLOP for the entire 100K prompt</strong>. A positive difference means more useful arithmetic in HY4. The <a href="@@GLM_URL@@">GLM tree</a> remains unchanged.</p>
+<details class="audit-note"><summary>Crosswalk to the original GLM execution-tree steps</summary>
+<div class="table-wrap"><table><thead><tr><th>Original GLM step</th><th>Corresponding HY4 operations</th><th>Change</th></tr></thead><tbody>
+<tr><th>2.1.1 input norm; 2.1.10 residual</th><td>2.1 iHC pre/norm; 2.3 attention writeback</td><td>Four-stream reduction and gated writeback replace ordinary residual handling</td></tr>
+<tr><th>2.1.2-2.1.4 Q/KV projections</th><td>2.2.1 Q/KV preparation</td><td>Same logical projection and latent-norm dimensions</td></tr>
+<tr><th>2.1.5 selector, A1-A3</th><td>2.2.2 DSA selector</td><td>Same total work; refresh layers shifted</td></tr>
+<tr><th>2.1.6 absorbed query / RoPE</th><td>2.2.1 query absorption / RoPE</td><td>Same useful dimensions</td></tr>
+<tr><th>2.1.7 sparse MLA scan</th><td>2.2.3 selected attention</td><td>Extra sink denominator term</td></tr>
+<tr><th>2.1.8 value expansion; 2.1.9 output projection</th><td>2.2.4 value expansion; 2.2.6 output projection</td><td>New 2.2.5 elementwise gate inserted between them</td></tr>
+<tr><th>Dense D1-D3; MoE branch</th><td>2.4 dense / MoE branches</td><td>Dense count/width change, two extra MoE layers, routed-only clamp</td></tr>
+</tbody></table></div></details>
+<div class="table-wrap"><table class="numeric"><thead><tr><th>Corresponding operation family</th><th>GLM-5.2</th><th>HY4</th><th>HY4 &minus; GLM</th></tr></thead><tbody>@@CATEGORIES@@</tbody>
+<tfoot><tr><th>Total</th><td>@@GLM_TOTAL@@</td><td>@@HY_TOTAL@@</td><td>+@@DELTA@@</td></tr></tfoot></table></div>
+<h3>Attention: same main backbone, one large extra GEMM</h3>
+<p>The query-A/KV-A, query-B, absorbed query, value expansion and output projection dimensions match. So do sparse QK/PV dimensions and the total number of selected pairs. HY4 adds the output gate. Its sink adds only one extra denominator term per query/head, not an extra attended value. <strong>The gate is a substantial FLOP change; the sink is not.</strong></p>
+<h3>FFN: wider first dense layer, two more MoE layers</h3>
+<div class="table-wrap"><table><thead><tr><th>Layer group, zero-based</th><th>GLM-5.2</th><th>HY4</th><th>FFN GEMM delta per layer</th></tr></thead><tbody>
+<tr><th>Layer 0</th><td>Dense, width 12,288</td><td>Dense, width 18,432</td><td>+22.649242 TFLOP</td></tr>
+<tr><th>Layers 1 and 2, each</th><td>Dense, width 12,288</td><td>8 routed + 1 shared, width 2,048</td><td>+22.963814 TFLOP</td></tr>
+<tr><th>Layers 3-77</th><td>Same active expert counts and widths</td><td>Same GEMM dimensions</td><td>0 TFLOP</td></tr>
+</tbody></table></div>
+<p>The second row includes the new 6,144-to-256 router GEMM. Activations, residual/iHC, indexing and the attention gate are accounted separately. Clamping changes routed-expert semantics and backend fusion, not these GEMM dimensions.</p>
+<h3>DSA: equal aggregate scoring, different layer placement</h3>
+<p><strong>HY4 refresh layers:</strong> @@HY_FULL@@.<br><strong>GLM-5.2 refresh layers:</strong> @@GLM_FULL@@.</p>
+<p>Both have 21 refresh layers, so their total DSA scoring/setup work matches. But layer 2 drops its selector in HY4, while layer 5 gains one. A full refresh costs about <strong>43.158851 TFLOP</strong> beyond a shared-index layer at this prompt length. This can outweigh the gate difference in an individual aligned layer. Reusing top-k IDs is not prompt-prefix caching.</p>
+<details class="audit-note"><summary>Exact reconciliation with the published GLM total</summary>
+<p>The original page sums to <strong>10,945,320,321,466,784 FLOPs</strong>. Its MoE combine convention charges 17<i>H</i> per token: nine weight multiplications and eight additions, including multiplication by the shared expert's unit weight.</p>
+<p>Here both models use the source-aligned expression: eight routed weight multiplications, seven routed additions and one unweighted shared addition, or 16<i>H</i>. Therefore subtract 100,000 &times; 75 &times; 6,144 = <strong>46,080,000,000 FLOPs</strong> from the original GLM ledger, giving <strong>10,945,274,241,466,784 FLOPs</strong>. The correction is about 0.00042%; it is disclosed rather than hidden in rounding.</p>
+<p>All other GLM leaf costs exactly reproduce the original expanded ledger. Routed scaling is represented in the eight route weights for both models; a backend applying it to the final vector executes a slightly different scalar operation count.</p></details>
+</section>
+
+<section id="layer-map"><h2>05 &nbsp; Layer-by-layer costs</h2>
+<p>Each row covers one complete layer processing the same 100K prompt, across the whole model parallel group. Final carrier reduction, final norm and LM head are excluded here and included in the model total. <strong>full/shared</strong> refers only to the DSA selector.</p>
+<figure><svg id="layer-chart" viewBox="0 0 1040 240" role="img" aria-label="HY4 and GLM-5.2 useful FLOPs across all 78 layers"></svg><figcaption><span class="swatch hy"></span> HY4 &nbsp; <span class="swatch glm"></span> GLM-5.2. Peaks are indexer refresh layers, not measured runtime spikes.</figcaption></figure>
+<details class="layer-detail"><summary>All 78 layers: exact aligned comparison in TFLOP</summary><div class="table-wrap"><table class="numeric" id="layer-table"><thead><tr><th>Layer</th><th>HY4 FFN / indexer</th><th>GLM FFN / indexer</th><th>HY4 TFLOP</th><th>GLM TFLOP</th><th>Difference</th></tr></thead><tbody>@@LAYERS@@</tbody></table></div></details>
+</section>
+
+<section id="runtime"><h2>06 &nbsp; Why +@@PERCENT@@% FLOPs is not a latency estimate</h2>
+<div class="table-wrap"><table><thead><tr><th>Source-derived behavior</th><th>Runtime consequence / limit of this ledger</th></tr></thead><tbody>
+<tr><th>Sink-enabled sparse backend</th><td>Our pinned DSA backend requires the FlashMLA sparse path when a sink is present. Its sparse wrapper pads local heads to 64 on SM9 and 128 on SM10. For example, an unsharded 64-head Blackwell call is presented as 128 heads, and an attention-TP8 shard with 8 useful heads is also padded to 128. The numerator above counts only 64 useful global heads. Padding can add physical work; exact executed instructions and masked-lane behavior require the chosen kernel/trace.</td></tr>
+<tr><th>Sink and combined BMM/attention path</th><td>The MLA eligibility helper rejects the combined <em>query-absorption BMM followed by attention</em> custom-op path when a learnable sink is present. This is not the final value-expansion BMM, nor a claim that both operations become one device kernel. Its source calls the BMM and attention in sequence. A sink changes path eligibility even though its arithmetic contribution is tiny.</td></tr>
+<tr><th>Gate kernel choice</th><td>Our HY4 code has HPC fused gated-MLA GEMM, Triton and eager fallback paths. Fused gate application can change memory traffic and launches but does not remove the separate learned matrix multiplication.</td></tr>
+<tr><th>iHC activation traffic</th><td>A logical BF16 100K &times; 4 &times; 6,144 carrier contains 4.9152 GB, versus 1.2288 GB for one hidden tensor. This is a shape/byte comparison, not measured peak allocation: chunked prefill holds smaller active chunks, and GLM may keep separate hidden/residual buffers. iHC does not quadruple the MLA KV cache.</td></tr>
+<tr><th>TP / DP attention / PP</th><td>The audited branch supports PP and DP attention. It carries the flattened 24,576-wide iHC state between PP stages, plus top-k IDs at shared-index boundaries. FFN DP synchronization operates on the reduced 6,144-wide input. Replicated small projections, collectives and local padding are not charged to this full-model useful-work ledger. Do not multiply its total by TP size.</td></tr>
+<tr><th>MoE routing and shared branch</th><td>Exactly eight routed experts plus one shared expert are counted per token. Token imbalance, grouped-GEMM tile padding, dispatch, quantization and all-to-all affect time. HY4 disables shared-expert fusion because only routed experts use its activation clamp.</td></tr>
+<tr><th>Precision and throughput</th><td>Tencent's config declares BF16 weights; iHC projections are explicitly FP32 in our source. Runtime quantization flags and kernel choice can alter compute precision. No precision-equivalent PFLOPs or MFU is claimed. A measured MFU would need precision-compatible peak throughput, actual hardware and a measured interval.</td></tr>
+</tbody></table></div>
+<p class="caution"><strong>Bottom line:</strong> use the tree to identify arithmetic changes and formulate kernel experiments. Use an actual HY4 profile to answer how much slower or faster it runs. A small scalar feature can change an entire kernel path; a large FLOP increase can partly overlap other work.</p>
+</section>
+
+<section id="sources"><h2>07 &nbsp; Sources and audit trail</h2>
+<p><strong>Primary implementation:</strong> our SGLang <code>feat/hy4-preview-support</code>, commit <code>@@REV@@</code>. Internal GitLab links require access. This is not a claim about every upstream or production revision.</p>
+<p><strong>Model:</strong> <a href="@@HF_URL@@">Tencent HY4 config at 705d81ee5156</a>. <strong>Baseline:</strong> <a href="@@GLM_URL@@">GLM-5.2 100K execution tree and its generator</a>. The original report is not edited.</p>
+<details class="audit-note"><summary>Audited files and content hashes</summary><ul class="source-list">@@SOURCES@@</ul></details>
+<p><a href="source-audit.json">Source revision, anchors and SHA-256 manifest</a> &middot; <a href="hy4-config.json">Pinned HY4 config</a> &middot; <a href="ledger.json">Every leaf and per-layer integer FLOP count</a> &middot; <a href="https://github.com/tomyoung903/maas_docs/blob/main/tools/build_hy4_flops.py">Reproducible generator</a></p>
+<p><strong>Validation:</strong> exact GLM-total reconciliation, independent causal/selected-pair formulas, 21 refresh layers per model, unique ownership of every tree leaf, component and 78-layer sum reconciliation, source/config hashes, and desktop browser checks. This document contains no new benchmark measurements.</p>
+</section>
+<footer>HY4 100K prefill &middot; source audit 2026-09-09 &middot; MaaS Docs</footer>
+</main></div>
+<script id="ledger-data" type="application/json">@@DATA@@</script>
+<script>@@JS@@</script>
+<script defer src="../assets/maas-annotator.js" data-maas-annotator data-page-key="/hy4-flops/"></script>
+</body></html>
