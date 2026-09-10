@@ -1,0 +1,204 @@
+<!doctype html>
+<!-- Hand-maintained source of truth for this standalone architecture comparison. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kimi K3 versus the audited GLM-5.3 checkpoint: hybrid KDA and MLA attention, latent MoE, Attention Residuals, and the resulting cache and serving tradeoffs.">
+  <meta name="maas-reviewed-at" content="2026-09-10">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/k3-vs-glm53-architecture/">
+  <link rel="icon" href="data:,">
+  <title>Kimi K3 vs GLM-5.3: Architecture and Serving Implications | MaaS Docs</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <nav class="topbar" aria-label="Documentation navigation">
+    <div class="topbar-inner">
+      <a class="brand" href="../">MaaS Docs</a>
+      <div class="toplinks"><a href="../glm52-flops/">GLM reference</a><a href="#sources">Evidence &amp; scope</a></div>
+    </div>
+  </nav>
+  <div class="page-shell">
+    <aside class="overview" aria-label="On this page">
+      <p class="overview-title">On this page</p>
+      <nav aria-label="Page sections">
+        <a href="#mental-model">The main difference</a>
+        <a href="#comparison">Architecture comparison</a>
+        <a href="#attention">KDA, MLA and DSA</a>
+        <a href="#moe">Latent MoE</a>
+        <a href="#residuals">Attention Residuals</a>
+        <a href="#other">Activation &amp; vision</a>
+        <a href="#serving">Cache &amp; serving</a>
+        <a href="#sources">Evidence &amp; scope</a>
+      </nav>
+      <div class="rail-key">
+        <p><span class="dot teal"></span>Recurrent state</p>
+        <p><span class="dot blue"></span>Hidden state / token KV</p>
+        <p><span class="dot violet"></span>Latent features / depth</p>
+      </div>
+    </aside>
+    <main id="main">
+      <article>
+        <header class="page-header">
+          <p class="eyebrow">Model architecture · source-grounded comparison</p>
+          <h1>Kimi K3 vs GLM-5.3</h1>
+          <p class="lede">Two MoE models with different ways of carrying history, running experts, and reusing intermediate representations. Those differences matter directly to cache capacity and serving bottlenecks.</p>
+          <div class="meta"><span class="pill">Reviewed · 10 September 2026</span><span class="pill">K3 source · cc1ecdadaf37</span><span class="pill">GLM source · 6d08e28b0c06</span><span class="pill">Architecture ≠ measured throughput</span></div>
+        </header>
+
+        <section id="mental-model" class="verdict">
+          <span class="section-number">The compact answer</span>
+          <h2>K3 combines recurrent memory, narrower routed experts, and learned reuse across depth.</h2>
+          <p>Our GLM-5.3 checkpoint uses MLA with sparse position selection and conventional residual connections. K3 instead mixes Kimi Delta Attention with MLA, surrounds its routed experts with a latent bottleneck, and adds Attention Residuals.</p>
+          <p><strong>Keep three different ideas separate:</strong> KDA summarizes sequence history; MLA compresses each token’s KV representation; latent MoE compresses features passed through the expert network.</p>
+        </section>
+
+        <section id="comparison">
+          <span class="section-number">01 · The structural map</span>
+          <h2>Compare the actual model profile, not generic defaults</h2>
+          <p>The K3 values below come from its official checkpoint configuration, cross-checked against the SGLang implementation. The GLM column describes the previously audited RadixArk GLM-5.3 NVFP4 checkpoint—not every future model carrying the GLM-5.3 name.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">Component</th><th scope="col">Kimi K3</th><th scope="col">Audited GLM-5.3</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Backbone depth</th><td>93 layers</td><td>78 layers</td></tr>
+                <tr><th scope="row">Hidden width</th><td>7,168</td><td>6,144</td></tr>
+                <tr><th scope="row">Attention family</th><td>69 KDA + 24 MLA layers</td><td>MLA + DSA throughout</td></tr>
+                <tr><th scope="row">Feed-forward layout</th><td>First layer dense; 92 MoE layers</td><td>First 3 layers dense; 75 MoE layers</td></tr>
+                <tr><th scope="row">Routed experts</th><td>896 total; 16 selected per token</td><td>256 total; 8 selected per token</td></tr>
+                <tr><th scope="row">Routed input/output width</th><td>Latent width 3,584</td><td>Full hidden width 6,144</td></tr>
+                <tr><th scope="row">Expert intermediate width</th><td>3,072</td><td>2,048</td></tr>
+                <tr><th scope="row">Always-active shared branch</th><td>2 expert units; one widened module</td><td>1 shared expert</td></tr>
+                <tr><th scope="row">Residual processing</th><td>Attention Residuals; 12-layer blocks</td><td>Ordinary residual additions</td></tr>
+                <tr><th scope="row">Feed-forward activation</th><td>SiTU</td><td>SwiGLU</td></tr>
+                <tr><th scope="row">Modalities</th><td>Text, images, video</td><td>Text-only deployed model</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="note"><p><strong>Shared-expert counting:</strong> K3’s config specifies two units. SGLang packs them into one shared MLP whose intermediate width is twice one expert’s width. The repository’s “one shared expert” shorthand is not the same as one expert unit.</p></div>
+          <p class="source-note">Sources: <a href="https://huggingface.co/moonshotai/Kimi-K3/raw/main/config.json">official K3 configuration</a>; <a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/models/kimi_k3.py">K3 model implementation</a>; <a href="#sources">pinned GLM evidence</a>. Constructor defaults in the reusable KimiLinearConfig class are not the K3 checkpoint’s dimensions.</p>
+        </section>
+
+        <section id="attention">
+          <span class="section-number">02 · How history is represented</span>
+          <h2>KDA summarizes history; DSA selects historical positions</h2>
+          <p>K3 interleaves recurrent and token-attention layers. Its one-based layer pattern is:</p>
+          <figure>
+            <div class="pattern" role="img" aria-label="KDA, KDA, KDA, MLA repeated 23 times, followed by a final MLA layer">
+              <div class="repeat-group"><span class="chip kda">KDA</span><span class="arrow">→</span><span class="chip kda">KDA</span><span class="arrow">→</span><span class="chip kda">KDA</span><span class="arrow">→</span><span class="chip mla">MLA</span></div>
+              <span class="repeat-label">× 23</span><span class="arrow">→</span><span class="chip mla">MLA</span><span class="repeat-label">final layer</span>
+            </div>
+            <figcaption class="figure-caption">The final MLA layer is layer 93. Pattern and counts are defined by the checkpoint, not inferred from a default attention ratio.</figcaption>
+          </figure>
+          <div class="pair">
+            <div class="card kda">
+              <h3>Kimi Delta Attention</h3>
+              <p>Each new token updates a recurrent state representing earlier history, using learned forgetting and update gates, then reads from that state.</p>
+              <p>There is no separate historical K/V entry for every token in a KDA layer. Its live recurrent-state size is fixed for a given model and sequence.</p>
+              <p>Short causal convolutions participate in Q/K/V processing. Prefill uses chunked kernels: recurrent semantics do not require token-at-a-time Prefill execution.</p>
+            </div>
+            <div class="card mla">
+              <h3>K3’s MLA layers</h3>
+              <p>These retain tokenwise compressed KV and perform causal attention over historical positions, complementing the recurrent summaries with direct access to history.</p>
+              <p>The K3 MLA implementation also applies a learned output gate and skips RoPE in this text-attention path.</p>
+              <p>Because these layers remain, the complete K3 model does not have constant memory or context-independent attention cost.</p>
+            </div>
+          </div>
+          <h3>GLM: keep compressed KV, then select what to read</h3>
+          <p>GLM uses MLA to retain compressed tokenwise KV throughout its layers. DeepSeek Sparse Attention (DSA) adds a lightweight indexer that selects up to 2,048 historical positions for the expensive attention operation. The indexer still searches historical positions.</p>
+          <p>Some layers reuse the previous layer’s selected indices. They still have their own layer-specific KV: reusing the selected positions does not mean reusing another layer’s complete attention cache.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th scope="col">Mechanism</th><th scope="col">What it changes</th><th scope="col">What it does not mean</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">KDA</th><td>Updates a compact recurrent memory of the past.</td><td>Not a growing list of token K/V entries.</td></tr>
+              <tr><th scope="row">MLA</th><td>Compresses each token’s KV representation.</td><td>Not automatically sparse position selection.</td></tr>
+              <tr><th scope="row">DSA</th><td>Selects historical positions for attention.</td><td>Not fixed-state recurrent attention.</td></tr>
+            </tbody>
+          </table></div>
+          <p class="source-note">Implementation anchors: K3 <code>KimiK3DeltaAttention</code>, <code>KimiK3MLAAttention</code>, and <code>KimiK3DecoderLayer</code>; GLM <code>DeepseekV2AttentionMLA</code>. <a href="#sources">Pinned source links</a>.</p>
+        </section>
+
+        <section id="moe">
+          <span class="section-number">03 · Where routed experts operate</span>
+          <h2>Latent MoE narrows the routed feature space</h2>
+          <p>K3’s router reads the original full-width hidden state. A common projection then compresses the expert input; selected experts operate in that narrower space. Their outputs are combined, normalized, and expanded back to the model’s hidden width.</p>
+          <figure class="moe-flow" aria-labelledby="moe-caption">
+            <div class="flow-head">Hidden state <span class="math-vec sym-hidden">h<sub>t</sub></span> ∈ <span class="math-space">ℝ<sup>7168</sup></span></div>
+            <div class="flow-branches">
+              <div class="flow-branch"><h3>Router</h3><div class="flow-step">Read full-width state</div><div class="down-arrow">↓</div><div class="flow-step">Select experts<br>and mixing weights</div><p class="source-note">Routing decisions control the middle branch.</p></div>
+              <div class="flow-branch routed"><h3>Routed branch</h3><div class="flow-step">Common down projection<br>7,168 → 3,584</div><div class="down-arrow">↓</div><div class="flow-step"><span class="math-vec sym-latent">z<sub>t</sub></span> ∈ <span class="math-space">ℝ<sup>3584</sup></span><br>Selected expert computations</div><div class="down-arrow">↓</div><div class="flow-step">Weighted combine → RMSNorm</div><div class="down-arrow">↓</div><div class="flow-step">Common up projection<br>3,584 → 7,168</div></div>
+              <div class="flow-branch"><h3>Shared branch</h3><div class="flow-step">Always active</div><div class="down-arrow">↓</div><div class="flow-step">Shared MLP at<br>full hidden width</div><p class="source-note">Two expert units packed into one module.</p></div>
+            </div>
+            <div class="flow-tail">Add expanded routed output + shared-branch output</div>
+            <figcaption id="moe-caption" class="figure-caption">A common bottleneck surrounds the routed expert block. It is not a per-expert LoRA adapter and is unrelated to KV-cache compression.</figcaption>
+          </figure>
+          <p class="symbol-key"><span class="math-vec sym-hidden">h<sub>t</sub></span>: full-width hidden vector for token <span class="math-var">t</span>. <span class="math-vec sym-latent">z<sub>t</sub></span>: routed-expert latent vector. <span class="math-space">ℝ<sup>d</sup></span>: real vector space of dimension <span class="math-var">d</span>.</p>
+          <p>GLM’s routed experts instead operate directly on its full hidden width. Both models still have top-k routing and an always-active shared branch.</p>
+          <div class="note warning"><p><strong>Narrower experts do not imply a blanket reduction in model compute.</strong> K3 activates more experts, has more layers, and adds common projections and normalization. Architecture alone does not establish a higher serving TPM.</p></div>
+          <p class="source-note">Source: <a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/models/kimi_k3.py">KimiK3MoE</a>, especially the router, shared branch, latent projections, and forward path.</p>
+        </section>
+
+        <section id="residuals">
+          <span class="section-number">04 · Reusing representations across depth</span>
+          <h2>Attention Residuals are not token-to-token attention</h2>
+          <p>GLM ordinarily carries a residual stream forward through additions. K3 additionally lets each token mix representations saved at earlier block boundaries.</p>
+          <div class="depth-flow" role="img" aria-label="For one token: earlier block snapshots plus current state, then learned scoring and softmax over depth, then weighted representation for the next operation">
+            <div class="depth-box">Earlier block snapshots<br>+ current residual state</div><span class="arrow">→</span><div class="depth-box">Learned scores<br>Softmax over depth</div><span class="arrow">→</span><div class="depth-box">Weighted mixture<br>for attention or MoE</div>
+          </div>
+          <ol>
+            <li>For one token, collect the available earlier block representations and the current residual state.</li>
+            <li>Normalize each candidate for scoring and assign a learned scalar score.</li>
+            <li>Apply softmax across those depth candidates.</li>
+            <li>Mix the original, unnormalized candidate vectors using those weights.</li>
+          </ol>
+          <p>The question being answered is: <strong>“Which earlier depth’s representation should this layer reuse?”</strong> It is not “Which previous sequence token should I attend to?”</p>
+          <div class="note"><p>The representation bank belongs to the current forward pass; it is not persistent sequence KV. Residual additions still exist inside blocks—K3 does not replace every addition with attention.</p></div>
+          <p class="source-note">Source: <a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/layers/attn_residual.py">aggregate_stream_torch and the Attention Residual bank</a>.</p>
+        </section>
+
+        <section id="other">
+          <span class="section-number">05 · Two additional distinctions</span>
+          <h2>Activation and multimodal processing also differ</h2>
+          <div class="pair">
+            <div class="card"><h3>SiTU versus SwiGLU</h3><p>K3’s SiTU gated activation softly bounds the gate branch with tanh; the checkpoint also enables a soft bound on the other multiplicative branch. This differs from the ordinary SiLU-based gated FFN used by the audited GLM checkpoint.</p><p class="source-note"><a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/layers/activation.py">SituAndMul implementation</a>.</p></div>
+            <div class="card"><h3>Vision encoder + language backbone</h3><p>K3’s wrapper combines a MoonViT3d vision tower, a multimodal projector, and the language model. Image/video inputs therefore add a processing path absent from our text-only GLM deployment.</p><p>That is not evidence that a text-only K3 request always pays image-encoding cost.</p><p class="source-note"><a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/models/kimi_k3.py">KimiK3ForConditionalGeneration</a>.</p></div>
+          </div>
+        </section>
+
+        <section id="serving">
+          <span class="section-number">06 · Implications for our serving experiments</span>
+          <h2>K3 has two different cache-capacity constraints</h2>
+          <div class="pair">
+            <div class="card mla"><h3>MLA KV pool</h3><p>Stores tokenwise attention history. Its occupied capacity grows with cached context length.</p><p>Only K3’s MLA layers use this kind of growing attention memory.</p></div>
+            <div class="card kda"><h3>KDA recurrent-state pool</h3><p>Stores live sequence states and additional retained copies required by caching or speculative execution.</p><p>Capacity depends on concurrent sequences and state-copy policy, not just total KV-token slots.</p></div>
+          </div>
+          <ul class="takeaways">
+            <li><strong>A concurrency limit can come from state storage.</strong> K3 can run out of KDA-state slots while its MLA KV pool still has space.</li>
+            <li><strong>Prefix reuse must preserve the right state.</strong> An arbitrary cached KV page is not by itself a substitute for the recurrent state at the matching prefix boundary.</li>
+            <li><strong>P/D transfer must cover both representations.</strong> For K3, transferring the growing MLA KV alone is not sufficient to resume all layers on Decode.</li>
+            <li><strong>Long-context cost changes, but does not disappear.</strong> Most K3 layers avoid repeated token-history scans, while the remaining MLA layers still attend over growing history.</li>
+            <li><strong>Compare useful service throughput, not model names.</strong> Input contexts, output lengths, quantization, kernels, routing, concurrency, and cache policy must be controlled before attributing a TPM difference to architecture.</li>
+          </ul>
+          <div class="note"><p><strong>Bottom line:</strong> K3 reduces dependence on historical-token scans in most layers, while adding a larger expert network and more sophisticated residual processing. Its bottlenecks need not resemble GLM-5.3’s; this explanation is not a measured performance ranking.</p></div>
+          <p class="source-note">Source: the two-pool configuration and serving notes in the <a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/docs/cookbook/autoregressive/Moonshotai/Kimi-K3.mdx">pinned K3 serving guide</a>.</p>
+        </section>
+
+        <section id="sources">
+          <span class="section-number">07 · Evidence boundary</span>
+          <h2>Checkpoint facts, implementation facts, and implications</h2>
+          <p>This page preserves the source-grounded explanation reviewed on 10 September 2026. It does not infer K3’s checkpoint dimensions from reusable class defaults, claim that all GLM-5.3 distributions are identical, or turn architecture differences into unmeasured speedup percentages.</p>
+          <ol class="sources">
+            <li><strong>K3 checkpoint:</strong> <a href="https://huggingface.co/moonshotai/Kimi-K3/raw/main/config.json">Moonshot AI’s Kimi-K3 config.json</a>, checked on the review date. This is a moving upstream URL. It supplied exact layer placement, hidden/expert dimensions, shared-expert count, gates, and residual settings.</li>
+            <li><strong>K3 implementation:</strong> our SGLang remote branch <code>feat/support-kimi-k3</code>, verified at <code>cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c</code>. <a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/models/kimi_k3.py">Model implementation</a>; <a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/configs/kimi_linear.py">configuration interpretation</a>.</li>
+            <li><strong>GLM checkpoint:</strong> the audited RadixArk GLM-5.3 NVFP4 experiment configuration; SHA-256 <code>3fe5e94b28789c603f17f98dcaa1f8e4d0c70d550cdcd32e84b3cfd75128051a</code>. Counts in the comparison refer to its base backbone, not an added draft or vision model.</li>
+            <li><strong>GLM implementation:</strong> SGLang <code>6d08e28b0c0691899973e3f11bf01fdbdf192a63</code>. <a href="https://git.luchentech.com/maas/sglang/-/blob/6d08e28b0c0691899973e3f11bf01fdbdf192a63/python/sglang/srt/models/glm4_moe.py">GLM model mapping</a>; <a href="https://git.luchentech.com/maas/sglang/-/blob/6d08e28b0c0691899973e3f11bf01fdbdf192a63/python/sglang/srt/models/deepseek_v2.py">MLA and MoE implementation</a>; <a href="https://git.luchentech.com/maas/sglang/-/blob/6d08e28b0c0691899973e3f11bf01fdbdf192a63/python/sglang/srt/configs/model_config.py">DSA index-reuse rules</a>.</li>
+          </ol>
+          <p class="source-note">The explanation is publicly readable. Company GitLab source links may require authorization. No cluster credentials, request contents, or private operational endpoints are included.</p>
+        </section>
+        <footer class="footer">MaaS Docs · Kimi K3 vs GLM-5.3 · hand-maintained HTML · reviewed 2026-09-10</footer>
+      </article>
+    </main>
+  </div>
+</body>
+</html>
