@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Theoretical bandwidth ceilings versus observed GLM-5.3 GB300 KV transfer speeds for the HiCache L3→L2→GPU restore path and the separate Prefill PP4→Decode DPA handoff.">
+  <meta name="description" content="Corrected GLM-5.3 GB300 KV-transfer boundaries: workload KV rate, residual P/D drain, active MNNVL bandwidth, and official real-world NVLink 5 measurements.">
   <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/tmp/glm53-gb300-hicache-pp4-dpa-kv-transfer-speeds/">
   <link rel="icon" href="data:,">
-  <title>GLM-5.3 GB300 KV Transfer Speeds: Theory vs Observed</title>
+  <title>GLM-5.3 GB300 KV Transfer: Corrected Measurement Boundaries</title>
   <style>
     :root {
       --canvas: #f5f7fa;
@@ -108,6 +108,7 @@
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
+    .metric-value.compact { font-size: 29px; }
     .metric.hardware .metric-value { color: var(--blue); }
     .metric.observed .metric-value { color: var(--teal); }
     .metric.proxy .metric-value { color: var(--amber); }
@@ -206,50 +207,50 @@
   <main class="page">
     <header class="hero">
       <p class="eyebrow">One million cached tokens · PP4 prefill · DP4 attention decode</p>
-      <h1>KV transfer speed: hardware floor vs deployment reality</h1>
-      <p class="lede">The hierarchy restore path is modeled at <strong>0.80 s</strong>; its optimistic hardware-reference floor is <strong>0.15 s</strong>. The separate PP→DPA handoff has a <strong>61 ms hardware floor</strong> but only a <strong>1.99 s workload-throughput proxy</strong>. These values do not share the same measurement boundary.</p>
+      <h1>KV transfer: workload rate is not wire bandwidth</h1>
+      <p class="lede">The HiCache restore model remains <strong>≈0.80 s</strong>. For PP→DPA, <strong>27.741 GB/s</strong> is KV traffic divided by the whole replay—not active NVLink bandwidth—and the former latency extrapolation was invalid. The retained final-drain mean is <strong>0.632–0.636 s</strong>; active Mooncake bandwidth was not captured.</p>
       <div class="legend" aria-label="Evidence labels">
         <span class="badge hardware">Hardware floor</span>
         <span class="badge observed">Observed application rate</span>
-        <span class="badge proxy">Derived proxy</span>
+        <span class="badge proxy">Workload average</span>
       </div>
     </header>
 
     <div class="metrics" aria-label="Headline results">
-      <div class="metric hardware">
-        <div class="metric-label">HiCache reference floor</div>
-        <div class="metric-value">≈0.15 s</div>
-        <div class="metric-note">Includes two GPUs sharing each Grace CPU</div>
-      </div>
       <div class="metric observed">
         <div class="metric-label">HiCache deployment model</div>
         <div class="metric-value">≈0.80 s</div>
         <div class="metric-note">Two measured stage rates in series</div>
       </div>
       <div class="metric hardware">
-        <div class="metric-label">PP→DPA hardware floor</div>
-        <div class="metric-value">61.4 ms</div>
-        <div class="metric-note">55.224 GB into one 900 GB/s ingress</div>
+        <div class="metric-label">NVLink 5 nominal peak</div>
+        <div class="metric-value">900 GB/s</div>
+        <div class="metric-note">One GPU, one direction; theoretical</div>
+      </div>
+      <div class="metric observed">
+        <div class="metric-label">Published pairwise copy</div>
+        <div class="metric-value">798–822</div>
+        <div class="metric-note">GB/s on GB200 NVLink 5; not our run</div>
       </div>
       <div class="metric proxy">
-        <div class="metric-label">PP→DPA workload proxy</div>
-        <div class="metric-value">≈1.99 s</div>
-        <div class="metric-note">At 27.741 GB/s observed system throughput</div>
+        <div class="metric-label">Our final P/D drain</div>
+        <div class="metric-value compact">0.632–0.636 s</div>
+        <div class="metric-note">After final-chunk submission; not pure copy</div>
       </div>
     </div>
 
     <section aria-labelledby="comparison-title">
-      <h2 id="comparison-title">One table, with the boundaries exposed</h2>
-      <p class="section-copy">Hardware values are lower bounds from bulk bandwidth. Deployment values come from SGLang counters or workload-level byte throughput; they include software effects but not always the same interval.</p>
+      <h2 id="comparison-title">One table, with corrected boundaries</h2>
+      <p class="section-copy">Hardware values are reference ceilings. Deployment evidence is labeled by its actual timer; no active P/D link rate was measured.</p>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Path</th>
               <th>Hardware reference</th>
-              <th>Observed application rate</th>
-              <th class="num">1M reference floor</th>
-              <th class="num">1M deployment result</th>
+              <th>Deployment evidence</th>
+              <th class="num">Derived 1M timing</th>
+              <th class="num">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -257,76 +258,101 @@
               <td>L3 → L2</td>
               <td><span class="rate-hardware">≈778 GB/s</span><small>Aggregate Grace-memory bandwidth per tray</small></td>
               <td><span class="rate-observed">28.84–31.31 GiB/s</span><small>Each PP rank; same-deployment calibration</small></td>
-              <td class="num"><span class="rate-hardware">≈71 ms</span></td>
-              <td class="num"><span class="rate-observed">436 ms</span></td>
+              <td class="num"><span class="rate-hardware">≈71 ms floor</span></td>
+              <td class="num"><span class="rate-observed">436 ms</span><small>Calibrated stage model</small></td>
             </tr>
             <tr>
               <td>L2 → GPU HBM</td>
               <td><span class="rate-hardware">350–360 GB/s</span><small>NVIDIA healthy achieved bulk-H2D reference; not peak</small></td>
               <td><span class="rate-observed">39.023 GB/s</span><small>Completed bytes ÷ CUDA-event duration</small></td>
-              <td class="num"><span class="rate-hardware">79–81 ms</span><small>28.320 GB on the heavier shared-Grace pair</small></td>
-              <td class="num"><span class="rate-observed">363 ms</span></td>
+              <td class="num"><span class="rate-hardware">79–81 ms floor</span><small>28.320 GB on the heavier shared-Grace pair</small></td>
+              <td class="num"><span class="rate-observed">363 ms</span><small>CUDA-event-derived model</small></td>
             </tr>
             <tr>
               <td>Complete L3 → GPU</td>
               <td>Two stages in series</td>
               <td>Derived from both observed rates</td>
-              <td class="num"><span class="rate-hardware">≈150–152 ms</span></td>
+              <td class="num"><span class="rate-hardware">≈150–152 ms floor</span></td>
               <td class="num"><span class="rate-observed">≈799 ms</span><small>Derived, not directly timed</small></td>
             </tr>
             <tr>
               <td>PP4 → one DPA GPU</td>
-              <td><span class="rate-hardware">900 GB/s</span><small>One-way destination NVLink ingress</small></td>
-              <td><span class="rate-proxy">27.741 GB/s</span><small>System-wide workload throughput</small></td>
-              <td class="num"><span class="rate-hardware">61.4 ms</span></td>
-              <td class="num"><span class="rate-proxy">≈1.99 s</span><small>Capacity proxy, not request latency</small></td>
+              <td><span class="rate-hardware">900 GB/s</span><small>Nominal one-way peak of one destination GPU</small></td>
+              <td><span class="rate-proxy">27.741 GB/s workload traffic</span><small>All P/D bytes ÷ 189.431 s replay; final drain 0.632–0.636 s</small></td>
+              <td class="num"><span class="rate-hardware">61.4 ms floor</span></td>
+              <td class="num"><strong>Active rate unknown</strong><small>No isolated Mooncake transfer timer or NVLink counters</small></td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <section aria-labelledby="paths-title">
-      <h2 id="paths-title">Why the two paths are calculated differently</h2>
-      <div class="paths">
-        <article class="path-card">
-          <div class="path-name"><span>HiCache restore</span><span class="badge observed">staged</span></div>
-          <div class="pipeline" aria-label="L3 to L2 to GPU HBM">
-            <div class="node"><strong>L3</strong><span>Mooncake EGM</span></div><span class="arrow">→</span>
-            <div class="node"><strong>L2</strong><span>Grace memory</span></div><span class="arrow">→</span>
-            <div class="node"><strong>L1</strong><span>GPU HBM</span></div>
-          </div>
-          <div class="equation"><span class="math-var">t</span><sub>restore</sub> ≈ 0.436 + 0.363 = <strong>0.799 <span class="math-unit">s</span></strong></div>
-        </article>
-
-        <article class="path-card">
-          <div class="path-name"><span>Prefill handoff</span><span class="badge hardware">fan-in</span></div>
-          <div class="pipeline" aria-label="Four prefill ranks converge on one decode DPA GPU">
-            <div class="fan-sources"><span>PP0 · 13.452 GB</span><span>PP1 · 13.452 GB</span><span>PP2 · 14.160 GB</span><span>PP3 · 14.160 GB</span></div>
-            <span class="arrow">→</span>
-            <div class="node"><strong>One DPA rank</strong><span>55.224 GB total</span></div>
-          </div>
-          <div class="equation blue"><span class="math-var">t</span><sub>P→D</sub> ≥ 55.224 ÷ 900 = <strong>61.4 <span class="math-unit">ms</span></strong></div>
-        </article>
+    <section aria-labelledby="online-title">
+      <h2 id="online-title">Does real NVLink 5 reach 900 GB/s?</h2>
+      <p class="section-copy">A normalized collective score can nearly match 900 GB/s. Direct active-copy payload reaches about 89–91% in public examples, while real communication kernels lose more to synchronization and work around the transfer.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Published test</th>
+              <th>Measured rate</th>
+              <th class="num">Share of 900</th>
+              <th>Boundary and qualification</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/25.3.2/dra-cds.html#usage-example-a-multi-node-nvbandwidth-test">NVIDIA nvbandwidth</a></td>
+              <td><span class="rate-observed">797.65–798.25 GB/s</span></td>
+              <td class="num">88.6–88.7%</td>
+              <td>Two nodes × four GB200 GPUs; individual 512 MiB copy-engine reads, median of three samples</td>
+            </tr>
+            <tr>
+              <td><a href="https://docs.aws.amazon.com/eks/latest/userguide/ml-eks-nvidia-ultraserver.html#nvidia-ultraserver-imex-nvlink">AWS nvbandwidth</a></td>
+              <td><span class="rate-observed">820.87–822.61 GB/s</span></td>
+              <td class="num">91.2–91.4%</td>
+              <td>Two-node GB200 example using the same pairwise copy-engine-read test</td>
+            </tr>
+            <tr>
+              <td><a href="https://docs.oracle.com/en-us/iaas/Content/Compute/gpu-quick-start/nvidia/GB200/README-GB200.htm">OCI NCCL AllReduce</a></td>
+              <td><span class="rate-observed">895.54 GB/s busbw</span></td>
+              <td class="num">99.5%</td>
+              <td>Two hosts, 8 GiB; normalized collective bus bandwidth with NVLS—not direct payload bytes ÷ active-copy time</td>
+            </tr>
+            <tr>
+              <td><a href="https://nvidia.github.io/TensorRT-LLM/blogs/tech_blog/blog18_Optimizing_MoE_Communication_with_One_Sided_AlltoAll_Over_NVLink.html">TensorRT-LLM one-sided MoE</a></td>
+              <td><span class="rate-observed">753.28 / 728.20 GB/s</span></td>
+              <td class="num">83.7% / 80.9%</td>
+              <td>EP8, batch 2048 dispatch / combine; logical application bandwidth including local-rank traffic</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+      <div class="equation blue">55.224 ÷ 900 = <strong>61.4 <span class="math-unit">ms</span></strong> &nbsp;·&nbsp; 55.224 ÷ 798.02 = <strong>69.2 <span class="math-unit">ms</span></strong></div>
+      <p class="section-copy">The public sources do not decompose every percentage point of the pairwise-copy gap. NVIDIA's own guidance shows that measured payload depends on copy-engine and endpoint efficiency, message size, alignment, bytes in flight, vectorization, and software tuning. Application paths then add launch, layout, queue, and synchronization costs.</p>
+      <p class="runline">The closest detailed official evidence is GB200, not our GB300. Both use the same 900 GB/s-per-direction NVLink 5 fabric rating. Even the measured-copy substitution adds only 7.8 ms; it cannot create a two-second delay. NCCL <code>busbw</code> is a derived collective normalization, so its near-900 result is not contradictory.</p>
     </section>
 
     <section aria-labelledby="limits-title">
-      <h2 id="limits-title">What the observed column does—and does not—mean</h2>
+      <h2 id="limits-title">Why our P/D boundary is much slower</h2>
       <div class="caveat">
-        <strong>Read before comparing</strong>
+        <strong>The decisive correction</strong>
         <ul>
-          <li>The 799 ms HiCache value is a serial estimate from two measured rates; layerwise GPU loads may overlap later compute. Its 150–152 ms reference floor is optimistic, not an end-to-end MNNVL guarantee.</li>
-          <li>The 1.99 s P→D value scales the formal run's aggregate throughput. It is not an isolated 1M-request latency measurement.</li>
-          <li>Do not use <code>kv_transfer_speed_gb_s</code> for this extrapolation: its Mooncake numerator covers all chunks, while its fallback timer begins after final-chunk submission.</li>
+          <li><strong>27.741 GB/s is workload production:</strong> 30,119,736 prompt tokens/min × 55,224 bytes/token ÷ 60 = 27.722 GB/s; page rounding explains the final 0.07%.</li>
+          <li>The 900 GB/s peak assumes one large, aligned, continuously active flow. Our Mooncake path uses 8K chunks, page/layer scatter-gather work, queues, polling, and four-PP-rank completion.</li>
+          <li>All four PP sources share one DPA GPU's 900 GB/s ingress; they do not receive 900 GB/s each. The slowest PP acknowledgement gates decode readiness.</li>
+          <li><code>kv_transfer_speed_gb_s</code> also mixes all-chunk bytes with a fallback timer beginning after final-chunk submission, so it is not active wire bandwidth.</li>
         </ul>
       </div>
-      <p class="runline"><strong>Formal P→D run:</strong> 2,048 requests · concurrency 80 · 189.431 s · 5,255.059 GB page-rounded transfer payload. The L3→L2 rates came from earlier same-deployment observations because this retained interval had no L3 reads.</p>
+      <p class="runline"><strong>Formal P→D run:</strong> 2,048 requests · concurrency 80 · 189.431 s · 5,255.059 GB page-rounded payload · HTTP TTFT p50 6.054 s · per-rank final-drain mean 0.632–0.636 s. No retained counter isolates active Mooncake or NVLink time.</p>
       <div class="sources">
-        <strong>Hardware sources</strong>
+        <strong>Sources</strong>
         <a href="https://www.nvidia.com/en-us/data-center/gb300-nvl72/">GB300 NVL72 specifications</a>
         <a href="https://docs.nvidia.com/dccpu/grace-perf-tuning-guide/health-checks.html">Grace H2D health check</a>
         <a href="https://docs.nvidia.com/multi-node-nvlink-systems/multi-node-tuning-guide/ucx.html">MNNVL one-way bandwidth</a>
+        <a href="https://github.com/NVIDIA/nvbandwidth#usage">nvbandwidth methodology</a>
+        <a href="https://github.com/NVIDIA/nccl-tests/blob/master/doc/PERFORMANCE.md">NCCL bandwidth semantics</a>
+        <a href="https://kvcache-ai.github.io/Mooncake/performance/mooncake/tebench.html">Mooncake tebench boundaries</a>
       </div>
     </section>
 
