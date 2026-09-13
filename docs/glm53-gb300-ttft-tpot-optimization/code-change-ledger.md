@@ -35,7 +35,9 @@ This combined export was finalized after the ATT33 milestone archive; that archi
 | ATT33 | Frontend projected-load escape threshold 8000ms → 0; affinity retained | `attempt33-two-prefill-strict-affinity/preparation/` |
 | ATT34 | Both Prefill chunk/max-prefill limits 8192 → 12288 and matching graph size; all frontend/Decode/Store settings retained | `attempt34-two-prefill-12k-strict-affinity/preparation/` |
 
-Each directory contains before/trial values, complete before/after renders, a machine-checked scope diff, command, rollback command and SHA256 hashes. ATT34 changes only two Prefill pods; six other pod/container incarnations must remain unchanged. This control asks whether Prefill throughput headroom reduces TTFT queues with locality already improved.
+ATT35 is an unchanged repeat of ATT34 after its generator failed the existing50ms event-loop-lag gate. No runtime/source/image/resource/validation changes are made; it retains all eight pod/container incarnations and uses a fresh cache reset. Its copied recipe, fresh attestations and reused bounded-check provenance are explicit in `attempt35-two-prefill-12k-repeat/preparation/PREPARED.json`. It is a new experiment record, not a new serving-code change.
+
+Each rollout directory contains before/trial values, complete before/after renders, a machine-checked scope diff, command, rollback command and SHA256 hashes. ATT34 changes only two Prefill pods; six other pod/container incarnations must remain unchanged. This control asks whether Prefill throughput headroom reduces TTFT queues with locality already improved.
 
 ## Native frontend provenance
 

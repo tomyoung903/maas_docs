@@ -14,7 +14,9 @@ Primary goal, reaffirmed by Tom on 13 September: the same TTFT standard achieved
 | ATT31: candidate05, 8K | Interrupted after backlog guard; 2,968 successes, zero failures; worst 20s p50 16.477s | `attempt31-two-prefill-matched-rate/REPORT.md`; Alex `20260913_070704` |
 | ATT32: session affinity 1800s | Locality improved, but 14 HTTP400 binding conflicts; 956 successes; residual bootstraps cleared after 300s timeout | `attempt32-two-prefill-session-affinity/REPORT.md`; Alex `20260913_073337` |
 | ATT33: strict affinity | Full 600s completed, 11,842 successes, zero failures/empty outputs. Worst 20s p50 6.116s; 213/603 windows above 4s. Hit 89.8904%; actual uncached approximately 6.069M TPM | `attempt33-two-prefill-strict-affinity/REPORT.md`; Alex `20260913_075613` |
-| ATT34: 12K with strict affinity | Applied to Prefill132/151; readiness and bounded checks precede replay. No performance result yet | `attempt34-two-prefill-12k-strict-affinity/STATUS.json`, `preparation/PREPARED.json` |
+| ATT34: 12K with strict affinity | 11,842 successes, zero failures; worst20s p50 4.571s,56/603 above4. Generator invalid: event-loop lag p99 50.390ms >50ms; diagnostic only | `attempt34-two-prefill-12k-strict-affinity/REPORT.md`; Alex `20260913_084212` |
+
+| ATT35: unchanged12K repeat | Prepared with identical eight runtime incarnations; fresh cache reset and generator attestation underway | `attempt35-two-prefill-12k-repeat/preparation/PREPARED.json` |
 
 Latest phase and active process handles: root `STATUS.json` and the current arm's `STATUS.json` / `tool-sessions.json`. An applied configuration is not a completed experiment. Failed and partial arms remain in this table.
 
