@@ -1,0 +1,561 @@
+--- a/python/sglang/srt/managers/scheduler_pp_mixin.py
++++ b/python/sglang/srt/managers/scheduler_pp_mixin.py
+@@ -234,6 +234,17 @@
+         send_consensus_bootstrapped_work = []
+         send_release_work = []
+ 
++        # Keep ring depth independent from launch/output-preparation order on
++        # this non-speculative, non-overlap PP4/TP1 Prefill path.
++        can_launch_before_outputs = (
++            get_parallel().pp_async_batch_depth == 1
++            and self.ps.pp_size == 4
++            and get_parallel().tp_size == 1
++            and not self.enable_staging
++            and not self.enable_overlap
++            and self.spec_algorithm.is_none()
++        )
++
+         while True:
+             server_is_idle = True
+             for mb_id in range(self.pp_loop_size):
+@@ -262,47 +273,6 @@
+                 self._pp_commit_comm_work(send_transfer_work)
+                 tmbs[mb_id] = transferred_rids
+ 
+-                self.process_prefill_chunk(
+-                    last_batch=self.last_batch, running_batch=self.running_batch
+-                )
+-                prefill_plan = self.get_new_batch_prefill(self.running_batch)
+-                batch = prefill_plan.batch_to_run
+-                self.running_batch = prefill_plan.running_batch
+-                batch = self.dp_attn_adapter.maybe_prepare_mlp_sync_batch(batch)
+-                self.mbs[mb_id] = batch
+-                self.running_mbs[mb_id] = self.running_batch
+-
+-                cur_batch: Optional[ScheduleBatch] = self.mbs[mb_id]
+-                self.cur_batch_for_debug = cur_batch
+-                if cur_batch:
+-                    server_is_idle = False
+-                    pp_proxy_tensors = self._pp_recv_proxy_tensors()
+-
+-                if get_parallel().pp_async_batch_depth > 0:
+-                    next_pp_outputs, next_batch_result, d2h_event = (
+-                        self._pp_commit_send_output_work_and_preprocess_output_tensors(
+-                            next_first_rank_mb_id,
+-                            next_mb_id,
+-                        )
+-                    )
+-                self._pp_commit_comm_work(self.send_proxy_work)
+-                if cur_batch:
+-                    if self.enable_staging:
+-                        self.maybe_prefetch_staging_for_batch(cur_batch)
+-                    result, self.launch_event = self._pp_launch_batch(
+-                        mb_id,
+-                        cur_batch,
+-                        pp_proxy_tensors,
+-                        self.mb_metadata,
+-                        self.last_rank_comm_queue,
+-                    )
+-                if get_parallel().pp_async_batch_depth == 0:
+-                    next_pp_outputs, next_batch_result, d2h_event = (
+-                        self._pp_commit_send_output_work_and_preprocess_output_tensors(
+-                            next_first_rank_mb_id,
+-                            next_mb_id,
+-                        )
+-                    )
+                 send_consensus_bootstrapped_work, consensus_bootstrapped_rids = (
+                     self._pp_pd_send_consensus_bootstrapped_ids(
+                         bmbs,
+@@ -316,6 +286,127 @@
+                         tmbs, next_first_rank_mb_id, release_rids, transferred_rids
+                     )
+                 )
++                if not self.pp_group.is_last_rank:
++                    self.send_req_work = self._pp_send_pyobj_to_next_stage(
++                        recv_reqs, async_send=True
++                    )
++                    send_bootstrapped_work = self._pp_send_pyobj_to_next_stage(
++                        bootstrapped_rids, async_send=True
++                    )
++                    send_transfer_work = self._pp_send_pyobj_to_next_stage(
++                        transferred_rids, async_send=True
++                    )
++
++
++                # Keep one non-final map on its original CUDA stream, while
++                # the CPU prepares the next batch. Always join before returned
++                # controls, old-result handling, or a new iteration can release KV.
++                with self._pp_chunk_map_scope(
++                    enabled=(
++                        can_launch_before_outputs
++                        and not is_xpu()
++                        and not envs.SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM.get()
++                        and self.scripted_scheduler_hook is None
++                        and self.forward_sleep_time is None
++                    )
++                ):
++                    self.process_prefill_chunk(
++                        last_batch=self.last_batch, running_batch=self.running_batch
++                    )
++                    prefill_plan = self.get_new_batch_prefill(self.running_batch)
++                    batch = prefill_plan.batch_to_run
++                    self.running_batch = prefill_plan.running_batch
++                    batch = self.dp_attn_adapter.maybe_prepare_mlp_sync_batch(batch)
++                    self.mbs[mb_id] = batch
++                    self.running_mbs[mb_id] = self.running_batch
++
++                    cur_batch: Optional[ScheduleBatch] = self.mbs[mb_id]
++                    self.cur_batch_for_debug = cur_batch
++                    # A mixed/decode input may need the older output relay before
++                    # forward. Only reorder explicit, independent Prefill inputs.
++                    launch_before_outputs = (
++                        get_parallel().pp_async_batch_depth == 0
++                        or (
++                            can_launch_before_outputs
++                            and (
++                                cur_batch is None
++                                or (
++                                    cur_batch.forward_mode.is_extend()
++                                    and (
++                                        cur_batch.prefill_input_ids_cpu is not None
++                                        or cur_batch.input_ids is not None
++                                    )
++                                    and cur_batch.mix_running_indices is None
++                                    and self.mbs[next_mb_id] is not cur_batch
++                                )
++                            )
++                        )
++                    )
++                    if not launch_before_outputs:
++                        self._pp_finish_chunk_map(publish=True)
++                    # At depth1, queued last-stage output and the other ranks'
++                    # already-received relay are independent of this slot's input.
++                    # Publish after the control bundle, before current proxy input.
++                    preposted_output_work = None
++                    if (
++                        can_launch_before_outputs
++                        and launch_before_outputs
++                        and not is_xpu()
++                    ):
++                        self._pp_commit_comm_work(self.send_output_work)
++                        preposted_output_work = self._pp_send_output_to_next_stage(
++                            next_first_rank_mb_id,
++                            self.mbs,
++                            self.last_rank_comm_queue,
++                            self.pp_outputs,
++                        )
++
++                    if cur_batch:
++                        server_is_idle = False
++                        # Device-resident cached prefix KV does not depend on the
++                        # incoming activations for this suffix. Publish on the
++                        # scheduler stream after selection/map writes and, on the
++                        # last rank, after the prior output producer fence above.
++                        # Keep run_batch's normal call: its send cursor makes an
++                        # already published prefix a no-op, and retains fallback.
++                        if (
++                            can_launch_before_outputs
++                            and launch_before_outputs
++                            and not is_xpu()
++                            and not envs.SGLANG_PP_SKIP_PURE_CHUNKED_OUTPUT_COMM.get()
++                            and self.scripted_scheduler_hook is None
++                            and self.forward_sleep_time is None
++                        ):
++                            for req in cur_batch.reqs:
++                                self.maybe_send_cached_prefix_chunk(req)
++                        pp_proxy_tensors = self._pp_recv_proxy_tensors()
++
++                    if not launch_before_outputs:
++                        next_pp_outputs, next_batch_result, d2h_event = (
++                            self._pp_commit_send_output_work_and_preprocess_output_tensors(
++                                next_first_rank_mb_id,
++                                next_mb_id,
++                            )
++                        )
++                    self._pp_commit_comm_work(self.send_proxy_work)
++                    if cur_batch:
++                        if self.enable_staging:
++                            self.maybe_prefetch_staging_for_batch(cur_batch)
++                        result, self.launch_event = self._pp_launch_batch(
++                            mb_id,
++                            cur_batch,
++                            pp_proxy_tensors,
++                            self.mb_metadata,
++                            self.last_rank_comm_queue,
++                        )
++                if launch_before_outputs:
++                    next_pp_outputs, next_batch_result, d2h_event = (
++                        self._pp_commit_send_output_work_and_preprocess_output_tensors(
++                            next_first_rank_mb_id,
++                            next_mb_id,
++                            preposted_output_work=preposted_output_work,
++                        )
++                    )
+ 
+                 if bmbs[next_mb_id] is not None:
+                     next_consensus_bootstrapped_rids = (
+@@ -340,15 +431,6 @@
+                 if tmbs[next_mb_id] is not None:
+                     self.process_disagg_prefill_inflight_queue(next_release_rids)
+                 if not self.pp_group.is_last_rank:
+-                    self.send_req_work = self._pp_send_pyobj_to_next_stage(
+-                        recv_reqs, async_send=True
+-                    )
+-                    send_bootstrapped_work = self._pp_send_pyobj_to_next_stage(
+-                        bootstrapped_rids, async_send=True
+-                    )
+-                    send_transfer_work = self._pp_send_pyobj_to_next_stage(
+-                        transferred_rids, async_send=True
+-                    )
+                     if cur_batch:
+                         self.device_module.current_stream().wait_event(
+                             self.launch_event
+@@ -945,12 +1027,14 @@
+         self: Scheduler,
+         next_first_rank_mb_id: int,
+         next_mb_id: int,
++        preposted_output_work: Optional[List[P2PWork]] = None,
+     ) -> Tuple[
+         Optional[PPProxyTensors],
+         Optional[GenerationBatchResult],
+         Optional[torch.Event],
+     ]:
+-        self._pp_commit_comm_work(work=self.send_output_work)
++        if preposted_output_work is None:
++            self._pp_commit_comm_work(work=self.send_output_work)
+         (
+             next_pp_outputs,
+             next_batch_result,
+@@ -963,6 +1047,7 @@
+             self.mb_metadata,
+             self.last_rank_comm_queue,
+             self.pp_outputs,
++            preposted_output_work=preposted_output_work,
+         )
+         return next_pp_outputs, next_batch_result, d2h_event
+ 
+@@ -1281,6 +1366,7 @@
+         mb_metadata: List[PPBatchMetadata],
+         last_rank_comm_queue: deque[Tuple[torch.Event, PPProxyTensors]],
+         pp_outputs: PPProxyTensors | None,
++        preposted_output_work: Optional[List[P2PWork]] = None,
+     ) -> Tuple[
+         Optional[PPProxyTensors],
+         Optional[GenerationBatchResult],
+@@ -1333,7 +1419,12 @@
+                 d2h_event = self.device_module.Event()
+                 d2h_event.record(self.device_module.current_stream())
+ 
+-        if send_first:
++        if preposted_output_work is not None:
++            # [] is also a completed send step; never pop the output queue twice.
++            # The new Work remains owned until the normal next-iteration commit.
++            send_output_work = preposted_output_work
++            _do_recv()
++        elif send_first:
+             send_output_work = _do_send()
+             _do_recv()
+         else:
+@@ -1369,17 +1460,16 @@
+                     can_run_cuda_graph=result.can_run_cuda_graph,
+                 )
+                 event = self.device_module.Event()
+-                event.record(self.device_module.current_stream())
+                 if self.pp_group.is_last_rank:
+-                    # (last rank) buffer the outputs for async batch depth
+-                    last_rank_comm_queue.append(
+-                        (
+-                            event,
+-                            PPProxyTensors(
+-                                self._pp_prepare_tensor_dict(result, cur_batch)
+-                            ),
+-                        )
+-                    )
++                    # Packing can enqueue device work for auxiliary payloads.
++                    # Fence the complete payload before its earlier publication.
++                    queued_outputs = PPProxyTensors(
++                        self._pp_prepare_tensor_dict(result, cur_batch)
++                    )
++                    event.record(self.device_module.current_stream())
++                    last_rank_comm_queue.append((event, queued_outputs))
++                else:
++                    event.record(self.device_module.current_stream())
+         return result, event
+ 
+     def get_rids(
+--- a/python/sglang/srt/disaggregation/prefill.py
++++ b/python/sglang/srt/disaggregation/prefill.py
+@@ -23,6 +23,7 @@
+ import logging
+ from array import array
+ from collections import deque
++from contextlib import contextmanager
+ from http import HTTPStatus
+ from typing import TYPE_CHECKING, List, Optional
+ 
+@@ -63,6 +64,7 @@
+     Req,
+     ScheduleBatch,
+ )
++from sglang.srt.mem_cache.allocator.base import BaseTokenToKVPoolAllocator
+ from sglang.srt.mem_cache.common import (
+     kv_to_page_indices,
+     kv_to_page_num,
+@@ -509,6 +511,157 @@
+ 
+ 
+ class SchedulerDisaggregationPrefillMixin:
++    @contextmanager
++    def _pp_chunk_map_scope(self, enabled):
++        """Own at most one map until this iteration's launch or exception."""
++        if getattr(self, "_pp_prepared_chunk_map", None) is not None:
++            raise RuntimeError("Unflushed PP chunk map from an earlier iteration")
++        self._pp_defer_chunk_map = enabled
++        try:
++            yield
++        except BaseException:
++            self._pp_finish_chunk_map(publish=False)
++            raise
++        else:
++            self._pp_finish_chunk_map(publish=True)
++        finally:
++            self._pp_defer_chunk_map = False
++
++    def _pp_chunk_map_identity(self, req):
++        sender = req.disagg_kv_sender
++        return (
++            req.rid,
++            req.bootstrap_room,
++            req.metadata_buffer_index,
++            req.kv.req_pool_idx,
++            int(self.req_to_token_pool.req_generation[req.kv.req_pool_idx]),
++            len(req.origin_input_ids),
++            req.last_node,
++            sender.bootstrap_room,
++            sender.num_kv_indices,
++        )
++
++    def _pp_try_prepare_chunk_map(self, req):
++        """Capture only a pinned, non-final static-pool CUDA chunk on PP4/TP1."""
++        if not getattr(self, "_pp_defer_chunk_map", False):
++            return False
++        if (
++            self.enable_staging
++            or self.enable_overlap
++            or self.enable_priority_preemption
++            or self.is_hybrid_swa
++            or self.dllm_config is not None
++            or self.scripted_scheduler_hook is not None
++            or self.forward_sleep_time is not None
++            or _is_npu
++            or get_parallel().attn_cp_size != 1
++            or req is not self.chunked_req
++            or req.pending_bootstrap
++            or is_aborted(req)
++            or not req.kv.holds_kv
++            or req.session is not None
++        ):
++            return False
++        # Alternate cache/transport/layout implementations keep the original
++        # synchronous path; the reviewed lifetime is the static DSA radix path.
++        from sglang.srt.disaggregation.mooncake.conn import MooncakeKVSender
++        from sglang.srt.mem_cache.unified_radix_cache import UnifiedRadixCache
++
++        if (
++            type(req.disagg_kv_sender) is not MooncakeKVSender
++            or type(self.tree_cache) is not UnifiedRadixCache
++            or self.tree_cache.disable
++            or self.disagg_prefill_bootstrap_queue.kv_manager.kv_args.state_types
++            != [StateType.DSA]
++            or getattr(
++                self.token_to_kv_pool_allocator.translate_kv_indices_for_transfer,
++                "__func__",
++                None,
++            )
++            is not BaseTokenToKVPoolAllocator.translate_kv_indices_for_transfer
++        ):
++            return False
++        page_size = self.token_to_kv_pool_allocator.page_size
++        start = req.start_send_idx
++        end = min(req.extend_range.end, len(req.origin_input_ids))
++        end -= end % page_size
++        if not (
++            0 <= start < end < len(req.origin_input_ids)
++            and start % page_size == 0
++            and end <= req.kv.cache_protected_len
++            and len(req.prefix_indices) - req.host_hit_length <= end
++            and end - start <= get_schedule().chunked_prefill_size
++            and self.req_to_token_pool.req_generation.device.type == "cpu"
++        ):
++            return False
++        row = self.req_to_token_pool.req_to_token
++        if not row.is_cuda or row.dtype not in (torch.int32, torch.int64):
++            return False
++        if torch.cuda.current_stream(row.device) != self.schedule_stream:
++            return False
++        if torch.cuda.is_current_stream_capturing():
++            return False
++        if getattr(self, "_pp_prepared_chunk_map", None) is not None:
++            raise RuntimeError("Only one chunk map may be deferred per iteration")
++
++        sender = req.disagg_kv_sender
++        identity = self._pp_chunk_map_identity(req)
++        cursor = sender.curr_idx
++        # Preserve the original gather's scheduler-stream position. The owned
++        # quotient tensor cannot alias later req-to-token row writes.
++        pages = row[req.kv.req_pool_idx, start:end:page_size] // page_size
++        host = torch.empty(pages.shape, dtype=pages.dtype, device="cpu", pin_memory=True)
++        done = torch.cuda.Event()
++        try:
++            host.copy_(pages, non_blocking=True)
++            done.record(self.schedule_stream)
++        except BaseException:
++            # Keep both storages alive until any partially enqueued copy stops.
++            self.schedule_stream.synchronize()
++            raise
++        self._pp_prepared_chunk_map = (
++            req, sender, identity, cursor, start, end, pages, host, done,
++        )
++        if not getattr(self, "_pp_chunk_map_activation_logged", False):
++            logger.info("TOM_PP_CHUNK_MAP active page_size=%d", page_size)
++            self._pp_chunk_map_activation_logged = True
++        # Neither request nor sender cursor moves before normal publication.
++        return True
++
++    def _pp_finish_chunk_map(self, publish):
++        pending = getattr(self, "_pp_prepared_chunk_map", None)
++        if pending is None:
++            return
++        req, sender, identity, cursor, start, end, pages, host, done = pending
++        # The local tuple retains GPU scratch and pinned CPU storage throughout
++        # the wait, including exception cancellation. No numpy read before it.
++        done.synchronize()
++        self._pp_prepared_chunk_map = None
++        if not publish:
++            return
++        if (
++            req.disagg_kv_sender is not sender
++            or self._pp_chunk_map_identity(req) != identity
++            or not req.kv.holds_kv
++            or req.kv.cache_protected_len < end
++            or req.start_send_idx != start
++            or sender.curr_idx != cursor
++            or req.pending_bootstrap
++            or is_aborted(req)
++        ):
++            raise RuntimeError("Deferred PP chunk map lost request/cursor ownership")
++        # The transport keeps its own independent ordinary CPU array. It never
++        # observes partially written pinned storage or the device temporary.
++        page_indices = host.numpy().copy()
++        if sender.should_send_kv_chunk(len(page_indices), False):
++            sender.send(page_indices, None, num_kv_tokens=end - start)
++        req.start_send_idx = end
++        self.disagg_prefill_pending_chunk_rids.add(req.rid)
++
++    def _pp_has_prepared_chunk_map(self, req):
++        pending = getattr(self, "_pp_prepared_chunk_map", None)
++        return pending is not None and pending[0] is req
++
+     """
+     Mixin for Scheduler to handle disaggregation prefill
+     """
+@@ -1036,6 +1189,8 @@
+         call this: a stale entry holds the unified-memory compaction gate closed
+         for the process lifetime.
+         """
++        if self._pp_has_prepared_chunk_map(req):
++            self._pp_finish_chunk_map(publish=False)
+         self.disagg_prefill_pending_chunk_rids.discard(req.rid)
+ 
+     def handle_bootstrap_failure(self: Scheduler, req: Req) -> None:
+@@ -1125,7 +1280,8 @@
+                     len(req.origin_input_ids),
+                 )
+             else:
+-                self.send_kv_chunk(req)
++                if not self._pp_try_prepare_chunk_map(req):
++                    self.send_kv_chunk(req)
+ 
+             if self.chunked_req is not None:
+                 running_batch.batch_is_full = False
+@@ -1142,6 +1298,9 @@
+                 running_batch.batch_is_full = False
+ 
+     def maybe_send_cached_prefix_chunk(self: Scheduler, req: Req) -> None:
++        # A prepared ordinary chunk must reach the sender before any later prefix.
++        if self._pp_has_prepared_chunk_map(req):
++            return
+         if not envs.SGLANG_DISAGG_PREFILL_EARLY_SEND_CACHED_PREFIX.get():
+             return
+ 
+@@ -1189,6 +1348,8 @@
+         """
+         Send a prefilled chunk to the decode server
+         """
++        if self._pp_has_prepared_chunk_map(req):
++            self._pp_finish_chunk_map(publish=True)
+         page_size = self.token_to_kv_pool_allocator.page_size
+         start_idx = req.start_send_idx
+         transfer_input_len = len(req.origin_input_ids)
+@@ -1410,17 +1571,41 @@
+ 
+         for seg_start, seg_end in segments:
+             is_final_segment = seg_end == end_idx
+-            kv_indices = self.req_to_token_pool.req_to_token[
+-                req.kv.req_pool_idx, seg_start:seg_end
+-            ]
+-            # Unified memory: req_to_token holds VIRTUAL ids; the transfer needs
+-            # physical ones. Per segment, since each is its own gather.
+-            kv_indices = (
+-                self.token_to_kv_pool_allocator.translate_kv_indices_for_transfer(
+-                    kv_indices
+-                )
+-            )
+-            page_indices = kv_to_page_indices(kv_indices, page_size)
++            # The final DSA payload already copied this exact physical map.
++            # Reuse only an aligned suffix with the base identity translator;
++            # all alternate layouts and staging retain their original gather.
++            reuse_final_dsa_pages = (
++                last_chunk
++                and not self.enable_staging
++                and not _is_npu
++                and state_types == [StateType.DSA]
++                and seg_start % page_size == 0
++                and 0 <= seg_start <= seg_end <= seq_len
++                and getattr(
++                    self.token_to_kv_pool_allocator.translate_kv_indices_for_transfer,
++                    "__func__",
++                    None,
++                )
++                is BaseTokenToKVPoolAllocator.translate_kv_indices_for_transfer
++            )
++            if reuse_final_dsa_pages:
++                # Keep independent CPU storage for asynchronous send consumers.
++                # This does not change KV producer fences or source ownership.
++                page_indices = state_indices[0][
++                    seg_start // page_size : kv_to_page_num(seg_end, page_size)
++                ].copy()
++            else:
++                kv_indices = self.req_to_token_pool.req_to_token[
++                    req.kv.req_pool_idx, seg_start:seg_end
++                ]
++                # Unified memory: req_to_token holds VIRTUAL ids; the transfer
++                # needs physical ones, per segment.
++                kv_indices = (
++                    self.token_to_kv_pool_allocator.translate_kv_indices_for_transfer(
++                        kv_indices
++                    )
++                )
++                page_indices = kv_to_page_indices(kv_indices, page_size)
+             segment_is_last = last_chunk and is_final_segment
+             if not req.disagg_kv_sender.should_send_kv_chunk(
+                 len(page_indices), segment_is_last
+@@ -1441,6 +1626,8 @@
+ 
+     def optimistic_release_and_requeue(self: Scheduler, req: Req) -> None:
+         """Release KV cache and requeue an optimistic prefill request."""
++        if self._pp_has_prepared_chunk_map(req):
++            self._pp_finish_chunk_map(publish=False)
+         max_attempts = get_disagg().optimistic_prefill_attempts
+         maybe_cache_unfinished_req(req, self.tree_cache)
+         release_kv_cache(req, self.tree_cache)
