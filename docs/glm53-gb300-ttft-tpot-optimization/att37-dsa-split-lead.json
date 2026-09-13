@@ -1,0 +1,72 @@
+{
+  "profiles": [
+    {
+      "role": "prefill-132",
+      "rank": "sglang::scheduler_PP0",
+      "main_samples": 223,
+      "mqa_ragged_inclusive": 12,
+      "mqa_chunk_loop_inclusive": 11,
+      "torch_unique_inclusive": 80,
+      "pp_comm_wait_inclusive": 48
+    },
+    {
+      "role": "prefill-132",
+      "rank": "sglang::scheduler_PP1",
+      "main_samples": 213,
+      "mqa_ragged_inclusive": 3,
+      "mqa_chunk_loop_inclusive": 2,
+      "torch_unique_inclusive": 59,
+      "pp_comm_wait_inclusive": 73
+    },
+    {
+      "role": "prefill-132",
+      "rank": "sglang::scheduler_PP2",
+      "main_samples": 220,
+      "mqa_ragged_inclusive": 5,
+      "mqa_chunk_loop_inclusive": 5,
+      "torch_unique_inclusive": 76,
+      "pp_comm_wait_inclusive": 42
+    },
+    {
+      "role": "prefill-132",
+      "rank": "sglang::scheduler_PP3",
+      "main_samples": 222,
+      "mqa_ragged_inclusive": 2,
+      "mqa_chunk_loop_inclusive": 0,
+      "torch_unique_inclusive": 2,
+      "pp_comm_wait_inclusive": 64
+    },
+    {
+      "role": "prefill-151",
+      "rank": "sglang::scheduler_PP1",
+      "main_samples": 222,
+      "mqa_ragged_inclusive": 132,
+      "mqa_chunk_loop_inclusive": 131,
+      "torch_unique_inclusive": 10,
+      "pp_comm_wait_inclusive": 17
+    },
+    {
+      "role": "prefill-151",
+      "rank": "sglang::scheduler_PP2",
+      "main_samples": 224,
+      "mqa_ragged_inclusive": 10,
+      "mqa_chunk_loop_inclusive": 9,
+      "torch_unique_inclusive": 14,
+      "pp_comm_wait_inclusive": 127
+    },
+    {
+      "role": "prefill-151",
+      "rank": "sglang::scheduler_PP3",
+      "main_samples": 220,
+      "mqa_ragged_inclusive": 7,
+      "mqa_chunk_loop_inclusive": 6,
+      "torch_unique_inclusive": 0,
+      "pp_comm_wait_inclusive": 152
+    }
+  ],
+  "missing": "P151PP0 sampler timedout; exactowned sampler requiredSIGKILLafterSIGINTdidnotexit; nooutputavailable. Servingprocessuntouched.",
+  "finding": "P151PP1 repeatedly sampled inside MQA logits subchunkloop; P151PP2/3 mostlyPPcommunicationwait samples. This is compatible with indexer budget-induced splitting, notproof of budgetvalue orcausality.",
+  "source_mechanism": "dsa_indexer.py caches min(firstnoncapturefreeVRAM*fraction,staticheadroom*fraction) perdevice, neverrefreshes; chunkrows depend on thisvalue. FirstfreeVRAMsnapshot andallocatorstate arehypotheses untilobserved. GraphTrue includes eagerDSAsplitops.",
+  "limits": "Nonblocking2HzconditionalCPUstacks; nocorrelatedGPUspans; sevenofeightprofiles.",
+  "actual_source_verification": "evidence/dsa-active-source/VERIFIED.json"
+}
