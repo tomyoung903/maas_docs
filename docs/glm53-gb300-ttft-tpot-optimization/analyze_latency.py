@@ -7,6 +7,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OLD = Path('/mnt/HPC/tom/pd-queue-overnight-20260912.twotxxas')
+allow_partial = '--allow-partial' in sys.argv[1:]
+requested_runs = [a for a in sys.argv[1:] if a != '--allow-partial']
+assert not any(a.startswith('--') for a in requested_runs)
 
 def percentile(values, q):
     a = sorted(values)
@@ -26,13 +29,15 @@ report = {'definitions': {'portal':'20-second trailing completion-time window, o
                          'tpot':'1000*(last_generation_time-first_generation_time)/(output_tokens-1), successful requests with output_tokens>1',
                          'contract':'TTFT P50/P75/P90/P99 targets 4/8/12/30 seconds; average missing. Three OTPS/TPOT pairs do not fully specify five columns. Threshold fractions are descriptive, not complete contractual certification.'},'runs':[]}
 arms = json.loads((OLD/'evidence/completed-arm-comparison.json').read_text())['arms']
-if sys.argv[1:]:
-    arms = [{'arm':'follow-up', 'run_id':rid} for rid in sys.argv[1:]]
+if requested_runs:
+    arms = [{'arm':'follow-up partial' if allow_partial else 'follow-up', 'run_id':rid} for rid in requested_runs]
 for arm in arms:
     rid = arm['run_id']; d = ROOT/'evidence'/rid
     xs = [json.loads(l) for l in (d/'timing-events.jsonl').open()]
     s = json.loads((d/'summary.json').read_text()); ts = json.loads((d/'timeseries.json').read_text())['distribution_sliding']
-    assert len(xs) == s['requests']['total'] == 5921
+    assert len(xs) == s['requests']['total']
+    if not allow_partial:
+        assert len(xs) == 5921
     base = ts['base_time']; good = [x for x in xs if x['success']]
     pairs = [(tpot(x),x) for x in good if tpot(x) is not None]
     vals = [v for v,x in pairs]
@@ -66,6 +71,9 @@ for arm in arms:
                ttft_threshold_fractions={str(th):sum(x['ttft']<=th for x in good)/len(good) for th in (4,8,12,30)},
                worst_requests=tail)
     report['runs'].append(row)
-name = 'latency-comparison-' + '-'.join(sys.argv[1:]) if sys.argv[1:] else 'latency-comparison'
+report['partial_run_analysis'] = allow_partial
+name = 'latency-comparison-' + '-'.join(requested_runs) if requested_runs else 'latency-comparison'
+if allow_partial:
+    name += '-partial'
 (ROOT/'evidence'/(name+'.json')).write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps([{k:x[k] for k in ['run_id','tpot_requests_above40','tpot_requests_above80','portal_points_p50_above4','portal_points_tpot_p99_above40','recomputed_chart_points']} for x in report['runs']],indent=2))
