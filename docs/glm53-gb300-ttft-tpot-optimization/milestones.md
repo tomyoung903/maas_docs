@@ -129,3 +129,11 @@ ATT43 severe backlog at6K:guard-stopped10140success/0failure,1702neveradmitted,v
 ### 2026-09-14T00:31:05.517331+08:00 — attempt47-two-prefill-ragged-uninstrumented fulltrialclosed
 
 20260913_161656:11842success/0failure;generatorvalid;TTFTP50/P992.885089/5.202355s,worst20sP504.135897s,16/603windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Recorded9performancecandidates,10240chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt47-two-prefill-ragged-uninstrumented/REPORT.md`.
+
+2026-09-14T00:36:02.328152+08:00 — ATT48 prepared, not applied: tenth candidate compact RAGGED MQA logits, source2ca8ca1e5616b140343c95126ad7dbb20d716974edfaad86c0c760795a0668a6. Native02 passed24RAGGED+8ABI+4smallPAGED+20graphreplays; native01 declined headroom before execution. Exact ten-candidate five-file reconstruction; other six serving pods unchanged. Fullmodel and performance gates pending.
+
+### 2026-09-14T01:08:16.717645+08:00 — attempt48-two-prefill-compressed-logits fulltrialclosed
+
+20260913_165356:11842success/0failure;generatorvalid;TTFTP50/P992.886835/5.468581s,worst20sP504.531822s,23/602windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Recorded10performancecandidates,10240chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt48-two-prefill-compressed-logits/REPORT.md`.
+
+2026-09-14T01:10:49.594653+08:00 — ATT49prepared8Kcompactchunktrial; ATT48closedvalidgenerator/loadbut23windowsover4. Exact3argumentdelta, unchangedtensources. ATT47bestvalidretained; nofallback.
