@@ -1,0 +1,75 @@
+{
+  "cpu_only": true,
+  "methods_executed": [
+    "send_kv_chunk",
+    "MooncakeKVSender.send",
+    "MooncakeKVManager.add_transfer_request",
+    "MooncakeKVManager.transfer_worker"
+  ],
+  "cases": [
+    {
+      "name": "PP_pending",
+      "scheduler_did_not_wait": true,
+      "actual_worker_reads_only_after_producer": true,
+      "segments": 1
+    },
+    {
+      "name": "partial_page",
+      "scheduler_did_not_wait": true,
+      "actual_worker_reads_only_after_producer": true,
+      "segments": 1
+    },
+    {
+      "name": "staging_two_segments",
+      "scheduler_did_not_wait": true,
+      "actual_worker_reads_only_after_producer": true,
+      "segments": 2
+    },
+    {
+      "name": "abort_during_event_wait",
+      "no_RDMA_after_abort": true,
+      "ack_only_after_wait": true
+    },
+    {
+      "name": "transport_without_capability",
+      "synchronous_safe_fallback": true
+    },
+    {
+      "name": "ordinary_nonPP",
+      "no_event_created": true
+    },
+    {
+      "name": "reversed_range",
+      "no_event_created": true
+    },
+    {
+      "name": "empty_nonfinal",
+      "no_event_created": true
+    },
+    {
+      "name": "sender_prepare_skip",
+      "event_consumed_without_stale_reuse": true
+    },
+    {
+      "name": "manager_failed",
+      "no_chunk_enqueued_or_stale_event": true
+    },
+    {
+      "name": "manager_dummy_rank",
+      "no_chunk_enqueued_or_stale_event": true
+    },
+    {
+      "name": "existing_early_prefix_event",
+      "Mooncake_now_honors_existing_producer_event": true
+    },
+    {
+      "name": "final_sender_branch",
+      "metadata_and_state_preserved_with_optional_event": true
+    }
+  ],
+  "candidate_hashes": {
+    "prefill.py": "5527df9d7fb20537a293004c36210066abb6def8c2ac58f3fd1aa5f1b8e3c246",
+    "mooncake-conn.py": "f34c28b27d812835d7b36d8074c12853aeb169a7c3261046c773262d304581ff"
+  },
+  "limitations": "Actual methods executed with fake CUDA events, CPU page indices and mocked RDMA. GPU stream correctness and performance still need runtime validation."
+}
