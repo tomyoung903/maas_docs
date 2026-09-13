@@ -49,6 +49,7 @@ section('workload','Fixed workload and serving configuration',table(['Item','Rec
 ['Prefill scheduling','8,192-token chunks and max-prefill; breakable CUDA graphs at 512, 1024, 2048, 4096, 8192'],
 ['Prefill memory','Memory fraction 0.85; 64-token pages; observed GPU KV capacity 9,252,096 tokens per rank'],
 ['Decode','TP4 / DP4 / PP1; maximum running 384; memory fraction 0.9'],
+['Decode speculation','Pre-existing EAGLE; 3 steps; top-k 1; 4 draft tokens; speculative attention mode decode. Prefill has no speculative-algorithm flag.'],
 ['HiCache / transport','Ratio 1.5; direct; '+code('page_first_direct')+'; '+code('write_through')+'; private Mooncake'],
 ['Dataset',code('tom-capacity-aware-v2-30m-3m-10min-20260911')],
 ['Dataset / token profile IDs',code('dataset-22913a80631e1384c956d887')+' / '+code('profile-bed998021231ed619ee5ec5c')],
