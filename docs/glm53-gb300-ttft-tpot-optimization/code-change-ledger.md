@@ -80,3 +80,9 @@ ATT41: configuration-only12Kchunk/max-prefill/matchinggraph trial oncandidate8. 
 attempt41-two-prefill-12k-startup-budget: config-onlychunk12288onstartupbudgetcandidate8. Run20260913_125341;observedTTFTP50/P993.198/5.595s,19failingwindows;generatorvalid;primarytrialaccepted=False. Incarnation/routingchanges preventisolatedcausalattribution. No additionalservingcodeorPRcreated.
 
 attempt42-two-prefill-8k-startup-budget: config-onlychunk8192onstartupbudgetcandidate8. Run20260913_132716;observedTTFTP50/P992.934/5.659s,32failingwindows;generatorinvalid;primarytrialaccepted=False. Incarnation/routingchanges preventisolatedcausalattribution. No additionalservingcodeorPRcreated.
+
+2026-09-13T22:05:12.142587+08:00 — Optional diagnostics prepared only: existing Prefill device-timer flag/render in`candidates/prefill-device-timer-from-att43/`; allocator-counter observer source/patch and11actual-method CPUguard checks in`candidates/prefill-allocator-counters/`. Neither is selected/applied; neither joins the retained eight performance candidates. No allocator tuning or PP layer repartition performed.
+
+ATT43:config-only6K trial on retained eight-candidate source; severe queue regression, no new serving source. Startupfailure retained separately. Return10K with prepared diagnostics next; noPRyet. `attempt43-two-prefill-6k-startup-budget/REPORT.md`.
+
+ATT44 prepared:retained eightperformancecandidates plus separate opt-in Prefill allocator diagnostic, sourceb4ff6631eacd6d7cbe68f44c03b45d0af254b9ca70300abba23d59e40b3e7ffa.11CPUchecks; nativeunvalidated. Built-in device timer alsoenabled. `attempt44-two-prefill-10k-timing-allocator/diagnostic-candidate/`; noadditionalperformanceclaim/PR.

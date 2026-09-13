@@ -91,3 +91,15 @@ All eight pods ready after505.385s from successful apply; only two Prefills repl
 ### 2026-09-13T21:45:00.157752+08:00 — ATT43 6K startup-budget test selected
 
 ATT42 full run is generator INVALID: lag54.661ms exceeds50ms. All11842 succeeded;32/603 windows>=4s,worst4.385677s,globalP50/P99=2.933608/5.658676s; all42621 load/cache engineering-band states pass. No accepted speedup claim. ATT40 remains best valid reference. PP0 observation-counter means indicate shorter8K stages but higher queueing than10K/12K; these are not matched request cohorts or additive decomposition. Test untried6K startup-budget recipe at unchanged6M schedule for this tradeoff. No6Mcapacityceiling established. Only three Prefill args change; exact render/rollback saved. Fresh6canonical+4affinity+400warmup precede full11842 measured requests.
+
+### 2026-09-13T21:52:23.508940+08:00 — ATT43 startup failure before traffic
+
+P151 PP3 Mooncake EGM HOST_NUMA allocation failed; container restarted once automatically. Previous logs and exact old/current IDs retained under`attempt43-two-prefill-6k-startup-budget/rollout/startup-incident`. One unchanged recovery attempt observed; no correctness or performance acceptance.
+
+### 2026-09-13T22:19:20.205043+08:00 — ATT43 closed
+
+20260913_140451:10140success/0failure,1702neveradmitted,validgenerator;TTFTP50/P995.287307/16.399969s,310/529windows>=4s,worst15.653466s. Guard stopped sustained Prefill backlog. All queues idle and collectors joined. FirstP151 EGM allocation failure/automatic one-restart recovery retained. See `attempt43-two-prefill-6k-startup-budget/REPORT.md`. No6Mcapacity ceiling claim.
+
+### 2026-09-13T22:20:29.116510+08:00 — ATT44 diagnostics selected
+
+ATT43 severe backlog at6K:guard-stopped10140success/0failure,1702neveradmitted,validgenerator,310/529windows>=4s. ReturnbestvalidATT40 10K for diagnostics. No6Mcapacity ceiling established. Two Prefills only:6K→10K args/graphs; built-in device timer and opt-in allocator reporter source/env/immutableCM. Six other pods and eight performance candidates unchanged. Fresh6canonical+4affinity/nativecoverage gates; exactrecipe/rollback preserved. CUDA-event interval includes stream/enqueue gaps; allocator counters omit allocations outside its backend and may add overhead. Missing counters are not zero. No native coverage or overhead validation yet; any useful optimization requires uninstrumented confirmation.
