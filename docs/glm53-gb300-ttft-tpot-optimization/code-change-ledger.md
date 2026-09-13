@@ -78,3 +78,5 @@ ATT40: first full valid test of candidate8 on unchangedATT39runtime. Observedp50
 ATT41: configuration-only12Kchunk/max-prefill/matchinggraph trial oncandidate8. No newservingcode; sourcepatchremains48a16944ecb09fea4b2dca5d7e8520ca8c5821ad7f54a51981c2d1f8ef0e884c. TwoPrefillincarnationsandroutingassignmentschange; recordascomparabilityfactor. Prior10K ATT40recipeisrollback. Candidate9notclaimed.
 
 attempt41-two-prefill-12k-startup-budget: config-onlychunk12288onstartupbudgetcandidate8. Run20260913_125341;observedTTFTP50/P993.198/5.595s,19failingwindows;generatorvalid;primarytrialaccepted=False. Incarnation/routingchanges preventisolatedcausalattribution. No additionalservingcodeorPRcreated.
+
+attempt42-two-prefill-8k-startup-budget: config-onlychunk8192onstartupbudgetcandidate8. Run20260913_132716;observedTTFTP50/P992.934/5.659s,32failingwindows;generatorinvalid;primarytrialaccepted=False. Incarnation/routingchanges preventisolatedcausalattribution. No additionalservingcodeorPRcreated.

@@ -75,3 +75,19 @@ ATT40 archive verified before mutation. ATT41 changes exactly3Prefillarguments (
 ### 2026-09-13T21:11:10.136766+08:00 — ATT42 8K startup-budget test selected
 
 ATT41 valid full run:19/603 windows>=4s,worst4.496s,globalP50/P99=3.198/5.595s;28 exact60sloadstates exceeded6.3Muncached engineeringband,max6.318466M. ATT40 remains bestvalidreference. 8K with startup-budget fix has not been tested; assess smaller-stage blocking/capacity tradeoff at unchanged6M schedule. No6Mcapacityceiling established. Only three Prefill args change; exact render/rollback saved. Fresh6canonical+4affinity+400warmup precede full11842 measured requests.
+
+### 2026-09-13T21:19:35.066977+08:00 — ATT41 published; secondary controls prepared
+
+Public ATT41 evidence verified at commit 9f5c926dede5f506213f1fd2f785edf4af37aead, HTML SHA256 bd4c2db2226afb1d2b3543d9cbee42e6cc3c3389851e375eba13497f08ff1102; 119 artifact hashes and desktop charts verified. ATT42 rollout has an observer retry for an old deleting Prefill; no serving error conclusion from that administrative termination. Secondary control template expects one Prefill, both Decode nodes, 87 idle gauges and all eight Decode flush confirmations. Source-based leads for Decode KV residency and graph48 versus slot96 are retained; neither is yet an observed long-output bottleneck.
+
+### 2026-09-13T21:25:34.226642+08:00 — ATT42 full confidence gate passed; warmup active
+
+All eight pods ready after505.385s from successful apply; only two Prefills replaced. New P132 UID670c2262-2826-4190-aa25-4d55a8d46bb0; P151 UID19ae8bef-ac68-4afb-93ad-f14034dba773. Both use8K graphs and startup budgets PP0/1=8910624522,PP2=7805586636,PP3=7480108646 bytes, previous values unset. Source/rank/capacity and defaultfraction checks passed, six canonical retrieval checks and four affinity checks passed, exact18048-token cross-Prefill L3 reuse verified. Full cache reset confirmed all eight Decode ranks. Warmup20260913_132423 started; full performance verdict pending.
+
+### 2026-09-13T21:44:33.953898+08:00 — attempt42-two-prefill-8k-startup-budget fulltrialclosed
+
+20260913_132716:11842success/0failure;generatorinvalid;TTFTP50/P992.933608/5.658676s,worst20sP504.385677s,32/603windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Samecandidate8source,8192chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt42-two-prefill-8k-startup-budget/REPORT.md`.
+
+### 2026-09-13T21:45:00.157752+08:00 — ATT43 6K startup-budget test selected
+
+ATT42 full run is generator INVALID: lag54.661ms exceeds50ms. All11842 succeeded;32/603 windows>=4s,worst4.385677s,globalP50/P99=2.933608/5.658676s; all42621 load/cache engineering-band states pass. No accepted speedup claim. ATT40 remains best valid reference. PP0 observation-counter means indicate shorter8K stages but higher queueing than10K/12K; these are not matched request cohorts or additive decomposition. Test untried6K startup-budget recipe at unchanged6M schedule for this tradeoff. No6Mcapacityceiling established. Only three Prefill args change; exact render/rollback saved. Fresh6canonical+4affinity+400warmup precede full11842 measured requests.
