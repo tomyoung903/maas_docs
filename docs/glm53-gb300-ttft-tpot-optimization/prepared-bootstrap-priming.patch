@@ -1,0 +1,54 @@
+--- a/python/sglang/srt/managers/scheduler_pp_mixin.py
++++ b/python/sglang/srt/managers/scheduler_pp_mixin.py
+@@ -184,6 +184,41 @@
+             if server_is_idle:
+                 self.on_idle()
+ 
++    def _pp_prime_early_bootstrap_peers(self):
++        """Initialize individual NCCL peer pairs before early control receives.
++
++        The first isend may wait on the host for its peer to initialize. With
++        an early bootstrap receive, that creates a startup progress cycle.
++        Use the same individual isend/recv APIs and existing PP device group
++        as activation/output transport. A collective or batched P2P warmup
++        need not initialize those pair-specific communicators.
++        """
++        group = self.pp_group
++        assert group.world_size == self.ps.pp_size == 4
++        assert group.rank_in_group == self.ps.pp_rank
++        buffer = torch.zeros(1, dtype=torch.int32, device=self.device)
++        assert buffer.is_cuda, "Early-bootstrap peer priming requires CUDA"
++        self.device_module.synchronize()
++        torch.distributed.barrier(group=group.cpu_group)
++        logger.info("TOM_PP_EARLY_BOOTSTRAP_PRIME begin pp_rank=%s", self.ps.pp_rank)
++        for source in range(group.world_size):
++            destination = (source + 1) % group.world_size
++            if group.rank_in_group == source:
++                buffer.fill_(source + 1)
++                work = torch.distributed.isend(
++                    buffer, dst=group.ranks[destination], group=group.device_group
++                )
++                work.wait()
++            elif group.rank_in_group == destination:
++                torch.distributed.recv(
++                    buffer, src=group.ranks[source], group=group.device_group
++                )
++                assert buffer.item() == source + 1
++            self.device_module.synchronize()
++            torch.distributed.barrier(group=group.cpu_group)
++        del buffer
++        logger.info("TOM_PP_EARLY_BOOTSTRAP_PRIME done pp_rank=%s pairs=4", self.ps.pp_rank)
++
+     @DynamicGradMode()
+     def event_loop_pp_disagg_prefill(self: Scheduler):
+         """
+@@ -264,6 +299,9 @@
+                 early_bootstrap_adopt,
+                 self.ps.pp_rank,
+             )
++
++        if early_bootstrap_adopt:
++            self._pp_prime_early_bootstrap_peers()
+ 
+         while True:
+             server_is_idle = True

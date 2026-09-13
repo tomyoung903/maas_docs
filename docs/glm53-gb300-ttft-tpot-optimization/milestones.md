@@ -165,3 +165,15 @@ ATT49 all8ready in491s,6canonical+4affinitypassed with crossPrefillL3reuse; allr
 2026-09-14T02:44:41.788653+08:00 — ATT52 first rollback desiredDGD/PCS/PCtemplates werecorrect, butnewP1516wtq5stillranearlyflag1/source d72dff03. SecondnativeCPUstacksreproducecandidatewaitpattern; not abaselinefailure. UID-preconditionedpodDELETEdeniedRBAC403(no deletion). PermittedDGDPrefillrolloutannotationrefresh applied; bothPmayroll,other6podsunchanged. Actualsourceisnowcheckedatcontainerstartbeforereadiness. Evidence:attempt52-two-prefill-9k-recovery/evidence/STALE-CHILD-INCIDENT.json.
 
 2026-09-13T18:57:25.833212+00:00 — ATT52exactATT50recoveryqualified; bothPrefillsrefreshed, other6incarnationsretained;6canonical4affinitypass;115gaugesidle; noAlexreplay/no newTTFTresult. Candidate11removed. Secondary12GPUoriginal-outputRSnext.
+
+2026-09-14T03:01:58.404355+08:00 — Native4-rank tiny peer check passed: cold individual isend host wait1.100–1.337s versus primed0.097–0.155ms with0.8s delayed receiver. Supports startup-progress mechanism only; no model qualification/TTFT gain. Helpers joined/absent,28P gauges idle. ATT53 Decode startup continues; no replay yet.
+
+2026-09-14T03:08:31.923455+08:00 — ATT53 startup: D130/192 GPU0 retained165367MiB/no compute processes, guard failed twice before modelstart. OnlyDP0/4 used byprecedingchecks. Refresh of idleP132 withsame source/recipe releasedallocations: both unchangedDecodecontainers logged allGPUsbelow1024MiB. No guardbypass/reset. ReplacementPrefill scheduled151. Exactremotehandleownershipnotenumerated; freshqualification pending.
+
+2026-09-14T03:28:35.958232+08:00 — ATT53 warmup complete100/100,0failure/empty,validgenerator.237180actualoutputtokens,median296,max128000(originallengthlimit;652.861sresponse). Rejection sampling enabled; not full-loadcapacity proof. Measured5921/600s launch now; no cache reset.
+
+### 2026-09-14T03:49:44.962491+08:00 — attempt53-one-prefill-real-output-rejection real-output12GPU trial closed
+
+Run20260913_192835: 5921success/0failure/0unadmitted; generatorvalid; badTTFTwindows14/730;TTFT/loadpass=False. Actualoutputtokens4080983; fullOTPScontractnotcertified. Exactrecipe/evidence: `attempt53-one-prefill-real-output-rejection/REPORT.md`.
+
+2026-09-14T03:50:20.125402+08:00 — ATT54 primary return prepared after ATT53 closure/archive. P1to2,primedbootstrap73aaee27,9K,DecodeRS retained; fresh6canonical4affinity+400warm/11842measured required. No6Mfallback or performance claim.

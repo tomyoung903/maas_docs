@@ -1,0 +1,9 @@
+# Native individual NCCL peer-initialization check
+
+A bounded four-rank helper on idle Prefill132 passed all twelve tiny-tensor cases before any ATT53 replay. Serving source and settings were unchanged. All helpers exited and were independently confirmed absent; all28Prefill queue gauges were idle twice afterward. The source hash, commands, pod/container identity, GPU memory snapshots and outputs are retained here.
+
+With each receiving peer delayed by0.8seconds, the first individual `isend` call on four previously unused neighbor pairs returned after1.100–1.337seconds. A separate NCCL group was explicitly primed using individual `isend` and matching `recv` on the same four pairs, each followed by a CPU barrier. Subsequent calls returned in0.097–0.155milliseconds despite the same receiver delay. All received tensor values matched. Each process reported512bytes peak PyTorch allocation and2MiB peak PyTorch reservation; CUDA context and NCCL memory are separate and not counted by those allocator metrics.
+
+This directly supports the proposed mechanism: first-pair initialization can block the host, and matching individual point-to-point priming avoids that host wait in this small native fixture. This does not validate the early-bootstrap model loop, large activation transfers, request correctness or any TTFT benefit. The observed initial delay must not be treated as per-request baseline overhead. The recorded `completed_s` is sender-local completion, not end-to-end peer receipt; tiny NCCL sends can complete into transport buffers before the delayed receiver call.
+
+This used independent torch process groups with four GPUs, Torch2.13.0+cu130 and NCCL2.29.7. It did not reuse or modify the serving communicator. A production priming candidate would still require source/control review, native startup and fresh model checks, followed by an uninstrumented performance replay.
