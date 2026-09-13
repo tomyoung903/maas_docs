@@ -39,3 +39,7 @@ ATT36 immutablearchive finalized:184files/1245798bytes, allentryhashesverified, 
 ATT37 closed:4,212 successes/0 failures,7,630 neveradmitted; worst20sTTFTp5014.229s,166/227windowsfail; generatorlag52.172ms>50ms. Unchanged10K diagnostic,7/8CPUprofiles recovered; exactownedP151PP0sampler requiredSIGKILLaftertimeout/SIGINTfailure. Allservingrequestsdrained,115gaugesidle. P151PP1 MQAlogits subchunkloop131/222samples vsP132PP1 2/213; actualbudgetvalues andcausalitynotyetobserved. `attempt37-two-prefill-10k-cpu-diagnostic/REPORT.md`.
 
 ATT37 archive:196files/874278bytes,allentriesverified, SHA256 `e7ad31296caf8501fee2c04bac5765857a3cc3b8417b64f752ffd0960ed418de`. ATT38 numericbudgetprobe prepared withunchangedruntime; boundedtwoPP1readers only.
+
+ATT38 closed 2026-09-13T18:50:48.801704+08:00:2,715success/0failure,manual diagnostic stop, all115gaugesidle/allcollectorsjoined. One coherent P151PP1 snapshot:88,067,276-byte MQA budget,10,077queries×538,333keys,40rows/split,252subchunks. P132 numeric budget unobserved; two inconsistent snapshots excluded. Valid generator;70/146TTFTwindows>4s. No serving patch applied; startup refresh through unchanged memory guards is next candidate. `attempt38-two-prefill-logits-budget-probe/REPORT.md`.
+
+ATT38 archive finalized:217files/890350bytes, SHA256`d48412d5e7081b5e4fe4762d33e1c327db9bb77e2af10d7c89584b8f9142d3ef`. ATT39 prepared: one scheduler startup hook, source`85bbce778a5683b013c54824e29eef2119fcde27e50c8954183f7e9fe00bf63d`,11CPUcontracts passed; onlyPrefill env/mount rendered; notapplied yet.

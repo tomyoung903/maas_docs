@@ -1,0 +1,51 @@
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -1034,6 +1034,39 @@
+         if self.draft_worker is not None:
+             self.draft_worker.init_cuda_graphs()
+ 
++    def _refresh_dsa_logits_budget_after_startup(self):
++        # Experiment-only opt-in. Run after graph capture and any post-capture
++        # KV resize, before requests are dispatched. Never query per request.
++        if os.environ.get("TOM_REFRESH_DSA_LOGITS_BUDGET_AFTER_STARTUP") != "1":
++            return
++        if get_disagg().disaggregation_mode != "prefill":
++            return
++        model_runner = self.tp_worker.model_runner
++        if model_runner.device != "cuda" or model_runner.is_draft_worker:
++            return
++
++        from sglang.srt.layers.attention.dsa.dsa_indexer import Indexer
++        from sglang.srt.model_executor.runner import get_is_capture_mode
++
++        if get_is_capture_mode():
++            raise RuntimeError("DSA startup budget refresh must run outside capture")
++        for indexer in model_runner.model.modules():
++            if not isinstance(indexer, Indexer):
++                continue
++            device_index = model_runner.gpu_id
++            old_budget = indexer._mqa_logits_budget_bytes.pop(device_index, None)
++            # Reuse the original free-memory fraction and static headroom cap.
++            # All layers share this per-device cache; refresh it just once.
++            new_budget = indexer._get_mqa_logits_budget_bytes(device_index)
++            logger.info(
++                "TOM_DSA_STARTUP_BUDGET device=%d old_bytes=%s new_bytes=%d",
++                device_index,
++                old_budget,
++                new_budget,
++            )
++            return
++        logger.info("TOM_DSA_STARTUP_BUDGET skipped: no DSA Indexer on this rank")
++
+     def init_model_worker(self):
+         # Load model weights.
+         self.init_tp_model_worker()
+@@ -1063,6 +1096,8 @@
+             and get_exec().moe.ep_join_mode == "recover"
+         ):
+             model_runner.post_capture_elastic_ep_recover()
++
++        self._refresh_dsa_logits_budget_after_startup()
+ 
+         # Dispatch the model worker
+         if self.spec_algorithm.is_none():

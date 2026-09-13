@@ -1,0 +1,19 @@
+{
+  "status": "prepared_not_applied",
+  "frozen_sglang": "6d08e28b0c0691899973e3f11bf01fdbdf192a63",
+  "relative_path": "python/sglang/srt/managers/scheduler.py",
+  "source_sha256": "85bbce778a5683b013c54824e29eef2119fcde27e50c8954183f7e9fe00bf63d",
+  "base_sha256": "9080391af1f994b1a975347d038ef3f9fec2c31338d354a6ec2dba791d63ced0",
+  "patch_sha256": "ea6cc26332dd13f58caf2275aabd7a10382d1e123f60a35bd83be2581754c67f",
+  "opt_in": "TOM_REFRESH_DSA_LOGITS_BUDGET_AFTER_STARTUP=1",
+  "scope": "Prefill CUDA target scheduler only; once after graph capture, optional KV resize and weight-load finalization, before request dispatch",
+  "invariant": "Existing getter unchanged: actual free memory times configured fraction capped by original static headroom. Other device cache entries untouched. No per-request memory query or allocator empty_cache.",
+  "hypothesis": "First-use budget may be frozen under transient allocation. ATT38 observed 88067276 bytes and252subchunks for one coherent P151PP1 batch. Original initialization time not observed.",
+  "comparison_factors": [
+    "Both Prefill processes must roll; worker identities/session assignments change",
+    "Startup old/new logs can test whether a small first-use budget is refreshed",
+    "A new rollout with different first-use conditions does not alone prove historical cause"
+  ],
+  "rollback": "Restore ATT38 owned Helm chart/values and roll only Prefills; immutable base source retained",
+  "production_merge": false
+}
