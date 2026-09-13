@@ -1,0 +1,87 @@
+--- a/python/sglang/srt/layers/attention/dsa/dsa_indexer.py
++++ b/python/sglang/srt/layers/attention/dsa/dsa_indexer.py
+@@ -66,6 +66,9 @@
+ _is_hip = is_hip()
+ _is_npu = is_npu()
+ _is_xpu = is_xpu()
++_use_compressed_mqa_logits = (
++    _is_cuda and get_bool_env_var("TOM_DSA_COMPRESSED_MQA_LOGITS")
++)
+ 
+ if not _is_npu:
+     from sglang.kernels.ops.attention.dsa import (
+@@ -1099,8 +1102,21 @@
+         token_to_batch_idx = metadata.get_token_to_batch_idx()
+         q_offset = ks.shape[0]
+         k_offset = k_fp8.shape[0]
++        # Compressed DeepGEMM scores use request-relative columns, while the
++        # ragged top-k retains the original flattened-KV output offsets.
++        compact_logits = (
++            _use_compressed_mqa_logits
++            and metadata.attn_metadata.topk_indices_offset is not None
++            and metadata.topk_backend.should_use_topk_v2()
++            and envs.SGLANG_DSA_FUSE_TOPK.get()
++            and not metadata.force_unfused_topk
++        )
++        logits_width = max_seq_len if compact_logits else k_offset
++        logits_stride = ceil_align(logits_width, 256) if compact_logits else k_offset
++        budget_q_rows = ceil_align(q_offset, 4) if compact_logits else q_offset
++        logits_kwargs = {"max_seqlen_k": max_seq_len} if compact_logits else {}
+         need_chunk, logits_budget_bytes = self._should_chunk_mqa_logits(
+-            q_offset, k_offset, device_index
++            budget_q_rows, logits_stride, device_index
+         )
+ 
+         if not need_chunk:
+@@ -1134,17 +1150,23 @@
+                         ks,
+                         ke,
+                         clean_logits=False,
++                        **logits_kwargs,
+                     )
+             assert logits.shape[0] == len(seq_lens_expanded)
+-            assert logits.shape[1] == k_offset
+-
+-            self._mask_init_and_local_tokens(logits, seq_lens_expanded, ks)
+-            raw_topk_result = metadata.topk_transform(logits, self.index_topk, ks=ks)
++            assert logits.shape[1] == logits_width
++
++            row_starts = None if compact_logits else ks
++            self._mask_init_and_local_tokens(logits, seq_lens_expanded, row_starts)
++            raw_topk_result = metadata.topk_transform(
++                logits, self.index_topk, ks=row_starts
++            )
+             topk_result[:q_offset] = raw_topk_result
+             return topk_result
+ 
+-        bytes_per_row = k_offset * self._MQA_LOGITS_BYTES_PER_ELEM
++        bytes_per_row = logits_stride * self._MQA_LOGITS_BYTES_PER_ELEM
+         max_rows = max(1, int(logits_budget_bytes // max(bytes_per_row, 1)))
++        if compact_logits and max_rows >= 4:
++            max_rows = (max_rows // 4) * 4
+         max_rows = min(max_rows, q_offset)
+ 
+         global_topk_offset = metadata.attn_metadata.topk_indices_offset
+@@ -1190,10 +1212,12 @@
+                         ks[start:end],
+                         ke[start:end],
+                         clean_logits=False,
++                        **logits_kwargs,
+                     )
+ 
+             lengths_chunk = seq_lens_expanded[start:end]
+-            self._mask_init_and_local_tokens(logits_chunk, lengths_chunk, ks[start:end])
++            row_starts_chunk = None if compact_logits else ks[start:end]
++            self._mask_init_and_local_tokens(logits_chunk, lengths_chunk, row_starts_chunk)
+ 
+             # RAGGED: use global offset; PAGED: construct local cu_seqlens_q per chunk
+             if global_topk_offset is not None:
+@@ -1210,7 +1234,7 @@
+             raw_topk_chunk = metadata.topk_transform(
+                 logits_chunk,
+                 self.index_topk,
+-                ks=ks[start:end],
++                ks=row_starts_chunk,
+                 cu_seqlens_q=cu_seqlens_q_chunk,
+                 ke_offset=lengths_chunk,
+                 batch_idx_list=batch_idx_chunk,

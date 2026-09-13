@@ -125,3 +125,7 @@ ATT43 severe backlog at6K:guard-stopped10140success/0failure,1702neveradmitted,v
 20260913_153855:11842success/0failure;generatorinvalid;TTFTP50/P992.980194/5.203011s,worst20sP504.312874s,31/604windows>=4s. Load/cachebandsFalse;primarytrialacceptanceFalse. Recorded9performancecandidates,10240chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt46-two-prefill-ragged-logits-lifetime/REPORT.md`.
 
 2026-09-13T23:55:40.203104+08:00—ATT47prepared only, removePrefilldiagnostics, same9performancecandidates/10K/C05/output20. ATT46closed11842successbutgeneratorinvalid and31/604TTFTwindowsfail. Prior442filearchiveverified. No6Mfallback orsecondaryactivation.
+
+### 2026-09-14T00:31:05.517331+08:00 — attempt47-two-prefill-ragged-uninstrumented fulltrialclosed
+
+20260913_161656:11842success/0failure;generatorvalid;TTFTP50/P992.885089/5.202355s,worst20sP504.135897s,16/603windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Recorded9performancecandidates,10240chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt47-two-prefill-ragged-uninstrumented/REPORT.md`.
