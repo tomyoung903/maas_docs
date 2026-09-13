@@ -1,0 +1,173 @@
+{
+  "definitions": {
+    "portal": "20-second trailing completion-time window, one-second steps; minimum three samples; linear percentile",
+    "previous_acceptance": "60-second arrival-time windows",
+    "tpot": "1000*(last_generation_time-first_generation_time)/(output_tokens-1), successful requests with output_tokens>1",
+    "contract": "TTFT P50/P75/P90/P99 targets 4/8/12/30 seconds; average missing. Three OTPS/TPOT pairs do not fully specify five columns. Threshold fractions are descriptive, not complete contractual certification."
+  },
+  "runs": [
+    {
+      "arm": "follow-up",
+      "run_id": "20260913_215025",
+      "requests": 5921,
+      "successes": 5921,
+      "failures": 0,
+      "ttft_global_ms": {
+        "count": 5921,
+        "mean": 3678.836397643663,
+        "median": 3021.1462429724634,
+        "std": 5192.564616343281,
+        "p50": 3021.1462429724634,
+        "p90": 5126.212772913277,
+        "p99": 15359.560633637073
+      },
+      "tpot_global_ms": {
+        "count": 5921,
+        "mean": 9.439151445982544,
+        "median": 12.92246807087946,
+        "std": 8.935290380961543,
+        "p50": 12.92246807087946,
+        "p90": 19.77751490711752,
+        "p99": 24.945029885696304
+      },
+      "worst_portal_ttft": {
+        "t": 682.0,
+        "partial_window": false,
+        "n_samples": 5,
+        "ttft": {
+          "p10": 3363.3952049538493,
+          "p50": 4080.0422187894583,
+          "p90": 4442.221899237484,
+          "p99": 4522.271951865405
+        },
+        "tpot": {
+          "p10": 14.687038960990797,
+          "p50": 15.979239199658213,
+          "p90": 17.57792103723791,
+          "p99": 18.03595814498736
+        },
+        "e2e": {
+          "p10": 88218.99338830262,
+          "p50": 150497.52730410546,
+          "p90": 200334.09765614197,
+          "p99": 226283.9897294715
+        }
+      },
+      "worst_portal_tpot": {
+        "t": 350.0,
+        "partial_window": false,
+        "n_samples": 199,
+        "ttft": {
+          "p10": 2386.3364764489233,
+          "p50": 3073.663394898176,
+          "p90": 5397.887295484544,
+          "p99": 14010.857463842258
+        },
+        "tpot": {
+          "p10": 0.0,
+          "p50": 5.741301318630576,
+          "p90": 20.34120153808063,
+          "p99": 32.56792901598225
+        },
+        "e2e": {
+          "p10": 2920.419122558087,
+          "p50": 4774.354697205126,
+          "p90": 21733.7864865549,
+          "p99": 116200.65316478736
+        }
+      },
+      "portal_points_p50_above4": 2,
+      "portal_points_p50_at_or_above4": 2,
+      "portal_points_tpot_p99_above40": 0,
+      "tpot_requests_above40": 2,
+      "tpot_requests_above80": 0,
+      "tpot_zero_span": 2637,
+      "recomputed_chart_points": 729,
+      "chart_point_partitions_by_endtime": {
+        "endpoint_at_or_before600s": {
+          "chart_points": 597,
+          "p50_at_or_above4": 0,
+          "worst_ttft": {
+            "t": 580.0,
+            "partial_window": false,
+            "n_samples": 199,
+            "ttft": {
+              "p10": 2941.8566928245127,
+              "p50": 3794.9920371174812,
+              "p90": 5331.249801628292,
+              "p99": 8239.706519125035
+            },
+            "tpot": {
+              "p10": 0.0,
+              "p50": 13.344023115041086,
+              "p90": 19.012168068616944,
+              "p99": 23.33005698386582
+            },
+            "e2e": {
+              "p10": 3889.475268498063,
+              "p50": 5515.731877181679,
+              "p90": 26149.785935599375,
+              "p99": 135578.21276810957
+            }
+          }
+        },
+        "endpoint_after600s": {
+          "chart_points": 132,
+          "p50_at_or_above4": 2,
+          "worst_ttft": {
+            "t": 682.0,
+            "partial_window": false,
+            "n_samples": 5,
+            "ttft": {
+              "p10": 3363.3952049538493,
+              "p50": 4080.0422187894583,
+              "p90": 4442.221899237484,
+              "p99": 4522.271951865405
+            },
+            "tpot": {
+              "p10": 14.687038960990797,
+              "p50": 15.979239199658213,
+              "p90": 17.57792103723791,
+              "p99": 18.03595814498736
+            },
+            "e2e": {
+              "p10": 88218.99338830262,
+              "p50": 150497.52730410546,
+              "p90": 200334.09765614197,
+              "p99": 226283.9897294715
+            }
+          }
+        }
+      },
+      "partition_note": "Descriptive partition by chart endpoint. Trailing20s windows after600s may straddle the admission boundary. All valid chart points, including the tail, remain in strict acceptance.",
+      "thresholds": {
+        "18": {
+          "count_le": 4668,
+          "eligible": 5921,
+          "fraction_le": 0.7883803411585881
+        },
+        "33": {
+          "count_le": 5914,
+          "eligible": 5921,
+          "fraction_le": 0.9988177672690424
+        },
+        "40": {
+          "count_le": 5919,
+          "eligible": 5921,
+          "fraction_le": 0.9996622192197264
+        }
+      },
+      "successful_requests_without_meaningful_generation": 0,
+      "ttft_threshold_eligible_requests": 5921,
+      "missing_generation_policy": "Preserve missing timestamps; exclude from latency without imputing zero; block whole-request acceptance.",
+      "ttft_threshold_fractions": {
+        "4": 0.7860158756966729,
+        "8": 0.9723019760175646,
+        "12": 0.9861509880087823,
+        "30": 0.9972977537578112
+      }
+    }
+  ],
+  "partial_run_analysis": false,
+  "run_state": "closed_secondary_not_accepted"
+}

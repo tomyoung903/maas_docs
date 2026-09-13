@@ -195,3 +195,16 @@ ATT56 unchanged fullC05 repeat20260913_211342 is active after400/400 validwarmup
 ### 2026-09-14T05:27:08.637397+08:00 — attempt56-two-prefill-utf8-repeat fulltrialclosed
 
 20260913_211342:11842success/0failure;generatorvalid;TTFTP50/P992.839280/4.948596s,worst20sP503.897844s,0/603windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Recorded11performancecandidates,9216chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt56-two-prefill-utf8-repeat/REPORT.md`.
+
+2026-09-14T05:44:06+08:00 — ATT57 begins original-output1P4+D8 warmup20260913_214406 after scale2Pto1P only; survivorP132,all6nonPidentitiesretained;151released0MiBall4GPUs. Eight sampling checks and6021payloadattestations pass,87queuegaugeszero twice. RS remains enabled. No capacity result yet.
+2026-09-14T05:43:00+08:00 — Primary output-coverage clue: ATT55all17andATT56 22of23missing-generation responses match existingGLM orphan tool-call discard warnings;10CPU parser cases reproduce incomplete bare-call suppression even withEOFrecovery. One4tokenstop remainsunknown; no sampler-origin conclusion or acceptance relaxation.
+
+2026-09-14T05:49:47.022083+08:00 — ATT56 worst-rank missing-TTFT sensitivity:all603cohortP50upperbounds<4s,worst3.900203s@507s even when23unknown latencies rank after allknown. No timestamps imputed; outputcoverage remainsfailed. Canonical observedP50/P992.83928/4.94860s unchanged.
+
+### 2026-09-14T06:06:58.847359+08:00 — attempt57-one-prefill-primed-real-output real-output12GPU trial closed
+
+Run20260913_215025: 5921success/0failure/0unadmitted; generatorvalid; badTTFTwindows2/729;TTFT/loadpass=False. Actualoutputtokens4060571; fullOTPScontractnotcertified. Exactrecipe/evidence: `attempt57-one-prefill-primed-real-output/REPORT.md`.
+
+### 2026-09-14T06:07:18.511009+08:00 — ATT57 admission-window milestone
+
+All597admission-period20sTTFTwindows<4s,worst3.794992037s;2/132drainwindows>=4s,worst4.080042219s/fivecompletions. All5921meaningful,validgenerator,load/cachepass. Strictwholeprocessgate stillfails. P50/P992=3.021146243/15.359560634s;TPOTP99=24.945029886ms,nochartP99>40ms. Nochangeofacceptancelimits.
