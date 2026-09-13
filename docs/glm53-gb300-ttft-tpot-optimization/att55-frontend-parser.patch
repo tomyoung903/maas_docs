@@ -1,0 +1,75 @@
+diff --git a/lib/parser/src/tool_calling/xml/glm47_parser.rs b/lib/parser/src/tool_calling/xml/glm47_parser.rs
+index 17a1189..ee12d35 100644
+--- a/lib/parser/src/tool_calling/xml/glm47_parser.rs
++++ b/lib/parser/src/tool_calling/xml/glm47_parser.rs
+@@ -567,12 +567,10 @@ fn parse_tool_call_block(
+ 
+     // Extract function name (everything before first <arg_key> or end)
+     let arg_key_start = &config.arg_key_start;
+-    let function_name = if let Some(pos) = content.find(arg_key_start.as_str()) {
+-        content[..pos].trim().to_string()
+-    } else {
+-        // No arguments, just function name
+-        content.trim().to_string()
+-    };
++    let args_start = content
++        .find(arg_key_start.as_str())
++        .unwrap_or(content.len());
++    let function_name = content[..args_start].trim().to_string();
+ 
+     if function_name.is_empty() {
+         anyhow::bail!("Empty function name in tool call");
+@@ -580,7 +578,9 @@ fn parse_tool_call_block(
+ 
+     // Parse key-value pairs
+     let mut arguments = HashMap::new();
+-    let args_section = &content[function_name.len()..];
++    // Keep the boundary in the original content: trimming the name changes
++    // its byte length and can otherwise slice inside a UTF-8 character.
++    let args_section = &content[args_start..];
+ 
+     // Build regex patterns
+     let arg_key_start_escaped = regex::escape(&config.arg_key_start);
+@@ -645,6 +645,42 @@ mod tests {
+         Glm47ParserConfig::default()
+     }
+ 
++    #[test]
++    fn test_utf8_function_name_with_whitespace() {
++        let config = get_test_config();
++        for (prefix, name, suffix) in [
++            (" ", "overcomingď", ""),
++            ("\t", "查询", " \n"),
++            ("\u{2003}", "get_weather", "\u{2003}"),
++            ("", "查询", ""),
++            (" ", "get_weather", " "),
++        ] {
++            let message = format!(
++                "<tool_call>{prefix}{name}{suffix}<arg_key>description</arg_key><arg_value>Get current time</arg_value></tool_call>"
++            );
++            let call = parse_tool_call_block(&message, &config, None).unwrap();
++            assert_eq!(call.function.name, name);
++            assert_eq!(
++                serde_json::from_str::<Value>(&call.function.arguments).unwrap(),
++                serde_json::json!({"description": "Get current time"})
++            );
++        }
++    }
++
++    #[test]
++    fn test_utf8_function_name_without_arguments() {
++        let config = get_test_config();
++        for message in [
++            "<tool_call> 查询</tool_call>",
++            "<tool_call>\u{2003}查询\u{2003}</tool_call>",
++            "<tool_call> 查询",
++        ] {
++            let call = parse_tool_call_block(message, &config, None).unwrap();
++            assert_eq!(call.function.name, "查询");
++            assert_eq!(call.function.arguments, "{}");
++        }
++    }
++
+     #[test] // helper
+     fn test_detect_tool_call_start() {
+         let config = get_test_config();

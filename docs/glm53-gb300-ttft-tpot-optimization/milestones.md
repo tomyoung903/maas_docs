@@ -181,3 +181,9 @@ Run20260913_192835: 5921success/0failure/0unadmitted; generatorvalid; badTTFTwin
 ### 2026-09-14T04:25:35.417071+08:00 — ATT54 closed, partial frontend parser failure
 
 8675protocolsuccess/1failure/3166unadmitted;11successeswithoutvisiblegeneration. EligibleTTFT P50/P992.628571/5.840450s;11/443windows>4s,worst4.940247s. Generatorvalid;full600snotcompleted. Primedbootstrap+DecodeRS;noisolatedattribution. Allcollectorsjoined,115gaugesidle,sourcesverified. See `attempt54-two-prefill-primed-bootstrap-rejection/REPORT.md`.
+
+2026-09-14T04:40:22.240548+08:00 — ATT55 frontend-only nativewheel rollout complete. New frontend r55hb Ready,restart0;allseven otherworker/Storeincarnations unchanged. NativeUTF8fix wheel7616ba116a7c;fullsource/API/correctness gatesnext.
+
+### 2026-09-14T05:04:38.165166+08:00 — attempt55-two-prefill-utf8-frontend fulltrialclosed
+
+20260913_205103:11842success/0failure;generatorinvalid;TTFTP50/P992.882916/4.978388s,worst20sP503.973114s,0/603windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Recorded11performancecandidates,9216chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt55-two-prefill-utf8-frontend/REPORT.md`.
