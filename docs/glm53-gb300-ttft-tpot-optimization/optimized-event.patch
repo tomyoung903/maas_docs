@@ -1,0 +1,133 @@
+--- a/python/sglang/srt/disaggregation/prefill.py
++++ b/python/sglang/srt/disaggregation/prefill.py
+@@ -569,6 +569,7 @@
+ 
+         if (
+             type(req.disagg_kv_sender) is not MooncakeKVSender
++            or not getattr(req.disagg_kv_sender, "supports_kv_ready_event", False)
+             or type(self.tree_cache) is not UnifiedRadixCache
+             or self.tree_cache.disable
+             or self.disagg_prefill_bootstrap_queue.kv_manager.kv_args.state_types
+@@ -612,15 +613,20 @@
+         pages = row[req.kv.req_pool_idx, start:end:page_size] // page_size
+         host = torch.empty(pages.shape, dtype=pages.dtype, device="cpu", pin_memory=True)
+         done = torch.cuda.Event()
++        kv_ready = torch.cuda.Event()
+         try:
+             host.copy_(pages, non_blocking=True)
+             done.record(self.schedule_stream)
++            # Capture the producer boundary before the next iteration
++            # launches unrelated work on the forward stream. The map
++            # copy event fences indices; this event fences KV bytes.
++            kv_ready.record(self.forward_stream)
+         except BaseException:
+             # Keep both storages alive until any partially enqueued copy stops.
+             self.schedule_stream.synchronize()
+             raise
+         self._pp_prepared_chunk_map = (
+-            req, sender, identity, cursor, start, end, pages, host, done,
++            req, sender, identity, cursor, start, end, pages, host, done, kv_ready,
+         )
+         if not getattr(self, "_pp_chunk_map_activation_logged", False):
+             logger.info("TOM_PP_CHUNK_MAP active page_size=%d", page_size)
+@@ -632,7 +638,7 @@
+         pending = getattr(self, "_pp_prepared_chunk_map", None)
+         if pending is None:
+             return
+-        req, sender, identity, cursor, start, end, pages, host, done = pending
++        req, sender, identity, cursor, start, end, pages, host, done, kv_ready = pending
+         # The local tuple retains GPU scratch and pinned CPU storage throughout
+         # the wait, including exception cancellation. No numpy read before it.
+         done.synchronize()
+@@ -654,6 +660,7 @@
+         # observes partially written pinned storage or the device temporary.
+         page_indices = host.numpy().copy()
+         if sender.should_send_kv_chunk(len(page_indices), False):
++            sender._early_send_wait_event = kv_ready
+             sender.send(page_indices, None, num_kv_tokens=end - start)
+         req.start_send_idx = end
+         self.disagg_prefill_pending_chunk_rids.add(req.rid)
+@@ -1611,6 +1618,16 @@
+                 len(page_indices), segment_is_last
+             ):
+                 continue
++            # PP enqueues forward work on a separate stream even when the
++            # ordinary overlap scheduler is disabled. Page-map copies alone
++            # do not fence those KV writes, especially on the last PP rank.
++            if not last_chunk and self.ps.pp_size > 1:
++                kv_ready = torch.cuda.Event()
++                kv_ready.record(self.forward_stream)
++                if getattr(req.disagg_kv_sender, "supports_kv_ready_event", False):
++                    req.disagg_kv_sender._early_send_wait_event = kv_ready
++                else:
++                    kv_ready.synchronize()
+             req.disagg_kv_sender.send(
+                 page_indices,
+                 state_indices if segment_is_last else None,
+--- a/python/sglang/srt/disaggregation/mooncake/conn.py
++++ b/python/sglang/srt/disaggregation/mooncake/conn.py
+@@ -1759,6 +1759,13 @@
+                 if not kv_chunk.staging_counted:
+                     self._staging_outstanding[kv_chunk.room] += 1
+                     kv_chunk.staging_counted = True
++
++                # Keep this chunk outstanding while the producer completes.
++                # Recheck abort/failure below after waiting, before any RDMA.
++                # This wait blocks only the transfer thread, not the scheduler.
++                if kv_chunk.wait_event is not None:
++                    kv_chunk.wait_event.synchronize()
++                    kv_chunk.wait_event = None
+ 
+                 if (
+                     kv_chunk.room not in self.request_status
+@@ -2304,6 +2311,7 @@
+         state_indices: Optional[List] = None,
+         num_kv_tokens: Optional[int] = None,
+         trace_ctx: Optional[Union[TraceReqContext, TraceNullContext]] = None,
++        wait_event: Optional[object] = None,
+     ):
+         assert self.disaggregation_mode == DisaggregationMode.PREFILL
+         assert not is_last_chunk or (is_last_chunk and aux_index is not None)
+@@ -2343,6 +2351,7 @@
+                 state_indices=state_indices,
+                 num_kv_tokens=num_kv_tokens,
+                 trace_ctx=trace_ctx,
++                wait_event=wait_event,
+             )
+         )
+ 
+@@ -2422,6 +2431,7 @@
+ 
+ 
+ class MooncakeKVSender(MooncakeFailureExceptionMixin, CommonKVSender):
++    supports_kv_ready_event = True
+ 
+     def __init__(
+         self,
+@@ -2451,6 +2461,10 @@
+         state_indices: Optional[List] = None,
+         num_kv_tokens: Optional[int] = None,
+     ):
++        # Consume even when this send is skipped; an event belongs to one
++        # submitted segment and must not leak into a later request/chunk.
++        wait_event = getattr(self, "_early_send_wait_event", None)
++        self._early_send_wait_event = None
+         kv_indices, index_slice, is_last_chunk, should_skip = (
+             self._prepare_send_indices(kv_indices, state_indices)
+         )
+@@ -2465,6 +2479,7 @@
+                 False,
+                 num_kv_tokens=num_kv_tokens,
+                 trace_ctx=self.trace_ctx.copy_for_thread(),
++                wait_event=wait_event,
+             )
+         else:
+             self.kv_mgr.add_transfer_request(
+@@ -2476,6 +2491,7 @@
+                 state_indices=state_indices,
+                 num_kv_tokens=num_kv_tokens,
+                 trace_ctx=self.trace_ctx.copy_for_thread(),
++                wait_event=wait_event,
+             )
+         self._record_transfer_indices(kv_indices, state_indices)
+ 
