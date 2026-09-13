@@ -147,3 +147,15 @@ ATT49 all8ready in491s,6canonical+4affinitypassed with crossPrefillL3reuse; allr
 20260913_172724:11842success/0failure;generatorinvalid;TTFTP50/P992.855329/5.207214s,worst20sP504.345156s,19/603windows>=4s. Load/cachebandsFalse;primarytrialacceptanceFalse. Recorded10performancecandidates,8192chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt49-two-prefill-8k-compressed-logits/REPORT.md`.
 
 2026-09-14T01:46:42.619174+08:00 — ATT50prepared9Kcompactchunktrial; ATT49closedinvalidgenerator/loadbandfailand19windowsover4. Exact3argumentdelta, unchangedtensources. ATT47bestvalidretained; nofallback.
+
+2026-09-14T02:00:23.859303+08:00 — 02:00checkpoint: ATT50ready476s andfresh6canonical+4affinitypass, capacitiesunchanged. ATT49closedinvalid/archive444hashes; ATT47bestvalid16badwindows. Full6M stillprimary; nofallback. Secondary12GPU original-output/RS slotaimaround03:00aftercurrentandatmostonequalifiedbootstraptrial. EarlyreturnedbootstrapCPUresearchsaved; actualmetadatahealthy8pass,failure4samebaselinecandidateper-rankhistoriesbutoraclefail. Headlessidlepage30snogeneratedrequests. NoPRworkbegun.
+
+### 2026-09-14T02:19:41.556341+08:00 — attempt50-two-prefill-9k-compressed-logits fulltrialclosed
+
+20260913_180611:11842success/0failure;generatorvalid;TTFTP50/P992.838442/5.518384s,worst20sP504.011806s,2/603windows>=4s. Load/cachebandsFalse;primarytrialacceptanceFalse. Recorded10performancecandidates,9216chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt50-two-prefill-9k-compressed-logits/REPORT.md`.
+
+2026-09-14T02:20:09.819197+08:00 — ATT50interpretation: nearstrictwindowtarget (2/603,worst4.011806s), validgenerator;432uncachedloadstatesaboveband max6.331259M. ATT47remainsfullyloadqualifiedreference. Oneearlybootstraptrialselectedafterarchive; secondaryRSoriginaloutputsnext.
+
+2026-09-14T02:20:25.109160+08:00 — ATT51prepared earlyreturnedbootstrap afterclosedATT50. Elevenperformancecandidates; unchanged9K/C05/output20. Sourced72dff03f17bc44e856d40e9ec6d05b707cc4895455c8642c2abb534f2f9b216. Uniformoptinstartup8activationlogs required; fresh6canonical+4affinity+warmup/fullvalidtrial next. CPUfailure limits retained; native/modelnotyetqualified.
+
+2026-09-14T02:23:28.963066+08:00 — ATT51 initialHelmupgrade rejected before runtimechange because releaseSecret>1MiB. ATT50spec/values/allincarnations reverified unchanged. Excluding disabledhistoricalpd-snapshot/pp-fence source+templates fromchartbundle removes95,428bytes; exactrenderSHAde5f9fee70f26d2fe742cc3f13f6a8b1e36c26e953e4756fe5cd6524d323b983 unchanged. Allsourcefilespreserved. Retryappliedsuccessfully; freshPrefillrolloutactive. Records:attempt51-two-prefill-early-bootstrap/rollout/failed-secret-size-01 andpreparation/HELM-STORAGE-CORRECTION.json.
