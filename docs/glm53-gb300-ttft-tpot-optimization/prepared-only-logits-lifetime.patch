@@ -1,0 +1,12 @@
+--- a/python/sglang/srt/layers/attention/dsa/dsa_indexer.py
++++ b/python/sglang/srt/layers/attention/dsa/dsa_indexer.py
+@@ -1217,6 +1217,9 @@
+                 topk_indices_offset_override=topk_offset_chunk,
+             )
+             topk_result[start:end] = raw_topk_chunk
++            # This score buffer has no remaining consumer after top-k. Release
++            # the Python reference before allocating the next logits chunk.
++            del logits_chunk
+             start = end
+ 
+         return topk_result

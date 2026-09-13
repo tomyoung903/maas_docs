@@ -103,3 +103,9 @@ P151 PP3 Mooncake EGM HOST_NUMA allocation failed; container restarted once auto
 ### 2026-09-13T22:20:29.116510+08:00 — ATT44 diagnostics selected
 
 ATT43 severe backlog at6K:guard-stopped10140success/0failure,1702neveradmitted,validgenerator,310/529windows>=4s. ReturnbestvalidATT40 10K for diagnostics. No6Mcapacity ceiling established. Two Prefills only:6K→10K args/graphs; built-in device timer and opt-in allocator reporter source/env/immutableCM. Six other pods and eight performance candidates unchanged. Fresh6canonical+4affinity/nativecoverage gates; exactrecipe/rollback preserved. CUDA-event interval includes stream/enqueue gaps; allocator counters omit allocations outside its backend and may add overhead. Missing counters are not zero. No native coverage or overhead validation yet; any useful optimization requires uninstrumented confirmation.
+
+2026-09-13T22:38:36.349916+08:00:ATT44 measured20260913_143815 started;full600s C05/output20,diagnostics only. Fresh6canonical+4affinity+400validwarmup pass;all8nativeforward/allocator counters present. Warmup interval had15 allocator retries across8ranks,zeroallocatorOOM; not yet a measured TTFT cause. Two newPrefills restart0;exactbindings archived at arm/runtime-bound.json.
+
+### 2026-09-13T22:54:48.094638+08:00 — attempt44-two-prefill-10k-timing-allocator fulltrialclosed
+
+20260913_143815:11842success/0failure;generatorvalid;TTFTP50/P993.031778/7.101334s,worst20sP506.186856s,79/603windows>=4s. Load/cachebandsFalse;primarytrialacceptanceFalse. Samecandidate8source,10240chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt44-two-prefill-10k-timing-allocator/REPORT.md`.
