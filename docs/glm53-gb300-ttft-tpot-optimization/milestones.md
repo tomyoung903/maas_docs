@@ -187,3 +187,11 @@ Run20260913_192835: 5921success/0failure/0unadmitted; generatorvalid; badTTFTwin
 ### 2026-09-14T05:04:38.165166+08:00 — attempt55-two-prefill-utf8-frontend fulltrialclosed
 
 20260913_205103:11842success/0failure;generatorinvalid;TTFTP50/P992.882916/4.978388s,worst20sP503.973114s,0/603windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Recorded11performancecandidates,9216chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt55-two-prefill-utf8-frontend/REPORT.md`.
+
+### 2026-09-14 05:20 SGT — ATT56 repeat and offline ownership review
+
+ATT56 unchanged fullC05 repeat20260913_211342 is active after400/400 validwarmup; all8serving identities retained. ATT55 corrected response audit unwraps Annotated.data:17usage-bearing responses lack nonempty generation deltas;16length/1stop. Pre-RSATT47/50 had complete TTFTcoverage; real-outputRSATT53 also has completecoverage, so the short-cap association is a hypothesis, not an isolated sampler defect. A12-request targeted logprob probe is prepared but gated untilATT56 closes. Earlier-finalKVbulk remains unapplied: exact radix insertion can free duplicate fresh slots and repoint maps after the proposed send; producer events and compaction gate alone do not protect this lifetime. Sources/hashes and transfer-completion requirement are recorded underresearch/early-final-bulk-held-page/RADIX-LIFETIME-*.
+
+### 2026-09-14T05:27:08.637397+08:00 — attempt56-two-prefill-utf8-repeat fulltrialclosed
+
+20260913_211342:11842success/0failure;generatorvalid;TTFTP50/P992.839280/4.948596s,worst20sP503.897844s,0/603windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Recorded11performancecandidates,9216chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt56-two-prefill-utf8-repeat/REPORT.md`.
