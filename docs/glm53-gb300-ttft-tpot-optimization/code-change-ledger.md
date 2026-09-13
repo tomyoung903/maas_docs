@@ -10,7 +10,7 @@ The six original optimizations modify `scheduler_pp_mixin.py` and `prefill.py`: 
 
 The later producer CUDA-event fix waits for KV-producing GPU work before transfer. It is retained in `candidates/optimized-async-kv-event/event-on-six-patches.patch`. That patch is incremental on the six optimizations, not a complete patch against frozen source. The complete files actually mounted into the workers are in each arm's `chart/files/`; corresponding `chart/templates/` and the rendered DGD specify mounting and startup order.
 
-Current Prefill hashes through ATT34:
+Current Prefill hashes through ATT35:
 
 | File | SHA256 |
 |---|---|
@@ -48,3 +48,11 @@ The wheel's referenced Dynamo commit is `dc39202c7d67a76f40efab53d1cfc3485489d83
 ## Reproduction discipline
 
 Use the arm's complete chart and values, not only the incremental patch. Recheck live ownership, exact namespace/release, no active replay, idle queues and resource scope before applying. Verify source/image identities and all intended ranks after rollout. Run bounded retrieval/L3/routing checks, then the recorded fresh-cache warmup and exact measured schedule. Preserve every outcome, including failed setup checks, unknown counters and interrupted replays. Do not replay stale pod IDs blindly.
+
+ATT36 is prepared only: Prefill chunk/max-prefill12288→10240 and graph-size12288→10240. All serving source/images remain unchanged. The rendered scope check found only these three Prefill arguments changed. Apply is gated on completed valid ATT35, full accounting, collector closure, idle queues and fresh ownership/identity checks. Initial Prefill bindings will change with worker IDs; frontend/Decode session retention is recorded separately. Recipe: `attempt36-two-prefill-10k-strict-affinity/preparation/`.
+
+## Generator investigation after ATT35
+
+ATT35 closed with all requests successful but a second invalid generator result (event-loop lag p99 51.507188ms >50ms). ATT36 remains prepared and held; it has not been applied. No serving or generator application source, resource, image or validation limit has changed. `worker/cpu_generator_callbacks.py` replays saved callbacks in a separate CPU-only process; `worker/run_cpu_generator_callbacks.py` records its exact source hash, bound container, stdout and exit status in `generator-cpu-audit/`. Hypotheses and controls are separate from proven findings.
+
+ATT35 retained all session-to-worker placements from ATT34 despite fresh KV reset. This state factor and inherited bounded-check provenance are part of its reproduction record.
