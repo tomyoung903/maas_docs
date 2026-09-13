@@ -1,0 +1,82 @@
+{
+  "utc": "2026-09-13T04:08:14.255265+00:00",
+  "trial": "ATT25",
+  "counts": {
+    "total": 3,
+    "passed": 2,
+    "wrong_or_empty_answer": 1,
+    "coverage_mismatch": 0
+  },
+  "snapshot_count": 15,
+  "hashed_bytes": 2995791552,
+  "rows": [
+    {
+      "input_tokens": 18083,
+      "cached_tokens": 0,
+      "decode_dp_rank": 0,
+      "tensor_count": 156,
+      "matching_tensor_count": 156,
+      "regular_kv_mismatching_layers": [],
+      "dsa_key_scale_mismatches": 0,
+      "last16_rows_match_on_mismatching_layers": true,
+      "metadata_different_field_names": [
+        "output_hidden_states"
+      ],
+      "hidden_state_buffers_all_zero": true
+    },
+    {
+      "input_tokens": 18082,
+      "cached_tokens": 0,
+      "decode_dp_rank": 2,
+      "tensor_count": 156,
+      "matching_tensor_count": 136,
+      "regular_kv_mismatching_layers": [
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77
+      ],
+      "dsa_key_scale_mismatches": 0,
+      "last16_rows_match_on_mismatching_layers": true,
+      "metadata_different_field_names": [
+        "output_hidden_states"
+      ],
+      "hidden_state_buffers_all_zero": true
+    },
+    {
+      "input_tokens": 18083,
+      "cached_tokens": 18048,
+      "decode_dp_rank": 1,
+      "tensor_count": 156,
+      "matching_tensor_count": 156,
+      "regular_kv_mismatching_layers": [],
+      "dsa_key_scale_mismatches": 0,
+      "last16_rows_match_on_mismatching_layers": true,
+      "metadata_different_field_names": [
+        "output_hidden_states"
+      ],
+      "hidden_state_buffers_all_zero": true
+    }
+  ],
+  "diagnostic_sha256": "ffbe76a6cda9f38c007d5d462750c1f1e55595211001c0f4dbdf4434f71b6ca4",
+  "scope": "Frozen Prefill inference sources, existing Decode EAGLE; corrected logical DSA hashes and PD-only diagnostic guard.",
+  "metadata_note": "All12 raw metadata differences are hidden-state buffer layout: Prefill has16float32 zeros and Decode has6144bfloat16 zeros. This difference is shared by passing and failing requests; it is not evidence of random transfer corruption. Six other required field hashes match. Validity of zero speculative seeds is a separate question.",
+  "inference": "Failure coincides with regular KV mismatch only in PP3/global58-77. Matching final16rows and reduced nonzero counts suggest early incomplete writes/transfer, but exact missing byte ranges need finer evidence.",
+  "source_lead": "Prefill startup has disable_overlap_schedule=true with PP4 asyncdepth1. process_prefill_chunk therefore sends nonfinal KV before next output-commit wait; PP3 lacks the proxy-send stream dependency used by other ranks. Check a bounded forward-completion fence as a discriminating treatment. No fix deployed yet."
+}

@@ -1,0 +1,53 @@
+--- a/python/sglang/srt/debug_utils/spec_anomaly.py
++++ b/python/sglang/srt/debug_utils/spec_anomaly.py
+@@ -140,17 +140,30 @@
+ 
+     loc = token_locations_cpu.to(device=tensor.device, dtype=torch.long)
+     if page_buffer:
+-        if tensor.ndim != 2 or tensor.shape[1] % page_size != 0:
++        # The reviewed NVIDIA DSA layout packs all 64x128 K bytes first,
++        # then all 64x4 scale bytes. Gather each token's two regions separately
++        # so the final partial page excludes padding and includes its scales.
++        if (
++            torch.version.hip is not None
++            or page_size != 64
++            or tensor.dtype != torch.uint8
++            or tensor.ndim != 2
++            or tensor.shape[1] != page_size * (128 + 4)
++        ):
+             raise ValueError(
+-                f"page buffer shape={tuple(tensor.shape)} cannot be split by "
+-                f"page_size={page_size}"
++                "DSA snapshot layout requires non-preshuffled NVIDIA64x(128K+4scale)"
+             )
+-        # DSA packs a whole page into one row. Slice it back into token-sized
+-        # records so the digest excludes unused bytes in the final partial page
+-        # and remains comparable across different physical page allocations.
+-        per_token_width = tensor.shape[1] // page_size
+-        logical = tensor.view(tensor.shape[0], page_size, per_token_width)
+-        return logical[loc // page_size, loc % page_size].detach().cpu().contiguous()
++        page_ids = (loc // page_size)[:, None]
++        token_offsets = (loc % page_size)[:, None]
++        k_columns = token_offsets * 128 + torch.arange(128, device=tensor.device)
++        scale_columns = (
++            page_size * 128
++            + token_offsets * 4
++            + torch.arange(4, device=tensor.device)
++        )
++        keys = tensor[page_ids, k_columns]
++        scales = tensor[page_ids, scale_columns]
++        return torch.cat((keys, scales), dim=1).detach().cpu().contiguous()
+ 
+     max_loc = int(loc.max().item())
+     if tensor.shape[0] > max_loc:
+@@ -804,6 +817,10 @@
+     batch_extra: dict[str, Any] | None = None,
+ ) -> str | None:
+     """Record metadata, hashes, logits and sampling decisions for every verify."""
++    # Task-owned diagnostic can restrict fingerprints to P->D boundaries.
++    # Leave inference and the default full diagnostic behavior unchanged.
++    if os.environ.get("TOM_PD_BOUNDARY_SNAPSHOTS_ONLY") == "1":
++        return None
+     if not should_capture_request(req):
+         return None
+ 
