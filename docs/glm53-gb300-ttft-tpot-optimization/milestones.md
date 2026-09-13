@@ -53,3 +53,11 @@ ATT39 resumed afterusage reset 2026-09-13T19:25:58.924494+08:00:sameeightboundin
 ATT39 userpaused 2026-09-13T19:28:41.918457+08:00:6canonical+4affinitypassed; warmup20260913_112533 completed400/400,0fail/empty,validgeneratorlagp995.866ms. ColdwarmupTTFTp50/p9917.184/22.488s. Full600smeasuredtest NOTstarted. NoactiveAlex;115gaugesidle twice; monitorstoprequested; servingresourcesremainallocated. `evidence/USER-PAUSED.json`.
 
 ATT39 closed warmup-only: candidate8startup initialization applied;11CPU/6canonical/4affinity passed;400warmupsuccess,0fail,validgenerator; measurednotstarted. Pause/resume/source/idlechecks preserved. NewATT40willreuseexactruntimewithfreshcache/warmup. `attempt39-two-prefill-startup-logits-budget/REPORT.md`.
+
+### 2026-09-13 20:15 Singapore — ATT40 full replay started
+
+Unchanged candidate8 runtime from closed warmup-only ATT39, fresh complete generator/dataset attestation, full cache reset, and400/400successfulwarmup (121122;validgeneratorlagp992.341ms). Full600sC05/output20run121454 is active; no performance pass yet. Secondary12GPU topology is rendered offline with original3Mdataset/outputpolicy preserved. Deadline is14September10:00Singapore;2P1Dpriorityandconditionalfallback/deferreddraftPRs/flagsissue recorded inDEADLINE-GOALS-20260914.md.
+
+### 2026-09-13T20:32:39.478043+08:00 — ATT40 best full valid2P1D result
+
+11842success/0failure,validgenerator44.319547ms;TTFTp50/p992.966963/5.334008s.20/603windows>4s,worst4.531601s at573s.42,621rollingload/cache states pass;actual60.033M/6.080MTPM,89.871884%hit.24existingtracecohorts point towardPrefillqueueing. All115gaugesidle,collectorsjoined,source/identitiesverified. Samecandidate8runtimeasATT39. Next12Kchunk trial; goalnotyetpassed. `attempt40-two-prefill-startup-budget-replay/REPORT.md`.
