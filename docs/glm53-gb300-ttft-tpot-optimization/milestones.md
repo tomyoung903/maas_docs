@@ -177,3 +177,7 @@ ATT49 all8ready in491s,6canonical+4affinitypassed with crossPrefillL3reuse; allr
 Run20260913_192835: 5921success/0failure/0unadmitted; generatorvalid; badTTFTwindows14/730;TTFT/loadpass=False. Actualoutputtokens4080983; fullOTPScontractnotcertified. Exactrecipe/evidence: `attempt53-one-prefill-real-output-rejection/REPORT.md`.
 
 2026-09-14T03:50:20.125402+08:00 — ATT54 primary return prepared after ATT53 closure/archive. P1to2,primedbootstrap73aaee27,9K,DecodeRS retained; fresh6canonical4affinity+400warm/11842measured required. No6Mfallback or performance claim.
+
+### 2026-09-14T04:25:35.417071+08:00 — ATT54 closed, partial frontend parser failure
+
+8675protocolsuccess/1failure/3166unadmitted;11successeswithoutvisiblegeneration. EligibleTTFT P50/P992.628571/5.840450s;11/443windows>4s,worst4.940247s. Generatorvalid;full600snotcompleted. Primedbootstrap+DecodeRS;noisolatedattribution. Allcollectorsjoined,115gaugesidle,sourcesverified. See `attempt54-two-prefill-primed-bootstrap-rejection/REPORT.md`.

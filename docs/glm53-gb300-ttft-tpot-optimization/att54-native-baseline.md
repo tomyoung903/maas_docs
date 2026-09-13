@@ -1,0 +1,3 @@
+# ATT54 native frontend provenance clarification
+
+The base image is labeled ff778ed, but frontend startup installs the retained dc39202 MiniJinja2.22 wheel, SHA6b6bd53e3ce2…, native SHA940d698e115b…. dc39202 is a direct child of ff778ed and only changes dependency locks, MiniJinja pins and a renderer regression test; the failing GLM parser file is byte-identical. The parser defect therefore applies to both. Repair builds must retain this delta. The closed ATT54 archive is unchanged; this addendum clarifies the actual native source baseline. Exact receipt: ../../candidates/frontend-parser-utf8/NATIVE-BASELINE-RESOLVED.json.
