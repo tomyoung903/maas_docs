@@ -1,0 +1,13 @@
+--- a/python/sglang/srt/layers/attention/dsa/dsa_indexer.py
++++ b/python/sglang/srt/layers/attention/dsa/dsa_indexer.py
+@@ -1217,6 +1217,10 @@
+                 topk_indices_offset_override=topk_offset_chunk,
+             )
+             topk_result[start:end] = raw_topk_chunk
++            # The ragged top-k consumes this score buffer on the current stream.
++            # Preserve the legacy PAGED branch lifetime unchanged.
++            if global_topk_offset is not None:
++                del logits_chunk
+             start = end
+ 
+         return topk_result

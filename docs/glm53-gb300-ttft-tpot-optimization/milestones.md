@@ -109,3 +109,19 @@ ATT43 severe backlog at6K:guard-stopped10140success/0failure,1702neveradmitted,v
 ### 2026-09-13T22:54:48.094638+08:00 — attempt44-two-prefill-10k-timing-allocator fulltrialclosed
 
 20260913_143815:11842success/0failure;generatorvalid;TTFTP50/P993.031778/7.101334s,worst20sP506.186856s,79/603windows>=4s. Load/cachebandsFalse;primarytrialacceptanceFalse. Samecandidate8source,10240chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt44-two-prefill-10k-timing-allocator/REPORT.md`.
+
+2026-09-13T22:59:14.343846+08:00:23:00review—ATT44archived/public; primaryremainsPrefillqueuecapacity. BoundednativevalidationselectedbeforepreparedMQAlifetimecandidate;noCUDAprocessyet.19GiBfreeonowned151GPU1,otherPdevicesexcluded;freshidle/source/headroomgatesrequired. SecondaryRS/originaloutputsreadyoffline;02:00slotcheckpointretained. No6Mcapacityceiling/fallback/PRwork.
+
+2026-09-13T23:08:48.436445+08:00—ATT45prepared only: ninthperformancecandidate, consumedMQAscorereferencerelease; unchangedATT44diagnostics/C05/10K.24nativecases/2graphchecks qualified; exactninepatch reconstruction5files. No servingbenefitclaimed.
+
+2026-09-13T23:17:22.250209+08:00 — ATT45 unconditional release remains unapplied: longK PAGED mismatch; fixed-score baseline control reproduces selected-set variation. Separate RAGGED-only revision planned, preserving original PAGED branch. Native06/07 retained.
+
+2026-09-13T23:19:22.503566+08:00—ATT46prepared only: ninthperformancecandidate, consumedMQAscorereferencerelease; unchangedATT44diagnostics/C05/10K.24nativecases/2graphchecks plus6longRAGGEDcases/1graphcheck qualified; PAGEDbranchunchanged; exactninepatch reconstruction5files. No servingbenefitclaimed.
+
+2026-09-13T23:26:27.683013+08:00 — ATT46 applied: RAGGED-only lifetime source182f5b863e82b3075f7ecf3dadf15047f283a967874b80be905f46a8822ce841; native24small+6longK cases and3graph checks passed, PAGED AST/lifetimeunchanged. FirstHelmreleaseSecret exceeded1MiB; failedattempt preserved and liveDGD/source/values unchanged verified. Excluding tests and2unusedchartfiles produced byte-identical render; same planned upgrade succeeded15:22:10UTC. All other6podincarnations retained. No performanceclaimbefore rollout/checks/replay.
+
+### 2026-09-13T23:53:13.185384+08:00 — attempt46-two-prefill-ragged-logits-lifetime fulltrialclosed
+
+20260913_153855:11842success/0failure;generatorinvalid;TTFTP50/P992.980194/5.203011s,worst20sP504.312874s,31/604windows>=4s. Load/cachebandsFalse;primarytrialacceptanceFalse. Recorded9performancecandidates,10240chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt46-two-prefill-ragged-logits-lifetime/REPORT.md`.
+
+2026-09-13T23:55:40.203104+08:00—ATT47prepared only, removePrefilldiagnostics, same9performancecandidates/10K/C05/output20. ATT46closed11842successbutgeneratorinvalid and31/604TTFTwindowsfail. Prior442filearchiveverified. No6Mfallback orsecondaryactivation.
