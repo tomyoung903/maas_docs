@@ -16,7 +16,7 @@ Primary goal, reaffirmed by Tom on 13 September: the same TTFT standard achieved
 | ATT33: strict affinity | Full 600s completed, 11,842 successes, zero failures/empty outputs. Worst 20s p50 6.116s; 213/603 windows above 4s. Hit 89.8904%; actual uncached approximately 6.069M TPM | `attempt33-two-prefill-strict-affinity/REPORT.md`; Alex `20260913_075613` |
 | ATT34: 12K with strict affinity | 11,842 successes, zero failures; worst20s p50 4.571s,56/603 above4. Generator invalid: event-loop lag p99 50.390ms >50ms; diagnostic only | `attempt34-two-prefill-12k-strict-affinity/REPORT.md`; Alex `20260913_084212` |
 | ATT35: unchanged12K repeat | 11,842 successes; worst20s p50 4.493s,60/602 above4. Generator invalid again:51.507ms>50; exact placement retained for all11,842 requests | `attempt35-two-prefill-12k-repeat/REPORT.md`; Alex `20260913_090354` |
-| ATT36: 10K intermediate control | Prepared only and held: ATT35 generator invalid. No serving changes applied | `attempt36-two-prefill-10k-strict-affinity/preparation/PREPARED.json` |
+| ATT36: 10K intermediate control | Prepared; decision amendment permits next investigation after CPU controls close. ATT35 remains invalid. No apply yet | `attempt36-two-prefill-10k-strict-affinity/preparation/PREPARED.json` |
 
 Latest phase and active process handles: root `STATUS.json` and the current arm's `STATUS.json` / `tool-sessions.json`. An applied configuration is not a completed experiment. Failed and partial arms remain in this table.
 
@@ -27,3 +27,5 @@ Closed milestones receive a private archive and verified file manifest under `mi
 ATT35 archive: `milestones/attempt35-two-prefill-12k-repeat/recipe-code-evidence.tar.gz`; 138 files verified, SHA256 `81ccff3efb2fbcd9c119ed336def4fb0be9f1e2a0b8d1254eced144157ceac9f`. Retained routing state is explicit: fresh KV reset did not clear frontend bindings; all 11,842 requests matched ATT34 worker placement.
 
 CPU generator audit: `generator-cpu-audit/`; isolated saved-callback replay, no HTTP/model calls or serving changes. Each variant preserves its source hash, original stdout, exit status and result. This is a diagnostic, not an accepted serving test.
+
+At 2026-09-13T17:45:58.184127+08:00 ATT36 applied only the three prepared Prefill arguments for10K chunk/max-prefill/graph size. Watcher session34037 is checking both Prefill replacements while preserving the other six incarnations. No benchmark has started. Prior held/prepared states above remain historical.
