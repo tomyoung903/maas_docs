@@ -61,3 +61,17 @@ Unchanged candidate8 runtime from closed warmup-only ATT39, fresh complete gener
 ### 2026-09-13T20:32:39.478043+08:00 — ATT40 best full valid2P1D result
 
 11842success/0failure,validgenerator44.319547ms;TTFTp50/p992.966963/5.334008s.20/603windows>4s,worst4.531601s at573s.42,621rollingload/cache states pass;actual60.033M/6.080MTPM,89.871884%hit.24existingtracecohorts point towardPrefillqueueing. All115gaugesidle,collectorsjoined,source/identitiesverified. Samecandidate8runtimeasATT39. Next12Kchunk trial; goalnotyetpassed. `attempt40-two-prefill-startup-budget-replay/REPORT.md`.
+
+### 2026-09-13T20:42:21.362700+08:00 — ATT41 scoped12K trial rollout
+
+ATT40 archive verified before mutation. ATT41 changes exactly3Prefillarguments (chunk/max-prefill/graph10240→12288); samecandidate8source,C05/output20,strictaffinity,Store and sixnonPrefillincarnations. P151ready;P132starting. Fresh6canonical+4affinitychecks andcachewarmup required. `attempt41-two-prefill-12k-startup-budget/preparation/PREPARED.json`, `rollout/INTENT.json`. Secondaryoriginal-outputHTTPbodies compiled andall6021comparedwithoriginalpolicywhileprimaryidle,20.35s/noinference; `secondary-1p1d-12gpu/payload-preparation/VERIFIED.json`.
+
+2026-09-13T20:50:29.800195+08:00: ATT41 bothPrefillsreadyafter507.331sreadinesswatch; actual12Kgraphs/frozencandidate8DSAsources,KV9252096tokens/PPrank,Decode3135616/DP,Store1300GiBverified. Eightstartupbudgetlogs:PP0/1=8910624522B,PP2=7401255731B,PP3=7020412928B,oldunset,bothPidentical. Fresh6retrieval+4affinitychecks allpass;L3cross-P18048tokensonall4ranksbothdirections. FourDSAsourcehashes/defaultfractionunchanged. FreshcompleteC05/generator/tokenmanifestattestationmatches. Scopedcache-resetbeforewarmupnowrunning.
+
+### 2026-09-13T21:10:14.667886+08:00 — attempt41-two-prefill-12k-startup-budget fulltrialclosed
+
+20260913_125341:11842success/0failure;generatorvalid;TTFTP50/P993.198143/5.594766s,worst20sP504.495855s,19/603windows>=4s. Load/cachebandsFalse;primarytrialacceptanceFalse. Samecandidate8source,12288chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt41-two-prefill-12k-startup-budget/REPORT.md`.
+
+### 2026-09-13T21:11:10.136766+08:00 — ATT42 8K startup-budget test selected
+
+ATT41 valid full run:19/603 windows>=4s,worst4.496s,globalP50/P99=3.198/5.595s;28 exact60sloadstates exceeded6.3Muncached engineeringband,max6.318466M. ATT40 remains bestvalidreference. 8K with startup-budget fix has not been tested; assess smaller-stage blocking/capacity tradeoff at unchanged6M schedule. No6Mcapacityceiling established. Only three Prefill args change; exact render/rollback saved. Fresh6canonical+4affinity+400warmup precede full11842 measured requests.
