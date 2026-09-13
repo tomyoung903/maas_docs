@@ -137,3 +137,13 @@ ATT43 severe backlog at6K:guard-stopped10140success/0failure,1702neveradmitted,v
 20260913_165356:11842success/0failure;generatorvalid;TTFTP50/P992.886835/5.468581s,worst20sP504.531822s,23/602windows>=4s. Load/cachebandsTrue;primarytrialacceptanceFalse. Recorded10performancecandidates,10240chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt48-two-prefill-compressed-logits/REPORT.md`.
 
 2026-09-14T01:10:49.594653+08:00 — ATT49prepared8Kcompactchunktrial; ATT48closedvalidgenerator/loadbut23windowsover4. Exact3argumentdelta, unchangedtensources. ATT47bestvalidretained; nofallback.
+
+### 2026-09-14T01:25:58.925556+08:00 — ATT49 ready; secondary analysis prepared
+
+ATT49 all8ready in491s,6canonical+4affinitypassed with crossPrefillL3reuse; allrankcache reset done; warmup20260913_172444 active. ATT48publicreport exactbytesverified atcommitf09184c885069c48013b0a1df798a77e364926e6,178artifacthashes. Secondary stillprepared only; original-output analysis recomputes all602ATT28chartwindows exactly, actualoutputs4–20,total117904. Firstchecker incorrectly assumed every output==20; retained/fixed withoutservingmutation. Baseline-derived chunks/graphs andsevenpodDGD/5921terminalhelpers retained under`secondary-1p1d-12gpu/control-template/`. 9Kcompactoptionpreparedonly, notselected.
+
+### 2026-09-14T01:45:30.212437+08:00 — attempt49-two-prefill-8k-compressed-logits fulltrialclosed
+
+20260913_172724:11842success/0failure;generatorinvalid;TTFTP50/P992.855329/5.207214s,worst20sP504.345156s,19/603windows>=4s. Load/cachebandsFalse;primarytrialacceptanceFalse. Recorded10performancecandidates,8192chunks. All115gaugesidle,collectorsjoined,source/incarnationschecked. Exactrecipeandrollbackin`attempt49-two-prefill-8k-compressed-logits/REPORT.md`.
+
+2026-09-14T01:46:42.619174+08:00 — ATT50prepared9Kcompactchunktrial; ATT49closedinvalidgenerator/loadbandfailand19windowsover4. Exact3argumentdelta, unchangedtensources. ATT47bestvalidretained; nofallback.
