@@ -1,0 +1,548 @@
+{
+  "schema_version": 1,
+  "reviewed_date": "2026-09-22",
+  "hf_revision": "f831ab66814297da540d832a5235f8e904f29d06",
+  "sglang_revision": "cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c",
+  "scope": "One fresh 100,000-token text sequence; expanded causal MLA and sequential-equivalent KDA mathematical work; one next-token logits row. No measured kernel arithmetic or precision normalization.",
+  "sources": {
+    "config": {
+      "title": "Official Kimi K3 checkpoint configuration",
+      "url": "https://huggingface.co/moonshotai/Kimi-K3/blob/f831ab66814297da540d832a5235f8e904f29d06/config.json",
+      "sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+      "access": "public"
+    },
+    "hf_model": {
+      "title": "Official Kimi K3 logical text model",
+      "url": "https://huggingface.co/moonshotai/Kimi-K3/blob/f831ab66814297da540d832a5235f8e904f29d06/modeling_kimi_linear.py",
+      "sha256": "9e3564c70ac21854ce5a090cc946c5dc76b70d1050ef50840449181a20fff44a",
+      "access": "public"
+    },
+    "tensor_index": {
+      "title": "Official Kimi K3 checkpoint tensor index",
+      "url": "https://huggingface.co/moonshotai/Kimi-K3/blob/f831ab66814297da540d832a5235f8e904f29d06/model.safetensors.index.json",
+      "sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+      "access": "public"
+    },
+    "sg_model": {
+      "title": "kimi_k3.py at pinned SGLang revision",
+      "url": "https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/models/kimi_k3.py",
+      "sha256": "7bb5a787dde8bf7350dc98912b1eec0fd7bb45d6031e1952521ae035fbfdaf3b",
+      "access": "may require company GitLab authorization"
+    },
+    "sg_kda": {
+      "title": "kda.py at pinned SGLang revision",
+      "url": "https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/kernels/ops/attention/fla/kda.py",
+      "sha256": "6d37f8f7bdfc5d430090f99106448f4051a9076c6df166fd2b96bafc61c601eb",
+      "access": "may require company GitLab authorization"
+    },
+    "sg_recurrent": {
+      "title": "fused_recurrent.py at pinned SGLang revision",
+      "url": "https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/kernels/ops/attention/fla/fused_recurrent.py",
+      "sha256": "cf5e980d86174a631bcd0872f8ebf7a6ab7c21c3435c097f66f8ba0e686debc0",
+      "access": "may require company GitLab authorization"
+    },
+    "sg_l2norm": {
+      "title": "l2norm.py at pinned SGLang revision",
+      "url": "https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/kernels/ops/attention/fla/l2norm.py",
+      "sha256": "b1323047a7c7f46268a9c295f4fea5c53a210ebfb04db5b17d7ce6ff4b24b7f7",
+      "access": "may require company GitLab authorization"
+    },
+    "sg_residual": {
+      "title": "attn_residual.py at pinned SGLang revision",
+      "url": "https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/layers/attn_residual.py",
+      "sha256": "a0586497dec4db2b7fd9e073ed0ad98ec2f9b1535a53e3b5e43f12c075662f11",
+      "access": "may require company GitLab authorization"
+    },
+    "sg_mla": {
+      "title": "deepseek_v2.py at pinned SGLang revision",
+      "url": "https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/models/deepseek_v2.py",
+      "sha256": "9ad5ad6641b63bea76ab5ece588401f263271e1758f0e3c2292dc37edb7db14f",
+      "access": "may require company GitLab authorization"
+    }
+  },
+  "claims": [
+    {
+      "id": "layer_profile",
+      "node_ids": [
+        "2",
+        "2.4",
+        "2.8"
+      ],
+      "claim": "93 decoder layers, 69 KDA plus 24 MLA; layer 0 dense and layers 1\u201392 latent MoE; explicit checkpoint lists control attention selection.",
+      "anchors": [
+        {
+          "source_id": "config",
+          "start_line": 18,
+          "end_line": 267
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 877,
+          "end_line": 904
+        }
+      ]
+    },
+    {
+      "id": "kda_projections",
+      "node_ids": [
+        "K1",
+        "K2",
+        "K3",
+        "K10"
+      ],
+      "claim": "KDA has 96 heads\u00d7128 features; q,k,v and output-gate are 7168\u219212288; forget 7168\u2192128\u219212288; beta 7168\u219296; output 12288\u21927168.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 477,
+          "end_line": 541
+        },
+        {
+          "source_id": "sg_model",
+          "start_line": 1401,
+          "end_line": 1582
+        }
+      ]
+    },
+    {
+      "id": "kda_convolution",
+      "node_ids": [
+        "K4",
+        "K5"
+      ],
+      "claim": "Three independent channelwise causal convolutions have kernel length 4 and SiLU, with no checkpoint convolution bias.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 502,
+          "end_line": 516
+        },
+        {
+          "source_id": "sg_model",
+          "start_line": 1584,
+          "end_line": 1593
+        }
+      ]
+    },
+    {
+      "id": "kda_qk_norm",
+      "node_ids": [
+        "K6"
+      ],
+      "claim": "Only Q and K receive per-head L2 normalization, epsilon 1 e-6; query state-read scale is 1/sqrt 128.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 610,
+          "end_line": 628
+        },
+        {
+          "source_id": "sg_kda",
+          "start_line": 1216,
+          "end_line": 1221
+        },
+        {
+          "source_id": "sg_l2norm",
+          "start_line": 29,
+          "end_line": 39
+        }
+      ]
+    },
+    {
+      "id": "kda_safe_gate",
+      "node_ids": [
+        "K7"
+      ],
+      "claim": "Forget logits use -5*sigmoid(exp(A_log)*(f+dt_bias)); beta is sigmoid, without doubling.",
+      "anchors": [
+        {
+          "source_id": "sg_kda",
+          "start_line": 988,
+          "end_line": 1006
+        },
+        {
+          "source_id": "sg_model",
+          "start_line": 1838,
+          "end_line": 1845
+        }
+      ]
+    },
+    {
+      "id": "kda_recurrence",
+      "node_ids": [
+        "K8",
+        "K8a",
+        "K8b",
+        "K8c",
+        "K8d"
+      ],
+      "claim": "Conceptual recurrence decays state, subtracts predicted value, scales correction by beta, adds key\u00d7correction outer product and reads updated state with scaled query. Logical state axis convention may be transposed relative to SGLang storage.",
+      "anchors": [
+        {
+          "source_id": "sg_recurrent",
+          "start_line": 81,
+          "end_line": 106
+        }
+      ]
+    },
+    {
+      "id": "kda_chunk_boundary",
+      "node_ids": [
+        "K8"
+      ],
+      "claim": "Pinned Triton prefill uses chunk size 64 with intra-chunk, state-scan and output kernels; the displayed recurrence is a mathematical work model, not a chunk-kernel instruction count.",
+      "anchors": [
+        {
+          "source_id": "sg_kda",
+          "start_line": 1084,
+          "end_line": 1186
+        }
+      ]
+    },
+    {
+      "id": "kda_output_gate",
+      "node_ids": [
+        "K9"
+      ],
+      "claim": "KDA applies learned per-head-width RMSNorm shared over heads, then sigmoid output gating before the output projection.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 539,
+          "end_line": 541
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 651,
+          "end_line": 661
+        }
+      ]
+    },
+    {
+      "id": "mla_projections",
+      "node_ids": [
+        "A1",
+        "A2",
+        "A3",
+        "A4"
+      ],
+      "claim": "Query rank 1536, KV rank 512, extra shared key 64,96 heads; QK width 192 and V width 128.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 351,
+          "end_line": 403
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 418,
+          "end_line": 440
+        }
+      ]
+    },
+    {
+      "id": "mla_nope",
+      "node_ids": [
+        "A5",
+        "A6",
+        "A6a",
+        "A6b",
+        "A6c"
+      ],
+      "claim": "NoPE removes rotation;64 shared key dimensions remain. MLA computes full causal attention with scaling 1/sqrt 192. No DSA selection executes.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 351,
+          "end_line": 359
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 395,
+          "end_line": 403
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 423,
+          "end_line": 463
+        }
+      ]
+    },
+    {
+      "id": "mla_cache",
+      "node_ids": [
+        "A5"
+      ],
+      "claim": "Pinned SGLang supports a 576-wide compressed key representation (512 KV latent+64 extra key features), distinct from expanded prefill K/V tensors.",
+      "anchors": [
+        {
+          "source_id": "sg_mla",
+          "start_line": 1896,
+          "end_line": 1931
+        }
+      ]
+    },
+    {
+      "id": "mla_output_gate",
+      "node_ids": [
+        "A7",
+        "A8",
+        "A9"
+      ],
+      "claim": "Full-rank output gate 7168\u219212288, followed by sigmoid and multiply, is applied before output projection.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 398,
+          "end_line": 401
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 468,
+          "end_line": 474
+        }
+      ]
+    },
+    {
+      "id": "situ",
+      "node_ids": [
+        "D2",
+        "M3c",
+        "M6b"
+      ],
+      "claim": "SiTU with checkpoint beta 4 and linear_beta 25 computes 4*tanh(gate/4)*sigmoid(gate)*25*tanh(up/25).",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 64,
+          "end_line": 84
+        },
+        {
+          "source_id": "config",
+          "start_line": 19,
+          "end_line": 20
+        }
+      ]
+    },
+    {
+      "id": "dense",
+      "node_ids": [
+        "D",
+        "D1",
+        "D3"
+      ],
+      "claim": "Only layer 0 has dense FFN; intermediate 33792 with gate/up/down matrices.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 273,
+          "end_line": 301
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 892,
+          "end_line": 900
+        },
+        {
+          "source_id": "config",
+          "start_line": 45,
+          "end_line": 55
+        }
+      ]
+    },
+    {
+      "id": "router",
+      "node_ids": [
+        "M1"
+      ],
+      "claim": "Router reads full hidden state; correction bias affects selection, while selected original sigmoid scores are renormalized.896 experts,16 selected, one group, scaling 1.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 676,
+          "end_line": 758
+        },
+        {
+          "source_id": "config",
+          "start_line": 175,
+          "end_line": 190
+        },
+        {
+          "source_id": "config",
+          "start_line": 245,
+          "end_line": 264
+        }
+      ]
+    },
+    {
+      "id": "latent_moe",
+      "node_ids": [
+        "M",
+        "M2",
+        "M3",
+        "M3a",
+        "M3b",
+        "M3d",
+        "M3e",
+        "M4",
+        "M5",
+        "M7"
+      ],
+      "claim": "Common 7168\u21943584 projections surround routed experts. Each expert has gate/up 3584\u21923072 and down 3072\u21923584. Weighted combine precedes latent RMSNorm and expansion.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 242,
+          "end_line": 270
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 777,
+          "end_line": 875
+        }
+      ]
+    },
+    {
+      "id": "shared",
+      "node_ids": [
+        "M6",
+        "M6a",
+        "M6c"
+      ],
+      "claim": "Two shared expert units form one full-width 7168 MLP with intermediate 6144 and no router weight.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 797,
+          "end_line": 815
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 833,
+          "end_line": 838
+        }
+      ]
+    },
+    {
+      "id": "attention_residual",
+      "node_ids": [
+        "2.1",
+        "2.1a",
+        "2.1b",
+        "2.1c",
+        "2.1d",
+        "2.2",
+        "2.3",
+        "2.5",
+        "2.6",
+        "2.6a",
+        "2.6b",
+        "2.6c",
+        "2.6d",
+        "2.7",
+        "2.9",
+        "3",
+        "3a",
+        "3b",
+        "3c",
+        "3d"
+      ],
+      "claim": "Depth attention scores normalized bank/current candidates, softmaxes over depth and mixes raw vectors. Bank snapshots occur before one-based layers 1,13,\u202685; final bank has 8 saved rows plus current.186 mixtures execute;187 scoring norm/projection pairs are stored.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 906,
+          "end_line": 917
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 983,
+          "end_line": 1046
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 1075,
+          "end_line": 1088
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 1096,
+          "end_line": 1110
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 1216,
+          "end_line": 1233
+        }
+      ]
+    },
+    {
+      "id": "embedding_and_head",
+      "node_ids": [
+        "1",
+        "4",
+        "5"
+      ],
+      "claim": "Untied vocabulary 163840\u00d7hidden 7168 embedding and LM head; final depth aggregation precedes final RMSNorm; one final logits row is an explicit generation scope.",
+      "anchors": [
+        {
+          "source_id": "hf_model",
+          "start_line": 1096,
+          "end_line": 1101
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 1216,
+          "end_line": 1222
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 1240,
+          "end_line": 1248
+        },
+        {
+          "source_id": "hf_model",
+          "start_line": 1294,
+          "end_line": 1300
+        },
+        {
+          "source_id": "config",
+          "start_line": 253,
+          "end_line": 266
+        }
+      ]
+    },
+    {
+      "id": "a_log_reconciliation",
+      "node_ids": [
+        "K7",
+        "R"
+      ],
+      "claim": "All 69 checkpoint A_log tensors contain 128 entries; pinned SGLang consumes 96, leaving 2208 checkpoint elements outside runtime ownership.",
+      "anchors": [
+        {
+          "source_id": "sg_model",
+          "start_line": 1595,
+          "end_line": 1621
+        }
+      ]
+    }
+  ],
+  "checkpoint_header_audit": {
+    "verified_shards": 94,
+    "text_tensor_count": 497052,
+    "by_kind": {
+      "learned_state": 2460,
+      "packed_weight": 247296,
+      "quantization_scale": 247296
+    },
+    "checkpoint_unpacked_logical_text_state": 2779484478208,
+    "runtime_logical_text_state": 2779484476000,
+    "a_log_surplus": 2208,
+    "all_index_text_tensors_matched": true,
+    "formula_totals_match_all_headers": true,
+    "quantization_scale_elements_excluded": true
+  },
+  "tensor_header_method": "Only 8-byte safetensors header lengths and corresponding JSON headers were fetched using bounded HTTP byte ranges; no weight payloads.",
+  "parameter_count_boundary": "Logical learned scalar slots; all routed experts included; quantization scales, vision, sharding replicas and request states excluded. Matrix shapes displayed as logical input-to-output mappings may be transposed or merged relative to checkpoint storage."
+}

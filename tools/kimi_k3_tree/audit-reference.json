@@ -1,0 +1,762 @@
+{
+  "scope": "one cold 100000-token text prefill, no padding tokens, one next-token logits row",
+  "contraction": "expanded MLA + sequential-equivalent KDA, eager AttnRes",
+  "dimensions": {
+    "T": 100000,
+    "H": 7168,
+    "N": 93,
+    "NK": 69,
+    "NM": 24,
+    "NH": 96,
+    "DK": 128,
+    "DV": 128,
+    "W": 12288,
+    "Q": 1536,
+    "R": 512,
+    "POS": 64,
+    "F0": 33792,
+    "F": 3072,
+    "Z": 3584,
+    "E": 896,
+    "K": 16,
+    "S": 2,
+    "VOCAB": 163840,
+    "P": 5000050000
+  },
+  "leaves": {
+    "input_norm": {
+      "flops": 266668200000,
+      "formula": "93*T*(4*H+2)",
+      "family": "common",
+      "pflops": 0.0002666682,
+      "note": ""
+    },
+    "post_attention_norm": {
+      "flops": 266668200000,
+      "formula": "93*T*(4*H+2)",
+      "family": "common",
+      "pflops": 0.0002666682,
+      "note": ""
+    },
+    "prefix_attention_add": {
+      "flops": 60928000000,
+      "formula": "(93-8)*T*H",
+      "family": "common",
+      "pflops": 6.0928e-05,
+      "note": "Block starts 1,13,...,85 reset prefix instead of adding it."
+    },
+    "prefix_ffn_add": {
+      "flops": 66662400000,
+      "formula": "93*T*H",
+      "family": "common",
+      "pflops": 6.66624e-05,
+      "note": ""
+    },
+    "final_norm": {
+      "flops": 2867400000,
+      "formula": "T*(4*H+2)",
+      "family": "final",
+      "pflops": 2.8674e-06,
+      "note": ""
+    },
+    "last_token_lm_head": {
+      "flops": 2348810240,
+      "formula": "2*H*VOCAB",
+      "family": "final",
+      "pflops": 2.34881024e-06,
+      "note": "One next-token logits row; all-token logits would multiply this by T."
+    },
+    "embedding_lookup": {
+      "flops": 0,
+      "formula": "0",
+      "family": "embedding",
+      "pflops": 0.0,
+      "note": "Gather, not floating arithmetic."
+    },
+    "attnres_attention_score_norm": {
+      "flops": 1410760800000,
+      "formula": "T*492*(4*H+2)",
+      "family": "attnres",
+      "pflops": 0.0014107608,
+      "note": ""
+    },
+    "attnres_attention_score_dot": {
+      "flops": 705331200000,
+      "formula": "T*492*2*H",
+      "family": "attnres",
+      "pflops": 0.0007053312,
+      "note": "GEMM 2 per MAC, including 0 accumulator."
+    },
+    "attnres_attention_softmax": {
+      "flops": 187600000,
+      "formula": "T*(4*492-92)",
+      "family": "attnres",
+      "pflops": 1.876e-07,
+      "note": ""
+    },
+    "attnres_attention_weighted_mix": {
+      "flops": 639385600000,
+      "formula": "T*(2*492-92)*H",
+      "family": "attnres",
+      "pflops": 0.0006393856,
+      "note": "R multiplications + R-1 additions per hidden coordinate."
+    },
+    "attnres_ffn_score_norm": {
+      "flops": 1436567400000,
+      "formula": "T*501*(4*H+2)",
+      "family": "attnres",
+      "pflops": 0.0014365674,
+      "note": ""
+    },
+    "attnres_ffn_score_dot": {
+      "flops": 718233600000,
+      "formula": "T*501*2*H",
+      "family": "attnres",
+      "pflops": 0.0007182336,
+      "note": "GEMM 2 per MAC, including 0 accumulator."
+    },
+    "attnres_ffn_softmax": {
+      "flops": 191100000,
+      "formula": "T*(4*501-93)",
+      "family": "attnres",
+      "pflops": 1.911e-07,
+      "note": ""
+    },
+    "attnres_ffn_weighted_mix": {
+      "flops": 651571200000,
+      "formula": "T*(2*501-93)*H",
+      "family": "attnres",
+      "pflops": 0.0006515712,
+      "note": "R multiplications + R-1 additions per hidden coordinate."
+    },
+    "attnres_final_score_norm": {
+      "flops": 25806600000,
+      "formula": "T*9*(4*H+2)",
+      "family": "final_attnres",
+      "pflops": 2.58066e-05,
+      "note": ""
+    },
+    "attnres_final_score_dot": {
+      "flops": 12902400000,
+      "formula": "T*9*2*H",
+      "family": "final_attnres",
+      "pflops": 1.29024e-05,
+      "note": "GEMM 2 per MAC, including 0 accumulator."
+    },
+    "attnres_final_softmax": {
+      "flops": 3500000,
+      "formula": "T*(4*9-1)",
+      "family": "final_attnres",
+      "pflops": 3.5e-09,
+      "note": ""
+    },
+    "attnres_final_weighted_mix": {
+      "flops": 12185600000,
+      "formula": "T*(2*9-1)*H",
+      "family": "final_attnres",
+      "pflops": 1.21856e-05,
+      "note": "R multiplications + R-1 additions per hidden coordinate."
+    },
+    "kda_qkv": {
+      "flops": 3646527897600000,
+      "formula": "69*T*2*7168*12288*3",
+      "family": "kda_linear",
+      "pflops": 3.6465278976,
+      "note": ""
+    },
+    "kda_output_gate_proj": {
+      "flops": 1215509299200000,
+      "formula": "69*T*2*7168*12288*1",
+      "family": "kda_linear",
+      "pflops": 1.2155092992,
+      "note": ""
+    },
+    "kda_beta_proj": {
+      "flops": 9496166400000,
+      "formula": "69*T*2*7168*96*1",
+      "family": "kda_linear",
+      "pflops": 0.0094961664,
+      "note": ""
+    },
+    "kda_forget_a": {
+      "flops": 12661555200000,
+      "formula": "69*T*2*7168*128*1",
+      "family": "kda_linear",
+      "pflops": 0.0126615552,
+      "note": ""
+    },
+    "kda_forget_b": {
+      "flops": 21705523200000,
+      "formula": "69*T*2*128*12288*1",
+      "family": "kda_linear",
+      "pflops": 0.0217055232,
+      "note": ""
+    },
+    "kda_output_proj": {
+      "flops": 1215509299200000,
+      "formula": "69*T*2*12288*7168*1",
+      "family": "kda_linear",
+      "pflops": 1.2155092992,
+      "note": ""
+    },
+    "kda_depthwise_conv4": {
+      "flops": 2034892800000,
+      "formula": "69*T*3*W*2*4",
+      "family": "kda_scalar",
+      "pflops": 0.0020348928,
+      "note": "Logical 2 FLOPs/MAC with explicit zero padding; not exact 4 mul+3 add arithmetic."
+    },
+    "kda_qkv_silu": {
+      "flops": 1017446400000,
+      "formula": "69*T*3*W*4",
+      "family": "kda_scalar",
+      "pflops": 0.0010174464,
+      "note": "Sigmoid exp/add/reciprocal=3, then x multiplication=1; unary minus free."
+    },
+    "kda_qk_l2norm": {
+      "flops": 510048000000,
+      "formula": "69*T*2*96*(3*128+1)",
+      "family": "kda_scalar",
+      "pflops": 0.000510048,
+      "note": "Assumes sum(x*x)+eps then rsqrt and output multiply; confirm pinned l2norm."
+    },
+    "kda_beta_sigmoid": {
+      "flops": 1987200000,
+      "formula": "69*T*96*3",
+      "family": "kda_scalar",
+      "pflops": 1.9872e-06,
+      "note": ""
+    },
+    "kda_forget_gate_to_alpha": {
+      "flops": 593510400000,
+      "formula": "69*T*W*7",
+      "family": "kda_scalar",
+      "pflops": 0.0005935104,
+      "note": "z=f+dt_bias; g=-5*sigmoid(exp(A)*z); alpha=exp(g). exp(A) separate."
+    },
+    "kda_exp_A_once_per_layer": {
+      "flops": 6624,
+      "formula": "69*96",
+      "family": "kda_scalar",
+      "pflops": 6.624e-12,
+      "note": "Parameter-only exp(A) hoisted once per layer in this reference."
+    },
+    "kda_query_scale": {
+      "flops": 84787200000,
+      "formula": "69*T*W",
+      "family": "kda_scalar",
+      "pflops": 8.47872e-05,
+      "note": ""
+    },
+    "kda_state_decay": {
+      "flops": 10852761600000,
+      "formula": "69*T*96*(dk*dv)",
+      "family": "kda_recurrence",
+      "pflops": 0.0108527616,
+      "note": "Sequential-equivalent arithmetic; chunked prefill executes a different factorization."
+    },
+    "kda_state_read_prediction": {
+      "flops": 21705523200000,
+      "formula": "69*T*96*(2*dk*dv)",
+      "family": "kda_recurrence",
+      "pflops": 0.0217055232,
+      "note": "Sequential-equivalent arithmetic; chunked prefill executes a different factorization."
+    },
+    "kda_delta_subtract_beta": {
+      "flops": 169574400000,
+      "formula": "69*T*96*(2*dv)",
+      "family": "kda_recurrence",
+      "pflops": 0.0001695744,
+      "note": "Sequential-equivalent arithmetic; chunked prefill executes a different factorization."
+    },
+    "kda_rank_one_state_update": {
+      "flops": 21705523200000,
+      "formula": "69*T*96*(2*dk*dv)",
+      "family": "kda_recurrence",
+      "pflops": 0.0217055232,
+      "note": "Sequential-equivalent arithmetic; chunked prefill executes a different factorization."
+    },
+    "kda_state_read_output": {
+      "flops": 21705523200000,
+      "formula": "69*T*96*(2*dk*dv)",
+      "family": "kda_recurrence",
+      "pflops": 0.0217055232,
+      "note": "Sequential-equivalent arithmetic; chunked prefill executes a different factorization."
+    },
+    "kda_output_rmsnorm": {
+      "flops": 340473600000,
+      "formula": "69*T*96*(4*128+2)",
+      "family": "kda_scalar",
+      "pflops": 0.0003404736,
+      "note": ""
+    },
+    "kda_output_sigmoid_multiply": {
+      "flops": 339148800000,
+      "formula": "69*T*W*4",
+      "family": "kda_scalar",
+      "pflops": 0.0003391488,
+      "note": ""
+    },
+    "mla_q_a": {
+      "flops": 52848230400000,
+      "formula": "24*T*2*7168*1536",
+      "family": "mla_linear",
+      "pflops": 0.0528482304,
+      "note": ""
+    },
+    "mla_kv_a": {
+      "flops": 19818086400000,
+      "formula": "24*T*2*7168*576",
+      "family": "mla_linear",
+      "pflops": 0.0198180864,
+      "note": ""
+    },
+    "mla_q_b": {
+      "flops": 135895449600000,
+      "formula": "24*T*2*1536*18432",
+      "family": "mla_linear",
+      "pflops": 0.1358954496,
+      "note": ""
+    },
+    "mla_kv_b_expand": {
+      "flops": 60397977600000,
+      "formula": "24*T*2*512*24576",
+      "family": "mla_linear",
+      "pflops": 0.0603979776,
+      "note": ""
+    },
+    "mla_output_gate_proj": {
+      "flops": 422785843200000,
+      "formula": "24*T*2*7168*12288",
+      "family": "mla_linear",
+      "pflops": 0.4227858432,
+      "note": ""
+    },
+    "mla_output_proj": {
+      "flops": 422785843200000,
+      "formula": "24*T*2*12288*7168",
+      "family": "mla_linear",
+      "pflops": 0.4227858432,
+      "note": ""
+    },
+    "mla_latent_norms": {
+      "flops": 19670400000,
+      "formula": "24*T*((4*1536+2)+(4*512+2))",
+      "family": "mla_scalar",
+      "pflops": 1.96704e-05,
+      "note": ""
+    },
+    "mla_qk": {
+      "flops": 4423724236800000,
+      "formula": "24*P*96*2*192",
+      "family": "mla_attention",
+      "pflops": 4.4237242368,
+      "note": ""
+    },
+    "mla_score_scale": {
+      "flops": 11520115200000,
+      "formula": "24*P*96",
+      "family": "mla_scalar",
+      "pflops": 0.0115201152,
+      "note": ""
+    },
+    "mla_softmax": {
+      "flops": 46080230400000,
+      "formula": "24*96*(4*P-T)",
+      "family": "mla_scalar",
+      "pflops": 0.0460802304,
+      "note": ""
+    },
+    "mla_pv": {
+      "flops": 2949149491200000,
+      "formula": "24*P*96*2*128",
+      "family": "mla_attention",
+      "pflops": 2.9491494912,
+      "note": ""
+    },
+    "mla_output_sigmoid_multiply": {
+      "flops": 117964800000,
+      "formula": "24*T*96*128*4",
+      "family": "mla_scalar",
+      "pflops": 0.0001179648,
+      "note": ""
+    },
+    "mla_rope": {
+      "flops": 0,
+      "formula": "0",
+      "family": "mla_scalar",
+      "pflops": 0.0,
+      "note": "Rotation disabled; qk_rope width still exists."
+    },
+    "dense_gate_up": {
+      "flops": 96888422400000,
+      "formula": "T*4*H*33792",
+      "family": "dense",
+      "pflops": 0.0968884224,
+      "note": ""
+    },
+    "dense_down": {
+      "flops": 48444211200000,
+      "formula": "T*2*H*33792",
+      "family": "dense",
+      "pflops": 0.0484442112,
+      "note": ""
+    },
+    "dense_situ": {
+      "flops": 37171200000,
+      "formula": "T*33792*11",
+      "family": "dense",
+      "pflops": 3.71712e-05,
+      "note": "Two tanh softcaps, sigmoid, products; tanh one symbolic SFU op."
+    },
+    "moe_router_gemm": {
+      "flops": 118174515200000,
+      "formula": "92*T*2*H*896",
+      "family": "moe_linear",
+      "pflops": 0.1181745152,
+      "note": ""
+    },
+    "moe_router_scalar": {
+      "flops": 33414400000,
+      "formula": "92*T*(4*896+3*16)",
+      "family": "moe_scalar",
+      "pflops": 3.34144e-05,
+      "note": "3E sigmoid+E correction +(K-1) reduction+1 eps+K div+K scale (scale=1 still counted)."
+    },
+    "moe_latent_down": {
+      "flops": 472698060800000,
+      "formula": "92*T*2*H*3584",
+      "family": "moe_linear",
+      "pflops": 0.4726980608,
+      "note": ""
+    },
+    "moe_routed_gate_up": {
+      "flops": 6482716262400000,
+      "formula": "92*T*16*4*3584*3072",
+      "family": "moe_linear",
+      "pflops": 6.4827162624,
+      "note": ""
+    },
+    "moe_routed_situ": {
+      "flops": 4974182400000,
+      "formula": "92*T*16*3072*11",
+      "family": "moe_scalar",
+      "pflops": 0.0049741824,
+      "note": ""
+    },
+    "moe_routed_down": {
+      "flops": 3241358131200000,
+      "formula": "92*T*16*2*3584*3072",
+      "family": "moe_linear",
+      "pflops": 3.2413581312,
+      "note": ""
+    },
+    "moe_weighted_combine": {
+      "flops": 1022156800000,
+      "formula": "92*T*31*3584",
+      "family": "moe_scalar",
+      "pflops": 0.0010221568,
+      "note": ""
+    },
+    "moe_latent_norm": {
+      "flops": 131909600000,
+      "formula": "92*T*(4*3584+2)",
+      "family": "moe_scalar",
+      "pflops": 0.0001319096,
+      "note": ""
+    },
+    "moe_latent_up": {
+      "flops": 472698060800000,
+      "formula": "92*T*2*3584*H",
+      "family": "moe_linear",
+      "pflops": 0.4726980608,
+      "note": ""
+    },
+    "moe_shared_gate_up": {
+      "flops": 1620679065600000,
+      "formula": "92*T*4*H*6144",
+      "family": "moe_linear",
+      "pflops": 1.6206790656,
+      "note": ""
+    },
+    "moe_shared_situ": {
+      "flops": 621772800000,
+      "formula": "92*T*6144*11",
+      "family": "moe_scalar",
+      "pflops": 0.0006217728,
+      "note": ""
+    },
+    "moe_shared_down": {
+      "flops": 810339532800000,
+      "formula": "92*T*2*H*6144",
+      "family": "moe_linear",
+      "pflops": 0.8103395328,
+      "note": ""
+    },
+    "moe_shared_routed_add": {
+      "flops": 65945600000,
+      "formula": "92*T*H",
+      "family": "moe_scalar",
+      "pflops": 6.59456e-05,
+      "note": ""
+    }
+  },
+  "family_totals": {
+    "common": 660926800000,
+    "final": 5216210240,
+    "embedding": 0,
+    "attnres": 5562228500000,
+    "final_attnres": 50898100000,
+    "kda_linear": 6121409740800000,
+    "kda_scalar": 4922294406624,
+    "kda_recurrence": 76138905600000,
+    "mla_linear": 1114531430400000,
+    "mla_scalar": 57737980800000,
+    "mla_attention": 7372873728000000,
+    "dense": 145369804800000,
+    "moe_linear": 13218663628800000,
+    "moe_scalar": 6849381600000
+  },
+  "total_flops": 28124776164816864,
+  "attnres_rows": {
+    "attention": {
+      "count": 92,
+      "sum_candidates": 492,
+      "candidates": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9
+      ]
+    },
+    "ffn": {
+      "count": 93,
+      "sum_candidates": 501,
+      "candidates": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9,
+        9
+      ]
+    },
+    "final": {
+      "count": 1,
+      "sum_candidates": 9,
+      "candidates": [
+        9
+      ]
+    }
+  },
+  "parameter_elements": {
+    "embedding": 1174405120,
+    "lm_head": 1174405120,
+    "decoder_input_post_norms": 1333248,
+    "decoder_attnres_score_norm_and_proj": 2666496,
+    "final_norm": 7168,
+    "final_attnres_score_norm_and_proj": 14336,
+    "kda_qkv_outputgate_oproj": 30387732480,
+    "kda_beta": 47480832,
+    "kda_forget_a_b": 171835392,
+    "kda_conv": 10174464,
+    "kda_dt_bias": 847872,
+    "kda_A_log_runtime": 6624,
+    "kda_output_norm": 8832,
+    "mla_q_a_b": 943718400,
+    "mla_kv_a_b": 401080320,
+    "mla_query_kv_norm": 49152,
+    "mla_output_gate_and_projection": 4227858432,
+    "dense_ffn": 726663168,
+    "moe_router_and_correction": 590955008,
+    "moe_all_routed_experts": 2722740830208,
+    "moe_shared_experts": 12155092992,
+    "moe_latent_projections_and_norm": 4727310336
+  },
+  "parameter_total_runtime_A_log": 2779484476000,
+  "parameter_total_checkpoint_A_log128": 2779484478208,
+  "alternatives": {
+    "absorbed_mla_scan": 25067770675200000,
+    "expanded_mla_scan": 7372873728000000,
+    "absorbed_mla_total_delta": 17694896947200000,
+    "nonpadded_conv_boundary_savings": 30523392,
+    "conv_exact_sum_vs_2mac_savings": 254361600000,
+    "exp_A_per_token_instead_of_hoisted_delta": 662393376,
+    "Kimi_Linear_paper_C64_approx_chunk_core": 84108902400000
+  }
+}

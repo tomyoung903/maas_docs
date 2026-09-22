@@ -1,0 +1,1928 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Static technical documentation for Kimi K3 100K Prefill Execution Tree.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tomyoung903.github.io/maas_docs/kimi-k3-flops/kimi_k3_100k_prefill_execution_tree.html">
+  <meta property="og:url" content="https://tomyoung903.github.io/maas_docs/kimi-k3-flops/kimi_k3_100k_prefill_execution_tree.html">
+  <title>Kimi K3 100K Prefill Execution Tree</title>
+  <style>
+:root {
+  --bg: #f4f7f6;
+  --paper: #ffffff;
+  --ink: #18211f;
+  --muted: #596865;
+  --line: #c9d6d2;
+  --accent: #0b6b66;
+  --accent-2: #9f3d3d;
+  --soft: #e8f2ef;
+  --code-bg: #10201f;
+  --code: #dff7ef;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 107, 102, .12), transparent 340px),
+    var(--bg);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.58;
+}
+main {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 42px 22px 80px;
+}
+nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 28px;
+}
+nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.doc-shell {
+  display: grid;
+  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.doc-content {
+  min-width: 0;
+}
+.content-overview {
+  position: sticky;
+  top: 18px;
+  padding: 10px 0 10px 14px;
+  border-left: 4px solid rgba(11, 107, 102, .28);
+  color: var(--muted);
+}
+.content-overview-title {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.content-overview a {
+  display: block;
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.content-overview a:hover,
+.content-overview a:focus {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.content-overview a.depth-2 {
+  padding-left: 12px;
+  font-size: .84rem;
+  font-weight: 650;
+}
+h1, h2, h3 {
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+h1 {
+  max-width: 900px;
+  margin: 0 0 14px;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+}
+h2 {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+h3 { margin-top: 22px; color: var(--accent); }
+p { max-width: 860px; color: var(--muted); }
+a { color: var(--accent); }
+.lead {
+  margin: 0 0 24px;
+  font-size: 1.08rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.card {
+  min-height: 120px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.label {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.value {
+  margin-top: 8px;
+  font-size: 1.55rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.value code {
+  white-space: normal;
+  word-break: break-word;
+}
+.note {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--ink);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0 26px;
+  background: var(--paper);
+}
+.parameter-table .param-group th {
+  padding: 14px 12px 11px;
+  border-top: 2px solid #8eb6ad;
+  background: #d4e5e1;
+  color: var(--ink);
+}
+.parameter-table .param-group-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 850;
+}
+.parameter-table .param-group-note {
+  display: block;
+  margin-top: 2px;
+  color: #4c5d59;
+  font-size: .82rem;
+  font-weight: 600;
+}
+.parameter-table .param-subgroup th {
+  padding: 9px 12px 8px 22px;
+  background: #edf4f2;
+  color: #36514c;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.parameter-table .param-component {
+  position: relative;
+  min-width: 185px;
+  padding-left: 34px;
+  font-weight: 700;
+}
+.parameter-table .param-component::before {
+  position: absolute;
+  top: 0;
+  bottom: 50%;
+  left: 17px;
+  width: 10px;
+  border-bottom: 1px solid #9bb8b1;
+  border-left: 1px solid #9bb8b1;
+  content: "";
+}
+.parameter-table .param-leaf td:last-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-table .param-count {
+  display: block;
+  font-weight: 750;
+}
+.parameter-table .param-rule {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.logical-parameter-table .param-col-component { width: 20%; }
+.logical-parameter-table .param-col-shape { width: 27%; }
+.logical-parameter-table .param-col-expansion { width: 39%; }
+.logical-parameter-table .param-col-logical { width: 14%; }
+.tp8-parameter-table .param-col-component { width: 24%; }
+.tp8-parameter-table .param-col-partition { width: 19%; }
+.tp8-parameter-table .param-col-shape { width: 39%; }
+.tp8-parameter-table .param-col-rank { width: 18%; }
+.parameter-table-scroll {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  overflow-x: auto;
+}
+.parameter-table-scroll .parameter-table { margin: 0; }
+th, td {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+th {
+  background: #e1ece9;
+  color: var(--ink);
+}
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+code {
+  padding: .08rem .22rem;
+  border-radius: 4px;
+  background: #edf3f1;
+  color: #243431;
+}
+pre {
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code);
+}
+.math-var, .math-func, .math-space, .shape, .eq-block {
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+}
+.math-var { font-style: italic; white-space: nowrap; }
+.math-vec, .math-mat, .math-set, .math-tensor { font-weight: 700; }
+.math-func { font-style: normal; white-space: nowrap; }
+.math-space { white-space: nowrap; color: #253633; }
+.shape {
+  display: inline-block;
+  white-space: nowrap;
+  color: #314541;
+  font-variant-numeric: tabular-nums;
+}
+.sym {
+  padding: 0 .08em;
+  border-bottom: 2px solid transparent;
+}
+.sym-hidden { color: #0b6b66; border-bottom-color: rgba(11, 107, 102, .35); }
+.sym-q { color: #7a3e9d; border-bottom-color: rgba(122, 62, 157, .35); }
+.sym-kv { color: #8f4b16; border-bottom-color: rgba(143, 75, 22, .35); }
+.sym-index { color: #1b5faa; border-bottom-color: rgba(27, 95, 170, .35); }
+.sym-gate { color: #9f3d3d; border-bottom-color: rgba(159, 61, 61, .35); }
+.sym-attn { color: #4f6b18; border-bottom-color: rgba(79, 107, 24, .35); }
+.sym-select { color: #6a4f00; border-bottom-color: rgba(106, 79, 0, .34); }
+.sym-weight { color: #3d5260; border-bottom-color: rgba(61, 82, 96, .28); }
+.eq-block {
+  max-width: 100%;
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  overflow-x: auto;
+}
+.eq-title {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font: 800 .86rem Inter, ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.eq-row {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 26px minmax(260px, 1fr) minmax(140px, max-content);
+  gap: 10px;
+  align-items: baseline;
+  width: max-content;
+  min-width: min(760px, 100%);
+  padding: 5px 0;
+}
+.eq-lhs { text-align: right; }
+.eq-op { text-align: center; color: var(--muted); }
+.eq-rhs { color: #1d2b28; }
+.eq-note { color: var(--muted); white-space: nowrap; }
+.eq-row.single {
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, max-content);
+}
+.eq-comment {
+  margin-top: 8px;
+  color: var(--muted);
+  font: .93rem Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.danger { color: var(--accent-2); font-weight: 800; }
+.footer {
+  margin-top: 42px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+@media (max-width: 980px) {
+  main {
+    max-width: 1160px;
+    padding: 28px 16px 64px;
+  }
+  .doc-shell {
+    display: block;
+  }
+  .content-overview {
+    position: static;
+    margin: 0 0 22px;
+    padding: 12px 14px;
+    border-left: 4px solid rgba(11, 107, 102, .28);
+    background: rgba(255, 255, 255, .72);
+  }
+  .content-overview a {
+    display: inline-block;
+    margin-right: 14px;
+  }
+  .content-overview a.depth-2 {
+    padding-left: 0;
+  }
+  .parameter-table-scroll .logical-parameter-table {
+    width: 1080px;
+    min-width: 1080px;
+  }
+  .parameter-table-scroll .tp8-parameter-table {
+    width: 900px;
+    min-width: 900px;
+  }
+}
+@media (max-width: 600px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .eq-row {
+    grid-template-columns: max-content 24px max-content max-content;
+  }
+  .parameter-table-scroll .parameter-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+  }
+}
+
+:root {
+  --tree-tensor-border: #2779ad;
+  --tree-tensor-bg: #e5f2fb;
+  --tree-tensor-text: #164f74;
+  --tree-state-border: #667386;
+  --tree-state-bg: #edf0f4;
+  --tree-state-text: #364152;
+  --tree-flops-border: #a32678;
+  --tree-flops-bg: #f9e7f2;
+  --tree-flops-text: #70204f;
+  --tree-refresh-border: #7551b2;
+  --tree-refresh-bg: #f0ebfa;
+  --tree-refresh-text: #4d347a;
+  --tree-reuse-border: #ad6900;
+  --tree-reuse-bg: #fff0d6;
+  --tree-reuse-text: #6f4300;
+  --tree-dense-border: #23835b;
+  --tree-dense-bg: #e5f5eb;
+  --tree-dense-text: #185b3e;
+  --tree-moe-border: #b94840;
+  --tree-moe-bg: #fbe8e5;
+  --tree-moe-text: #7c2d28;
+}
+.tree-legend {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 24px;
+}
+.legend-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.legend-group-label {
+  color: #52635f;
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.logic-badge,
+.repeat-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid #9db8b1;
+  border-radius: 4px;
+  background: #edf4f2;
+  color: #29453f;
+  font-size: .76rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.column-toggle {
+  appearance: none;
+  gap: 6px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, opacity .14s ease;
+}
+.column-toggle::before {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  content: "\2713";
+  font-size: .65rem;
+  line-height: 1;
+}
+.logic-badge.column-toggle[aria-pressed="false"] {
+  border-color: #aab6b3;
+  background: #fff;
+  color: #66736f;
+  opacity: .78;
+}
+.logic-badge.column-toggle[aria-pressed="false"]::before { content: ""; }
+.column-toggle:hover { opacity: 1; }
+.column-toggle:focus-visible {
+  outline: 3px solid rgba(11, 107, 102, .32);
+  outline-offset: 2px;
+}
+.logic-badge.tensor { border-color: var(--tree-tensor-border); background: var(--tree-tensor-bg); color: var(--tree-tensor-text); }
+.logic-badge.state { border-color: var(--tree-state-border); background: var(--tree-state-bg); color: var(--tree-state-text); }
+.logic-badge.flops { border-color: var(--tree-flops-border); background: var(--tree-flops-bg); color: var(--tree-flops-text); }
+.logic-badge.branch-refresh { border-color: var(--tree-refresh-border); background: var(--tree-refresh-bg); color: var(--tree-refresh-text); }
+.logic-badge.branch-reuse { border-color: var(--tree-reuse-border); background: var(--tree-reuse-bg); color: var(--tree-reuse-text); }
+.logic-badge.branch-dense { border-color: var(--tree-dense-border); background: var(--tree-dense-bg); color: var(--tree-dense-text); }
+.logic-badge.branch-moe { border-color: var(--tree-moe-border); background: var(--tree-moe-bg); color: var(--tree-moe-text); }
+.logic-badge.precision { border-color: var(--tree-flops-border); background: var(--tree-flops-bg); color: var(--tree-flops-text); }
+.logic-badge.precision-separate { border-color: var(--tree-state-border); background: var(--tree-state-bg); color: var(--tree-state-text); }
+.flow-tree,
+.flow-children {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.flow-tree {
+  max-width: 1250px;
+  margin: 20px 0 30px;
+}
+.flow-step {
+  position: relative;
+  margin: 0 0 10px;
+}
+.flow-step.has-children > .flow-row {
+  cursor: pointer;
+  transition: border-color .14s ease, box-shadow .14s ease;
+}
+@media (hover: hover) {
+  .flow-step.has-children > .flow-row:hover {
+    border-color: #86aaa2;
+    box-shadow: 0 2px 8px rgba(32, 65, 59, .1);
+  }
+}
+.flow-step.is-collapsed > .flow-children { display: none; }
+.flow-children {
+  position: relative;
+  margin: 10px 0 2px 22px;
+  padding-left: 30px;
+  border-left: 2px solid #a8beb8;
+}
+.flow-children > .flow-step::before {
+  position: absolute;
+  top: 29px;
+  left: -30px;
+  width: 22px;
+  border-top: 2px solid #a8beb8;
+  content: "";
+}
+.flow-row {
+  display: grid;
+  grid-template-areas: "main io state flops";
+  grid-template-columns: minmax(230px, 1.15fr) minmax(0, 1fr) minmax(0, .86fr) minmax(165px, .72fr);
+  gap: 18px;
+  align-items: start;
+  padding: 13px 14px;
+  border: 1px solid #cad7d3;
+  border-left: 4px solid #789b93;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .86);
+}
+.flow-step.group > .flow-row {
+  border-left-color: var(--accent);
+  background: #eaf2f0;
+}
+.flow-step.branch-refresh > .flow-row {
+  border-left-color: var(--tree-refresh-border);
+  background: var(--tree-refresh-bg);
+}
+.flow-step.branch-reuse > .flow-row {
+  border-left-color: var(--tree-reuse-border);
+  background: var(--tree-reuse-bg);
+}
+.flow-step.branch-dense > .flow-row {
+  border-left-color: var(--tree-dense-border);
+  background: var(--tree-dense-bg);
+}
+.flow-step.branch-moe > .flow-row {
+  border-left-color: var(--tree-moe-border);
+  background: var(--tree-moe-bg);
+}
+.flow-main { grid-area: main; min-width: 0; }
+.flow-heading {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.flow-toggle {
+  display: inline-flex;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #86a69f;
+  border-radius: 4px;
+  background: #fff;
+  color: #27514a;
+  cursor: pointer;
+}
+.flow-toggle-hint {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  color: #52635f;
+  font-size: .7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.flow-toggle-prompt {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 7px 3px 3px;
+  border: 2px solid #b98200;
+  border-radius: 4px;
+  background: #fff4cc;
+  box-shadow: 0 0 0 2px rgba(185, 130, 0, .12);
+}
+.flow-toggle-prompt .flow-toggle { border-color: #b98200; }
+.flow-toggle-prompt .flow-toggle-hint { color: #6b4b00; }
+.flow-toggle-icon {
+  font-size: .92rem;
+  line-height: 1;
+}
+.flow-toggle-icon.collapsed { display: none; }
+.flow-step.is-collapsed > .flow-row .flow-toggle-icon.expanded { display: none; }
+.flow-step.is-collapsed > .flow-row .flow-toggle-icon.collapsed { display: inline; }
+.flow-toggle:focus-visible {
+  outline: 3px solid rgba(11, 107, 102, .32);
+  outline-offset: 2px;
+}
+.flow-step-id {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 38px;
+  height: 30px;
+  padding: 0 6px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #86a69f;
+  border-radius: 4px;
+  background: #fff;
+  color: #27514a;
+  font-size: .72rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+.flow-title-wrap { min-width: 0; }
+.flow-title {
+  display: block;
+  color: var(--ink);
+  font-size: .96rem;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.flow-title code { font-size: .82rem; }
+.flow-role {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.38;
+}
+.repeat-badge {
+  margin-top: 8px;
+  border-color: #9fb2ad;
+  background: #fff;
+  color: #445b56;
+  white-space: normal;
+}
+.flow-io,
+.flow-state,
+.flow-flops {
+  min-width: 0;
+  font-size: .82rem;
+  line-height: 1.42;
+}
+.flow-io { grid-area: io; color: var(--tree-tensor-text); }
+.flow-state { grid-area: state; color: var(--tree-state-text); }
+.flow-flops { grid-area: flops; color: var(--tree-flops-text); }
+.flow-label {
+  display: block;
+  margin-bottom: 3px;
+  color: #52635f;
+  font-size: .67rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.flow-io > .flow-label,
+.flow-state > .flow-label,
+.flow-flops > .flow-label {
+  display: flex;
+  width: fit-content;
+  padding: 2px 5px;
+  border: 1px solid;
+  border-radius: 3px;
+  line-height: 1.2;
+}
+.flow-io > .flow-label {
+  border-color: var(--tree-tensor-border);
+  background: var(--tree-tensor-bg);
+  color: var(--tree-tensor-text);
+}
+.flow-state > .flow-label {
+  border-color: var(--tree-state-border);
+  background: var(--tree-state-bg);
+  color: var(--tree-state-text);
+}
+.flow-flops > .flow-label {
+  border-color: var(--tree-flops-border);
+  background: var(--tree-flops-bg);
+  color: var(--tree-flops-text);
+}
+.flow-io .shape { color: var(--tree-tensor-text); }
+.flow-state .shape,
+.flow-state .flow-count { color: var(--tree-state-text); }
+.flop-value {
+  display: block;
+  color: var(--tree-flops-text);
+  font-size: .95rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.flop-value.outside { font-size: .84rem; }
+.flop-formula,
+.flop-note {
+  display: block;
+  margin-top: 5px;
+  color: #675062;
+  font-size: .73rem;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+}
+.flop-formula { font-variant-numeric: tabular-nums; }
+.flop-status {
+  display: inline-flex;
+  padding: 2px 5px;
+  border: 1px solid #c9aabd;
+  border-radius: 3px;
+  background: #fff8fc;
+  color: #6e3858;
+  font-size: .72rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.flop-precision {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #d9b7cb;
+}
+.flop-precision-label {
+  color: #675062;
+  font-size: .65rem;
+  font-weight: 850;
+  letter-spacing: .035em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.flop-precision-row {
+  display: block;
+  padding: 5px 6px;
+  border: 1px solid #c9aabd;
+  border-radius: 3px;
+  background: #fff8fc;
+}
+.flop-precision-row.separate {
+  border-color: #b7c0c9;
+  background: #f5f7f9;
+}
+.flop-precision-value,
+.flop-precision-mode {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.flop-precision-value {
+  color: var(--tree-flops-text);
+  font-size: .76rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+.flop-precision-row.separate .flop-precision-value { color: var(--tree-state-text); }
+.flop-precision-mode {
+  margin-top: 2px;
+  color: #675062;
+  font-size: .67rem;
+  line-height: 1.3;
+}
+.flop-precision-row.separate .flop-precision-mode { color: #52606f; }
+.flop-breakdown {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #d9b7cb;
+}
+.flop-breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  color: #675062;
+  font-size: .69rem;
+  line-height: 1.25;
+}
+.flop-breakdown-row strong { font-weight: 720; }
+.flop-breakdown-row span {
+  color: var(--tree-flops-text);
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+.flow-arrow {
+  display: block;
+  margin: 5px 0;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 850;
+}
+.flow-count {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.flow-choice-note {
+  max-width: 1050px;
+  margin: 10px 0 18px 52px;
+  padding: 8px 12px;
+  border-left: 3px solid #b49a5a;
+  color: #5b523d;
+  font-size: .84rem;
+}
+.tree-caption {
+  max-width: 950px;
+  margin: -4px 0 22px;
+  color: var(--muted);
+  font-size: .88rem;
+}
+/* Deep operation rows need more vertical room than top-level summary rows. */
+.flow-children .flow-children .flow-row {
+  grid-template-areas:
+    "main flops"
+    "io state";
+  grid-template-columns: minmax(230px, 1.05fr) minmax(190px, .95fr);
+}
+.flow-tree.hide-io .flow-io,
+.flow-tree.hide-state .flow-state,
+.flow-tree.hide-flops .flow-flops { display: none; }
+@media (min-width: 1401px) {
+  .flow-tree.hide-io:not(.hide-state):not(.hide-flops) .flow-row {
+    grid-template-areas: "main state flops";
+    grid-template-columns: minmax(260px, 1.15fr) minmax(210px, .86fr) minmax(190px, .72fr);
+  }
+  .flow-tree.hide-state:not(.hide-io):not(.hide-flops) .flow-row {
+    grid-template-areas: "main io flops";
+    grid-template-columns: minmax(260px, 1.15fr) minmax(220px, 1fr) minmax(190px, .72fr);
+  }
+  .flow-tree.hide-flops:not(.hide-io):not(.hide-state) .flow-row {
+    grid-template-areas: "main io state";
+    grid-template-columns: minmax(260px, 1.15fr) minmax(220px, 1fr) minmax(210px, .86fr);
+  }
+  .flow-tree.hide-io.hide-state:not(.hide-flops) .flow-row {
+    grid-template-areas: "main flops";
+    grid-template-columns: minmax(280px, 1.3fr) minmax(210px, .7fr);
+  }
+  .flow-tree.hide-io.hide-flops:not(.hide-state) .flow-row {
+    grid-template-areas: "main state";
+    grid-template-columns: minmax(280px, 1.3fr) minmax(220px, .7fr);
+  }
+  .flow-tree.hide-state.hide-flops:not(.hide-io) .flow-row {
+    grid-template-areas: "main io";
+    grid-template-columns: minmax(280px, 1.15fr) minmax(240px, .85fr);
+  }
+  .flow-tree.hide-io.hide-state.hide-flops .flow-row {
+    grid-template-areas: "main";
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 1400px) {
+  .flow-row {
+    grid-template-areas:
+      "main flops"
+      "io state";
+    grid-template-columns: minmax(230px, 1.05fr) minmax(190px, .95fr);
+  }
+}
+@media (min-width: 721px) and (max-width: 1400px) {
+  .flow-tree.hide-io:not(.hide-state):not(.hide-flops) .flow-row {
+    grid-template-areas:
+      "main state"
+      "flops flops";
+  }
+  .flow-tree.hide-state:not(.hide-io):not(.hide-flops) .flow-row {
+    grid-template-areas:
+      "main io"
+      "flops flops";
+  }
+  .flow-tree.hide-flops:not(.hide-io):not(.hide-state) .flow-row {
+    grid-template-areas:
+      "main io"
+      "state state";
+  }
+  .flow-tree.hide-io.hide-state:not(.hide-flops) .flow-row {
+    grid-template-areas: "main flops";
+  }
+  .flow-tree.hide-io.hide-flops:not(.hide-state) .flow-row {
+    grid-template-areas: "main state";
+  }
+  .flow-tree.hide-state.hide-flops:not(.hide-io) .flow-row {
+    grid-template-areas: "main io";
+  }
+  .flow-tree.hide-io.hide-state.hide-flops .flow-row {
+    grid-template-areas: "main";
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .flow-row { display: block; padding: 12px; }
+  .flow-io,
+  .flow-state,
+  .flow-flops { margin-top: 12px; padding-left: 39px; }
+  .flow-children { margin-left: 12px; padding-left: 18px; }
+  .flow-children > .flow-step::before { left: -18px; width: 12px; }
+  .flow-step-id { min-width: 36px; height: 28px; }
+  .flow-toggle { flex-basis: 28px; width: 28px; height: 28px; }
+  .flow-choice-note { margin-left: 30px; }
+}
+@media (max-width: 430px) {
+  .flow-children { margin-left: 5px; padding-left: 13px; }
+  .flow-children > .flow-step::before { left: -13px; width: 8px; }
+  .flow-io,
+  .flow-state,
+  .flow-flops { padding-left: 0; }
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="../">MaaS Docs</a><a href="./">K3 Overview</a><a href="../k3-vs-glm53-architecture/">K3 Architecture</a><a href="kimi_k3_100k_prefill_execution_tree.html">100K Prefill Tree</a><a href="../glm52-flops/glm52_100k_prefill_execution_tree.html">GLM-5.2 Reference</a><a href="#sources">Evidence</a><a href="https://tomyoung903.github.io/maas_docs/kimi-k3-flops/kimi_k3_100k_prefill_execution_tree.html">Public URL</a></nav>
+<div class="doc-shell">
+<aside class="content-overview" aria-label="Content overview">
+  <div class="content-overview-title">On this page</div>
+  <a class="depth-1" href="#execution-tree">Execution Tree</a>
+<a class="depth-1" href="#layer-families">Layer Families</a>
+<a class="depth-1" href="#parameter-ledger">Logical Parameters</a>
+<a class="depth-1" href="#depth-aggregation">Depth Aggregation</a>
+<a class="depth-1" href="#accounting">Counting Convention</a>
+<a class="depth-2" href="#parent-rollup">Parent Rollup</a>
+<a class="depth-1" href="#contractions">Contraction Choices</a>
+<a class="depth-2" href="#mla-contraction">MLA Formulation</a>
+<a class="depth-2" href="#kda-contraction">KDA Recurrence</a>
+<a class="depth-2" href="#mfu-handoff">MFU Handoff</a>
+<a class="depth-1" href="#sources">Evidence &amp; Audit</a>
+</aside>
+<article class="doc-content">
+<h1>Kimi K3 100K Prefill Execution Tree</h1>
+<p class="lead">A model-level map of one 100,000-token text prefill: embedding, 93 ordered hybrid decoder layers, final depth aggregation and normalization, then one next-token output projection. Every tree row aligns tensor flow, model-owned parameter state, and a declared logical FLOP scope.</p>
+<div class="grid"><section class="card"><div class="label">prefill input</div><div class="value">100,000 token IDs</div></section><section class="card"><div class="label">decoder stack</div><div class="value">93 ordered layers</div></section><section class="card"><div class="label">attention families</div><div class="value">69 KDA + 24 MLA</div></section><section class="card"><div class="label">logical 100K FLOPs</div><div class="value">28.12 PFLOP</div></section><section class="card"><div class="label">MoE routing</div><div class="value">16 of 896 experts</div></section><section class="card"><div class="label">logical text parameter state</div><div class="value">2.779484 T elements</div></section></div>
+<div class="tree-legend" aria-label="Execution tree color legend">
+  <div class="legend-group" role="group" aria-label="Visible execution tree columns">
+    <button type="button" class="logic-badge column-toggle tensor" data-column="io" aria-controls="execution-flow-tree" aria-label="Tensor input to tensor output column" aria-pressed="true">Tensor input &darr; tensor output</button>
+    <button type="button" class="logic-badge column-toggle state" data-column="state" aria-controls="execution-flow-tree" aria-label="Logical parameter state column" aria-pressed="true">Logical parameter state</button>
+    <button type="button" class="logic-badge column-toggle flops" data-column="flops" aria-controls="execution-flow-tree" aria-label="100K prefill FLOPs column" aria-pressed="true">100K prefill FLOPs</button>
+  </div>
+  <div class="legend-group" aria-label="Layer-dependent branch colors"><span class="legend-group-label">Layer-dependent branches</span><span class="logic-badge branch-refresh">KDA</span><span class="logic-badge branch-reuse">MLA</span><span class="logic-badge branch-dense">Dense SiTU</span><span class="logic-badge branch-moe">Latent MoE</span></div>
+</div>
+<h2 id="execution-tree">Collapsed Execution Tree</h2>
+<p>Read from top to bottom. Indentation means logical ownership; branch subtotals cover disjoint layer families. The stack describes a repeated layer body, not 69 KDA layers followed by 24 MLA layers. Sibling rows follow dependency order, while independent projections and the shared MoE branch may read the same saved input and execute concurrently. This is not a kernel launch timeline. Parent and child values must not be added twice.</p><div class="note"><strong>Declared reference:</strong> one cold text sequence; T = 100,000; all 93 target layers; one next-token logits row. <strong>Expanded causal MLA + sequential-equivalent KDA + eager Attention Residual arithmetic.</strong> The main number is logical model work under these conventions, not measured chunk-kernel work. Matrix products use two FLOPs per multiply-add; scalar/SFU operations are counted as specified below. TopK comparisons and memory/communication work remain separate. Shapes use logical input→output matrix orientation; checkpoint matrices may be transposed, packed, or merged. All parent rows start expanded, matching the GLM reference; click a parent to collapse it.</div>
+<ol id="execution-flow-tree" class="flow-tree" aria-label="Logical 100K prefill execution tree with FLOP accounting"><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-toggle-prompt"><button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-1" aria-label="Collapse child modules under step R" data-step="R" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-toggle-hint">Click to expand / collapse</span></span><span class="flow-step-id">R</span>
+        <span class="flow-title-wrap"><span class="flow-title">Kimi K3 text target forward</span><span class="flow-role">One uncached 100,000-token text prefill, followed by one next-token logits row.</span><span class="repeat-badge">one text prefill</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 163840]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>2,779,484,476,000 model-owned logical learned text elements, including all 896 experts per MoE layer; vision and quantization metadata excluded.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="28,124,776,164,816,864 FLOP exactly" data-flops="28124776164816864">28.12 PFLOP</span></div>
+  </div>
+<ol id="flow-children-1" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Token embedding</span><span class="flow-role">Look up one hidden vector per token ID.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[163840, 7168]</span><br><span class="flow-count">1,174,405,120 learned elements total</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="0 FLOP exactly" data-flops="0">0 FLOP</span><span class="flop-status">Non-FLOP work</span><span class="flop-note">716,800,000 embedding elements gathered; no vocabulary-wide matrix product.</span></div>
+  </div>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-2" aria-label="Collapse child modules under step 2" data-step="2" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Decoder stack</span><span class="flow-role">Repeat the following calculation-ordered layer body for layers 0–92. Attention and feed-forward branches are selected by layer ID.</span><span class="repeat-badge">93 sequential layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>93 distinct decoder-layer parameter sets; tree branch values sum over their respective layers.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="28,124,720,050,506,624 FLOP exactly" data-flops="28124720050506624">28.12 PFLOP</span></div>
+  </div>
+<ol id="flow-children-2" class="flow-children"><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-3" aria-label="Collapse child modules under step 2.1" data-step="2.1" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2.1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Attention-side depth aggregation</span><span class="flow-role">Score earlier block snapshots and the current block prefix; mix the original vectors across depth for each token.</span><span class="repeat-badge">92 aggregation sites</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span> current prefix + <span class="shape">[100000, bank rows, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>92 scoring sites; each owns a <span class="shape">[7168]</span> score vector and <span class="shape">[7168]</span> RMSNorm vector.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="2,755,665,200,000 FLOP exactly" data-flops="2755665200000">2.756 TFLOP</span><span class="flop-formula">92 active sites; ΣR = 492 per token</span></div>
+  </div>
+<ol id="flow-children-3" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Candidate RMSNorm</span><span class="flow-role">Normalize each candidate for scoring; these normalized vectors are not the mixed values.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168]</span> learned score-normalization vector at each of 92 executed sites; included in the Attention Residual state family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="1,410,760,800,000 FLOP exactly" data-flops="1410760800000">1.411 TFLOP</span><span class="flop-formula">492 candidate rows across sites × 100,000 tokens × (4 × 7,168 + 2)</span><span class="flop-note">Expanded eager-reference norm; the fused implementation can precombine learned norm and score weights.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Learned depth scores</span><span class="flow-role">Apply one scalar score projection per candidate.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 1]</span> score projection at each of 92 executed sites; included in the same state family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="705,331,200,000 FLOP exactly" data-flops="705331200000">705.3 GFLOP</span><span class="flop-formula">100,000 × 492 × 2 × 7,168</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Softmax over depth</span><span class="flow-role">Normalize scores over the candidate bank, separately for each token.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="187,600,000 FLOP exactly" data-flops="187600000">187.6 MFLOP</span><span class="flop-formula">100,000 × (4 × 492 − 92)</span><span class="flop-note">Maximum comparisons are outside FLOPs.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.1d</span>
+        <span class="flow-title-wrap"><span class="flow-title">Weighted depth mixture</span><span class="flow-role">Mix the original, unnormalized candidate vectors.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R]</span> probabilities + <span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="639,385,600,000 FLOP exactly" data-flops="639385600000">639.4 GFLOP</span><span class="flop-formula">100,000 × 7,168 × (2 × 492 − 92)</span><span class="flop-note">R multiplies + R−1 adds per hidden coordinate; this is forward-pass depth state, not token KV.</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Snapshot at block entry</span><span class="flow-role">At layers 0, 12, …, 84, save the current raw prefix to the bank and reset the within-block prefix before attention.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, up to 8, 7168]</span> depth bank</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="0 FLOP exactly" data-flops="0">0 FLOP</span><span class="flop-status">Non-FLOP work</span><span class="flop-note">Aggregation reads the existing bank first. A new snapshot becomes visible to the MLP-side aggregation in the same layer.</span><span class="flop-note">8 snapshot copies × 100,000 × 7,168 = 5,734,400,000 copied elements.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Attention input RMSNorm</span><span class="flow-role">Normalize the attention-side mixture, or the embedding at layer 0.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168]</span> learned norm vector: 7,168 elements per layer.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="266,668,200,000 FLOP exactly" data-flops="266668200000">266.7 GFLOP</span><span class="flop-formula">93 × 100,000 × (4 × 7,168 + 2)</span><span class="flop-note">One learned norm vector per layer, included in the layer-norm parameter family.</span></div>
+  </div>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-4" aria-label="Collapse child modules under step 2.4" data-step="2.4" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2.4</span>
+        <span class="flow-title-wrap"><span class="flow-title">Choose the attention branch</span><span class="flow-role">Exactly one of KDA or MLA executes in a layer.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>Distinct KDA and MLA layer families.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="14,747,614,080,006,624 FLOP exactly" data-flops="14747614080006624">14.75 PFLOP</span></div>
+  </div>
+<ol id="flow-children-4" class="flow-children"><li class="flow-step branch-refresh has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-5" aria-label="Collapse child modules under step K" data-step="K" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">K</span>
+        <span class="flow-title-wrap"><span class="flow-title">Kimi Delta Attention</span><span class="flow-role">Update a fixed-size state per sequence and head, then read it. This branch executes in 69 layers.</span><span class="repeat-badge">69 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>KDA parameters belong only to the 69 KDA layers.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="6,202,470,940,806,624 FLOP exactly" data-flops="6202470940806624">6.202 PFLOP</span></div>
+  </div>
+<ol id="flow-children-5" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Q/K/V and full-rank output-gate projections</span><span class="flow-role">Four full-width projections; SGLang may fuse these as one Q/K/V/g GEMM.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span>Q, K, V and g: four <span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>four matrices per KDA layer: <span class="shape">[7168, 12288]</span><br><span class="flow-count">352,321,536 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="4,862,037,196,800,000 FLOP exactly" data-flops="4862037196800000">4.862 PFLOP</span><span class="flop-formula">69 × 100,000 × 2 × 7,168 × (4 × 12,288)</span><span class="flop-note">Only the forgetting gate below is low-rank. The output gate g is full-rank.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Forgetting-gate projections</span><span class="flow-role">Project through a 128-wide bottleneck to one gate input per head/key coordinate.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 128]</span> → <span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 128]</span> + <span class="shape">[128, 12288]</span><br><span class="flow-count">2,490,368 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="34,367,078,400,000 FLOP exactly" data-flops="34367078400000">0.03437 PFLOP</span><span class="flop-formula">69 × 100,000 × 2 × (7,168 × 128 + 128 × 12,288)</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Beta projection</span><span class="flow-role">Generate one update-strength logit per token and head.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 96]</span><br><span class="flow-count">688,128 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="9,496,166,400,000 FLOP exactly" data-flops="9496166400000">9.496 TFLOP</span><span class="flop-formula">69 × 100,000 × 2 × 7,168 × 96</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K4</span>
+        <span class="flow-title-wrap"><span class="flow-title">Causal depthwise Q/K/V convolution</span><span class="flow-role">Apply a width-four convolution independently to each projected channel.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>three <span class="shape">[100000, 96, 128]</span><span class="flow-arrow" aria-hidden="true">&darr;</span>three <span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>three weight arrays <span class="shape">[12288, 4]</span><br><span class="flow-count">147,456 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="2,034,892,800,000 FLOP exactly" data-flops="2034892800000">2.035 TFLOP</span><span class="flop-formula">69 × 100,000 × 3 × 12,288 × 2 × 4</span><span class="flop-note">Fixed four-tap, zero-padded logical convolution; each tap uses the 2-FLOP multiply-add convention, including the padded boundary.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K5</span>
+        <span class="flow-title-wrap"><span class="flow-title">Convolution SiLU</span><span class="flow-role">Activate all three convolution outputs.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>three <span class="shape">[100000, 96, 128]</span><span class="flow-arrow" aria-hidden="true">&darr;</span>three <span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="1,017,446,400,000 FLOP exactly" data-flops="1017446400000">1.017 TFLOP</span><span class="flop-formula">69 × 100,000 × 3 × 12,288 × 4</span><span class="flop-note">SiLU: exp + add + reciprocal + multiply; sign reversal is folded into exp's argument.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K6</span>
+        <span class="flow-title-wrap"><span class="flow-title">Q/K L2 normalization and query scale</span><span class="flow-role">L2-normalize Q and K per head; scale Q by 1/√128 before the state read.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>Q and K: two <span class="shape">[100000, 96, 128]</span><span class="flow-arrow" aria-hidden="true">&darr;</span>normalized Q and K: two <span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="594,835,200,000 FLOP exactly" data-flops="594835200000">594.8 GFLOP</span><span class="flop-formula">69 × 100,000 × 96 × [2 × (3 × 128 + 1) + 128]</span><span class="flop-note">L2 norm uses sum of squares, epsilon, reciprocal square root, and coordinate multiply; it is not RMSNorm.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K7</span>
+        <span class="flow-title-wrap"><span class="flow-title">Safe decay and beta gates</span><span class="flow-role">Turn forgetting logits into bounded log-decay and exponentiate to multiplicative decay; sigmoid the update logits.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 96, 128]</span> forgetting logits + <span class="shape">[100000, 96]</span> beta logits<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 128]</span> α + <span class="shape">[100000, 96]</span> β</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>active A-log <span class="shape">[96]</span> + delta-time bias <span class="shape">[12288]</span><br><span class="flow-count">12,384 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="595,497,606,624 FLOP exactly" data-flops="595497606624">595.5 GFLOP</span><span class="flop-formula">69 × [100,000 × (7 × 12,288 + 3 × 96) + 96]</span><span class="flop-note">log α = −5 · sigmoid(exp(A-log) · (f + dt-bias)); α = exp(log α). Count exp(A-log) once per active head per request; 7 scalar operations per decay coordinate and 3 per beta.</span></div>
+  </div>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-6" aria-label="Collapse child modules under step K8" data-step="K8" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">K8</span>
+        <span class="flow-title-wrap"><span class="flow-title">Delta-rule state update and read</span><span class="flow-role">Sequential-equivalent logical recurrence; prefill uses chunked kernels rather than launching this loop token by token.</span><span class="repeat-badge">100,000 steps × 69 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>Q/K/V streams: three <span class="shape">[100000, 96, 128]</span> + α/β + <span class="shape">[96, 128, 128]</span> state<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 128]</span> outputs + final <span class="shape">[96, 128, 128]</span> state</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix here; the live recurrent state is request state.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="76,138,905,600,000 FLOP exactly" data-flops="76138905600000">0.07614 PFLOP</span><span class="flop-formula">69 × 100,000 × 96 × (7 × 128² + 2 × 128)</span><span class="flop-note">Q/K are L2-normalized; V is convolved/activated. Child tensors show one recurrent step, repeated for every token; FLOPs include all tokens and layers. Chunk transforms, triangular solves, tiling and padded MMA are not this numerator.</span></div>
+  </div>
+<ol id="flow-children-6" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K8a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Decay prior state</span><span class="flow-role">Scale each state key row by its coordinate-specific α.</span><span class="repeat-badge">per-token state step × 100,000 × 69 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[96, 128, 128]</span> prior state + <span class="shape">[96, 128]</span> α<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[96, 128, 128]</span> decayed state</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="10,852,761,600,000 FLOP exactly" data-flops="10852761600000">0.01085 PFLOP</span><span class="flop-formula">69 × 100,000 × 96 × 128 × 128</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K8b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Predict value and form correction</span><span class="flow-role">Read the decayed state using K; form β · (V − prediction).</span><span class="repeat-badge">per-token state step × 100,000 × 69 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[96, 128, 128]</span> decayed state + K/V/β<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[96, 128]</span> correction</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="21,875,097,600,000 FLOP exactly" data-flops="21875097600000">0.02188 PFLOP</span><span class="flop-formula">69 × 100,000 × 96 × (2 × 128 × 128 + 2 × 128)</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K8c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Rank-one state update</span><span class="flow-role">Add the outer product of K and the correction to the decayed state.</span><span class="repeat-badge">per-token state step × 100,000 × 69 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[96, 128]</span> K and correction + decayed state<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[96, 128, 128]</span> updated state</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="21,705,523,200,000 FLOP exactly" data-flops="21705523200000">0.02171 PFLOP</span><span class="flop-formula">69 × 100,000 × 96 × 2 × 128 × 128</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K8d</span>
+        <span class="flow-title-wrap"><span class="flow-title">Read with scaled Q</span><span class="flow-role">Contract the updated state with Q to obtain one value vector per head.</span><span class="repeat-badge">per-token state step × 100,000 × 69 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[96, 128, 128]</span> updated state + Q<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="21,705,523,200,000 FLOP exactly" data-flops="21705523200000">0.02171 PFLOP</span><span class="flop-formula">69 × 100,000 × 96 × 2 × 128 × 128</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K9</span>
+        <span class="flow-title-wrap"><span class="flow-title">Per-head RMSNorm and sigmoid output gate</span><span class="flow-role">Normalize the recurrent output, then multiply by sigmoid(g) from K1.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 96, 128]</span> core output + <span class="shape">[100000, 96, 128]</span> g<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>one shared-across-heads vector <span class="shape">[128]</span><br><span class="flow-count">128 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="679,622,400,000 FLOP exactly" data-flops="679622400000">679.6 GFLOP</span><span class="flop-formula">69 × 100,000 × 96 × [(4 × 128 + 2) + 4 × 128]</span><span class="flop-note">One 128-element learned RMSNorm vector is shared across 96 heads; it is not 96 separate learned norm vectors.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">K10</span>
+        <span class="flow-title-wrap"><span class="flow-title">KDA output projection</span><span class="flow-role">Concatenate value heads and return to the model hidden width.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 12288]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[12288, 7168]</span><br><span class="flow-count">88,080,384 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="1,215,509,299,200,000 FLOP exactly" data-flops="1215509299200000">1.216 PFLOP</span><span class="flop-formula">69 × 100,000 × 2 × 12,288 × 7,168</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step branch-reuse has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-7" aria-label="Collapse child modules under step A" data-step="A" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">A</span>
+        <span class="flow-title-wrap"><span class="flow-title">Multi-head Latent Attention</span><span class="flow-role">Full causal token attention in 24 layers. The tree expands K/V before attention, matching the logical prefill formulation.</span><span class="repeat-badge">24 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>MLA parameters belong only to the 24 MLA layers.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="8,545,143,139,200,000 FLOP exactly" data-flops="8545143139200000">8.545 PFLOP</span></div>
+  </div>
+<ol id="flow-children-7" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Query/KV down projections</span><span class="flow-role">Project hidden states to a query latent, a KV latent, and 64 shared key coordinates.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 1536]</span> query + <span class="shape">[100000, 512]</span> KV + <span class="shape">[100000, 64]</span> key</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 2112]</span><br><span class="flow-count">15,138,816 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="72,666,316,800,000 FLOP exactly" data-flops="72666316800000">0.07267 PFLOP</span><span class="flop-formula">24 × 100,000 × 2 × 7,168 × (1,536 + 512 + 64)</span><span class="flop-note">SGLang can fuse the two matrices into one 2,112-output projection.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Query/KV latent RMSNorm</span><span class="flow-role">Normalize the query and KV latents independently.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 1536]</span> + <span class="shape">[100000, 512]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 1536]</span> + <span class="shape">[100000, 512]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[1536]</span> + <span class="shape">[512]</span><br><span class="flow-count">2,048 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="19,670,400,000 FLOP exactly" data-flops="19670400000">19.67 GFLOP</span><span class="flop-formula">24 × 100,000 × [(4 × 1,536 + 2) + (4 × 512 + 2)]</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Query expansion</span><span class="flow-role">Expand to 96 query heads, each retaining all 192 coordinates.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 1536]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 192]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[1536, 18432]</span><br><span class="flow-count">28,311,552 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="135,895,449,600,000 FLOP exactly" data-flops="135895449600000">0.1359 PFLOP</span><span class="flop-formula">24 × 100,000 × 2 × 1,536 × 96 × 192</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A4</span>
+        <span class="flow-title-wrap"><span class="flow-title">Key/value expansion</span><span class="flow-role">Expand compressed KV into per-head 128-coordinate keys and values.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 512]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 128]</span> K + <span class="shape">[100000, 96, 128]</span> V</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[512, 24576]</span><br><span class="flow-count">12,582,912 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="60,397,977,600,000 FLOP exactly" data-flops="60397977600000">0.06040 PFLOP</span><span class="flop-formula">24 × 100,000 × 2 × 512 × 96 × (128 + 128)</span><span class="flop-note">This expanded prefill contraction differs from the absorbed latent scan shown in the GLM reference.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A5</span>
+        <span class="flow-title-wrap"><span class="flow-title">Assemble keys and retain latent cache</span><span class="flow-role">Append the unrotated 64 shared key coordinates to each head. No rotary rotation and no DSA selector execute.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 96, 128]</span> keys + <span class="shape">[100000, 64]</span> shared coordinates<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 192]</span> effective keys; latent cache <span class="shape">[100000, 576]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="0 FLOP exactly" data-flops="0">0 FLOP</span><span class="flop-status">Non-FLOP work</span><span class="flop-note">NoPE removes rotation, not the 64-coordinate branch. Physical backends may additionally materialize expanded keys/values.</span><span class="flop-note">Broadcast/concatenation and logical cache writes: 1,382,400,000 latent-cache elements across 24 layers.</span></div>
+  </div>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-8" aria-label="Collapse child modules under step A6" data-step="A6" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">A6</span>
+        <span class="flow-title-wrap"><span class="flow-title">Full causal score, softmax and value accumulation</span><span class="flow-role">Each query attends to its entire legal prefix, including itself.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 96, 192]</span> Q/K + <span class="shape">[100000, 96, 128]</span> V<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned matrix in the scan.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="7,430,474,073,600,000 FLOP exactly" data-flops="7430474073600000">7.430 PFLOP</span><span class="flop-formula">5,000,050,000 causal pairs per head and MLA layer</span><span class="flop-note">Scores are logical tensors; a fused attention kernel need not materialize them.</span></div>
+  </div>
+<ol id="flow-children-8" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A6a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Causal QK and score scaling</span><span class="flow-role">Score every legal query/key pair at width 192, then apply one scale multiplication per score.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 96, 192]</span> Q/K<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[96, 5,000,050,000 causal scores]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="4,435,244,352,000,000 FLOP exactly" data-flops="4435244352000000">4.435 PFLOP</span><span class="flop-formula">24 × 96 × 5,000,050,000 × (2 × 192 + 1)</span><span class="flop-note">The causal triangle has T(T+1)/2 pairs; no dense masked upper-triangle FLOPs are charged.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A6b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Causal softmax</span><span class="flow-role">Subtract row maximum, exponentiate, sum, and normalize causal scores.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>causal attention scores<span class="flow-arrow" aria-hidden="true">&darr;</span>causal probabilities</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="46,080,230,400,000 FLOP exactly" data-flops="46080230400000">0.04608 PFLOP</span><span class="flop-formula">4 × 11,520,115,200,000 score elements − 230,400,000 query/head rows</span><span class="flop-note">Maximum comparisons and masks are outside floating arithmetic.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A6c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Value accumulation</span><span class="flow-role">Contract causal probabilities with 128-coordinate values.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>causal probabilities + <span class="shape">[100000, 96, 128]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="2,949,149,491,200,000 FLOP exactly" data-flops="2949149491200000">2.949 PFLOP</span><span class="flop-formula">24 × 96 × 5,000,050,000 × 2 × 128</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A7</span>
+        <span class="flow-title-wrap"><span class="flow-title">Full-rank MLA output-gate projection</span><span class="flow-role">Produce a gate logit for every value-head coordinate from the normalized layer input.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 12288]</span><br><span class="flow-count">88,080,384 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="422,785,843,200,000 FLOP exactly" data-flops="422785843200000">0.4228 PFLOP</span><span class="flop-formula">24 × 100,000 × 2 × 7,168 × 96 × 128</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A8</span>
+        <span class="flow-title-wrap"><span class="flow-title">Sigmoid and output gating</span><span class="flow-role">Gate attention values before the output projection.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 96, 128]</span> attention output and gate<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 96, 128]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="117,964,800,000 FLOP exactly" data-flops="117964800000">118.0 GFLOP</span><span class="flop-formula">24 × 100,000 × 96 × 128 × 4</span><span class="flop-note">Three operations for sigmoid plus one output multiplication.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">A9</span>
+        <span class="flow-title-wrap"><span class="flow-title">MLA output projection</span><span class="flow-role">Return concatenated value heads to hidden width.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 12288]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[12288, 7168]</span><br><span class="flow-count">88,080,384 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="422,785,843,200,000 FLOP exactly" data-flops="422785843200000">0.4228 PFLOP</span><span class="flop-formula">24 × 100,000 × 2 × 96 × 128 × 7,168</span></div>
+  </div>
+</li></ol>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.5</span>
+        <span class="flow-title-wrap"><span class="flow-title">Within-block attention residual add</span><span class="flow-role">Add attention output to the running raw block prefix only when this layer did not reset it.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span> attention output + optional <span class="shape">[100000, 7168]</span> prefix<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="60,928,000,000 FLOP exactly" data-flops="60928000000">60.93 GFLOP</span><span class="flop-formula">(93 − 8 block-entry layers) × 100,000 × 7,168</span><span class="flop-note">85 additions; layer 0 and the other seven block-entry layers start from attention output alone.</span></div>
+  </div>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-9" aria-label="Collapse child modules under step 2.6" data-step="2.6" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2.6</span>
+        <span class="flow-title-wrap"><span class="flow-title">MLP-side depth aggregation</span><span class="flow-role">Score earlier block snapshots and the current block prefix; mix the original vectors across depth for each token.</span><span class="repeat-badge">93 aggregation sites</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span> current prefix + <span class="shape">[100000, bank rows, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>93 scoring sites; each owns a <span class="shape">[7168]</span> score vector and <span class="shape">[7168]</span> RMSNorm vector.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="2,806,563,300,000 FLOP exactly" data-flops="2806563300000">2.807 TFLOP</span><span class="flop-formula">93 active sites; ΣR = 501 per token</span></div>
+  </div>
+<ol id="flow-children-9" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.6a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Candidate RMSNorm</span><span class="flow-role">Normalize each candidate for scoring; these normalized vectors are not the mixed values.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168]</span> learned score-normalization vector at each of 93 executed sites; included in the Attention Residual state family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="1,436,567,400,000 FLOP exactly" data-flops="1436567400000">1.437 TFLOP</span><span class="flop-formula">501 candidate rows across sites × 100,000 tokens × (4 × 7,168 + 2)</span><span class="flop-note">Expanded eager-reference norm; the fused implementation can precombine learned norm and score weights.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.6b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Learned depth scores</span><span class="flow-role">Apply one scalar score projection per candidate.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 1]</span> score projection at each of 93 executed sites; included in the same state family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="718,233,600,000 FLOP exactly" data-flops="718233600000">718.2 GFLOP</span><span class="flop-formula">100,000 × 501 × 2 × 7,168</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.6c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Softmax over depth</span><span class="flow-role">Normalize scores over the candidate bank, separately for each token.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="191,100,000 FLOP exactly" data-flops="191100000">191.1 MFLOP</span><span class="flop-formula">100,000 × (4 × 501 − 93)</span><span class="flop-note">Maximum comparisons are outside FLOPs.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.6d</span>
+        <span class="flow-title-wrap"><span class="flow-title">Weighted depth mixture</span><span class="flow-role">Mix the original, unnormalized candidate vectors.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R]</span> probabilities + <span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="651,571,200,000 FLOP exactly" data-flops="651571200000">651.6 GFLOP</span><span class="flop-formula">100,000 × 7,168 × (2 × 501 − 93)</span><span class="flop-note">R multiplies + R−1 adds per hidden coordinate; this is forward-pass depth state, not token KV.</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.7</span>
+        <span class="flow-title-wrap"><span class="flow-title">MLP input RMSNorm</span><span class="flow-role">Normalize the depth mixture before the dense or MoE path.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168]</span> learned norm vector: 7,168 elements per layer.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="266,668,200,000 FLOP exactly" data-flops="266668200000">266.7 GFLOP</span><span class="flop-formula">93 × 100,000 × (4 × 7,168 + 2)</span><span class="flop-note">One learned norm vector per layer, counted separately from score-normalization vectors.</span></div>
+  </div>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-10" aria-label="Collapse child modules under step 2.8" data-step="2.8" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">2.8</span>
+        <span class="flow-title-wrap"><span class="flow-title">Choose the feed-forward branch</span><span class="flow-role">Layer 0 is dense; layers 1–92 use latent MoE.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>Disjoint dense and sparse layer families.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="13,370,882,815,200,000 FLOP exactly" data-flops="13370882815200000">13.37 PFLOP</span></div>
+  </div>
+<ol id="flow-children-10" class="flow-children"><li class="flow-step branch-dense has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-11" aria-label="Collapse child modules under step D" data-step="D" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">D</span>
+        <span class="flow-title-wrap"><span class="flow-title">Dense SiTU MLP</span><span class="flow-role">Layer 0 uses one dense MLP with intermediate width 33,792.</span><span class="repeat-badge">1 layer</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 67584]</span> + <span class="shape">[33792, 7168]</span><br><span class="flow-count">726,663,168 learned elements total</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="145,369,804,800,000 FLOP exactly" data-flops="145369804800000">0.1454 PFLOP</span></div>
+  </div>
+<ol id="flow-children-11" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">D1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Dense merged gate/up</span><span class="flow-role">Produce the two dense activation branches.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 67584]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 67584]</span> weight: 484,442,112 learned elements in the dense MLP; included in the parent parameter family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="96,888,422,400,000 FLOP exactly" data-flops="96888422400000">0.09689 PFLOP</span><span class="flop-formula">100,000 × 2 × 7,168 × 67,584</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">D2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Dense SiTU and multiply</span><span class="flow-role">Soft-bound both activation branches and multiply them.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 67584]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 33792]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="37,171,200,000 FLOP exactly" data-flops="37171200000">37.17 GFLOP</span><span class="flop-formula">100,000 × 33,792 × 11</span><span class="flop-note">4·tanh(gate/4)·sigmoid(gate) × 25·tanh(up/25); one tanh counts as one scalar special-function operation.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">D3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Dense down projection</span><span class="flow-role">Return the dense intermediate to hidden width.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 33792]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[33792, 7168]</span> weight: 242,221,056 learned elements in the dense MLP; included in the parent parameter family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="48,444,211,200,000 FLOP exactly" data-flops="48444211200000">0.04844 PFLOP</span><span class="flop-formula">100,000 × 2 × 33,792 × 7,168</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step branch-moe has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-12" aria-label="Collapse child modules under step M" data-step="M" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">M</span>
+        <span class="flow-title-wrap"><span class="flow-title">Latent MoE</span><span class="flow-role">Route from full-width hidden states; narrow only the routed expert branch. Shared and routed branches can overlap in execution.</span><span class="repeat-badge">92 layers</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>896 routed experts + one widened shared module + router + latent projections/norm per layer.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="13,225,513,010,400,000 FLOP exactly" data-flops="13225513010400000">13.23 PFLOP</span></div>
+  </div>
+<ol id="flow-children-12" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M1</span>
+        <span class="flow-title-wrap"><span class="flow-title">Router scores and top-16 weights</span><span class="flow-role">Score 896 experts, select with corrected scores, then normalize the original sigmoid scores of the selected experts.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 16]</span> IDs + <span class="shape">[100000, 16]</span> weights</div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 896]</span> + <span class="shape">[896]</span><br><span class="flow-count">6,423,424 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="118,207,929,600,000 FLOP exactly" data-flops="118207929600000">0.1182 PFLOP</span><span class="flop-formula">92 × 100,000 × [2 × 7,168 × 896 + 4 × 896 + 3 × 16]</span><span class="flop-note">3 operations per sigmoid + correction add; selected sum (K−1), epsilon add (1), K divisions and K scale multiplies. Scale is 1 in this checkpoint; retained in the logical router convention.</span><span class="flop-note">8,243,200,000 score inspections and 147,200,000 selected-ID writes; exact TopK comparison count is kernel-dependent.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M2</span>
+        <span class="flow-title-wrap"><span class="flow-title">Common latent down projection</span><span class="flow-role">Compress the routed input once per token, shared by all selected experts.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 3584]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 3584]</span> weight: 25,690,112 learned elements per MoE layer; included in the parent parameter family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="472,698,060,800,000 FLOP exactly" data-flops="472698060800000">0.4727 PFLOP</span><span class="flop-formula">92 × 100,000 × 2 × 7,168 × 3,584</span><span class="flop-note">Weight per layer: <span class="shape">[7168, 3584]</span> = 25,690,112 elements; the opposite projection is counted at M5.</span></div>
+  </div>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-13" aria-label="Collapse child modules under step M3" data-step="M3" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">M3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Routed experts in latent space</span><span class="flow-role">Only 16 of 896 experts execute per token, using width 3,584.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 3584]</span> + top-16 routes<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 3584]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>each: <span class="shape">[3584, 6144]</span> + <span class="shape">[3072, 3584]</span><br><span class="flow-count">29,595,009,024 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="9,730,070,732,800,000 FLOP exactly" data-flops="9730070732800000">9.730 PFLOP</span></div>
+  </div>
+<ol id="flow-children-13" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Dispatch latent rows</span><span class="flow-role">Group latent token rows by selected expert.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 3584]</span> + <span class="shape">[100000, 16]</span> IDs<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1600000, 3584]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="0 FLOP exactly" data-flops="0">0 FLOP</span><span class="flop-status">Non-FLOP work</span><span class="flop-note">Logical input placements: 527,564,800,000 elements across all 92 MoE layers. Physical packing and communication depend on the backend.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Expert merged gate/up</span><span class="flow-role">For each routed assignment, produce 3,072 gate and 3,072 up coordinates.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[1600000, 3584]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1600000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[3584, 6144]</span> weight: 22,020,096 learned elements per routed expert; all 896 sets are owned; included in the parent parameter family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="6,482,716,262,400,000 FLOP exactly" data-flops="6482716262400000">6.483 PFLOP</span><span class="flop-formula">92 × 100,000 × 16 × 2 × 3,584 × 6,144</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Expert SiTU and multiply</span><span class="flow-role">Apply the checkpoint's two soft bounds and gated product.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[1600000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1600000, 3072]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="4,974,182,400,000 FLOP exactly" data-flops="4974182400000">4.974 TFLOP</span><span class="flop-formula">92 × 100,000 × 16 × 3,072 × 11</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3d</span>
+        <span class="flow-title-wrap"><span class="flow-title">Expert down projection</span><span class="flow-role">Return each expert result to latent width, not full hidden width.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[1600000, 3072]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1600000, 3584]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[3072, 3584]</span> weight: 11,010,048 learned elements per routed expert; all 896 sets are owned; included in the parent parameter family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="3,241,358,131,200,000 FLOP exactly" data-flops="3241358131200000">3.241 PFLOP</span><span class="flop-formula">92 × 100,000 × 16 × 2 × 3,072 × 3,584</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M3e</span>
+        <span class="flow-title-wrap"><span class="flow-title">Weighted routed combine</span><span class="flow-role">Weight and sum the 16 routed results for each token in latent space.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 16, 3584]</span> + route weights<span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 3584]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="1,022,156,800,000 FLOP exactly" data-flops="1022156800000">1.022 TFLOP</span><span class="flop-formula">92 × 100,000 × 3,584 × (16 multiplies + 15 adds)</span><span class="flop-note">The shared branch is separate and has no router probability.</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M4</span>
+        <span class="flow-title-wrap"><span class="flow-title">Routed output RMSNorm</span><span class="flow-role">Normalize after combining routed expert outputs, before expanding them.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 3584]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 3584]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[3584]</span><br><span class="flow-count">3,584 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="131,909,600,000 FLOP exactly" data-flops="131909600000">131.9 GFLOP</span><span class="flop-formula">92 × 100,000 × (4 × 3,584 + 2)</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M5</span>
+        <span class="flow-title-wrap"><span class="flow-title">Common latent up projection</span><span class="flow-role">Expand the combined routed output once per token.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 3584]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[3584, 7168]</span> weight: 25,690,112 learned elements per MoE layer; included in the parent parameter family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="472,698,060,800,000 FLOP exactly" data-flops="472698060800000">0.4727 PFLOP</span><span class="flop-formula">92 × 100,000 × 2 × 3,584 × 7,168</span><span class="flop-note">Weight per layer: <span class="shape">[3584, 7168]</span> = 25,690,112 elements.</span></div>
+  </div>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-14" aria-label="Collapse child modules under step M6" data-step="M6" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">M6</span>
+        <span class="flow-title-wrap"><span class="flow-title">Always-active shared MLP</span><span class="flow-role">Two shared expert units are packed into one full-width MLP with intermediate width 6,144.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 12288]</span> + <span class="shape">[6144, 7168]</span><br><span class="flow-count">132,120,576 learned elements per layer</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="2,431,640,371,200,000 FLOP exactly" data-flops="2431640371200000">2.432 PFLOP</span></div>
+  </div>
+<ol id="flow-children-14" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M6a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Shared merged gate/up</span><span class="flow-role">Read the original full-width normalized hidden state.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 12288]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 12288]</span> weight: 88,080,384 learned elements per widened shared MLP; included in the parent parameter family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="1,620,679,065,600,000 FLOP exactly" data-flops="1620679065600000">1.621 PFLOP</span><span class="flop-formula">92 × 100,000 × 2 × 7,168 × 12,288</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M6b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Shared SiTU and multiply</span><span class="flow-role">Apply SiTU to the widened shared intermediate.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 12288]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 6144]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="621,772,800,000 FLOP exactly" data-flops="621772800000">621.8 GFLOP</span><span class="flop-formula">92 × 100,000 × 6,144 × 11</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M6c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Shared down projection</span><span class="flow-role">Return to full hidden width.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 6144]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[6144, 7168]</span> weight: 44,040,192 learned elements per widened shared MLP; included in the parent parameter family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="810,339,532,800,000 FLOP exactly" data-flops="810339532800000">0.8103 PFLOP</span><span class="flop-formula">92 × 100,000 × 2 × 6,144 × 7,168</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">M7</span>
+        <span class="flow-title-wrap"><span class="flow-title">Add routed and shared outputs</span><span class="flow-role">Sum the expanded routed result and the always-active full-width shared result.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>two <span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="65,945,600,000 FLOP exactly" data-flops="65945600000">65.95 GFLOP</span><span class="flop-formula">92 × 100,000 × 7,168</span><span class="flop-note">This addition is separate from the following block-prefix residual addition.</span></div>
+  </div>
+</li></ol>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">2.9</span>
+        <span class="flow-title-wrap"><span class="flow-title">Feed-forward block-prefix add</span><span class="flow-role">Add feed-forward output to the current raw prefix; retain this prefix for the next layer.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span>two <span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="66,662,400,000 FLOP exactly" data-flops="66662400000">66.66 GFLOP</span><span class="flop-formula">93 × 100,000 × 7,168</span><span class="flop-note">The fused implementation may combine this with the routed/shared sum or delay it; the logical add is counted once.</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step group has-children">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <button type="button" class="flow-toggle" aria-expanded="true" aria-controls="flow-children-15" aria-label="Collapse child modules under step 3" data-step="3" title="Collapse child modules"><span class="flow-toggle-icon expanded" aria-hidden="true">&#9662;</span><span class="flow-toggle-icon collapsed" aria-hidden="true">&#9656;</span></button><span class="flow-step-id">3</span>
+        <span class="flow-title-wrap"><span class="flow-title">Final depth aggregation</span><span class="flow-role">Score earlier block snapshots and the current block prefix; mix the original vectors across depth for each token.</span><span class="repeat-badge">1 aggregation sites</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span> current prefix + <span class="shape">[100000, bank rows, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>1 scoring sites; each owns a <span class="shape">[7168]</span> score vector and <span class="shape">[7168]</span> RMSNorm vector.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="50,898,100,000 FLOP exactly" data-flops="50898100000">50.90 GFLOP</span><span class="flop-formula">1 active sites; ΣR = 9 per token</span></div>
+  </div>
+<ol id="flow-children-15" class="flow-children"><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">3a</span>
+        <span class="flow-title-wrap"><span class="flow-title">Candidate RMSNorm</span><span class="flow-role">Normalize each candidate for scoring; these normalized vectors are not the mixed values.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168]</span> learned score-normalization vector at each of 1 executed sites; included in the Attention Residual state family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="25,806,600,000 FLOP exactly" data-flops="25806600000">25.81 GFLOP</span><span class="flop-formula">9 candidate rows across sites × 100,000 tokens × (4 × 7,168 + 2)</span><span class="flop-note">Expanded eager-reference norm; the fused implementation can precombine learned norm and score weights.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">3b</span>
+        <span class="flow-title-wrap"><span class="flow-title">Learned depth scores</span><span class="flow-role">Apply one scalar score projection per candidate.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 1]</span> score projection at each of 1 executed sites; included in the same state family.</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="12,902,400,000 FLOP exactly" data-flops="12902400000">12.90 GFLOP</span><span class="flop-formula">100,000 × 9 × 2 × 7,168</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">3c</span>
+        <span class="flow-title-wrap"><span class="flow-title">Softmax over depth</span><span class="flow-role">Normalize scores over the candidate bank, separately for each token.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, R]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="3,500,000 FLOP exactly" data-flops="3500000">3.500 MFLOP</span><span class="flop-formula">100,000 × (4 × 9 − 1)</span><span class="flop-note">Maximum comparisons are outside FLOPs.</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">3d</span>
+        <span class="flow-title-wrap"><span class="flow-title">Weighted depth mixture</span><span class="flow-role">Mix the original, unnormalized candidate vectors.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, R]</span> probabilities + <span class="shape">[100000, R, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span>No learned state</div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="12,185,600,000 FLOP exactly" data-flops="12185600000">12.19 GFLOP</span><span class="flop-formula">100,000 × 7,168 × (2 × 9 − 1)</span><span class="flop-note">R multiplies + R−1 adds per hidden coordinate; this is forward-pass depth state, not token KV.</span></div>
+  </div>
+</li></ol>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">4</span>
+        <span class="flow-title-wrap"><span class="flow-title">Final RMSNorm</span><span class="flow-role">Normalize the final depth mixture.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[100000, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[100000, 7168]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168]</span><br><span class="flow-count">7,168 learned elements total</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="2,867,400,000 FLOP exactly" data-flops="2867400000">2.867 GFLOP</span><span class="flop-formula">100,000 × (4 × 7,168 + 2)</span></div>
+  </div>
+</li><li class="flow-step leaf">
+  <div class="flow-row">
+    <div class="flow-main">
+      <div class="flow-heading">
+        <span class="flow-step-id">5</span>
+        <span class="flow-title-wrap"><span class="flow-title">Last-token language-model head</span><span class="flow-role">Select the last hidden row and project once to all 163,840 vocabulary logits.</span></span>
+      </div>
+    </div>
+    <div class="flow-io"><span class="flow-label">Tensor flow</span><span class="shape">[1, 7168]</span><span class="flow-arrow" aria-hidden="true">&darr;</span><span class="shape">[1, 163840]</span></div>
+    <div class="flow-state"><span class="flow-label">Logical parameter state</span><span class="shape">[7168, 163840]</span><br><span class="flow-count">1,174,405,120 learned elements total</span></div>
+    <div class="flow-flops"><span class="flow-label">100K prefill FLOPs</span><span class="flop-value" title="2,348,810,240 FLOP exactly" data-flops="2348810240">2.349 GFLOP</span><span class="flop-formula">2 × 7,168 × 163,840</span><span class="flop-note">One logits row for next-token generation. Requesting prompt log-probabilities would change this scope.</span></div>
+  </div>
+</li></ol>
+</li></ol>
+<h2 id="layer-families">Expand the 93 Layers</h2>
+<p>All layer IDs on this page are <strong>zero-based</strong>. The official configuration lists attention layer IDs one-based; subtract one to obtain these IDs. Execute layers 0 through 92 in order, choosing exactly one attention branch and one feed-forward branch per layer.</p><table class=""><thead><tr><th>Layer family</th><th>Zero-based layer IDs</th><th>Copies</th><th>Attention</th><th>Feed-forward</th></tr></thead><tbody><tr><td>KDA + dense</td><td>0</td><td>1</td><td>KDA</td><td>Dense SiTU; intermediate 33,792</td></tr><tr><td>KDA + MoE</td><td>1, 2, 4, 5, 6, …, 88, 89, 90</td><td>68</td><td>KDA</td><td>16 routed experts + widened shared MLP</td></tr><tr><td>MLA + MoE</td><td>3, 7, 11, …, 91, plus 92</td><td>24</td><td>Full causal MLA; QK width 192</td><td>Same latent-MoE layout</td></tr><tr><td>Total</td><td>0–92</td><td>93</td><td>69 KDA + 24 MLA</td><td>1 dense + 92 MoE</td></tr></tbody></table><p>The repeated attention pattern is KDA → KDA → KDA → MLA, repeated 23 times, followed by the additional final MLA at layer 92. The table below also marks the eight Attention Residual snapshot boundaries.</p><table class=""><thead><tr><th>Layer block</th><th>Attention order</th><th>Snapshot before layer</th><th>Feed-forward</th></tr></thead><tbody><tr><td>0–11</td><td>KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong></td><td>0</td><td>Dense only at 0; otherwise MoE</td></tr><tr><td>12–23</td><td>KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong></td><td>12</td><td>MoE throughout</td></tr><tr><td>24–35</td><td>KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong></td><td>24</td><td>MoE throughout</td></tr><tr><td>36–47</td><td>KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong></td><td>36</td><td>MoE throughout</td></tr><tr><td>48–59</td><td>KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong></td><td>48</td><td>MoE throughout</td></tr><tr><td>60–71</td><td>KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong></td><td>60</td><td>MoE throughout</td></tr><tr><td>72–83</td><td>KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong></td><td>72</td><td>MoE throughout</td></tr><tr><td>84–92</td><td>KDA → KDA → KDA → <strong>MLA</strong> → KDA → KDA → KDA → <strong>MLA</strong> → <strong>MLA</strong></td><td>84</td><td>MoE throughout</td></tr></tbody></table><div class="note"><a href="layer-map.json">Download the complete 93-layer map</a> for every layer’s attention family, feed-forward family, candidate counts, and residual-add condition.</div>
+<h2 id="parameter-ledger">Logical Parameter Ledger</h2>
+<p>Count each model-owned learned object once, including <strong>all 896 experts</strong> in every MoE layer. These are unpacked logical element counts in the SGLang runtime parameter layout; they are not active parameters per token, packed checkpoint bytes, VRAM, or per-rank allocations. The vision tower/projector, quantization scales, runtime caches, derived matrices, and TP replicas are outside this ledger.</p><div class="grid"><section class="card"><div class="label">Logical text parameter state</div><div class="value">2.779484 T elements</div></section><section class="card"><div class="label">Stored routed experts / MoE layer</div><div class="value">896</div></section><section class="card"><div class="label">Executed routed experts / token</div><div class="value">16</div></section></div><div class="parameter-table-scroll"><table class="parameter-table logical-parameter-table"><colgroup><col class="param-col-component"><col class="param-col-shape"><col class="param-col-expansion"><col class="param-col-logical"></colgroup><thead><tr><th>Component</th><th>Logical shape / object</th><th>Unique-ownership formula</th><th>Learned elements</th></tr></thead><tbody><tr class="param-group"><th colspan="4"><span class="param-group-title">Token input and output</span></th></tr><tr class="param-leaf"><th scope="row" class="param-component">Token embedding</th><td><span class="shape">[163840, 7168]</span></td><td>163,840 × 7,168</td><td><span class="param-count">1,174,405,120</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Untied language-model head</th><td><span class="shape">[7168, 163840]</span></td><td>7,168 × 163,840<span class="param-rule">Logical input→output orientation; the checkpoint stores the transposed [163840, 7168] tensor.</span></td><td><span class="param-count">1,174,405,120</span></td></tr><tr class="param-group"><th colspan="4"><span class="param-group-title">Kimi Delta Attention · 69 layers</span></th></tr><tr class="param-leaf"><th scope="row" class="param-component">KDA Q/K/V + full-rank output gate</th><td>four matrices per KDA layer: <span class="shape">[7168, 12288]</span></td><td>69 × 4 × 7,168 × 12,288</td><td><span class="param-count">24,310,185,984</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">KDA low-rank forgetting gate</th><td><span class="shape">[7168, 128]</span> + <span class="shape">[128, 12288]</span></td><td>69 × (7,168 × 128 + 128 × 12,288)</td><td><span class="param-count">171,835,392</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">KDA beta projection</th><td><span class="shape">[7168, 96]</span></td><td>69 × 7,168 × 96</td><td><span class="param-count">47,480,832</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">KDA Q/K/V depthwise convolution</th><td>three weight arrays <span class="shape">[12288, 4]</span></td><td>69 × 3 × 12,288 × 4</td><td><span class="param-count">10,174,464</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">KDA decay parameters</th><td>active A-log <span class="shape">[96]</span> + delta-time bias <span class="shape">[12288]</span></td><td>69 × (96 + 12,288)<span class="param-rule">The checkpoint stores 128 A-log values per layer; SGLang uses the first 96. The inactive tail is reconciled separately.</span></td><td><span class="param-count">854,496</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">KDA output RMSNorm</th><td>one shared-across-heads vector <span class="shape">[128]</span></td><td>69 × 128</td><td><span class="param-count">8,832</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">KDA output projection</th><td><span class="shape">[12288, 7168]</span></td><td>69 × 12,288 × 7,168</td><td><span class="param-count">6,077,546,496</span></td></tr><tr class="param-group"><th colspan="4"><span class="param-group-title">Multi-head Latent Attention · 24 layers</span></th></tr><tr class="param-leaf"><th scope="row" class="param-component">MLA query/KV down projections</th><td><span class="shape">[7168, 2112]</span></td><td>24 × 7,168 × (1,536 + 512 + 64)</td><td><span class="param-count">363,331,584</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MLA query expansion</th><td><span class="shape">[1536, 18432]</span></td><td>24 × 1,536 × 96 × 192</td><td><span class="param-count">679,477,248</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MLA key/value expansion</th><td><span class="shape">[512, 24576]</span></td><td>24 × 512 × 96 × (128 + 128)<span class="param-rule">Count this weight object once, including if a backend uses absorbed matrix views.</span></td><td><span class="param-count">301,989,888</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MLA output-gate projection</th><td><span class="shape">[7168, 12288]</span></td><td>24 × 7,168 × 96 × 128</td><td><span class="param-count">2,113,929,216</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MLA output projection</th><td><span class="shape">[12288, 7168]</span></td><td>24 × 96 × 128 × 7,168</td><td><span class="param-count">2,113,929,216</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">MLA latent norms</th><td><span class="shape">[1536]</span> + <span class="shape">[512]</span></td><td>24 × (1,536 + 512)</td><td><span class="param-count">49,152</span></td></tr><tr class="param-group"><th colspan="4"><span class="param-group-title">Feed-forward networks</span></th></tr><tr class="param-leaf"><th scope="row" class="param-component">Layer 0 dense SiTU MLP</th><td><span class="shape">[7168, 67584]</span> + <span class="shape">[33792, 7168]</span></td><td>3 × 7,168 × 33,792</td><td><span class="param-count">726,663,168</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Latent-MoE router and correction bias</th><td><span class="shape">[7168, 896]</span> + <span class="shape">[896]</span></td><td>92 × (7,168 × 896 + 896)</td><td><span class="param-count">590,955,008</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">All 896 routed experts per MoE layer</th><td>each: <span class="shape">[3584, 6144]</span> + <span class="shape">[3072, 3584]</span></td><td>92 × 896 × 3 × 3,584 × 3,072<span class="param-rule">All experts are stored; only top-16 per token contribute to routed expert FLOPs.</span></td><td><span class="param-count">2,722,740,830,208</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Common latent down/up projections</th><td><span class="shape">[7168, 3584]</span> + <span class="shape">[3584, 7168]</span></td><td>92 × 2 × 7,168 × 3,584</td><td><span class="param-count">4,726,980,608</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Latent-MoE output RMSNorm</th><td><span class="shape">[3584]</span></td><td>92 × 3,584</td><td><span class="param-count">329,728</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Always-active shared MLP</th><td><span class="shape">[7168, 12288]</span> + <span class="shape">[6144, 7168]</span></td><td>92 × 3 × 7,168 × (2 × 3,072)<span class="param-rule">Two expert units form one widened MLP at full hidden width; this branch is not routed.</span></td><td><span class="param-count">12,155,092,992</span></td></tr><tr class="param-group"><th colspan="4"><span class="param-group-title">Norms and depth aggregation</span></th></tr><tr class="param-leaf"><th scope="row" class="param-component">Attention/MLP input RMSNorms</th><td>two <span class="shape">[7168]</span> vectors per layer</td><td>93 × 2 × 7,168</td><td><span class="param-count">1,333,248</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Attention Residual scoring state</th><td>187 score projections + 187 norm vectors, each <span class="shape">[7168]</span></td><td>(2 × 93 + 1) × 2 × 7,168<span class="param-rule">Layer 0's attention-side scorer is stored but bypassed while the bank is empty.</span></td><td><span class="param-count">2,680,832</span></td></tr><tr class="param-leaf"><th scope="row" class="param-component">Final RMSNorm</th><td><span class="shape">[7168]</span></td><td>7,168</td><td><span class="param-count">7,168</span></td></tr><tr><th colspan="3">Logical runtime-layout text total</th><td><strong>2,779,484,476,000</strong></td></tr></tbody></table></div><div class="note"><strong>Checkpoint reconciliation:</strong> all 94 text-bearing safetensors headers and 497,052 text tensor entries were checked against the checkpoint index. The unpacked checkpoint has 2,779,484,478,208 learned text elements. Each of the 69 KDA layers stores 128 A-log entries, while SGLang uses the first 96: the difference is exactly 69 × 32 = 2,208 elements. Quantization-scale tensors are identified and excluded from both learned-element totals. <a href="parameter-header-audit.json">Header audit and per-layer reconciliation</a>.</div>
+<h2 id="depth-aggregation">Attention Residual Schedule</h2>
+<p>Attention Residuals reuse representations across <strong>depth for the same token</strong>. At each mixing site, normalized candidates supply scalar scores, and softmax weights mix the original candidate vectors. The ordinary input RMSNorm is then applied to the mixture. The raw within-block prefix remains a separate stream.</p><table class=""><thead><tr><th>Site</th><th>Executed mixtures</th><th>Candidates per token, summed over sites</th><th>Learned scoring modules</th></tr></thead><tbody><tr><td>Before attention</td><td>92</td><td>492</td><td>93 declared; layer 0 bypasses its scorer</td></tr><tr><td>Before dense/MoE</td><td>93</td><td>501</td><td>93</td></tr><tr><td>After layer 92</td><td>1</td><td>9</td><td>1</td></tr><tr><td>Total</td><td>186</td><td>1,002</td><td>187</td></tr></tbody></table><p>For zero-based layer <span class="math-var">i</span>, the attention-side bank has ⌈<span class="math-var">i</span>/12⌉ prior snapshots. Its mixture uses that bank plus the current prefix, except layer 0 has an empty bank and skips mixing. After the possible block-entry snapshot, the MLP-side mixture has ⌊<span class="math-var">i</span>/12⌋ + 2 candidates. The final mixture has eight snapshots plus the final prefix.</p><div class="note"><strong>Residual additions:</strong> the eight block-entry layers reset their running prefix. There are 85 attention residual additions and 93 feed-forward residual additions. Snapshot copies are memory movement; the bank belongs to the current forward pass and is not a sequence KV cache.</div>
+<h2 id="accounting">Arithmetic Convention and Reconciliation</h2>
+<p>The tree preserves the reference’s raw logical accounting: every floating-arithmetic leaf contributes once, parent cells are subtotals, and comparison/movement work is separate. The following conventions make this numerator reproducible. Special functions counted as one operation do not have equal hardware costs.</p><table class=""><thead><tr><th>Operation</th><th>Declared logical rule</th></tr></thead><tbody><tr><td>Matrix products and dot contractions</td><td>2 × <span class="math-var">m</span> × <span class="math-var">k</span> × <span class="math-var">n</span>; one multiply-add is two FLOPs, including accumulation from zero.</td></tr><tr><td>Scalar arithmetic / special functions</td><td>Add, subtract, multiply, divide, reciprocal, rsqrt, exp, and tanh each count as one. Unary signs, casts, views, and index arithmetic are excluded.</td></tr><tr><td>RMSNorm of width d</td><td>4<span class="math-var">d</span> + 2: squares, sum, mean, epsilon, rsqrt, and two coordinate multiplications.</td></tr><tr><td>Q/K L2 normalization</td><td>3<span class="math-var">d</span> + 1: squares, sum, epsilon, rsqrt, and output multiplication.</td></tr><tr><td>Softmax over R values</td><td>4<span class="math-var">R</span> − 1; maximum comparisons remain auxiliary work.</td></tr><tr><td>Weighted sums</td><td><span class="math-var">R</span> multiplies + <span class="math-var">R</span>−1 adds per coordinate.</td></tr><tr><td>Convolution</td><td>Four zero-padded taps per Q/K/V channel; 2 FLOPs per tap, including initial padding. SiLU costs four further operations.</td></tr><tr><td>SiTU</td><td>11 operations per gated coordinate: 4·tanh(gate/4)·sigmoid(gate) × 25·tanh(up/25).</td></tr><tr><td>Attention Residual scores</td><td>Expanded SGLang eager reference: learned RMSNorm followed by scalar score projection. Fused paths may precombine those weights and use fewer scalar operations.</td></tr><tr><td>Parameter-only transforms</td><td>exp(A-log) is prepared once per active head and layer in this reference; kernels may repeat it by tile. Fixed norm/attention scale constants are already prepared.</td></tr><tr><td>Non-floating work</td><td>TopK comparisons, gathers, tensor copies, cache writes, permutations, dispatch, and communication are shown separately; no GPU timing or bandwidth is inferred.</td></tr></tbody></table><h3 id="parent-rollup">Additive Parent Rollup</h3><p>These subtrees are disjoint. Their exact integer values add to the root; embedding and snapshot/cache movement have zero arithmetic FLOPs.</p><table class=""><thead><tr><th>Disjoint subtree</th><th>Logical FLOPs</th><th>Exact integer FLOPs</th></tr></thead><tbody><tr><td>All KDA layers</td><td>6.202 PFLOP</td><td>6,202,470,940,806,624</td></tr><tr><td>All MLA layers</td><td>8.545 PFLOP</td><td>8,545,143,139,200,000</td></tr><tr><td>Dense MLP</td><td>0.1454 PFLOP</td><td>145,369,804,800,000</td></tr><tr><td>All latent-MoE layers</td><td>13.23 PFLOP</td><td>13,225,513,010,400,000</td></tr><tr><td>Attention-side depth aggregation</td><td>2.756 TFLOP</td><td>2,755,665,200,000</td></tr><tr><td>MLP-side depth aggregation</td><td>2.807 TFLOP</td><td>2,806,563,300,000</td></tr><tr><td>Attention input RMSNorms</td><td>266.7 GFLOP</td><td>266,668,200,000</td></tr><tr><td>MLP input RMSNorms</td><td>266.7 GFLOP</td><td>266,668,200,000</td></tr><tr><td>Attention block-prefix additions</td><td>60.93 GFLOP</td><td>60,928,000,000</td></tr><tr><td>Feed-forward block-prefix additions</td><td>66.66 GFLOP</td><td>66,662,400,000</td></tr><tr><td>Final depth aggregation</td><td>50.90 GFLOP</td><td>50,898,100,000</td></tr><tr><td>Final RMSNorm</td><td>2.867 GFLOP</td><td>2,867,400,000</td></tr><tr><td>Last-token head</td><td>2.349 GFLOP</td><td>2,348,810,240</td></tr><tr><td>Root total</td><td>28.12 PFLOP</td><td>28,124,776,164,816,864</td></tr></tbody></table><p><a href="ledger.json">Download the full machine-readable tree and parameter ledger</a>. Exact integers express this convention, not an exact instruction count for every implementation.</p>
+<h2 id="contractions">Contraction Choices and Execution Boundary</h2>
+<p>The main value uses <strong>expanded causal MLA</strong> and a <strong>sequential-equivalent KDA recurrence</strong>. Both are specified mathematical factorizations. They establish a logical numerator; a measured execution numerator also needs the backend, kernel path, padding and precision.</p><h3 id="mla-contraction">MLA: expanded prefill versus absorbed scan</h3><p>At 100,000 tokens there are 5,000,050,000 causal pairs per head. K3 keeps all 192 QK coordinates even though RoPE rotation is disabled. The expanded scan uses value width 128. An absorbed formulation uses QK width 512 + 64 and accumulates 512-dimensional latent values instead.</p><table class=""><thead><tr><th>MLA formulation</th><th>QK width</th><th>Accumulated value width</th><th>QK + P×V scan, all 24 layers</th><th>Whole-model reference</th></tr></thead><tbody><tr><td>Expanded causal prefill — used in this tree</td><td>192</td><td>128</td><td>7.3728737280 PFLOP</td><td>28.124776164817 PFLOP</td></tr><tr><td>Absorbed latent scan — alternative</td><td>576</td><td>512</td><td>25.0677706752 PFLOP</td><td>45.819673112017 PFLOP</td></tr></tbody></table><p>For this full T-query/T-key cold prefill, expanding K/V before attention and performing query absorption plus value expansion afterward use the same total projection arithmetic. The scan alone changes by 17.6948969472 PFLOP. The two whole-model values are alternatives; they must not be added. Neither value establishes which path an unspecified deployment uses.</p><h3 id="kda-contraction">KDA: the counted recurrence</h3><p>Per head, let <span class="math-func math-mat">S</span> be the 128 × 128 state, <span class="math-var math-vec">α</span> the 128-coordinate decay, and <span class="math-var">β</span> the scalar update strength. Only Q and K are L2-normalized. The value vector is the convolution-plus-SiLU result.</p><table class=""><thead><tr><th>Logical operation</th><th>Equation</th><th>Operations per token/head</th></tr></thead><tbody><tr><td>Decay</td><td><span class="math-func math-mat">D</span> = diag(<span class="math-var math-vec">α</span>) <span class="math-func math-mat">S</span><sub>prev</sub></td><td>128²</td></tr><tr><td>Predict / correct</td><td><span class="math-var math-vec">u</span> = <span class="math-var">β</span> (<span class="math-var math-vec">v</span> − <span class="math-func math-mat">D</span><sup>T</sup><span class="math-var math-vec">k</span>)</td><td>2 × 128² + 2 × 128</td></tr><tr><td>Update</td><td><span class="math-func math-mat">S</span> = <span class="math-func math-mat">D</span> + <span class="math-var math-vec">k</span><span class="math-var math-vec">u</span><sup>T</sup></td><td>2 × 128²</td></tr><tr><td>Read</td><td><span class="math-var math-vec">o</span> = <span class="math-func math-mat">S</span><sup>T</sup><span class="math-var math-vec">q</span><sub>scaled</sub></td><td>2 × 128²</td></tr></tbody></table><p>The 69-layer recurrence subtotal is 76,138,905,600,000 FLOPs (0.0761389056 PFLOP). Projection, convolution, normalization, gate and query-scale leaves are separate. The state is fixed-size per sequence/head; MLA token history still grows with context.</p><div class="note"><strong>Chunked prefill boundary:</strong> KDA prefill evaluates an equivalent chunked algorithm with intra-chunk gated products, transforms/solves, inter-chunk state propagation and outputs. Its executed arithmetic differs from the recurrence above and depends on kernel implementation and tiling. This page does not substitute an approximate chunk formula for a verified executed-kernel count, and does not add both formulations.</div><h3 id="mfu-handoff">MFU and precision handoff</h3><p>The GLM reference includes a separately verified H200 precision view. This K3 page has no matching runtime capture, so it reports raw logical work without an FP8-equivalent conversion. A checkpoint quantization format alone does not establish operand precision, accumulation, kernels, elapsed time, or peak-throughput normalization. If this logical numerator is used for an MFU convention, name the selected contractions and use a separately measured, compatible denominator.</p>
+<h2 id="sources">Evidence and Validation</h2>
+<p>Architecture and weights are pinned independently of the moving upstream default branch. The serving implementation is pinned to the same revision used by the existing K3 architecture comparison.</p><table class=""><thead><tr><th>Evidence</th><th>Pinned source / validation</th></tr></thead><tbody><tr><td>Official checkpoint configuration</td><td><a href="https://huggingface.co/moonshotai/Kimi-K3/blob/f831ab66814297da540d832a5235f8e904f29d06/config.json">Moonshot Kimi-K3 config</a> · revision <code>f831ab66814297da540d832a5235f8e904f29d06</code><br>SHA-256 <code>9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213</code></td></tr><tr><td>Official model definitions</td><td><a href="https://huggingface.co/moonshotai/Kimi-K3/blob/f831ab66814297da540d832a5235f8e904f29d06/modeling_kimi_linear.py">Public text model</a>; <a href="https://huggingface.co/moonshotai/Kimi-K3/blob/f831ab66814297da540d832a5235f8e904f29d06/modeling_kimi_k3.py">Public multimodal wrapper</a></td></tr><tr><td>SGLang model</td><td><a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/models/kimi_k3.py">KDA, MLA, latent MoE and residual schedule</a> · <code>cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c</code></td></tr><tr><td>Attention Residual reference</td><td><a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/srt/layers/attn_residual.py">aggregate_stream_torch, AttnResidual and fused implementations</a></td></tr><tr><td>KDA normalization / gate / kernels</td><td><a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/kernels/ops/attention/fla/kda.py">KDA implementation</a>; <a href="https://git.luchentech.com/maas/sglang/-/blob/cc1ecdadaf37e5d0a912ba3a68047a89dc453e1c/python/sglang/kernels/ops/attention/fla/l2norm.py">L2 normalization</a></td></tr><tr><td>Checkpoint tensor audit</td><td><a href="parameter-header-audit.json">94 header hashes and every-layer counts</a>; packed routed expert shapes are unpacked logically, quantization metadata counted separately.</td></tr><tr><td>Independent arithmetic and algebra</td><td><a href="validation.json">Leaf-by-leaf reconciliation and algebra checks</a>; KDA matrix transition and expanded/absorbed MLA were compared on small float64 tensors.</td></tr><tr><td>Preserved UI reference</td><td><a href="https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_100k_prefill_execution_tree.html#execution-tree">GLM-5.2 100K execution tree</a>; its complete CSS and collapse/column-toggle JavaScript are reused byte-for-byte.</td></tr><tr><td>Reproducible artifacts</td><td><a href="config.json">Pinned config</a> · <a href="ledger.json">Exact ledger</a> · <a href="layer-map.json">93-layer map</a> · <a href="source-audit.json">Source hashes and node anchors</a></td></tr></tbody></table><p>Private GitLab links may require authorization. Public configuration, model code, and generated numerical evidence remain available independently. Text-only scope excludes vision processing, draft/MTP, backward work, sampling, cached-prefix reuse, all-token logits, and runtime quantization/packing overhead.</p>
+<script>
+(() => {
+  const tree = document.querySelector(".flow-tree");
+  if (!tree) return;
+
+  const columnLabels = {
+    io: "Tensor input to tensor output",
+    state: "Logical parameter state",
+    flops: "100K prefill FLOPs",
+  };
+
+  document.querySelectorAll(".column-toggle[data-column]").forEach((button) => {
+    const column = button.dataset.column;
+    const label = columnLabels[column];
+    if (!label) return;
+
+    const setVisible = (visible) => {
+      tree.classList.toggle(`hide-${column}`, !visible);
+      button.setAttribute("aria-pressed", String(visible));
+      button.title = `${visible ? "Hide" : "Show"} ${label} column`;
+    };
+
+    setVisible(button.getAttribute("aria-pressed") !== "false");
+    button.addEventListener("click", () => {
+      setVisible(button.getAttribute("aria-pressed") !== "true");
+    });
+  });
+
+  const setExpanded = (step, expanded) => {
+    const children = step.querySelector(":scope > .flow-children");
+    const button = step.querySelector(":scope > .flow-row .flow-toggle");
+    if (!children || !button) return;
+
+    step.classList.toggle("is-collapsed", !expanded);
+    children.hidden = !expanded;
+    button.setAttribute("aria-expanded", String(expanded));
+    const action = expanded ? "Collapse" : "Expand";
+    const stepId = button.dataset.step;
+    button.setAttribute("aria-label", `${action} child modules under step ${stepId}`);
+    button.title = `${action} child modules`;
+  };
+
+  tree.addEventListener("click", (event) => {
+    const row = event.target.closest(".flow-row");
+    const step = row?.parentElement;
+    if (!step?.classList.contains("has-children")) return;
+    if (window.getSelection()?.toString()) return;
+    setExpanded(step, step.classList.contains("is-collapsed"));
+  });
+})();
+</script>
+<p class="footer">Public URL: <a href="https://tomyoung903.github.io/maas_docs/kimi-k3-flops/kimi_k3_100k_prefill_execution_tree.html">https://tomyoung903.github.io/maas_docs/kimi-k3-flops/kimi_k3_100k_prefill_execution_tree.html</a><br>Generated from pinned Kimi-K3 configuration and independently audited logical arithmetic. UI preserved from the GLM-5.2 execution tree. Source and accounting boundary are recorded above.</p>
+</article>
+</div>
+</main>
+  <script defer src="../assets/maas-annotator.js" data-maas-annotator data-page-key="/kimi-k3-flops/kimi_k3_100k_prefill_execution_tree.html"></script>
+</body>
+</html>
