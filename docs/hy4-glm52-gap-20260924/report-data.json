@@ -1,0 +1,1456 @@
+{
+  "schema": "hy4-glm52-gap-public/v1",
+  "built_utc": "2026-09-24T10:39:55.382899+00:00",
+  "ratios": {
+    "historical_rate_ratio": 2.2696282387018103,
+    "glm_profile_tpm": 3299890.8688745443,
+    "hy4_profile_tpm": 1490701.8492843208,
+    "profile_rate_ratio": 2.213649141482455,
+    "glm_historical_over_profile": 1.0174596953348896,
+    "hy4_profile_over_historical": 1.0076941202367882,
+    "profile_client_cycle_ratio": 2.219562944167199,
+    "profile_tokens_per_batch_glm_over_hy4": 0.9973356003711068
+  },
+  "all_rank_cycle_rows": [
+    {
+      "label": "GLM · rank0",
+      "values": [
+        129.47232336792453,
+        11.610571889937107,
+        0.6183943647798742,
+        6.505373198113208
+      ],
+      "total": 148.2066628207547
+    },
+    {
+      "label": "HY4 · rank0",
+      "values": [
+        236.84893802769233,
+        89.89963210307693,
+        0.19738901076923077,
+        2.3228583984615385
+      ],
+      "total": 329.26881754000004
+    },
+    {
+      "label": "GLM · rank1",
+      "values": [
+        119.7981782389937,
+        22.07168547798742,
+        0.1321552955974843,
+        6.237663817610063
+      ],
+      "total": 148.23968283018868
+    },
+    {
+      "label": "HY4 · rank1",
+      "values": [
+        235.95750998923077,
+        89.99848396615384,
+        0.17920903538461538,
+        3.1825606815384617
+      ],
+      "total": 329.31776367230765
+    },
+    {
+      "label": "GLM · rank2",
+      "values": [
+        128.46332327672954,
+        13.690060773584905,
+        0.18250737106918238,
+        5.9410383270440255
+      ],
+      "total": 148.27692974842765
+    },
+    {
+      "label": "HY4 · rank2",
+      "values": [
+        246.87233101076922,
+        79.08674459230768,
+        0.1828713553846154,
+        3.226216993846154
+      ],
+      "total": 329.3681639523077
+    },
+    {
+      "label": "GLM · rank3",
+      "values": [
+        129.90946306603774,
+        2.480966317610063,
+        0.7616310628930818,
+        15.15618933018868
+      ],
+      "total": 148.30824977672955
+    },
+    {
+      "label": "HY4 · rank3",
+      "values": [
+        245.90376594307693,
+        80.80484154153847,
+        0.18320907076923076,
+        2.524223556923077
+      ],
+      "total": 329.41604011230766
+    }
+  ],
+  "grouped_final_rank_delta_ms": [
+    {
+      "label": "Sparse attention + query padding",
+      "delta_ms": 56.17761280777938
+    },
+    {
+      "label": "iHC",
+      "delta_ms": 24.872597252307692
+    },
+    {
+      "label": "Attention gate",
+      "delta_ms": 18.774719775384614
+    },
+    {
+      "label": "Router projections",
+      "delta_ms": 10.286339634755684
+    },
+    {
+      "label": "Remaining compute / overlap",
+      "delta_ms": 5.883033406811791
+    },
+    {
+      "label": "Net NCCL / copy / idle coverage",
+      "delta_ms": 65.11348745853894
+    }
+  ],
+  "all_rank_component_differences": {
+    "0": {
+      "glm_cycle_ms": 148.2066628207547,
+      "hy4_cycle_ms": 329.26881754000004,
+      "delta_cycle_ms": 181.06215471924534,
+      "non_nccl_union_delta_ms": 107.3766146597678,
+      "components": [
+        {
+          "family": "nccl_only_incremental_coverage",
+          "glm_ms": 11.610571889937107,
+          "hy4_ms": 89.89963210307693,
+          "hy4_minus_glm_ms": 78.28906021313982
+        },
+        {
+          "family": "sparse_attention_math",
+          "glm_ms": 29.17709594654088,
+          "hy4_ms": 64.77558004307693,
+          "hy4_minus_glm_ms": 35.59848409653605
+        },
+        {
+          "family": "hy4_ihc_fused",
+          "glm_ms": 0,
+          "hy4_ms": 23.30548800307692,
+          "hy4_minus_glm_ms": 23.30548800307692
+        },
+        {
+          "family": "hy4_attention_gate",
+          "glm_ms": 0,
+          "hy4_ms": 17.73931513076923,
+          "hy4_minus_glm_ms": 17.73931513076923
+        },
+        {
+          "family": "query_head_padding_copy",
+          "glm_ms": 0,
+          "hy4_ms": 12.937112367692308,
+          "hy4_minus_glm_ms": 12.937112367692308
+        },
+        {
+          "family": "router_projection_gemm_glm_inferred",
+          "glm_ms": 0.4366200786163522,
+          "hy4_ms": 9.454957187692306,
+          "hy4_minus_glm_ms": 9.018337109075954
+        },
+        {
+          "family": "query_head_padding_fill",
+          "glm_ms": 0,
+          "hy4_ms": 6.338158647692308,
+          "hy4_minus_glm_ms": 6.338158647692308
+        },
+        {
+          "family": "routed_moe_up_gemm",
+          "glm_ms": 18.1393956918239,
+          "hy4_ms": 22.157957303076923,
+          "hy4_minus_glm_ms": 4.018561611253023
+        },
+        {
+          "family": "routed_moe_down_gemm",
+          "glm_ms": 9.553331012578615,
+          "hy4_ms": 11.69520151076923,
+          "hy4_minus_glm_ms": 2.141870498190615
+        },
+        {
+          "family": "other_dense_projection_gemm_unresolved",
+          "glm_ms": 40.56516631132075,
+          "hy4_ms": 42.64340195692308,
+          "hy4_minus_glm_ms": 2.0782356456023265
+        },
+        {
+          "family": "other_unresolved",
+          "glm_ms": 2.2324298018867923,
+          "hy4_ms": 4.303422163076923,
+          "hy4_minus_glm_ms": 2.0709923611901306
+        },
+        {
+          "family": "attention_named_preparation",
+          "glm_ms": 3.7981091226415096,
+          "hy4_ms": 5.106170416923077,
+          "hy4_minus_glm_ms": 1.3080612942815675
+        },
+        {
+          "family": "hy4_ihc_initial_repeat",
+          "glm_ms": 0,
+          "hy4_ms": 0.3993413538461538,
+          "hy4_minus_glm_ms": 0.3993413538461538
+        },
+        {
+          "family": "moe_named_routing_quant_finalize",
+          "glm_ms": 2.954571544025157,
+          "hy4_ms": 3.348565713846154,
+          "hy4_minus_glm_ms": 0.393994169820997
+        },
+        {
+          "family": "attention_kv_rope_contiguous_copy",
+          "glm_ms": 0,
+          "hy4_ms": 0.07644866923076923,
+          "hy4_minus_glm_ms": 0.07644866923076923
+        },
+        {
+          "family": "other_named_norm",
+          "glm_ms": 0.37322537735849054,
+          "hy4_ms": 0.3785107153846154,
+          "hy4_minus_glm_ms": 0.005285338026124853
+        },
+        {
+          "family": "non_nccl_overlap_correction",
+          "glm_ms": -0.878867820754717,
+          "hy4_ms": -1.0056974061538462,
+          "hy4_minus_glm_ms": -0.12682958539912914
+        },
+        {
+          "family": "indexer_named_preparation",
+          "glm_ms": 0.6004651572327044,
+          "hy4_ms": 0.3555052523076923,
+          "hy4_minus_glm_ms": -0.24495990492501213
+        },
+        {
+          "family": "memcpy_only_incremental_coverage",
+          "glm_ms": 0.6183943647798742,
+          "hy4_ms": 0.19738901076923077,
+          "hy4_minus_glm_ms": -0.42100535401064343
+        },
+        {
+          "family": "glm_fused_residual_norm",
+          "glm_ms": 2.259369238993711,
+          "hy4_ms": 0,
+          "hy4_minus_glm_ms": -2.259369238993711
+        },
+        {
+          "family": "indexer_score_math",
+          "glm_ms": 11.2560353081761,
+          "hy4_ms": 8.866614518461539,
+          "hy4_minus_glm_ms": -2.3894207897145616
+        },
+        {
+          "family": "no_traced_gpu_activity",
+          "glm_ms": 6.505373198113208,
+          "hy4_ms": 2.3228583984615385,
+          "hy4_minus_glm_ms": -4.18251479965167
+        },
+        {
+          "family": "indexer_topk",
+          "glm_ms": 9.005376597484277,
+          "hy4_ms": 3.97288448,
+          "hy4_minus_glm_ms": -5.032492117484278
+        }
+      ]
+    },
+    "1": {
+      "glm_cycle_ms": 148.23968283018868,
+      "hy4_cycle_ms": 329.31776367230765,
+      "delta_cycle_ms": 181.07808084211896,
+      "non_nccl_union_delta_ms": 116.15933175023707,
+      "components": [
+        {
+          "family": "nccl_only_incremental_coverage",
+          "glm_ms": 22.07168547798742,
+          "hy4_ms": 89.99848396615384,
+          "hy4_minus_glm_ms": 67.92679848816643
+        },
+        {
+          "family": "sparse_attention_math",
+          "glm_ms": 28.760878852201255,
+          "hy4_ms": 64.74736059846154,
+          "hy4_minus_glm_ms": 35.98648174626028
+        },
+        {
+          "family": "hy4_ihc_fused",
+          "glm_ms": 0,
+          "hy4_ms": 23.182139435384617,
+          "hy4_minus_glm_ms": 23.182139435384617
+        },
+        {
+          "family": "hy4_attention_gate",
+          "glm_ms": 0,
+          "hy4_ms": 17.927849898461538,
+          "hy4_minus_glm_ms": 17.927849898461538
+        },
+        {
+          "family": "query_head_padding_copy",
+          "glm_ms": 0,
+          "hy4_ms": 13.049931993846155,
+          "hy4_minus_glm_ms": 13.049931993846155
+        },
+        {
+          "family": "router_projection_gemm_glm_inferred",
+          "glm_ms": 0.5201607106918239,
+          "hy4_ms": 10.12548463230769,
+          "hy4_minus_glm_ms": 9.605323921615867
+        },
+        {
+          "family": "query_head_padding_fill",
+          "glm_ms": 0,
+          "hy4_ms": 6.333591487692308,
+          "hy4_minus_glm_ms": 6.333591487692308
+        },
+        {
+          "family": "other_dense_projection_gemm_unresolved",
+          "glm_ms": 35.07053950314465,
+          "hy4_ms": 40.59419596307693,
+          "hy4_minus_glm_ms": 5.523656459932276
+        },
+        {
+          "family": "other_unresolved",
+          "glm_ms": 1.7800016666666667,
+          "hy4_ms": 4.29691108,
+          "hy4_minus_glm_ms": 2.5169094133333334
+        },
+        {
+          "family": "routed_moe_up_gemm",
+          "glm_ms": 21.580333503144654,
+          "hy4_ms": 23.870086546153846,
+          "hy4_minus_glm_ms": 2.289753043009192
+        },
+        {
+          "family": "attention_named_preparation",
+          "glm_ms": 3.7727753679245284,
+          "hy4_ms": 5.127138341538462,
+          "hy4_minus_glm_ms": 1.3543629736139335
+        },
+        {
+          "family": "indexer_score_math",
+          "glm_ms": 6.353941273584906,
+          "hy4_ms": 7.61503759076923,
+          "hy4_minus_glm_ms": 1.2610963171843244
+        },
+        {
+          "family": "routed_moe_down_gemm",
+          "glm_ms": 11.470634716981131,
+          "hy4_ms": 12.59329115076923,
+          "hy4_minus_glm_ms": 1.1226564337880998
+        },
+        {
+          "family": "attention_kv_rope_contiguous_copy",
+          "glm_ms": 0,
+          "hy4_ms": 0.0766623353846154,
+          "hy4_minus_glm_ms": 0.0766623353846154
+        },
+        {
+          "family": "moe_named_routing_quant_finalize",
+          "glm_ms": 3.4869124308176103,
+          "hy4_ms": 3.5392117153846154,
+          "hy4_minus_glm_ms": 0.052299284567005166
+        },
+        {
+          "family": "memcpy_only_incremental_coverage",
+          "glm_ms": 0.1321552955974843,
+          "hy4_ms": 0.17920903538461538,
+          "hy4_minus_glm_ms": 0.047053739787131094
+        },
+        {
+          "family": "other_named_norm",
+          "glm_ms": 0.3472076918238994,
+          "hy4_ms": 0.3794596615384615,
+          "hy4_minus_glm_ms": 0.03225196971456212
+        },
+        {
+          "family": "indexer_named_preparation",
+          "glm_ms": 0.3465846477987421,
+          "hy4_ms": 0.30655331076923076,
+          "hy4_minus_glm_ms": -0.04003133702951134
+        },
+        {
+          "family": "non_nccl_overlap_correction",
+          "glm_ms": -0.8587892358490566,
+          "hy4_ms": -1.0009313076923076,
+          "hy4_minus_glm_ms": -0.142142071843251
+        },
+        {
+          "family": "indexer_topk",
+          "glm_ms": 4.841837213836478,
+          "hy4_ms": 3.1935355553846154,
+          "hy4_minus_glm_ms": -1.6483016584518628
+        },
+        {
+          "family": "glm_fused_residual_norm",
+          "glm_ms": 2.325159896226415,
+          "hy4_ms": 0,
+          "hy4_minus_glm_ms": -2.325159896226415
+        },
+        {
+          "family": "no_traced_gpu_activity",
+          "glm_ms": 6.237663817610063,
+          "hy4_ms": 3.1825606815384617,
+          "hy4_minus_glm_ms": -3.055103136071601
+        }
+      ]
+    },
+    "2": {
+      "glm_cycle_ms": 148.27692974842765,
+      "hy4_cycle_ms": 329.3681639523077,
+      "delta_cycle_ms": 181.09123420388008,
+      "non_nccl_union_delta_ms": 118.40900773403965,
+      "components": [
+        {
+          "family": "nccl_only_incremental_coverage",
+          "glm_ms": 13.690060773584905,
+          "hy4_ms": 79.08674459230768,
+          "hy4_minus_glm_ms": 65.39668381872278
+        },
+        {
+          "family": "sparse_attention_math",
+          "glm_ms": 30.541819047169813,
+          "hy4_ms": 66.92764940923077,
+          "hy4_minus_glm_ms": 36.38583036206096
+        },
+        {
+          "family": "hy4_ihc_fused",
+          "glm_ms": 0,
+          "hy4_ms": 24.38335199846154,
+          "hy4_minus_glm_ms": 24.38335199846154
+        },
+        {
+          "family": "hy4_attention_gate",
+          "glm_ms": 0,
+          "hy4_ms": 18.842385364615385,
+          "hy4_minus_glm_ms": 18.842385364615385
+        },
+        {
+          "family": "query_head_padding_copy",
+          "glm_ms": 0,
+          "hy4_ms": 13.719901053846154,
+          "hy4_minus_glm_ms": 13.719901053846154
+        },
+        {
+          "family": "router_projection_gemm_glm_inferred",
+          "glm_ms": 0.5483716257861635,
+          "hy4_ms": 10.606187938461538,
+          "hy4_minus_glm_ms": 10.057816312675374
+        },
+        {
+          "family": "query_head_padding_fill",
+          "glm_ms": 0,
+          "hy4_ms": 6.669618796923077,
+          "hy4_minus_glm_ms": 6.669618796923077
+        },
+        {
+          "family": "other_dense_projection_gemm_unresolved",
+          "glm_ms": 36.514097452830185,
+          "hy4_ms": 42.43188865384615,
+          "hy4_minus_glm_ms": 5.917791201015966
+        },
+        {
+          "family": "routed_moe_up_gemm",
+          "glm_ms": 22.696163072327042,
+          "hy4_ms": 25.582996893846154,
+          "hy4_minus_glm_ms": 2.8868338215191116
+        },
+        {
+          "family": "other_unresolved",
+          "glm_ms": 1.940858037735849,
+          "hy4_ms": 4.549983755384615,
+          "hy4_minus_glm_ms": 2.6091257176487663
+        },
+        {
+          "family": "routed_moe_down_gemm",
+          "glm_ms": 12.057650704402516,
+          "hy4_ms": 13.485422787692308,
+          "hy4_minus_glm_ms": 1.427772083289792
+        },
+        {
+          "family": "attention_named_preparation",
+          "glm_ms": 3.9829193333333337,
+          "hy4_ms": 5.388074926153846,
+          "hy4_minus_glm_ms": 1.405155592820512
+        },
+        {
+          "family": "attention_kv_rope_contiguous_copy",
+          "glm_ms": 0,
+          "hy4_ms": 0.08044956153846154,
+          "hy4_minus_glm_ms": 0.08044956153846154
+        },
+        {
+          "family": "moe_named_routing_quant_finalize",
+          "glm_ms": 3.6736053773584905,
+          "hy4_ms": 3.7246662784615383,
+          "hy4_minus_glm_ms": 0.05106090110304784
+        },
+        {
+          "family": "other_named_norm",
+          "glm_ms": 0.36338140251572326,
+          "hy4_ms": 0.4014966953846154,
+          "hy4_minus_glm_ms": 0.03811529286889215
+        },
+        {
+          "family": "memcpy_only_incremental_coverage",
+          "glm_ms": 0.18250737106918238,
+          "hy4_ms": 0.1828713553846154,
+          "hy4_minus_glm_ms": 0.0003639843154330247
+        },
+        {
+          "family": "indexer_named_preparation",
+          "glm_ms": 0.4269022578616352,
+          "hy4_ms": 0.3076443461538461,
+          "hy4_minus_glm_ms": -0.1192579117077891
+        },
+        {
+          "family": "non_nccl_overlap_correction",
+          "glm_ms": -0.9068033113207546,
+          "hy4_ms": -1.0342480307692308,
+          "hy4_minus_glm_ms": -0.12744471944847613
+        },
+        {
+          "family": "indexer_score_math",
+          "glm_ms": 7.91177312264151,
+          "hy4_ms": 7.581697869230769,
+          "hy4_minus_glm_ms": -0.3300752534107403
+        },
+        {
+          "family": "glm_fused_residual_norm",
+          "glm_ms": 2.4259797452830187,
+          "hy4_ms": 0,
+          "hy4_minus_glm_ms": -2.4259797452830187
+        },
+        {
+          "family": "no_traced_gpu_activity",
+          "glm_ms": 5.9410383270440255,
+          "hy4_ms": 3.226216993846154,
+          "hy4_minus_glm_ms": -2.7148213331978717
+        },
+        {
+          "family": "indexer_topk",
+          "glm_ms": 6.286605408805031,
+          "hy4_ms": 3.2231627123076927,
+          "hy4_minus_glm_ms": -3.0634426964973387
+        }
+      ]
+    },
+    "3": {
+      "glm_cycle_ms": 148.30824977672955,
+      "hy4_cycle_ms": 329.41604011230766,
+      "delta_cycle_ms": 181.1077903355781,
+      "non_nccl_union_delta_ms": 115.99430287703919,
+      "components": [
+        {
+          "family": "nccl_only_incremental_coverage",
+          "glm_ms": 2.480966317610063,
+          "hy4_ms": 80.80484154153847,
+          "hy4_minus_glm_ms": 78.3238752239284
+        },
+        {
+          "family": "sparse_attention_math",
+          "glm_ms": 30.542458424528302,
+          "hy4_ms": 66.44331706307692,
+          "hy4_minus_glm_ms": 35.90085863854861
+        },
+        {
+          "family": "hy4_ihc_fused",
+          "glm_ms": 0,
+          "hy4_ms": 24.872597252307692,
+          "hy4_minus_glm_ms": 24.872597252307692
+        },
+        {
+          "family": "hy4_attention_gate",
+          "glm_ms": 0,
+          "hy4_ms": 18.774719775384614,
+          "hy4_minus_glm_ms": 18.774719775384614
+        },
+        {
+          "family": "query_head_padding_copy",
+          "glm_ms": 0,
+          "hy4_ms": 13.620112590769232,
+          "hy4_minus_glm_ms": 13.620112590769232
+        },
+        {
+          "family": "router_projection_gemm_glm_inferred",
+          "glm_ms": 0.5477116006289309,
+          "hy4_ms": 10.834051235384615,
+          "hy4_minus_glm_ms": 10.286339634755684
+        },
+        {
+          "family": "query_head_padding_fill",
+          "glm_ms": 0,
+          "hy4_ms": 6.656641578461538,
+          "hy4_minus_glm_ms": 6.656641578461538
+        },
+        {
+          "family": "other_dense_projection_gemm_unresolved",
+          "glm_ms": 37.56463733333334,
+          "hy4_ms": 42.25330691384616,
+          "hy4_minus_glm_ms": 4.688669580512823
+        },
+        {
+          "family": "other_unresolved",
+          "glm_ms": 2.0512266635220127,
+          "hy4_ms": 4.567895970769231,
+          "hy4_minus_glm_ms": 2.5166693072472186
+        },
+        {
+          "family": "routed_moe_up_gemm",
+          "glm_ms": 22.713514996855345,
+          "hy4_ms": 25.213618815384613,
+          "hy4_minus_glm_ms": 2.5001038185292686
+        },
+        {
+          "family": "attention_named_preparation",
+          "glm_ms": 3.986014141509434,
+          "hy4_ms": 5.389439403076923,
+          "hy4_minus_glm_ms": 1.4034252615674894
+        },
+        {
+          "family": "routed_moe_down_gemm",
+          "glm_ms": 12.025388245283018,
+          "hy4_ms": 13.387360076923077,
+          "hy4_minus_glm_ms": 1.3619718316400586
+        },
+        {
+          "family": "attention_kv_rope_contiguous_copy",
+          "glm_ms": 0,
+          "hy4_ms": 0.07951677846153846,
+          "hy4_minus_glm_ms": 0.07951677846153846
+        },
+        {
+          "family": "other_named_norm",
+          "glm_ms": 0.3595084811320755,
+          "hy4_ms": 0.39571232,
+          "hy4_minus_glm_ms": 0.0362038388679245
+        },
+        {
+          "family": "moe_named_routing_quant_finalize",
+          "glm_ms": 3.682713062893082,
+          "hy4_ms": 3.7069715153846152,
+          "hy4_minus_glm_ms": 0.024258452491533244
+        },
+        {
+          "family": "indexer_named_preparation",
+          "glm_ms": 0.4283621163522013,
+          "hy4_ms": 0.30021883692307694,
+          "hy4_minus_glm_ms": -0.12814327942912435
+        },
+        {
+          "family": "non_nccl_overlap_correction",
+          "glm_ms": -0.904932320754717,
+          "hy4_ms": -1.1382700707692308,
+          "hy4_minus_glm_ms": -0.23333775001451385
+        },
+        {
+          "family": "indexer_score_math",
+          "glm_ms": 8.001350732704402,
+          "hy4_ms": 7.426260709230769,
+          "hy4_minus_glm_ms": -0.5750900234736331
+        },
+        {
+          "family": "memcpy_only_incremental_coverage",
+          "glm_ms": 0.7616310628930818,
+          "hy4_ms": 0.18320907076923076,
+          "hy4_minus_glm_ms": -0.578421992123851
+        },
+        {
+          "family": "glm_fused_residual_norm",
+          "glm_ms": 2.4775164591194967,
+          "hy4_ms": 0,
+          "hy4_minus_glm_ms": -2.4775164591194967
+        },
+        {
+          "family": "indexer_topk",
+          "glm_ms": 6.433993128930817,
+          "hy4_ms": 3.1202951784615385,
+          "hy4_minus_glm_ms": -3.3136979504692787
+        },
+        {
+          "family": "no_traced_gpu_activity",
+          "glm_ms": 15.15618933018868,
+          "hy4_ms": 2.524223556923077,
+          "hy4_minus_glm_ms": -12.631965773265602
+        }
+      ]
+    }
+  },
+  "pipeline_receive_pairing": {
+    "0:output_ring_recv": {
+      "count": 642,
+      "receiver_residency_ms": {
+        "count": 642,
+        "sum": 57286.599177,
+        "mean": 89.23146289252337,
+        "p50": 88.7907145,
+        "p90": 141.667651,
+        "p99": 169.151952,
+        "max": 181.375963
+      },
+      "pre_sender_residence_ms": {
+        "count": 642,
+        "sum": 57280.473318,
+        "mean": 89.22192105607476,
+        "p50": 88.78132099999999,
+        "p90": 141.658413,
+        "p99": 169.142337,
+        "max": 181.366736
+      },
+      "pre_sender_fraction": 0.9998930664572866,
+      "completion_delta_us": {
+        "count": 642,
+        "sum": 232.204,
+        "mean": 0.36168847352024924,
+        "p50": 0.3065,
+        "p90": 0.751,
+        "p99": 1.992,
+        "max": 2.221
+      },
+      "sender_step_minus_receiver_step": {
+        "-3": 642
+      }
+    },
+    "2:output_ring_recv": {
+      "count": 644,
+      "receiver_residency_ms": {
+        "count": 644,
+        "sum": 50403.676044,
+        "mean": 78.26657770807454,
+        "p50": 78.8689235,
+        "p90": 127.999048,
+        "p99": 150.650941,
+        "max": 161.289139
+      },
+      "pre_sender_residence_ms": {
+        "count": 644,
+        "sum": 50398.099952,
+        "mean": 78.25791918012422,
+        "p50": 78.8603855,
+        "p90": 127.99065,
+        "p99": 150.642252,
+        "max": 161.280519
+      },
+      "pre_sender_fraction": 0.9998893713229342,
+      "completion_delta_us": {
+        "count": 644,
+        "sum": 948.649,
+        "mean": 1.4730574534161491,
+        "p50": 1.4625,
+        "p90": 1.891,
+        "p99": 2.255,
+        "max": 25.77
+      },
+      "sender_step_minus_receiver_step": {
+        "1": 644
+      }
+    },
+    "1:proxy_recv_carrier": {
+      "count": 644,
+      "receiver_residency_ms": {
+        "count": 644,
+        "sum": 57541.320533,
+        "mean": 89.34987660403726,
+        "p50": 90.491107,
+        "p90": 140.398502,
+        "p99": 161.202288,
+        "max": 163.428967
+      },
+      "pre_sender_residence_ms": {
+        "count": 644,
+        "sum": 57146.37064,
+        "mean": 88.73660037267081,
+        "p50": 89.8783375,
+        "p90": 139.79622,
+        "p99": 160.599952,
+        "max": 162.816645
+      },
+      "pre_sender_fraction": 0.9931362386309245,
+      "completion_delta_us": {
+        "count": 644,
+        "sum": 13782.295,
+        "mean": 21.401079192546582,
+        "p50": 21.621499999999997,
+        "p90": 26.224,
+        "p99": 31.573,
+        "max": 37.175
+      },
+      "sender_step_minus_receiver_step": {
+        "1": 644
+      }
+    },
+    "3:proxy_recv_carrier": {
+      "count": 645,
+      "receiver_residency_ms": {
+        "count": 645,
+        "sum": 54929.679465,
+        "mean": 85.16229374418604,
+        "p50": 84.496005,
+        "p90": 140.113028,
+        "p99": 169.046045,
+        "max": 178.784927
+      },
+      "pre_sender_residence_ms": {
+        "count": 645,
+        "sum": 54528.547183,
+        "mean": 84.54038322945736,
+        "p50": 83.879511,
+        "p90": 139.475477,
+        "p99": 168.432383,
+        "max": 178.16783
+      },
+      "pre_sender_fraction": 0.9926973489394637,
+      "completion_delta_us": {
+        "count": 645,
+        "sum": 17166.843,
+        "mean": 26.61526046511628,
+        "p50": 25.16,
+        "p90": 33.292,
+        "p99": 51.391,
+        "max": 188.273
+      },
+      "sender_step_minus_receiver_step": {
+        "1": 645
+      }
+    }
+  },
+  "depth_receive_compute_overlap": {
+    "old_depth1": {
+      "sqlite_sha256": "38fc3a1ae57f5c46515a71d678d271f688117a4337f3607a1e02b6fa39edfb80",
+      "roles": {
+        "0:output_ring_recv": {
+          "count": 645,
+          "mean_residency_ms": 88.92510554573643,
+          "compute_overlap_fraction": 0.0,
+          "mean_outside_non_nccl_ms": 88.92510554573643
+        },
+        "2:output_ring_recv": {
+          "count": 645,
+          "mean_residency_ms": 78.14524519069766,
+          "compute_overlap_fraction": 0.0,
+          "mean_outside_non_nccl_ms": 78.14524519069766
+        }
+      }
+    },
+    "new_depth0": {
+      "sqlite_sha256": "7a8e46df7bc282043c26aef2fb0ac0c3337e232ffbf581b60d883800483f0464",
+      "roles": {
+        "0:output_ring_recv": {
+          "count": 645,
+          "mean_residency_ms": 175.56310339534886,
+          "compute_overlap_fraction": 0.9437223756568824,
+          "mean_outside_non_nccl_ms": 9.880274381395349
+        },
+        "2:output_ring_recv": {
+          "count": 645,
+          "mean_residency_ms": 0.2017793457364341,
+          "compute_overlap_fraction": 0.9971377284195574,
+          "mean_outside_non_nccl_ms": 0.0005775472868217054
+        }
+      }
+    }
+  },
+  "source_claims": [
+    {
+      "id": "hy4_requires_sink_and_gate_ihc",
+      "claim": "HYV4Config requires enabled iHC, elementwise gated MLA and learnable attention sinks; these are model semantics.",
+      "refs": [
+        {
+          "file": "installed-00-hy_v4.py",
+          "line_start": 142,
+          "line_end": 147,
+          "sha256": "809fb6452f3d768286e3d8645d3bcc4b8412733e4a8439b35214709d83978a4e"
+        }
+      ]
+    },
+    {
+      "id": "hy4_router_fp32",
+      "claim": "HYV4Config unconditionally sets router_fp32=True. Current MoEGate allocates FP32 weights and casts activations to FP32 before F.linear. This closes the previously unknown reason for the measured FP32 SIMT router.",
+      "refs": [
+        {
+          "file": "installed-00-hy_v4.py",
+          "line_start": 93,
+          "line_end": 93,
+          "sha256": "809fb6452f3d768286e3d8645d3bcc4b8412733e4a8439b35214709d83978a4e"
+        },
+        {
+          "file": "installed-01-deepseek_v2.py",
+          "line_start": 484,
+          "line_end": 491,
+          "sha256": "2126962f1723774de5e2d91279032d550550bc8348afc7e0d351667d02fd9fff"
+        },
+        {
+          "file": "installed-01-deepseek_v2.py",
+          "line_start": 523,
+          "line_end": 524,
+          "sha256": "2126962f1723774de5e2d91279032d550550bc8348afc7e0d351667d02fd9fff"
+        }
+      ]
+    },
+    {
+      "id": "glm_router_bf16",
+      "claim": "GLM inherits DeepseekV2ForCausalLM. Historical MoEGate uses linear_bf16_fp32 on large CUDA batches; BF16 CUDA inputs/weights use torch.mm with FP32 output. Five NVJet TSS kernel variants exactly match all23850 router calls and are always immediately between fused residual RMSNorm and the routing helper on the same stream. Strong source/order/count inference, not recovered CPU/NVTX module proof.",
+      "refs": [
+        {
+          "file": "glm-d0f290a8-deepseek_v2.py",
+          "line_start": 474,
+          "line_end": 476,
+          "sha256": "1ba2ffe6bf7537d0fcef6945f44b239883125a8bc382e86fa57885c135bed21f"
+        },
+        {
+          "file": "glm-d0f290a8-deepseek_v2.py",
+          "line_start": 529,
+          "line_end": 550,
+          "sha256": "1ba2ffe6bf7537d0fcef6945f44b239883125a8bc382e86fa57885c135bed21f"
+        },
+        {
+          "file": "glm-d0f290a8-glm4_moe.py",
+          "line_start": 1447,
+          "line_end": 1448,
+          "sha256": "da66fe6314fa84e7401900cf7e7a05d7dced72b39477595c3a67fda735e24256"
+        },
+        {
+          "file": "glm-d0f290a8-dsv4-gemm.py",
+          "line_start": 114,
+          "line_end": 118,
+          "sha256": "7d08628d9f298c404afe3201552b8c39df5a1f8718db2c1f3dc36b3a2659d428"
+        },
+        {
+          "file": "glm-d0f290a8-dsv4-gemm.py",
+          "line_start": 143,
+          "line_end": 168,
+          "sha256": "7d08628d9f298c404afe3201552b8c39df5a1f8718db2c1f3dc36b3a2659d428"
+        }
+      ]
+    },
+    {
+      "id": "sink_selects_bf16",
+      "claim": "Non-null attention sinks reject any DSA backend other than flashmla_sparse. That wrapper exposes a BF16 Q/KV API.",
+      "refs": [
+        {
+          "file": "runtime-dsa_backend.py",
+          "line_start": 2023,
+          "line_end": 2026,
+          "sha256": "b1096428fea36d55d62c071a9c8e408ba195b67e30f12382571337fc10cf1d47"
+        },
+        {
+          "file": "installed-11-flash_mla.py",
+          "line_start": 310,
+          "line_end": 340,
+          "sha256": "7b4d4830a23b6349db5d530ba34920337e26b814b11f79c15e0c797054e26386"
+        }
+      ]
+    },
+    {
+      "id": "blackwell_pads_64_to_128",
+      "claim": "The installed BF16 FlashMLA wrapper selects head multiple128 on SM10, zero-allocates padded Q, copies the useful64heads, and passes128heads to the kernel. Output slicing is a view.",
+      "refs": [
+        {
+          "file": "runtime-dsa_backend.py",
+          "line_start": 2749,
+          "line_end": 2782,
+          "sha256": "b1096428fea36d55d62c071a9c8e408ba195b67e30f12382571337fc10cf1d47"
+        },
+        {
+          "file": "runtime-dsa_backend.py",
+          "line_start": 2795,
+          "line_end": 2808,
+          "sha256": "b1096428fea36d55d62c071a9c8e408ba195b67e30f12382571337fc10cf1d47"
+        }
+      ]
+    },
+    {
+      "id": "glm_fp8_trt_native_heads",
+      "claim": "The historical image-revision TRT DSA path quantizes Q/K/RoPE to FP8, keeps num_heads from Q, and calls the TRT sparse MLA backend. The actual recovered kernel name independently encodes QkvE4m3 and Q64.",
+      "refs": [
+        {
+          "file": "glm-d0f290a8-dsa_backend.py",
+          "line_start": 3132,
+          "line_end": 3170,
+          "sha256": "ff02323d24b8742a7d3cfe820dd677bb32850c83a87aeffabf842252cda169a1"
+        },
+        {
+          "file": "glm-d0f290a8-dsa_backend.py",
+          "line_start": 3230,
+          "line_end": 3270,
+          "sha256": "ff02323d24b8742a7d3cfe820dd677bb32850c83a87aeffabf842252cda169a1"
+        }
+      ]
+    },
+    {
+      "id": "q8_not_blackwell_dropin",
+      "claim": "The installed flashmla_sparse_q8 backend is explicitly SM90-only and requires FP8 KV. Sinks additionally reject it. This flag is not a valid B300 replacement.",
+      "refs": [
+        {
+          "file": "runtime-dsa_backend.py",
+          "line_start": 421,
+          "line_end": 438,
+          "sha256": "b1096428fea36d55d62c071a9c8e408ba195b67e30f12382571337fc10cf1d47"
+        },
+        {
+          "file": "runtime-dsa_backend.py",
+          "line_start": 2023,
+          "line_end": 2026,
+          "sha256": "b1096428fea36d55d62c071a9c8e408ba195b67e30f12382571337fc10cf1d47"
+        }
+      ]
+    },
+    {
+      "id": "hy4_gate_real_work",
+      "claim": "HY4 adds a hidden6144 to16384 BF16 gate projection per layer. The HPC path fuses projection,sigmoid,andmultiply, but still performs the projection.",
+      "refs": [
+        {
+          "file": "installed-05-hunyuan_v4.py",
+          "line_start": 536,
+          "line_end": 553,
+          "sha256": "76a30825be9f19498db21e2d7a355d2ff2d90f079d9152d737064850f5b5f451"
+        },
+        {
+          "file": "installed-05-hunyuan_v4.py",
+          "line_start": 627,
+          "line_end": 667,
+          "sha256": "76a30825be9f19498db21e2d7a355d2ff2d90f079d9152d737064850f5b5f451"
+        },
+        {
+          "file": "installed-05-hunyuan_v4.py",
+          "line_start": 686,
+          "line_end": 704,
+          "sha256": "76a30825be9f19498db21e2d7a355d2ff2d90f079d9152d737064850f5b5f451"
+        }
+      ]
+    },
+    {
+      "id": "ihc_four_streams",
+      "claim": "HY4 materializes a four-stream carrier and repeatedly reduces/gates/updates it. HPC pre/post-pre/post/head fusion is already selected, so missing fusion is not the diagnosis.",
+      "refs": [
+        {
+          "file": "installed-05-hunyuan_v4.py",
+          "line_start": 249,
+          "line_end": 268,
+          "sha256": "76a30825be9f19498db21e2d7a355d2ff2d90f079d9152d737064850f5b5f451"
+        },
+        {
+          "file": "installed-05-hunyuan_v4.py",
+          "line_start": 357,
+          "line_end": 426,
+          "sha256": "76a30825be9f19498db21e2d7a355d2ff2d90f079d9152d737064850f5b5f451"
+        },
+        {
+          "file": "installed-05-hunyuan_v4.py",
+          "line_start": 875,
+          "line_end": 881,
+          "sha256": "76a30825be9f19498db21e2d7a355d2ff2d90f079d9152d737064850f5b5f451"
+        },
+        {
+          "file": "runtime-hy4_ihc.py",
+          "line_start": 204,
+          "line_end": 245,
+          "sha256": "25eb00c57739c1a5a6ecfda783264a97f8b75a2d8eb0feb4258df9e0562dcb78"
+        }
+      ]
+    },
+    {
+      "id": "pp_payload",
+      "claim": "HY4 PP sends a flattened four-stream hidden carrier and optional shared-index tensor, with no separate residual key. Do not equate this to a fourfold increase over GLM, which sends hidden plus residual.",
+      "refs": [
+        {
+          "file": "installed-05-hunyuan_v4.py",
+          "line_start": 883,
+          "line_end": 897,
+          "sha256": "76a30825be9f19498db21e2d7a355d2ff2d90f079d9152d737064850f5b5f451"
+        },
+        {
+          "file": "installed-05-hunyuan_v4.py",
+          "line_start": 934,
+          "line_end": 981,
+          "sha256": "76a30825be9f19498db21e2d7a355d2ff2d90f079d9152d737064850f5b5f451"
+        }
+      ]
+    },
+    {
+      "id": "kv_dequant",
+      "claim": "The BF16 FlashMLA path requires BF16 KV; prefix paths gather/dequantize FP8 packed KV. Enabled sparse/vector gather reduces excess work; this is not a claim of full-pool dequantization every prefill.",
+      "refs": [
+        {
+          "file": "runtime-dsa_backend.py",
+          "line_start": 2665,
+          "line_end": 2718,
+          "sha256": "b1096428fea36d55d62c071a9c8e408ba195b67e30f12382571337fc10cf1d47"
+        },
+        {
+          "file": "runtime-dsa_backend.py",
+          "line_start": 2731,
+          "line_end": 2747,
+          "sha256": "b1096428fea36d55d62c071a9c8e408ba195b67e30f12382571337fc10cf1d47"
+        }
+      ]
+    },
+    {
+      "id": "glm_conditional_pp_topk",
+      "claim": "GLM forwards hidden plus residual and adds topk_indices only if the next pipeline stage starts on a skip-topk layer.",
+      "refs": [
+        {
+          "file": "glm-d0f290a8-deepseek_v2.py",
+          "line_start": 2883,
+          "line_end": 2908,
+          "sha256": "1ba2ffe6bf7537d0fcef6945f44b239883125a8bc382e86fa57885c135bed21f"
+        }
+      ]
+    }
+  ],
+  "experiment": {
+    "status": "complete",
+    "title": "Same-GPU pipeline test: 23.4–25.9% higher throughput",
+    "summary": "One fresh depth-1 control and two depth-0 phases used the same four physical B300 GPUs in the same pipeline-rank order. The immutable image, five source overlays, checkpoint, input IDs, client cap, cache configuration and other server arguments were preserved. Capture was inactive during all three phases. Each phase started after an acknowledged four-rank cache flush and ended after all 128 one-token requests drained.",
+    "rows": [
+      {
+        "label": "Fresh control",
+        "setting": "HY4, depth 1",
+        "uncached_tpm": 1466004.0721458455,
+        "uncached_tokens": 5318885,
+        "seconds": 217.6890951829846,
+        "qualification": "128/128 successful; 650 batches on each rank; no measured Decode batches."
+      },
+      {
+        "label": "Depth 0 — first run",
+        "setting": "HY4, depth 0",
+        "uncached_tpm": 1809366.5094002169,
+        "uncached_tokens": 5321125,
+        "seconds": 176.45264148601564,
+        "qualification": "128/128 successful; 651 batches on each rank; no measured Decode batches."
+      },
+      {
+        "label": "Depth 0 — repeat",
+        "setting": "HY4, depth 0",
+        "uncached_tpm": 1845080.617265109,
+        "uncached_tokens": 5318885,
+        "seconds": 172.96431224400294,
+        "qualification": "128/128 successful; 650 batches on each rank; no measured Decode batches."
+      }
+    ],
+    "conclusions": [
+      "Depth 0 achieved 1.8094M and 1.8451M uncached tokens/minute, versus 1.4660M at depth 1: gains of 23.42% and 25.86%. Both observed results are shown.",
+      "The repeat exactly matches the control: 5,318,885 uncached tokens, 2,788,352 cached tokens and 650 logical batches. The first depth-0 run has 2,240 fewer cache hits (0.0421% more uncached work) and one extra batch. All per-request and four-rank token accounts reconcile.",
+      "The separate complete traces show the mechanism: result receives overlap computation at depth 0, reducing the observed per-batch cycle by approximately 60.9 ms while semantic kernel counts remain unchanged."
+    ],
+    "limitations": [
+      "This is a sequential finite-corpus comparison, not a randomized confidence interval or a maximum-capacity certificate.",
+      "The setting changes the standalone pipeline loop; this result does not by itself establish a production PD tuning recommendation.",
+      "The full matched GLM experiment remains pending verified checkpoint staging. Its common native-input control and recovered historical chat-input control will separate workload and historical-environment effects from current model implementation."
+    ],
+    "phase_details": [
+      {
+        "label": "Fresh control",
+        "completion_span_seconds": 217.6890951829846,
+        "prompt_tokens": 8107237,
+        "cached_tokens": 2788352,
+        "uncached_tokens": 5318885,
+        "uncached_tpm": 1466004.0721458455,
+        "batches_per_rank": 650
+      },
+      {
+        "label": "Depth 0 — first run",
+        "completion_span_seconds": 176.45264148601564,
+        "prompt_tokens": 8107237,
+        "cached_tokens": 2786112,
+        "uncached_tokens": 5321125,
+        "uncached_tpm": 1809366.5094002169,
+        "batches_per_rank": 651
+      },
+      {
+        "label": "Depth 0 — repeat",
+        "completion_span_seconds": 172.96431224400294,
+        "prompt_tokens": 8107237,
+        "cached_tokens": 2788352,
+        "uncached_tokens": 5318885,
+        "uncached_tpm": 1845080.617265109,
+        "batches_per_rank": 650
+      }
+    ],
+    "sources": [
+      {
+        "label": "Fresh control",
+        "reconciliation_sha256": "a25b1e490a2a1996ca7248d983fda0d237c8f35b7ca83277137838dfea87ce08"
+      },
+      {
+        "label": "Depth 0 — first run",
+        "reconciliation_sha256": "77e54e089f77162b9ea862eb117a07bf4934c245e6f4187ae27f6cf1e1e96c11"
+      },
+      {
+        "label": "Depth 0 — repeat",
+        "reconciliation_sha256": "5da2fd65d0f95e93c60917c5170dab96d79485e8e0659cad0cdbe6422adadd54"
+      }
+    ]
+  },
+  "kernel_controls": {
+    "schema": "hy4-kernel-controls-public/v1",
+    "created_utc": "2026-09-24T10:22:47.400406+00:00",
+    "all_validations_passed": true,
+    "hardware": "One NVIDIA B300 GPU, the same physical device for all arms",
+    "timing": "2 ABBA warmup rounds, then8 measured ABBA rounds;16 samples per arm; no CUDA graphs",
+    "attention": {
+      "q_tokens": 8192,
+      "prefix_tokens": 57344,
+      "topk": 2048,
+      "useful_heads": 64,
+      "flash_padded_heads": 128,
+      "inputs": "Identical exact-FP8-representable synthetic Q/KV values; no checkpoint activations",
+      "no_sink_backend_comparison": {
+        "A": {
+          "cuda_event_ms": {
+            "n": 16,
+            "median": 1.7565760016441345,
+            "p10": 1.6891359686851501,
+            "p90": 1.8149760365486145
+          },
+          "synchronized_wall_ms": {
+            "n": 16,
+            "median": 1.7761699855327606,
+            "p10": 1.7088430031435564,
+            "p90": 1.8413619982311502
+          }
+        },
+        "B": {
+          "cuda_event_ms": {
+            "n": 16,
+            "median": 3.5015358924865723,
+            "p10": 3.4045759439468384,
+            "p90": 3.5921759605407715
+          },
+          "synchronized_wall_ms": {
+            "n": 16,
+            "median": 3.520869999192655,
+            "p10": 3.4243264817632735,
+            "p90": 3.6114925023866817
+          }
+        }
+      },
+      "sink_preserving_padding_comparison": {
+        "A": {
+          "cuda_event_ms": {
+            "n": 16,
+            "median": 4.518896102905273,
+            "p10": 4.51148796081543,
+            "p90": 4.5936479568481445
+          },
+          "synchronized_wall_ms": {
+            "n": 16,
+            "median": 4.538840497843921,
+            "p10": 4.5298395125428215,
+            "p90": 4.614125486114062
+          }
+        },
+        "B": {
+          "cuda_event_ms": {
+            "n": 16,
+            "median": 3.562831997871399,
+            "p10": 3.5473440885543823,
+            "p90": 3.608896017074585
+          },
+          "synchronized_wall_ms": {
+            "n": 16,
+            "median": 3.581166994990781,
+            "p10": 3.5665425093611702,
+            "p90": 3.6278765037423
+          }
+        }
+      },
+      "materialization_only": {
+        "cuda_event_ms": {
+          "n": 16,
+          "median": 0.9837759733200073,
+          "p10": 0.9820640087127686,
+          "p90": 0.9850240051746368
+        },
+        "synchronized_wall_ms": {
+          "n": 16,
+          "median": 1.0009990073740482,
+          "p10": 0.9990380058297887,
+          "p90": 1.003701996523887
+        }
+      },
+      "checks": {
+        "padded_queries_byte_identical": true,
+        "full_no_sink_outputs_finite": true,
+        "flash_no_sink_fp32_oracle": {
+          "max_abs": 0.0035980939865112305,
+          "mean_abs": 0.00031277412199415267,
+          "relative_l2": 0.0021611982956528664,
+          "actual_finite": true,
+          "expected_finite": true
+        },
+        "trt_no_sink_fp32_oracle": {
+          "max_abs": 0.015557587146759033,
+          "mean_abs": 0.0021697767078876495,
+          "relative_l2": 0.012871501967310905,
+          "actual_finite": true,
+          "expected_finite": true,
+          "original_strict_gate_passed": false,
+          "upstream_elementwise_violations": 0,
+          "upstream_max_error_over_limit": 0.1354951560497284,
+          "qualification": "FlashInfer v0.6.17 sparse FP8 atol=.1 rtol=.1 plus relativeL2<=.02; all sampled elements finite"
+        },
+        "sink_padding_useful_output_and_lse_bit_exact": true,
+        "synthetic_sink_fp32_oracle": {
+          "max_abs": 0.0036217570304870605,
+          "mean_abs": 0.0003130277036689222,
+          "relative_l2": 0.0021598010789602995,
+          "actual_finite": true,
+          "expected_finite": true
+        }
+      },
+      "trt_precision_criterion": {
+        "elementwise_atol": 0.1,
+        "elementwise_rtol": 0.1,
+        "relative_l2": 0.02,
+        "all_sampled_elements_required": true,
+        "source": "https://github.com/flashinfer-ai/flashinfer/blob/v0.6.17/tests/attention/test_trtllm_gen_mla.py#L902-L910",
+        "source_sha256": "166ac9645c4fca863ff644c7a92b7067341785d591cb89e26721c5e9b88c6ae7",
+        "original_max_abs_gate_retained_as_diagnostic": 0.005
+      },
+      "peak_allocated_gib": 4.646515846252441
+    },
+    "router": {
+      "shape_mkn": [
+        8192,
+        6144,
+        256
+      ],
+      "inputs": "Identical dense dyadic synthetic values, not learned model weights",
+      "conversion_inclusive_vs_bf16": {
+        "A": {
+          "cuda_event_ms": {
+            "n": 16,
+            "median": 0.5787200033664703,
+            "p10": 0.5765120089054108,
+            "p90": 0.5861279964447021
+          },
+          "synchronized_wall_ms": {
+            "n": 16,
+            "median": 0.5943095166003332,
+            "p10": 0.59169449377805,
+            "p90": 0.6020950095262378
+          }
+        },
+        "B": {
+          "cuda_event_ms": {
+            "n": 16,
+            "median": 0.03838399983942509,
+            "p10": 0.036480000242590904,
+            "p90": 0.0432640016078949
+          },
+          "synchronized_wall_ms": {
+            "n": 16,
+            "median": 0.053723008022643626,
+            "p10": 0.051765498938038945,
+            "p90": 0.05928648170083761
+          }
+        }
+      },
+      "fp32_gemm_only_vs_bf16": {
+        "A": {
+          "cuda_event_ms": {
+            "n": 16,
+            "median": 0.45795200765132904,
+            "p10": 0.4564480036497116,
+            "p90": 0.45846399664878845
+          },
+          "synchronized_wall_ms": {
+            "n": 16,
+            "median": 0.47382798220496625,
+            "p10": 0.4725089966086671,
+            "p90": 0.47530149458907545
+          }
+        },
+        "B": {
+          "cuda_event_ms": {
+            "n": 16,
+            "median": 0.03763200156390667,
+            "p10": 0.036079999059438705,
+            "p90": 0.039263999089598656
+          },
+          "synchronized_wall_ms": {
+            "n": 16,
+            "median": 0.053737996495328844,
+            "p10": 0.05195950507186353,
+            "p90": 0.05580899596679956
+          }
+        }
+      },
+      "conversion_only": {
+        "cuda_event_ms": {
+          "n": 16,
+          "median": 0.13611199706792831,
+          "p10": 0.1347840055823326,
+          "p90": 0.1366560012102127
+        },
+        "synchronized_wall_ms": {
+          "n": 16,
+          "median": 0.15224199160002172,
+          "p10": 0.15060699661262333,
+          "p90": 0.1530565059510991
+        }
+      },
+      "complete_outputs_bit_equal": true,
+      "equal_elements": 2097152,
+      "sampled_cpu_integer_oracle_exact": true,
+      "precision_flags": {
+        "allow_tf32": false,
+        "allow_bf16_reduced_precision_reduction": true,
+        "float32_matmul_precision": "highest"
+      },
+      "peak_allocated_gib": 0.5244140625
+    },
+    "source_sha256": {
+      "attention_result": "378f66b764c424d597e4891ef6ec57270269f1c8dccae4f1fa6a8a9da9d2cdef",
+      "router_result": "2ba95be79f15e5f52d52b25353a8aea22f745daaf00f7f9862265cdbd18e53e2",
+      "attention_script": "dccf191bdb1333691547ab97aebe3ca223c19a7ec0bf8cb7407c61bc2cee5506",
+      "router_script": "6f24c78069d352406189ef92dd0348b114871de3a002f9e3098b3a6c91eaae8c"
+    },
+    "limitations": [
+      "These are isolated public-API call costs, not end-to-end throughput gains or a validated production replacement.",
+      "The attention comparison combines backend, precision and physical head-count changes; it does not isolate each independently.",
+      "Attention timing covers only the originally planned57344-token prefix. A broader attempt failed the stricter Flash absolute-error check at zero prefix;122880-prefix remains unqualified.",
+      "The first FP8 attempt failed a .005 absolute-error gate. The qualified run applies the exact released FlashInfer0.6.17 FP8 criterion plus relativeL2<=.02, preserving the original failure and full sample diagnostics.",
+      "Synthetic sink padding preserves useful outputs and LSE bit-for-bit; actual learned sink distribution is not represented.",
+      "Exact synthetic router output equality does not establish that changing real HY4 router precision preserves learned routing."
+    ]
+  },
+  "source_hashes": {
+    "comparison": "7bdd356380a7cad00b82c7dc3eb3c05fb15ce00582f4344495d84c145dc538d9",
+    "pipeline": "c20dcdf21c05c1afc35243c979f5adc643e78265cdeb46b10737b72c3f74076b",
+    "source_claims": "f805b3e1eaf109a72478ee3e3693306186f23478e02c2a6b21783d9d4a1a5026",
+    "glm_events": "a334515ec297c75d7bb52edaa57344ce18b1a2cdd76204b93315027d58ac1790",
+    "hy4_sqlite": "38fc3a1ae57f5c46515a71d678d271f688117a4337f3607a1e02b6fa39edfb80"
+  },
+  "depth_overlap_source_sha256": "6ea740df553ecbaa9eef01f96b5f3e23e51d1827467f86ac8f453c29a32a1a45",
+  "kernel_controls_source_sha256": "72b3214e344f349a12bed8772cb9a958d28198e1f3c8351661386e17d43ee5bf",
+  "limits": [
+    "Observed accounting is not an experimentally isolated causal attribution. GLM is GB300/Grace, HY4 B300/x86, with different runtime, corpus/cache/context and PP-depth controls.",
+    "GLM CSV contains shortened kernel names and no CPU-launch/NVTX ownership. The five TSS router-projection names are strongly inferred from old-source BF16-input/FP32-output GEMM dispatch, exact318x75 counts, and complete norm→TSS→router-helper same-stream adjacency independently reverified here. This is NOT NVTX-proven. Remaining NVJet/dense names cannot safely separate attention projections, shared experts and dense layers; retained as unresolved.",
+    "The per-rank additive cycle budget sums raw non-NCCL family residency plus a negative overlap correction, NCCL coverage outside non-NCCL kernels, memory-copy-only coverage, and no-activity gaps. It reconciles elapsed span but is not a dependency critical path.",
+    "NCCL residency includes waiting and overlap; its added exclusive coverage is not measured network transfer time.",
+    "Device-summed family residency is not wall latency or achievable optimization speedup.",
+    "318 versus650 logical steps inferred from exact full-model attention invocations and archived layer-count evidence; final batch is smaller and actual token counts vary slightly with page rounding.",
+    "Zero in a named family means no identified events for that specific family, not zero mathematical cost. Comparative router projection combines HY4 source/NVTX-audited FP32 SIMT GEMM and strongly inferred GLM BF16-input/FP32-output TSS GEMM; router-selection helpers remain separate.",
+    "GLM generic client validation flags all_records_valid=false because max_records128 truncates an expected129 source; separate bounded-run qualification is required from trace-provenance audit despite128 successful one-token EOFs.",
+    "NCCL NVTX schemas list peer/byte fields but actual event payloads are absent from SQLite; role labels rely on source ordering, not decoded peer IDs.",
+    "GPU kernel residency includes waiting and transfer; role residence alone cannot measure wire time.",
+    "GLM CSV lacks CPU/NVTX correlation, so only stream and interval overlap can be independently compared.",
+    "Source depth0/depth1 phase ordering is a mechanism hypothesis awaiting controlled HY4 depth0 A/B.",
+    "Overlap establishes simultaneous kernel residency, not simultaneous SM utilization or freedom from resource contention.",
+    "Per-role outside-compute time is not additive across roles and does not itself prove critical-path delay.",
+    "Physical GPU subsets differ; fresh depth1 same-device control remains required."
+  ]
+}
