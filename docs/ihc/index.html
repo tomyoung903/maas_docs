@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A visual guide to HY4 identity Hyper-Connections: four residual streams, one complete Attention and MoE layer, worked examples, and the exact gate generator.">
+  <title>IHC</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><a href="../">MaaS Docs</a><span>Architecture notes</span><a href="../hy4-flops/#ihc">HY4 execution tree ↗</a></header>
+<div class="layout">
+  <aside class="overview" aria-label="On this page">
+    <p class="nav-label">IHC</p>
+    <nav>
+      <a href="#idea">The basic idea</a>
+      <a href="#whole-layer">One complete layer</a>
+      <a href="#identity">Identity and interaction</a>
+      <a href="#example">A numerical example</a>
+      <a href="#gate-generator">Inside the gate generator</a>
+      <a href="#lifecycle">Beginning and end</a>
+      <a href="#distinctions">Keep these separate</a>
+      <a href="#sources">Sources and scope</a>
+    </nav>
+    <p class="nav-note">HY4 · four residual streams<br>Updated 12 October 2026</p>
+  </aside>
+  <main id="main">
+    <div class="hero">
+      <p class="eyebrow">Identity Hyper-Connections</p>
+      <h1>IHC</h1>
+      <p class="dek">Keep four streams. Process one mixture. Add the result back four ways.</p>
+      <p>A visual reference for the HY4 implementation, from one complete later layer to the eight numbers produced by its gate generator.</p>
+      <div class="summary"><span>4 residual streams</span><span>1 mixture per sublayer</span><span>2 updates per layer</span></div>
+    </div>
+
+    <section id="idea">
+      <p class="section-number">01 / THE BASIC IDEA</p>
+      <h2>One token carries four evolving feature vectors</h2>
+      <p>In this HY4 configuration, each token carries four streams. Each stream contains 6,144 numbers. Together they form a <span class="math">4 × 6,144</span> carrier. These are <strong>residual feature streams</strong>, not CUDA streams or four independent model runs.</p>
+      <p>Before Attention or the feed-forward network, iHC computes a weighted sum of the four streams. The processing block receives that one 6,144-number vector after RMSNorm. Its output is then added back to each retained stream, with a separate multiplier for each stream.</p>
+      <div class="equations" aria-label="The three main iHC equations">
+        <div><span class="math math-vec">u</span><span>=</span><span class="math">RMSNorm(∑<sub>s=1</sub><sup>4</sup> <i>a</i><sub>s</sub><b><i>x</i></b><sub>s</sub>)</span><small>one input vector</small></div>
+        <div><span class="math math-vec">y</span><span>=</span><span class="math">Attention(<b><i>u</i></b>) or FFN(<b><i>u</i></b>)</span><small>one branch output</small></div>
+        <div><span class="math math-vec">x<sub>s</sub><sup>new</sup></span><span>=</span><span class="math"><b><i>x</i></b><sub>s</sub> + <i>b</i><sub>s</sub><b><i>y</i></b></span><small>four updated streams</small></div>
+      </div>
+      <p>The <span class="math"><i>a</i><sub>s</sub></span> values are <strong>pre gates</strong>: they control the mixture. The <span class="math"><i>b</i><sub>s</sub></span> values are <strong>post gates</strong>: they control how much of the output is added to each stream.</p>
+    </section>
+
+    <section id="whole-layer">
+      <p class="section-number">02 / ONE COMPLETE LAYER</p>
+      <h2>Follow a token through a later layer</h2>
+      <p>Think of layer 10. The incoming streams have already been updated by earlier layers and can differ. Attention updates them first. The MoE feed-forward block then reads and updates the resulting carrier.</p>
+      <figure class="layer-figure">
+        <a class="figure-open" href="full-layer.svg" target="_blank" rel="noopener">Open the full-size diagram ↗</a>
+        <img src="full-layer.svg" width="1024" height="1942" alt="One complete later HY4 layer. Four incoming streams branch into an Attention gate generator, a weighted mixture followed by RMSNorm and Attention, and four preserved residual paths. The output is scaled and added to each stream. The updated carrier then follows the same pattern through separate FFN gates and a MoE block, with selected routed experts and a parallel shared expert. Four streams leave for the next layer.">
+        <figcaption>The stream carrier follows the identity paths. Dotted controls supply scalar gates. Both pre and post gates are computed before their corresponding processing block runs.</figcaption>
+      </figure>
+      <div class="pair">
+        <div><h3>After Attention</h3><p class="display-math"><b><i>z</i></b><sub>s</sub> = <b><i>x</i></b><sub>s</sub> + <i>b</i><sub>s</sub><sup>A</sup><b><i>y</i></b><sup>A</sup></p><p>The Attention gates come from <span class="math-mat">X</span>, the carrier entering Attention.</p></div>
+        <div><h3>After MoE</h3><p class="display-math"><b><i>w</i></b><sub>s</sub> = <b><i>z</i></b><sub>s</sub> + <i>b</i><sub>s</sub><sup>F</sup><b><i>y</i></b><sup>F</sup></p><p>The FFN gates come from <span class="math-mat">Z</span>, the carrier after Attention. They use separate learned parameters.</p></div>
+      </div>
+      <p>Attention uses information from permitted context tokens. The MoE block transforms this token's mixed input using its selected routed experts and shared expert. Both blocks return one output vector for this token.</p>
+    </section>
+
+    <section id="identity">
+      <p class="section-number">03 / IDENTITY AND INTERACTION</p>
+      <h2>Each stream keeps a direct path through</h2>
+      <p>“Identity” describes the residual path. In <span class="math"><b><i>x</i></b><sub>s</sub> + <i>b</i><sub>s</sub><b><i>y</i></b></span>, the original <span class="math-vec">x<sub>s</sub></span> reaches the addition unchanged. There is no learned cross-stream mixing matrix on that direct path. The final stream changes because an update is added.</p>
+      <div class="path"><span>Original stream</span><span aria-hidden="true">→</span><strong>Preserve</strong><span aria-hidden="true">→</span><span>Add its weighted update</span></div>
+      <h3>The streams still influence one another</h3>
+      <p>Stream 1 contributes to the weighted mixture and to the gate calculation. Those affect the processing block and the updates received by the other streams. For example:</p>
+      <div class="path"><span>Stream 1</span><span aria-hidden="true">→</span><span>Shared mixture</span><span aria-hidden="true">→</span><span>Output <span class="math-vec">y</span></span><span aria-hidden="true">→</span><span>Update to stream 2</span></div>
+      <p>The four streams can retain different histories without being isolated from one another. Distinctness is possible, not enforced.</p>
+    </section>
+
+    <section id="example">
+      <p class="section-number">04 / A NUMERICAL EXAMPLE</p>
+      <h2>Two updates, four retained streams</h2>
+      <p>This toy example uses two numbers per stream instead of 6,144. The gates and branch outputs below are chosen to make the arithmetic visible. They are not measurements or model predictions.</p>
+      <h3>First: Attention</h3>
+      <p>Choose pre gates <span class="math"><i>a</i><sup>A</sup> = (0.5, 0.25, 0.25, 0.5)</span>. The weighted sum is <span class="math math-vec">m<sup>A</sup> = (0.25, 1.25)</span>. RMSNorm processes that sum before Attention. Suppose the Attention output is <span class="math math-vec">y<sup>A</sup> = (2, −1)</span>, and the post gates are <span class="math"><i>b</i><sup>A</sup> = (0.1, 0.2, 0.3, 0.4)</span>.</p>
+      <h3>Then: MoE</h3>
+      <p>Choose new pre gates <span class="math"><i>a</i><sup>F</sup> = (0.4, 0.3, 0.2, 0.5)</span>. Applied to the updated carrier, they produce <span class="math math-vec">m<sup>F</sup> = (0.82, 0.94)</span>. RMSNorm processes this sum before MoE. Suppose its output is <span class="math math-vec">y<sup>F</sup> = (−1, 2)</span>, with post gates <span class="math"><i>b</i><sup>F</sup> = (0.4, 0.1, 0.2, 0.3)</span>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Stream</th><th>Enters layer: <span class="math-mat">X</span></th><th>After Attention: <span class="math-mat">Z</span></th><th>After MoE: <span class="math-mat">W</span></th></tr></thead>
+        <tbody><tr><th>1</th><td>(1, 0)</td><td>(1.2, −0.1)</td><td>(0.8, 0.7)</td></tr><tr><th>2</th><td>(0, 2)</td><td>(0.4, 1.8)</td><td>(0.3, 2.0)</td></tr><tr><th>3</th><td>(1, 1)</td><td>(1.6, 0.7)</td><td>(1.4, 1.1)</td></tr><tr><th>4</th><td>(−1, 1)</td><td>(−0.2, 0.6)</td><td>(−0.5, 1.2)</td></tr></tbody>
+      </table></div>
+      <p>For stream 1, the two additions are:</p>
+      <div class="formula"><span class="math">(1, 0) + 0.1(2, −1) = (1.2, −0.1)</span><br><span class="math">(1.2, −0.1) + 0.4(−1, 2) = (0.8, 0.7)</span></div>
+      <p>The pre gates deliberately do not sum to one. They are independent gates, not a probability distribution.</p>
+    </section>
+
+    <section id="gate-generator">
+      <p class="section-number">05 / INSIDE THE GATE GENERATOR</p>
+      <h2>Four vectors in. Eight scalar controls out.</h2>
+      <p>The gate generator is a small learned projection followed by rescaling and sigmoid functions. It reads the current values in <em>all four</em> streams. Each of its eight outputs can therefore depend on every coordinate of every stream.</p>
+      <div class="gate-flow" aria-label="Gate generation stages"><span>Concatenate<br><strong>24,576 values</strong></span><i>→</i><span>Learned projection<br><strong>8 scores</strong></span><i>→</i><span>Rescale + sigmoid<br><strong>4 pre + 4 post gates</strong></span></div>
+      <p>Below, <span class="math-vec">v</span> refers to one token. The same calculation is performed independently for each token's carrier.</p>
+
+      <h3>1. Lay the four streams end to end</h3>
+      <div class="formula"><span class="math"><b><i>v</i></b> = concat(<b><i>x</i></b><sub>1</sub>, <b><i>x</i></b><sub>2</sub>, <b><i>x</i></b><sub>3</sub>, <b><i>x</i></b><sub>4</sub>) ∈ ℝ<sup>24,576</sup></span></div>
+      <p>The implementation converts these values to FP32 for gate calculation. Concatenation preserves the values; it just presents them as one long vector.</p>
+
+      <h3>2. Measure the carrier's overall magnitude</h3>
+      <div class="formula"><span class="math"><i>r</i> = 1 / √[(1 / 24,576) ∑<sub>j=1</sub><sup>24,576</sup> <i>v</i><sub>j</sub><sup>2</sup> + 10<sup>−5</sup>]</span></div>
+      <p>This is one inverse root-mean-square value for the token's full carrier. It does not subtract a mean or apply a learned normalization gain.</p>
+
+      <h3>3. Compute eight learned weighted sums</h3>
+      <div class="formula"><span class="math"><b><i>g</i></b> = <i>r</i>(<b>W</b><sub>g</sub><b><i>v</i></b>), &nbsp; <b>W</b><sub>g</sub> ∈ ℝ<sup>8 × 24,576</sup></span></div>
+      <p>Each row of <span class="math-mat">W<sub>g</sub></span> contains a different learned weight for each input coordinate. A row combines all 24,576 values into one score. Eight rows produce eight scores.</p>
+      <p>The linear projection has no bias. The eager implementation computes the projection first and multiplies its scores by <span class="math"><i>r</i></span>. For this bias-free projection, normalizing the input first is mathematically equivalent.</p>
+
+      <h3>4. Turn the scores into pre and post gates</h3>
+      <p>The first four scores produce pre gates. The other four produce post gates. For <span class="math"><i>i</i> = 1, 2, 3, 4</span>:</p>
+      <div class="equations gate-equations">
+        <div><span class="math"><i>a</i><sub>i</sub></span><span>=</span><span class="math">σ(<i>s</i><sub>pre</sub><i>g</i><sub>i</sub> + <i>c</i><sub>i</sub>) + 10<sup>−6</sup></span><small>pre: roughly 0 to 1</small></div>
+        <div><span class="math"><i>b</i><sub>i</sub></span><span>=</span><span class="math">2σ(<i>s</i><sub>post</sub><i>g</i><sub>4+i</sub> + <i>c</i><sub>4+i</sub>) + 10<sup>−6</sup></span><small>post: roughly 0 to 2</small></div>
+      </div>
+      <p>Here <span class="math">σ(<i>q</i>) = 1 / (1 + e<sup>−<i>q</i></sup>)</span>. The two <span class="math"><i>s</i></span> values are learned scales, one per gate group. The eight <span class="math"><i>c</i></span> values are learned offsets, one per output. The tiny epsilon is added after the sigmoid, and after the factor of two for post gates.</p>
+      <p>For a simple illustration, a pre-gate input of zero gives about <span class="math">0.5</span>; a post-gate input of zero gives about <span class="math">1.0</span>. Each resulting gate is a single number applied across all 6,144 coordinates of its stream.</p>
+
+      <h3>5. Use the gates at two different points</h3>
+      <p>The pre gates immediately form the weighted mixture. A <em>separate</em> sublayer RMSNorm then processes that mixture before Attention or MoE. The post gates are retained until the branch returns its output, and then scale the four residual updates.</p>
+      <div class="table-wrap"><table class="parameter-table"><thead><tr><th>Learned during training</th><th>Computed from the current token</th></tr></thead><tbody><tr><td>Projection matrix <span class="math-mat">W<sub>g</sub></span><br>Two scales <span class="math"><i>s</i><sub>pre</sub>, <i>s</i><sub>post</sub></span><br>Eight offsets <span class="math"><i>c</i><sub>1…8</sub></span></td><td>Inverse RMS <span class="math"><i>r</i></span><br>Eight scores <span class="math-vec">g</span><br>Four pre gates and four post gates</td></tr></tbody></table></div>
+      <p>Attention and FFN have separate parameter sets. Different decoder layers also have separate sets. Both gate groups depend on the carrier <em>before</em> their own branch runs; the post gates are not calculated from its output.</p>
+    </section>
+
+    <section id="lifecycle">
+      <p class="section-number">06 / BEGINNING AND END</p>
+      <h2>Where the four streams come from, and where they go</h2>
+      <ol class="lifecycle"><li><strong>At the model entrance:</strong> one token embedding is copied into four initially identical streams.</li><li><strong>Inside the first layer:</strong> different post gates can already make the streams differ. They are not required to remain identical throughout this layer.</li><li><strong>Through later layers:</strong> the updated carrier is passed forward. The model does not make four fresh identical copies at every layer.</li><li><strong>At the model exit:</strong> a separate learned gate generator produces four head gates. A weighted sum collapses the four streams into one vector, followed by final normalization and the language-model head.</li></ol>
+      <p>The final reduction is a learned weighted sum, not necessarily an average, and not concatenation into the language-model head.</p>
+    </section>
+
+    <section id="distinctions">
+      <p class="section-number">07 / KEEP THESE SEPARATE</p>
+      <h2>Three different kinds of gate</h2>
+      <div class="table-wrap"><table><thead><tr><th>Component</th><th>What it controls</th></tr></thead><tbody><tr><th>iHC pre and post gates</th><td>How four residual streams form the branch input, and how the branch output updates those streams.</td></tr><tr><th>MoE router</th><td>Which routed experts process a token, and their combination weights. The shared expert is always included and is not selected by the router.</td></tr><tr><th>HY4 Attention output gate</th><td>Individual coordinates of the expanded attention output, before its output projection. It is separate from iHC.</td></tr></tbody></table></div>
+      <p>Four residual streams do not imply four Attention applications, four independent model runs, or four times the MLA KV cache. MoE still evaluates its selected experts within one MoE application.</p>
+    </section>
+
+    <section id="sources">
+      <p class="section-number">08 / SOURCES AND SCOPE</p>
+      <h2>A guide to the checked HY4 implementation</h2>
+      <p>The formulas were checked against the HY4 model implementation used in the prefill iHC work and its checkpoint configuration. The configuration has four streams, a hidden width of 6,144, post-gate magnitude 2, gate epsilon 10<sup>−6</sup>, and RMS epsilon 10<sup>−5</sup>. Gate projection weights, scales, and offsets are FP32 in the checked source.</p>
+      <ul class="sources"><li><a href="../hy4-flops/#ihc">HY4 execution tree: the four-stream carrier</a></li><li><a href="https://git.luchentech.com/maas/sglang/-/merge_requests/274">Prefill iHC implementation review</a> — internal GitLab access required.</li></ul>
+      <p>This page explains the mechanism. It does not establish a measured quality improvement or a runtime speedup over ordinary residual connections. Fused kernels may combine operations while preserving this mathematical flow.</p>
+    </section>
+    <footer><a href="../">MaaS Docs</a><span>IHC · a visual reference for future recall</span><a href="#main">Back to top ↑</a></footer>
+  </main>
+</div>
+  <script defer src="../assets/maas-annotator.js" data-maas-annotator data-page-key="/ihc/"></script>
+</body>
+</html>
