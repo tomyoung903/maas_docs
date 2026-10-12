@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1560" viewBox="0 0 1024 1560" role="img" aria-labelledby="title desc">
+  <title id="title">Inside the iHC gate generator: exact matrix and column-vector shapes</title>
+  <desc id="desc">For one token, the four rows of X, a 4 by 6,144 carrier, are flattened into a 24,576 by 1 column v. A learned 8 by 24,576 projection W g gives q equals W g times v. The computed scalar r equals one divided by the square root of v transpose v divided by 24,576 plus epsilon RMS. Then g equals r q. The first four entries are g pre and the last four are g post. Learned scalar scales and four-entry biases give t pre and t post. The read gates a equal sigmoid of t pre plus epsilon HC times the four-entry ones column. Write gates b equal twice sigmoid of t post plus the same epsilon term. Both gate columns are 4 by 1. The read mixture m equals X transpose a, shape 6,144 by 1. Its normalized branch computation produces y, also 6,144 by 1. Writing back gives X new equals X plus b y transpose, shape 4 by 6,144.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#202b32"/></marker>
+    <marker id="blue-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#37699a"/></marker>
+    <marker id="teal-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#18716a"/></marker>
+    <style>
+      text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #202b32; font-size: 18px; }
+      .heading { font-size: 19px; font-weight: 700; letter-spacing: .7px; }
+      .bold { font-weight: 650; }
+      .label { font-size: 17px; }
+      .small { font-size: 16px; }
+      .math { font-family: "Cambria Math", "DejaVu Sans", Arial, sans-serif; font-size: 22px; }
+      .sub { baseline-shift: sub; font-size: 70%; }
+      .sup { baseline-shift: super; font-size: 70%; }
+      .muted { fill: #5b676c; }
+      .blue { fill: #37699a; }
+      .teal { fill: #18716a; }
+      .flow { fill: none; stroke: #202b32; stroke-width: 2.2; stroke-linejoin: round; marker-end: url(#arrow); }
+      .gate { fill: none; stroke: #37699a; stroke-width: 2.2; stroke-dasharray: 7 5; stroke-linejoin: round; marker-end: url(#blue-arrow); }
+      .reuse { fill: none; stroke: #18716a; stroke-width: 2.7; stroke-linejoin: round; marker-end: url(#teal-arrow); }
+      .box { fill: #fff; stroke: #bec8cc; stroke-width: 1.4; }
+      .learned { fill: #edf3fa; stroke: #93acc5; stroke-width: 1.4; }
+      .gates { fill: #edf3fa; stroke: #37699a; stroke-width: 1.6; }
+      .carrier { fill: #edf5f2; stroke: #6daba4; stroke-width: 1.5; }
+    </style>
+  </defs>
+  <rect width="1024" height="1560" fill="#faf9f6"/>
+  <text x="40" y="48" font-size="29" font-weight="700">Inside the iHC gate generator</text>
+  <text x="40" y="80" class="label muted">One token · four streams · explicit matrix shapes and column vectors</text>
+  <rect x="41" y="101" width="23" height="15" rx="3" class="learned"/>
+  <text x="76" y="114" class="small blue">Learned parameters</text>
+  <rect x="269" y="101" width="23" height="15" rx="3" class="box"/>
+  <text x="304" y="114" class="small">Computed values</text>
+  <path d="M488 108H532" stroke="#18716a" stroke-width="2.7"/>
+  <text x="544" y="114" class="small teal">Original carrier reused</text>
+
+  <!-- Original carrier is reused by both read and write operations below. -->
+  <path d="M45 227H24V1430H217V1396" class="reuse"/>
+  <path d="M24 1430H829V1396" class="reuse"/>
+
+  <!-- Flatten and independent RMS scale. -->
+  <path d="M340 227H394" class="flow"/>
+  <path d="M656 227H714" class="flow"/>
+  <path d="M525 275V368" class="flow"/>
+  <path d="M345 388H505" class="flow"/>
+  <path d="M545 388H620" class="flow"/>
+  <path d="M846 301V318H996V520H670" class="flow"/>
+  <path d="M799 430V488H650V500" class="flow"/>
+  <path d="M650 540V552H512V568" class="flow"/>
+
+  <rect x="45" y="156" width="295" height="142" rx="11" class="carrier"/>
+  <text x="192.5" y="183" text-anchor="middle" class="bold">Original carrier X</text>
+  <text x="192.5" y="224" text-anchor="middle" class="math" style="font-size:20px">X = [x₁ᵀ; x₂ᵀ; x₃ᵀ; x₄ᵀ]</text>
+  <text x="192.5" y="251" text-anchor="middle" class="small muted">one row per stream</text>
+  <text x="192.5" y="281" text-anchor="middle" class="bold teal">4 × 6,144</text>
+  <text x="367" y="146" text-anchor="middle" class="small muted">flatten rows</text>
+  <rect x="394" y="181" width="262" height="94" rx="10" class="box"/>
+  <text x="525" y="214" text-anchor="middle" class="math" style="font-size:20px">v = [x₁; x₂; x₃; x₄]</text>
+  <text x="525" y="248" text-anchor="middle" class="bold">24,576 × 1</text>
+  <text x="525" y="301" text-anchor="middle" class="small muted">stacked feature column</text>
+  <rect x="714" y="155" width="264" height="146" rx="11" class="box"/>
+  <text x="846" y="182" text-anchor="middle" class="bold">Computed RMS factor</text>
+  <text x="738" y="232" class="math">r =</text>
+  <text x="876" y="213" text-anchor="middle" class="math">1</text>
+  <path d="M789 222H965" stroke="#202b32" stroke-width="1.4"/>
+  <text x="876" y="248" text-anchor="middle" class="math" style="font-size:16px">√(vᵀv / 24,576 + ε<tspan class="sub">rms</tspan>)</text>
+  <text x="846" y="283" text-anchor="middle" class="small muted">one computed scalar</text>
+
+  <!-- Projection happens before multiplication by the RMS factor. -->
+  <rect x="45" y="346" width="300" height="84" rx="10" class="learned"/>
+  <text x="195" y="373" text-anchor="middle" class="blue bold">Learned projection</text>
+  <text x="195" y="406" text-anchor="middle" class="math">W<tspan class="sub">g</tspan>: 8 × 24,576</text>
+  <circle cx="525" cy="388" r="20" fill="#faf9f6" stroke="#202b32" stroke-width="1.5"/>
+  <text x="525" y="395" text-anchor="middle" class="math">×</text>
+  <rect x="620" y="346" width="358" height="84" rx="10" class="box"/>
+  <text x="799" y="380" text-anchor="middle" class="math">q = W<tspan class="sub">g</tspan> v</text>
+  <text x="799" y="413" text-anchor="middle" class="bold">8 × 1</text>
+  <text x="443" y="462" class="small muted">Projection first; scalar normalization second.</text>
+  <circle cx="650" cy="520" r="20" fill="#faf9f6" stroke="#202b32" stroke-width="1.5"/>
+  <text x="650" y="527" text-anchor="middle" class="math">×</text>
+  <rect x="350" y="568" width="324" height="78" rx="10" class="box"/>
+  <text x="512" y="600" text-anchor="middle" class="math">g = r q</text>
+  <text x="512" y="629" text-anchor="middle" class="bold">8 × 1</text>
+
+  <!-- Split the eight-entry column into two four-entry columns. -->
+  <path d="M512 646V677H162.5V761" class="flow"/>
+  <path d="M512 677H652.5V761" class="flow"/>
+  <rect x="40" y="707" width="455" height="460" rx="14" fill="#f3f5f6" stroke="#d9dfdf"/>
+  <rect x="530" y="707" width="454" height="460" rx="14" fill="#f3f5f6" stroke="#d9dfdf"/>
+  <!-- Redraw final split segments above the panel backgrounds. -->
+  <path d="M162.5 707V761" class="flow"/>
+  <path d="M652.5 707V761" class="flow"/>
+  <text x="267" y="736" text-anchor="middle" class="heading blue">PRE / READ</text>
+  <text x="757" y="736" text-anchor="middle" class="heading blue">POST / WRITE</text>
+
+  <path d="M162.5 855V882H267V912" class="flow"/>
+  <path d="M379 855V882H267" class="flow"/>
+  <path d="M267 990V1035" class="flow"/>
+  <path d="M652.5 855V882H757V912" class="flow"/>
+  <path d="M869 855V882H757" class="flow"/>
+  <path d="M757 990V1035" class="flow"/>
+
+  <rect x="60" y="761" width="205" height="94" rx="9" class="box"/>
+  <text x="162.5" y="790" text-anchor="middle" class="math">g<tspan class="sub">pre</tspan></text>
+  <text x="162.5" y="818" text-anchor="middle" class="small muted">first 4 entries of g</text>
+  <text x="162.5" y="844" text-anchor="middle" class="bold">4 × 1</text>
+  <rect x="284" y="761" width="190" height="94" rx="9" class="learned"/>
+  <text x="379" y="786" text-anchor="middle" class="small blue bold">LEARNED</text>
+  <text x="379" y="816" text-anchor="middle">s<tspan class="sub">pre</tspan>: scalar</text>
+  <text x="379" y="842" text-anchor="middle">c<tspan class="sub">pre</tspan>: 4 × 1</text>
+  <rect x="60" y="912" width="415" height="78" rx="9" class="box"/>
+  <text x="267" y="945" text-anchor="middle" class="math">t<tspan class="sub">pre</tspan> = s<tspan class="sub">pre</tspan> g<tspan class="sub">pre</tspan> + c<tspan class="sub">pre</tspan></text>
+  <text x="267" y="975" text-anchor="middle" class="bold">4 × 1</text>
+  <rect x="60" y="1035" width="415" height="93" rx="10" class="gates"/>
+  <text x="267" y="1072" text-anchor="middle" class="math">a = σ(t<tspan class="sub">pre</tspan>) + ε<tspan class="sub">hc</tspan> 1₄</text>
+  <text x="267" y="1106" text-anchor="middle" class="blue bold">4 × 1 read-gate column</text>
+
+  <rect x="550" y="761" width="205" height="94" rx="9" class="box"/>
+  <text x="652.5" y="790" text-anchor="middle" class="math">g<tspan class="sub">post</tspan></text>
+  <text x="652.5" y="818" text-anchor="middle" class="small muted">last 4 entries of g</text>
+  <text x="652.5" y="844" text-anchor="middle" class="bold">4 × 1</text>
+  <rect x="774" y="761" width="190" height="94" rx="9" class="learned"/>
+  <text x="869" y="786" text-anchor="middle" class="small blue bold">LEARNED</text>
+  <text x="869" y="816" text-anchor="middle">s<tspan class="sub">post</tspan>: scalar</text>
+  <text x="869" y="842" text-anchor="middle">c<tspan class="sub">post</tspan>: 4 × 1</text>
+  <rect x="550" y="912" width="415" height="78" rx="9" class="box"/>
+  <text x="757" y="945" text-anchor="middle" class="math">t<tspan class="sub">post</tspan> = s<tspan class="sub">post</tspan> g<tspan class="sub">post</tspan> + c<tspan class="sub">post</tspan></text>
+  <text x="757" y="975" text-anchor="middle" class="bold">4 × 1</text>
+  <rect x="550" y="1035" width="415" height="93" rx="10" class="gates"/>
+  <text x="757" y="1072" text-anchor="middle" class="math">b = 2σ(t<tspan class="sub">post</tspan>) + ε<tspan class="sub">hc</tspan> 1₄</text>
+  <text x="757" y="1106" text-anchor="middle" class="blue bold">4 × 1 write-gate column</text>
+
+  <!-- Gate use: both operations refer to the same original X. -->
+  <rect x="40" y="1190" width="944" height="299" rx="14" fill="#f4f5f3" stroke="#d9dfdc"/>
+  <text x="512" y="1231" text-anchor="middle" class="heading">USE THE GATES WITH X</text>
+  <path d="M267 1128V1280" class="gate"/>
+  <path d="M757 1128V1160H829V1280" class="gate"/>
+  <path d="M378 1338H420" class="flow"/>
+  <path d="M636 1338H694" class="flow"/>
+  <!-- Original-X paths are redrawn inside this panel. -->
+  <path d="M40 1430H217V1396" class="reuse"/>
+  <path d="M217 1430H829V1396" class="reuse"/>
+  <rect x="60" y="1280" width="318" height="116" rx="10" class="box"/>
+  <text x="219" y="1310" text-anchor="middle" class="bold">Read / mix</text>
+  <text x="219" y="1348" text-anchor="middle" class="math">m = Xᵀ a</text>
+  <text x="219" y="1379" text-anchor="middle" class="bold">6,144 × 1</text>
+  <rect x="420" y="1280" width="216" height="116" rx="10" class="box"/>
+  <text x="528" y="1309" text-anchor="middle" class="label bold">RMSNorm + branch</text>
+  <text x="528" y="1338" text-anchor="middle" class="small muted">Attention or MoE</text>
+  <text x="528" y="1376" text-anchor="middle" class="bold">y: 6,144 × 1</text>
+  <rect x="694" y="1280" width="270" height="116" rx="10" class="carrier"/>
+  <text x="829" y="1310" text-anchor="middle" class="bold">Write / add back</text>
+  <text x="829" y="1348" text-anchor="middle" class="math" style="font-size:20px">X<tspan class="sub">new</tspan> = X + b yᵀ</text>
+  <text x="829" y="1379" text-anchor="middle" class="bold teal">4 × 6,144</text>
+  <text x="512" y="1463" text-anchor="middle" class="label teal">Original X reused in both operations</text>
+  <text x="40" y="1524" class="small muted">σ acts entry by entry. 1₄ is the four-entry ones column; both ε terms are scalar stability constants.</text>
+  <text x="40" y="1548" class="small muted">Attention and FFN/MoE each have their own learned W<tspan class="sub">g</tspan>, scales, and biases.</text>
+</svg>
