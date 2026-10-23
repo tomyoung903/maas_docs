@@ -9,22 +9,66 @@
         {
           "id": "moe-topology",
           "number": 1,
-          "text": "设计 prefill AllGather / decode MC2 分相混合通信，按 Cube / Vector / 通信引擎配对排班实现共享专家多流重叠；结合 MTP 投机解码 V2 调优，服务总吞吐 201.5 → 345.7 tok/s（+71.6%），平均 TPOT 156.3 → 91.0 ms（−42%），TTFT 中位数 20.8 → 7.4 s（−64%），GPQA 不降；"
+          "text": "设计 prefill AllGather / decode MC2 分相混合通信，按 Cube / Vector / 通信引擎配对排班实现共享专家多流重叠；结合 MTP 投机解码 V2 调优，服务总吞吐 201.5 → 345.7 tok/s（+71.6%），平均 TPOT 156.3 → 91.0 ms（−42%），TTFT 中位数 20.8 → 7.4 s（−64%），GPQA 不降；",
+          "evidence": {
+            "references": [
+              {
+                "label": "#17255 · 他人 · 已合并 · 仅机制相关",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/17255"
+              },
+              {
+                "label": "#17570 · 本人 · 已合并 · 仅部署背景",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/17570"
+              }
+            ],
+            "note": "仅机制/部署背景部分对应；整组性能与 GPQA 指标未核实。"
+          }
         },
         {
           "id": "moe-precision",
           "number": 2,
-          "text": "独立定位并修复 4 个精度缺陷（归约顺序、torch.compile 分支固化、量化权重元数据缺失致投机接受率为 0 等），建立固定探针 + golden 逐层比对 + 单变量 A/B 流程；"
+          "text": "独立定位并修复 4 个精度缺陷（归约顺序、torch.compile 分支固化、量化权重元数据缺失致投机接受率为 0 等），建立固定探针 + golden 逐层比对 + 单变量 A/B 流程；",
+          "evidence": {
+            "references": [
+              {
+                "label": "#14345 · 本人 · 已合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/14345"
+              }
+            ],
+            "note": "仅归约顺序修复已对应；其余精度修复未完整核实。"
+          }
         },
         {
           "id": "moe-kernel",
           "number": 3,
-          "text": "修复 MoE 激活量化 kernel 死行扫描（无效行扫描）：按有效行计算并放开 BF16 / group_index 限制，该 kernel 40× 加速，端到端 TTFT −44%，数值逐位不变；"
+          "text": "修复 MoE 激活量化 kernel 死行扫描（无效行扫描）：按有效行计算并放开 BF16 / group_index 限制，该 kernel 40× 加速，端到端 TTFT −44%，数值逐位不变；",
+          "evidence": {
+            "references": [
+              {
+                "label": "#17570 · 本人 · 已合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/17570"
+              }
+            ],
+            "note": "约 40×为 PR 自报；TTFT −44%来自同效 Python 切片方案，非该 kernel 直接 A/B。"
+          }
         },
         {
           "id": "moe-other",
           "number": 4,
-          "text": "另完成零填充、KDA 层回写冗余、router GEMM 数据类型等优化项定位与验证。"
+          "text": "另完成零填充、KDA 层回写冗余、router GEMM 数据类型等优化项定位与验证。",
+          "evidence": {
+            "references": [
+              {
+                "label": "#17577 · 本人 · 已合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/17577"
+              },
+              {
+                "label": "#17068 · 他人 · 已合并 · 仅机制相关",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/17068"
+              }
+            ],
+            "note": "零填充为本人；router 仅有他人相关 PR，KDA 回写未核实。"
+          }
         }
       ]
     },
@@ -35,22 +79,70 @@
         {
           "id": "kv-chain",
           "number": 1,
-          "text": "构建 4-bit KV Cache 端到端链：压缩写入 + 融合解压读取 + vllm-ascend 集成，面向 DeepSeek 系稀疏注意力 / GLM 系长上下文模型的 1M 长上下文推理；"
+          "text": "构建 4-bit KV Cache 端到端链：压缩写入 + 融合解压读取 + vllm-ascend 集成，面向 DeepSeek 系稀疏注意力 / GLM 系长上下文模型的 1M 长上下文推理；",
+          "evidence": {
+            "references": [
+              {
+                "label": "#15822 · 他人 · 已关闭·未合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/15822"
+              },
+              {
+                "label": "#17726 · 他人 · 已合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/17726"
+              }
+            ],
+            "note": "集成 PR 属其他作者；1M 仅对应 DeepSeek 测试，GLM 为 128K。"
+          }
         },
         {
           "id": "kv-capacity",
           "number": 2,
-          "text": "长上下文实测（相对 BF16 KV 基线）：DeepSeek 系单卡吞吐 +31.8%，单卡同显存可用并发 4→10（2.5×）；GLM 系 8 卡 TP8+EP 下 KV 池容量 2.68×，batch=2 输出吞吐 +23%；"
+          "text": "长上下文实测（相对 BF16 KV 基线）：DeepSeek 系单卡吞吐 +31.8%，单卡同显存可用并发 4→10（2.5×）；GLM 系 8 卡 TP8+EP 下 KV 池容量 2.68×，batch=2 输出吞吐 +23%；",
+          "evidence": {
+            "references": [
+              {
+                "label": "#15822 · 他人 · 已关闭·未合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/15822"
+              },
+              {
+                "label": "#17726 · 他人 · 已合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/17726"
+              }
+            ],
+            "note": "公开指标可对应；GLM 的 +23%对比 C8，容量 2.68×才对比 BF16。"
+          }
         },
         {
           "id": "kv-format",
           "number": 3,
-          "text": "MLA latent 4-bit 码本量化：per-token L2 归一化 + 16 级 Lloyd-Max 最近邻；解压与 attention 单 kernel 融合，反量化不落 Global Memory（GM）；BF16 路径 rel-L2 0.7% ~ 1.4%；"
+          "text": "MLA latent 4-bit 码本量化：per-token L2 归一化 + 16 级 Lloyd-Max 最近邻；解压与 attention 单 kernel 融合，反量化不落 Global Memory（GM）；BF16 路径 rel-L2 0.7% ~ 1.4%；",
+          "evidence": {
+            "references": [
+              {
+                "label": "#17726 · 他人 · 已合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/17726"
+              }
+            ],
+            "note": "量化/融合部分对应；误差未核验，“不落 GM”需区分版本。"
+          }
         },
         {
           "id": "kv-microapi",
           "number": 4,
-          "text": "下一代 NPU 上用 MicroAPI 从零重写压缩 / 读取算子：真卡标定并行因子，梯子式索引改 Gather 直索引、标量 FP 向量化，压缩吞吐 3.6×，输出与上代 golden 逐字节一致。"
+          "text": "下一代 NPU 上用 MicroAPI 从零重写压缩 / 读取算子：真卡标定并行因子，梯子式索引改 Gather 直索引、标量 FP 向量化，压缩吞吐 3.6×，输出与上代 golden 逐字节一致。",
+          "evidence": {
+            "references": [
+              {
+                "label": "压缩提交 · 同名 fork · 归属待核",
+                "url": "https://gitcode.com/boes129/ops-nn/commit/dda4e4e8ca455cd7768a4d637a428b7223cc7f7a"
+              },
+              {
+                "label": "读取提交 · 同名 fork · 归属待核",
+                "url": "https://gitcode.com/boes129/ops-transformer/commit/10969811aef09f40bc5c491e712d9ec34e3c5e60"
+              }
+            ],
+            "note": "未找到已核验合并 PR；3.6×为压缩调优，读取验证不能一并标为逐字节一致。"
+          }
         }
       ]
     }

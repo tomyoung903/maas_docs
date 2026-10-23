@@ -35,6 +35,19 @@ assert len({q['id'] for q in questions}) == len(questions), 'duplicate question 
 by_anchor = {anchor: [q for q in questions if q['anchorId'] == anchor] for anchor in anchors}
 # Excerpts may start without questions; users can add their own in the editor.
 
+def render_evidence(evidence):
+    if not evidence:
+        return ''
+    references = []
+    for reference in evidence.get('references', []):
+        url = reference['url']
+        assert url.startswith('https://'), 'evidence links must use HTTPS'
+        references.append(f'<a href="{esc(url)}" target="_blank" rel="noopener noreferrer">{esc(reference["label"])}</a>')
+    text = '；'.join(references)
+    if evidence.get('note'):
+        text += ('。' if text else '') + esc(evidence['note'])
+    return f'<div class="project-evidence" aria-label="公开资料核验">公开核验：{text}</div>'
+
 paper = []
 for project, section in enumerate(content['sections'], start=1):
     paper.append(f'<article class="project" id="project-{project}" aria-labelledby="project-title-{project}">')
@@ -46,7 +59,7 @@ for project, section in enumerate(content['sections'], start=1):
     paper.append('<ul class="experience">')
     for excerpt in section['excerpts']:
         pins = ''.join(f'<button class="question-pin" type="button" data-question="{esc(q["id"])}" aria-haspopup="dialog" aria-controls="question-dialog" aria-label="问题 {q["number"]}：{esc(q["title"])}">{q["number"]}</button>' for q in by_anchor[excerpt['id']])
-        paper.append(f'<li data-anchor="{esc(excerpt["id"])}">{esc(excerpt["text"])}<span class="mark-cluster">{pins}</span></li>')
+        paper.append(f'<li data-anchor="{esc(excerpt["id"])}">{esc(excerpt["text"])}<span class="mark-cluster">{pins}</span>{render_evidence(excerpt.get("evidence"))}</li>')
     paper.append('</ul></article>')
 
 # Keep this entirely static: no build/runtime CDN and no external fonts.

@@ -35,7 +35,7 @@
     document.querySelectorAll('.project').forEach(function (projectNode, projectIndex) {
       projectNode.querySelectorAll('.experience > li').forEach(function (node, blockIndex) {
         var copy = node.cloneNode(true);
-        copy.querySelectorAll('.question-pin').forEach(function (pin) { pin.remove(); });
+        copy.querySelectorAll('.question-pin, .project-evidence').forEach(function (node) { node.remove(); });
         paragraphBlocks.push({ project: projectIndex + 1, blockIndex: blockIndex, anchorId: node.dataset.anchor, node: node, text: copy.textContent.trim() });
       });
     });
@@ -132,7 +132,7 @@
       if (!quote || quote === question.id) {
         if (anchor) {
           var copy = anchor.cloneNode(true);
-          copy.querySelectorAll('.question-pin').forEach(function (pin) { pin.remove(); });
+          copy.querySelectorAll('.question-pin, .project-evidence').forEach(function (node) { node.remove(); });
           quote = copy.textContent.trim();
         }
       }
@@ -187,6 +187,7 @@
       else { dialog.removeAttribute('open'); finishClose(); }
     }
     document.addEventListener('click', function (event) {
+      if (event.target.closest && event.target.closest('.project-evidence')) return;
       var pin = event.target.closest && event.target.closest('.question-pin');
       if (!pin) return;
       event.preventDefault();
@@ -322,7 +323,7 @@
         pin.textContent = String(question.number);
         pin.setAttribute('aria-label', '问题 ' + question.number + '：' + question.title);
         pin.setAttribute('aria-haspopup', 'dialog'); pin.setAttribute('aria-controls', 'question-dialog');
-        wrapper.appendChild(pin); block.node.appendChild(wrapper);
+        wrapper.appendChild(pin); block.node.insertBefore(wrapper, block.node.querySelector('.project-evidence'));
       });
       pins = Array.from(document.querySelectorAll('.question-pin'));
       pins.forEach(function (pin) { pin.setAttribute('aria-expanded', 'false'); });
