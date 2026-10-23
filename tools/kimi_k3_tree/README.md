@@ -25,6 +25,14 @@ video is silent, with on-screen explanations. The accompanying caption and
 linked recurrence equations provide a text explanation of the state symbols.
 MP4 SHA-256: `3a77de0483d056e7a2b798507040016fb05e0499a880f62fa09d42474eb9a569`.
 
+The self-paced version is `docs/kimi-k3-flops/kda-slides.html`, with its local
+CSS, controller/content module, and animated SVG module beside it. All 12
+slides use manual navigation, independently looping diagrams, pause/replay,
+stable per-slide URL fragments, and a slide overview. Add `?embed=1` to use
+the compact presentation embedded above the optional continuous video in the
+tree page. No external animation or slide library is required. The SVG values
+are schematic; dimensions and equations retain the video's pinned sources.
+
 ## Counting boundary
 
 - One uncached 100,000-token text prefill and one next-token logits row.

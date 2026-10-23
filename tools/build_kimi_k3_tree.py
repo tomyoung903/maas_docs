@@ -134,6 +134,14 @@ def report(data):
         +'<p>'+link('ledger.json','Download the full machine-readable tree and parameter ledger')+'. Exact integers express this convention, not an exact instruction count for every implementation.</p>'
     )
     kda_video_html=(
+        '<p>Move through the KDA module at your own pace. Each slide has a looping illustration, '
+        'verified tensor shapes, and pause/replay controls. '
+        +link('kda-slides.html','Open the animated slides in a full tab')+'.</p>'
+        '<iframe src="kda-slides.html?embed=1" title="Self-paced animated Kimi K3 KDA slides" '
+        'loading="lazy" allow="fullscreen" allowfullscreen '
+        'style="width:100%;height:780px;border:1px solid #334b64;border-radius:12px;background:#09111e"></iframe>'
+        '<details style="margin-top:20px"><summary style="cursor:pointer;font-weight:650">'
+        'Watch the continuous video instead (88 seconds)</summary>'
         '<p>An 88-second, silent walkthrough of one KDA module, with on-screen explanations and tensor shapes '
         'for one 100,000-token sequence.</p>'
         '<figure style="margin:24px 0">'
@@ -153,7 +161,7 @@ def report(data):
         'The token-by-token animation explains the equivalent recurrence; 100K prefill executes in chunks.'
         '</figcaption></figure>'
         '<p>'+link('assets/kimi-k3-kda-tensor-flow.mp4','Open or download the video')+' · '
-        +link('#kda-contraction','Read the recurrence equations')+'</p>'
+        +link('#kda-contraction','Read the recurrence equations')+'</p></details>'
     )
     contraction_html=(
         '<p>The main value uses <strong>expanded causal MLA</strong> and a <strong>sequential-equivalent KDA recurrence</strong>. '
@@ -216,7 +224,7 @@ def report(data):
         overview=[{'label':label,'href':'#'+id,'depth':depth} for label,id,depth in [
             ('Execution Tree','execution-tree',1),('Layer Families','layer-families',1),('Logical Parameters','parameter-ledger',1),
             ('Depth Aggregation','depth-aggregation',1),('Counting Convention','accounting',1),('Parent Rollup','parent-rollup',2),
-            ('KDA Video','kda-video',1),('Contraction Choices','contractions',1),('MLA Formulation','mla-contraction',2),('KDA Recurrence','kda-contraction',2),
+            ('KDA Walkthrough','kda-video',1),('Contraction Choices','contractions',1),('MLA Formulation','mla-contraction',2),('KDA Recurrence','kda-contraction',2),
             ('MFU Handoff','mfu-handoff',2),('Evidence & Audit','sources',1)]],
         cards=[{'label':'prefill input','value':'100,000 token IDs'},
                {'label':'decoder stack','value':'93 ordered layers'},
@@ -241,7 +249,7 @@ def report(data):
             {'id':'parameter-ledger','title':'Logical Parameter Ledger','html':parameters_html},
             {'id':'depth-aggregation','title':'Attention Residual Schedule','html':residual_html},
             {'id':'accounting','title':'Arithmetic Convention and Reconciliation','html':convention_html},
-            {'id':'kda-video','title':'KDA Video Walkthrough','html':kda_video_html},
+            {'id':'kda-video','title':'KDA Animated Walkthrough','html':kda_video_html},
             {'id':'contractions','title':'Contraction Choices and Execution Boundary','html':contraction_html},
             {'id':'sources','title':'Evidence and Validation','html':sources_html},
         ],
