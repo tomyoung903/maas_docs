@@ -20,7 +20,7 @@
     var answerInput = document.getElementById('editor-answer');
     var storageKey = 'chen-qi-interview:custom-questions:v1';
     var firstCustomNumber = Math.max.apply(null, presetQuestions.map(function (q) { return q.number || 0; }).concat([0])) + 1;
-    var customState = { version: 1, nextNumber: firstCustomNumber, questions: [] };
+    var customState = { version: 2, nextNumber: firstCustomNumber, questions: [] };
     var unsavedIds = new Set();
     var editingId = null;
     var editorReturnId = null;
@@ -36,7 +36,7 @@
       projectNode.querySelectorAll('.experience > li').forEach(function (node, blockIndex) {
         var copy = node.cloneNode(true);
         copy.querySelectorAll('.question-pin').forEach(function (pin) { pin.remove(); });
-        paragraphBlocks.push({ project: projectIndex + 1, blockIndex: blockIndex, node: node, text: copy.textContent.trim() });
+        paragraphBlocks.push({ project: projectIndex + 1, blockIndex: blockIndex, anchorId: node.dataset.anchor, node: node, text: copy.textContent.trim() });
       });
     });
 
@@ -55,13 +55,16 @@
     function findAnchor(id) {
       var custom = questions.find(function (question) { return question.id === id && question.custom; });
       if (custom) {
-        var block = findBlock(custom.project, custom.blockIndex);
+        var block = findBlockByAnchor(custom.anchorId);
         if (block) return block.node;
       }
       return Array.from(document.querySelectorAll('[data-anchor]')).find(function (node) { return node.dataset.anchor === id; }) || (findPin(id) && findPin(id).closest('[data-anchor]'));
     }
     function findBlock(project, blockIndex) {
       return paragraphBlocks.find(function (block) { return block.project === project && block.blockIndex === blockIndex; });
+    }
+    function findBlockByAnchor(anchorId) {
+      return paragraphBlocks.find(function (block) { return typeof anchorId === 'string' && block.anchorId === anchorId; });
     }
     function syncDialogState() {
       document.body.classList.toggle('dialog-open', Boolean(dialog.open || (editor && editor.open)));
@@ -252,32 +255,41 @@
       return collisions.length > 0 || state.nextNumber !== previousNext;
     }
     function readCustomState() {
-      var result = { version: 1, nextNumber: firstCustomNumber, questions: [] };
+      var result = { version: 2, nextNumber: firstCustomNumber, questions: [] };
       try {
         var raw = window.localStorage.getItem(storageKey);
         if (!raw) return result;
         var stored = JSON.parse(raw);
-        if (stored.version !== 1 || !Array.isArray(stored.questions)) return result;
+        if ((stored.version !== 1 && stored.version !== 2) || !Array.isArray(stored.questions)) return result;
+        // Version 1 referred to the original three paragraphs by position.
+        // Version 2 uses the stable excerpt ID while retaining this storage key.
+        var legacyAnchors = {
+          1: ['moe-topology', 'moe-precision', 'moe-kernel'],
+          2: ['kv-format', 'kv-capacity', 'kv-chain']
+        };
         var ids = new Set();
         stored.questions.forEach(function (item) {
           if (!item || typeof item.id !== 'string' || !/^custom-[a-z0-9-]+$/i.test(item.id) || ids.has(item.id)) return;
           // Preserve existing custom questions if a later preset takes their number.
           if (!Number.isSafeInteger(item.number) || item.number < 1) return;
-          if (!findBlock(item.project, item.blockIndex) || typeof item.question !== 'string' || !item.question.trim()) return;
+          var anchorId = stored.version === 1
+            ? (legacyAnchors[item.project] || [])[item.blockIndex]
+            : item.anchorId;
+          var block = findBlockByAnchor(anchorId);
+          if (!block || typeof item.question !== 'string' || !item.question.trim()) return;
           ids.add(item.id);
-          var block = findBlock(item.project, item.blockIndex);
           var text = item.question.trim().slice(0, 5000);
           result.questions.push({
-            id: item.id, number: item.number, project: item.project, blockIndex: item.blockIndex,
+            id: item.id, number: item.number, project: block.project, blockIndex: block.blockIndex, anchorId: block.anchorId,
             question: text, title: text.split(/\r?\n/)[0].slice(0, 48), anchor: block.text,
-            expectedAnswer: Array.isArray(item.expectedAnswer) ? item.expectedAnswer.filter(function (value) { return typeof value === 'string'; }).join('\n\n').slice(0, 10000).split(/\n{2,}/).filter(Boolean) : [],
+            expectedAnswer: Array.isArray(item.expectedAnswer) ? item.expectedAnswer.filter(function (value) { return typeof value === 'string'; }) : [],
             custom: true
           });
         });
         result.nextNumber = Math.max.apply(null, result.questions.map(function (item) { return item.number + 1; }).concat([firstCustomNumber, Number.isInteger(stored.nextNumber) ? stored.nextNumber : firstCustomNumber]));
-        if (normalizeCustomNumbers(result)) {
+        if (normalizeCustomNumbers(result) || stored.version === 1) {
           try { window.localStorage.setItem(storageKey, JSON.stringify(result)); }
-          catch (_) { warnStorage('自定义问题已保留并调整编号，但浏览器阻止了保存。刷新后会重新恢复编号。'); }
+          catch (_) { warnStorage('自定义问题已恢复，但浏览器阻止了保存段落关联或编号。刷新后会重新恢复。'); }
         }
       } catch (_) {
         warnStorage('浏览器暂时无法读取本地问题。新问题可在当前页面使用，但保存状态需要确认。');
@@ -299,7 +311,7 @@
       customState.questions.sort(function (a, b) { return a.number - b.number; });
       questions = presetQuestions.concat(customState.questions);
       customState.questions.forEach(function (question) {
-        var block = findBlock(question.project, question.blockIndex);
+        var block = findBlockByAnchor(question.anchorId);
         if (!block) return;
         var wrapper = document.createElement('span');
         wrapper.className = 'claim-anchor custom-question-anchor';
@@ -383,7 +395,7 @@
         customState = mergeUnsavedState(readCustomState());
         var old = customState.questions.find(function (item) { return item.id === editingId; });
         var id = old ? old.id : 'custom-' + (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
-        var question = { id: id, number: old ? old.number : customState.nextNumber++, project: block.project, blockIndex: block.blockIndex, title: text.split(/\r?\n/)[0].slice(0, 48), question: text, anchor: block.text, expectedAnswer: answerInput.value.trim() ? answerInput.value.trim().split(/\n{2,}/) : [], custom: true };
+        var question = { id: id, number: old ? old.number : customState.nextNumber++, project: block.project, blockIndex: block.blockIndex, anchorId: block.anchorId, title: text.split(/\r?\n/)[0].slice(0, 48), question: text, anchor: block.text, expectedAnswer: answerInput.value.trim() ? answerInput.value.trim().split(/\n{2,}/) : [], custom: true };
         customState.questions = customState.questions.filter(function (item) { return item.id !== id; }).concat([question]);
         unsavedIds.add(id);
         try {

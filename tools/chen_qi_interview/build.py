@@ -43,11 +43,11 @@ for project, section in enumerate(content['sections'], start=1):
         paper.append(f'<header class="project-heading"><h2>{esc(section["subtitle"])}</h2></header>')
     if section.get('context'):
         paper.append(f'<p class="project-context">{esc(section["context"])}</p>')
-    paper.append('<ol class="experience">')
+    paper.append('<ul class="experience">')
     for excerpt in section['excerpts']:
         pins = ''.join(f'<button class="question-pin" type="button" data-question="{esc(q["id"])}" aria-haspopup="dialog" aria-controls="question-dialog" aria-label="问题 {q["number"]}：{esc(q["title"])}">{q["number"]}</button>' for q in by_anchor[excerpt['id']])
-        paper.append(f'<li value="{excerpt["number"]}" data-anchor="{esc(excerpt["id"])}">{esc(excerpt["text"])}<span class="mark-cluster">{pins}</span></li>')
-    paper.append('</ol></article>')
+        paper.append(f'<li data-anchor="{esc(excerpt["id"])}">{esc(excerpt["text"])}<span class="mark-cluster">{pins}</span></li>')
+    paper.append('</ul></article>')
 
 # Keep this entirely static: no build/runtime CDN and no external fonts.
 (OUT/'data.js').write_text('window.INTERVIEW_QUESTIONS = ' + json.dumps(questions, ensure_ascii=False, indent=2) + ';\n')
