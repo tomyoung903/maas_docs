@@ -1,0 +1,256 @@
+window.INTERVIEW_QUESTIONS = [
+  {
+    "id": "q1",
+    "anchorId": "moe-topology",
+    "title": "64 张卡上的 TP8 / DP8 / EP64 怎么分工？",
+    "question": "请画出项目实际的 64 卡分组：一个请求的 attention 在哪些卡上算，token 送到哪些专家，结果怎样回来？再用同一张图解释为什么 prefill 用 AllGather、decode 改用 MC2，以及你本人改了哪部分。",
+    "expected": [
+      "给出实际启动配置与框架版本，并选一个 rank 标明 TP/DP/EP 组成员；解释 EP64 如何复用这 64 个 rank，而不是把 8×8×64 当作卡数。",
+      "说明 attention 权重、KV 与请求的归属，以及专家权重的分布；能沿一个 token 讲清 dispatch、计算、combine 的张量形状和通信范围。",
+      "用 prefill/decode 的本地 token 行数、消息大小与延迟需求解释不同通信路径；先解释 MC2 在本项目里的含义，不靠术语代替机制。",
+      "展示共享专家重叠前后的依赖与时间线，确认关键路径真的缩短；区分本人改动与团队已有能力，整体验收要固定负载、精度、MTP 和缓存条件。"
+    ],
+    "followUp": "如果某个 DP rank 没有真实请求，而其他 rank 仍在做专家通信，它能直接跳过这一步吗？你的实现怎样避免不同 rank 的 collective 对不上？",
+    "interviewerHint": "你已学过“不要把所有并行度相乘”及“多个 stream 不保证重叠”。vLLM 的组定义与 SGLang 不必相同，让他给实际配置。常见 vLLM MoE 中 EP=TP×DP，所以 8×8=64 是可能的；这不是对其部署的事实认证。",
+    "studySources": [
+      {
+        "title": "已学关联：TP、DP、EP 的分组与 tensor 归属",
+        "url": "https://tomyoung903.github.io/maas_docs/tmp/sglang-parallelism-mental-model/index.html"
+      },
+      {
+        "title": "已学关联：stream 顺序、依赖与实际重叠",
+        "url": "https://tomyoung903.github.io/maas_docs/cuda-kernel-basics-h200/index.html"
+      }
+    ],
+    "sources": [
+      {
+        "label": "vLLM：DP 与 MoE expert 分组、空 rank 的同步",
+        "url": "https://docs.vllm.ai/en/stable/serving/data_parallel_deployment/"
+      },
+      {
+        "label": "华为 Ascend C：MC² 的 AllGatherMatmul 数据流与重叠示例",
+        "url": "https://www.hiascend.com/doc_center/source/en/canncommercial/850/opdevg/Ascendcopdevg/atlas_ascendc_10_10034.html"
+      }
+    ],
+    "number": 1,
+    "project": 1,
+    "blockIndex": 0,
+    "projectLabel": "项目一｜万亿参数 MoE 模型昇腾推理性能优化",
+    "claim": "设计 prefill AllGather / decode MC2 分相混合通信，按 Cube / Vector / 通信引擎配对排班实现共享专家多流重叠；结合 MTP 投机解码 V2 调优，服务总吞吐 201.5 → 345.7 tok/s（+71.6%），平均 TPOT 156.3 → 91.0 ms（−42%），TTFT 中位数 20.8 → 7.4 s（−64%），GPQA 不降。",
+    "expectedAnswer": [
+      "给出实际启动配置与框架版本，并选一个 rank 标明 TP/DP/EP 组成员；解释 EP64 如何复用这 64 个 rank，而不是把 8×8×64 当作卡数。",
+      "说明 attention 权重、KV 与请求的归属，以及专家权重的分布；能沿一个 token 讲清 dispatch、计算、combine 的张量形状和通信范围。",
+      "用 prefill/decode 的本地 token 行数、消息大小与延迟需求解释不同通信路径；先解释 MC2 在本项目里的含义，不靠术语代替机制。",
+      "展示共享专家重叠前后的依赖与时间线，确认关键路径真的缩短；区分本人改动与团队已有能力，整体验收要固定负载、精度、MTP 和缓存条件。"
+    ]
+  },
+  {
+    "id": "q2",
+    "anchorId": "moe-precision",
+    "title": "量化元数据缺失，为什么接受率会归零？",
+    "question": "请选“量化权重元数据缺失导致 MTP 接受率为 0”这次故障，按发现、定位、修复、回归四步讲清楚。缺的是哪个字段，数据是在哪一层第一次算错的，怎样证明不是采样或验证逻辑本身的问题？",
+    "expected": [
+      "给出缺失字段的真实名字、来源和消费位置，解释如何影响权重解释或计算路径；不能由简历替他猜是 scale、zero-point 或其他属性。",
+      "在固定 token 前缀、权重、采样设置与探针输入下，对照 golden 找到首个偏差 tensor；再缩小到具体加载/算子环节，而不只展示最终文本异常。",
+      "分别核对 drafter logits、target 验证及接受计数的定义；接受率为 0 本身不能单独证明哪一环有 bug，也不能等同于最终输出必错。",
+      "用最小修复 A/B 恢复 tensor/接受率，覆盖编译与 eager、相关量化和批次边界，并说明 GPQA 不降的样本、配置与对比结果。"
+    ],
+    "followUp": "如果最终文本和 GPQA 都看起来正常，但接受率一直为 0，这个问题可以不修吗？你会再看哪两个性能或正确性信号？",
+    "interviewerHint": "你熟悉投机解码：草稿差可能只是反复被拒绝，target 仍可产生正常结果。让他解释实际元数据和第一处偏差；不要把 torch.compile 的正常 specialize/guard 自动判成错误。",
+    "studySources": [
+      {
+        "title": "已学关联：投机接受、拒绝与最终输出的关系",
+        "url": "https://tomyoung903.github.io/maas_docs/tmp/glm52-eagle-rejection-sampling/index.html"
+      },
+      {
+        "title": "已学关联：接受率优化要做同条件对比",
+        "url": "https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-eagle-acceptance-optimization-20260825/index.html"
+      }
+    ],
+    "sources": [
+      {
+        "label": "PyTorch：torch.compile 编译、缓存与配置",
+        "url": "https://docs.pytorch.org/docs/stable/generated/torch.compile"
+      }
+    ],
+    "number": 2,
+    "project": 1,
+    "blockIndex": 1,
+    "projectLabel": "项目一｜万亿参数 MoE 模型昇腾推理性能优化",
+    "claim": "独立定位并修复 4 个精度缺陷（归约顺序、torch.compile 分支固化、量化权重元数据缺失致投机接受率为 0 等），建立固定探针 + golden 逐层比对 + 单变量 A/B 流程。",
+    "expectedAnswer": [
+      "给出缺失字段的真实名字、来源和消费位置，解释如何影响权重解释或计算路径；不能由简历替他猜是 scale、zero-point 或其他属性。",
+      "在固定 token 前缀、权重、采样设置与探针输入下，对照 golden 找到首个偏差 tensor；再缩小到具体加载/算子环节，而不只展示最终文本异常。",
+      "分别核对 drafter logits、target 验证及接受计数的定义；接受率为 0 本身不能单独证明哪一环有 bug，也不能等同于最终输出必错。",
+      "用最小修复 A/B 恢复 tensor/接受率，覆盖编译与 eager、相关量化和批次边界，并说明 GPQA 不降的样本、配置与对比结果。"
+    ]
+  },
+  {
+    "id": "q3",
+    "anchorId": "moe-kernel",
+    "title": "40 倍 kernel 加速，为什么 TTFT 只降 44%？",
+    "question": "你写到修复激活量化的“无效行扫描”，kernel 加速 40 倍、TTFT 降低 44%。请用一个真实输入说明有效行、分配行和原循环范围，展示改前/改后代码逻辑及耗时，并解释这两个比例怎样对上。",
+    "expected": [
+      "给出真实 shape、有效行计数的来源、旧循环扫描的范围及新边界；说明 BF16 / group_index 限制为何相关，不能只说“少算了很多”。",
+      "固定模型、输入、有效行分布、精度和并发，报告 kernel 所有调用的总耗时及同口径 TTFT；排除首次编译、缓存、其他改动和 profiler 开销。",
+      "解释 Amdahl：仅在单变量、串行、不重叠且其他耗时不变时，0.56=(1−f)+f/40，得到原占比约 45.1%；有重叠、排队或不同样本时不能据此倒推。",
+      "说明无效行是否真正不可见，验证尾块、零有效行、不同 group_index 等边界；“逐位不变”必须明确比较的输出和覆盖样本。"
+    ],
+    "followUp": "如果原时间线显示这部分只占 TTFT 的 10%，你会怎样解释或重新核查“降低 44%”这个结论？",
+    "interviewerHint": "不要求他心算 45.1%。重点是能否指出 kernel 不是全流程，以及两项百分比必须来自可比实验；self time 相加也未必等于关键路径。",
+    "studySources": [
+      {
+        "title": "已学关联：单个 kernel、有效工作量与计时范围",
+        "url": "https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-dense-down-kernel-tutorial/index.html"
+      },
+      {
+        "title": "已学关联：TTFT 的等待与执行阶段边界",
+        "url": "https://tomyoung903.github.io/maas_docs/glm53-gb300-engine-ttft/index.html"
+      }
+    ],
+    "sources": [
+      {
+        "label": "NVIDIA：profiling 的计时范围及干扰因素，作方法参考",
+        "url": "https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html"
+      }
+    ],
+    "number": 3,
+    "project": 1,
+    "blockIndex": 2,
+    "projectLabel": "项目一｜万亿参数 MoE 模型昇腾推理性能优化",
+    "claim": "修复 MoE 激活量化 kernel 死行扫描（无效行扫描）：按有效行计算并放开 BF16 / group_index 限制，该 kernel 40× 加速，端到端 TTFT −44%，数值逐位不变；另完成零填充、KDA 层回写冗余、router GEMM 数据类型等优化项定位与验证。",
+    "expectedAnswer": [
+      "给出真实 shape、有效行计数的来源、旧循环扫描的范围及新边界；说明 BF16 / group_index 限制为何相关，不能只说“少算了很多”。",
+      "固定模型、输入、有效行分布、精度和并发，报告 kernel 所有调用的总耗时及同口径 TTFT；排除首次编译、缓存、其他改动和 profiler 开销。",
+      "解释 Amdahl：仅在单变量、串行、不重叠且其他耗时不变时，0.56=(1−f)+f/40，得到原占比约 45.1%；有重叠、排队或不同样本时不能据此倒推。",
+      "说明无效行是否真正不可见，验证尾块、零有效行、不同 group_index 等边界；“逐位不变”必须明确比较的输出和覆盖样本。"
+    ]
+  },
+  {
+    "id": "q4",
+    "anchorId": "kv-format",
+    "title": "4-bit 码本 KV 里，实际存了什么？",
+    "question": "以你实际使用的一个 MLA latent 向量为例，从 BF16 数组开始，写出 L2 归一化、16 级最近邻编码、打包存储和解码的过程。哪些数保存在 KV 里，读回时怎样重建？",
+    "expected": [
+      "给出真实 latent 维度和缓存 shape；说明每 token 的范数、码本如何取得，是否有维度缩放、旋转或其他步骤，区分实际实现与完整论文算法。",
+      "解释每坐标存 0～15 的索引，通常两项打包到一字节，重建时查码本并恢复尺度；列出范数、码本及其他元数据的 dtype 与保存位置。",
+      "给出一个数值例子或 golden 小样本，并覆盖零范数、极值、打包尾部和索引边界；码本量化有损，不等同于 BF16 无损存储。",
+      "说明 rel-L2 0.7%～1.4% 究竟比较哪一 tensor、采用什么公式和数据集；局部小误差不自动保证长上下文 attention 或任务质量不变。"
+    ],
+    "followUp": "如果把同一 latent 向量整体乘 10，编码索引和保存的范数分别会怎样变化？哪些实现细节可能破坏这个关系？",
+    "interviewerHint": "先听清“存索引＋范数，读时查表还原”。不要假定 MLA latent 就是每个 head 各存一套 K/V，也不预设具体模型维度。论文含随机旋转等步骤，简历可能是项目化变体，需他说明。",
+    "studySources": [
+      {
+        "title": "已学关联：MLA 压缩 latent 与 attention 的连接",
+        "url": "https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_dsa_mla_connection.html"
+      },
+      {
+        "title": "已学关联：量化数据、scale 与 tensor 形状的区别",
+        "url": "https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-dense-down-kernel-tutorial/index.html"
+      }
+    ],
+    "sources": [
+      {
+        "label": "TurboQuant 原论文：码本、量化与误差目标",
+        "url": "https://arxiv.org/html/2504.19874v1"
+      }
+    ],
+    "number": 4,
+    "project": 2,
+    "blockIndex": 0,
+    "projectLabel": "项目二｜TurboQuant 4-bit KV Cache 压缩推理链",
+    "claim": "MLA latent 4-bit 码本量化：per-token L2 归一化 + 16 级 Lloyd-Max 最近邻；BF16 路径 rel-L2 0.7% ~ 1.4%。",
+    "expectedAnswer": [
+      "给出真实 latent 维度和缓存 shape；说明每 token 的范数、码本如何取得，是否有维度缩放、旋转或其他步骤，区分实际实现与完整论文算法。",
+      "解释每坐标存 0～15 的索引，通常两项打包到一字节，重建时查码本并恢复尺度；列出范数、码本及其他元数据的 dtype 与保存位置。",
+      "给出一个数值例子或 golden 小样本，并覆盖零范数、极值、打包尾部和索引边界；码本量化有损，不等同于 BF16 无损存储。",
+      "说明 rel-L2 0.7%～1.4% 究竟比较哪一 tensor、采用什么公式和数据集；局部小误差不自动保证长上下文 attention 或任务质量不变。"
+    ]
+  },
+  {
+    "id": "q5",
+    "anchorId": "kv-capacity",
+    "title": "16 位到 4 位，为何 KV 池只增大 2.68 倍？",
+    "question": "BF16 到 4-bit 的原始数据量看起来应缩小到四分之一。请用项目里的每 token 字节账单解释实际 KV 池容量为何是 2.68 倍；“并发 4→10”和“输出吞吐 +23%”又各是在什么条件下测的？",
+    "expected": [
+      "逐项列出原始与压缩后的每 token 字节数：latent 索引、范数/scale、未量化字段、页/对齐等；原始 payload 的理想 4 倍不等于整池必有 4 倍容量。",
+      "说明池预算、weights/workspace 等保留内存和各 rank 分片规则，避免混淆逻辑 token 容量、8 卡总字节与单卡可用空间。",
+      "固定模型、上下文/输出长度、精度、缓存冷热和总显存，区分“最大可容纳并发”和“同 batch 的吞吐”；两者不能当作同一个加速指标。",
+      "明确 DeepSeek 系单卡结果与 GLM 系 8 卡结果是不同实验；提供实际模型、TP/EP 配置及长上下文质量验证，不把比例互相套用。"
+    ],
+    "followUp": "如果容量增加了，但固定 batch=2 的吞吐没有改善，甚至下降，这是否与压缩成功矛盾？下一步查什么？",
+    "interviewerHint": "这里考容量与速度分开算。4 倍只针对完全量化的 BF16 payload；2.68 倍需要真实字节账单，不接受凭空把所有差额归因于元数据。",
+    "studySources": [
+      {
+        "title": "已学关联：KV 层级、分片与逻辑容量",
+        "url": "https://tomyoung903.github.io/maas_docs/glm53-gb300-hicache/index.html"
+      },
+      {
+        "title": "已学关联：带宽下界不等于端到端时延",
+        "url": "https://tomyoung903.github.io/maas_docs/glm52-flops/glm52_decode_roofline.html"
+      }
+    ],
+    "sources": [
+      {
+        "label": "TurboQuant 原论文：存储率与失真不是端到端性能保证",
+        "url": "https://arxiv.org/html/2504.19874v1"
+      }
+    ],
+    "number": 5,
+    "project": 2,
+    "blockIndex": 1,
+    "projectLabel": "项目二｜TurboQuant 4-bit KV Cache 压缩推理链",
+    "claim": "长上下文实测（相对 BF16 KV 基线）：DeepSeek 系单卡吞吐 +31.8%，单卡同显存可用并发 4→10（2.5×）；GLM 系 8 卡 TP8+EP 下 KV 池容量 2.68×，batch=2 输出吞吐 +23%。",
+    "expectedAnswer": [
+      "逐项列出原始与压缩后的每 token 字节数：latent 索引、范数/scale、未量化字段、页/对齐等；原始 payload 的理想 4 倍不等于整池必有 4 倍容量。",
+      "说明池预算、weights/workspace 等保留内存和各 rank 分片规则，避免混淆逻辑 token 容量、8 卡总字节与单卡可用空间。",
+      "固定模型、上下文/输出长度、精度、缓存冷热和总显存，区分“最大可容纳并发”和“同 batch 的吞吐”；两者不能当作同一个加速指标。",
+      "明确 DeepSeek 系单卡结果与 GLM 系 8 卡结果是不同实验；提供实际模型、TP/EP 配置及长上下文质量验证，不把比例互相套用。"
+    ]
+  },
+  {
+    "id": "q6",
+    "anchorId": "kv-fusion",
+    "title": "不写回 GM 的解压，省了什么又多做了什么？",
+    "question": "请画出“压缩 KV 读取→解码→attention”的数据路径：解压后的值在哪里，为什么不用写回 GM？再区分 A2 团队端到端结果与你亲自重写的下一代 NPU 算子，说明 3.6 倍具体测的是哪一段。",
+    "expected": [
+      "说明从 GM 读取 packed 索引和元数据、片上解码再消费的路径；未写 GM 不代表没有重建计算或数据移动，需按实际硬件说明寄存器/本地存储位置。",
+      "比较省去的中间 BF16 写入/重读与新增查表、解包、范数缩放的代价，并说明分块、复用、片上容量和同步怎样影响实际收益。",
+      "就本人改动给出 Gather 索引布局、向量化前后循环与实际访问证据；不把 NVIDIA warp/合并访存规则直接套到 Ascend。3.6 倍应注明同卡同输入与 baseline，不能算成全模型加速。",
+      "明确本人负责压缩/读取、团队负责 A2 端到端的边界；逐字节一致是相对哪个 golden、哪些输出和样本，并单独验证融合后的 attention 误差、端到端吞吐和质量。"
+    ],
+    "followUp": "如果解压融合后少搬了数据，但 attention 仍更慢，你会先看查表/解包、片上资源还是访存布局？怎样设计一个能区分这些原因的实验？",
+    "interviewerHint": "你已学过算术强度与 tensor 数据流。重点是中间张量不落 GM 省去往返，但可能增加计算和片上压力；把“压缩算子 3.6 倍”和“团队系统收益”严格分开。",
+    "studySources": [
+      {
+        "title": "已学关联：真实 tensor 数据流、片上资源与访存",
+        "url": "https://tomyoung903.github.io/maas_docs/tmp/sparse-mla-30pct-mfu-sm-education/index.html"
+      },
+      {
+        "title": "已学关联：kernel 吞吐、计时范围与对照",
+        "url": "https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-kernel-efficiency-sweep/index.html"
+      }
+    ],
+    "sources": [
+      {
+        "label": "TurboQuant 原论文：量化与重建计算",
+        "url": "https://arxiv.org/html/2504.19874v1"
+      },
+      {
+        "label": "Ascend C 官方示例：GM 与本地计算的数据流，具体功能以实际芯片版本为准",
+        "url": "https://www.hiascend.com/doc_center/source/en/canncommercial/850/opdevg/Ascendcopdevg/atlas_ascendc_10_10034.html"
+      }
+    ],
+    "number": 6,
+    "project": 2,
+    "blockIndex": 2,
+    "projectLabel": "项目二｜TurboQuant 4-bit KV Cache 压缩推理链",
+    "claim": "构建 4-bit KV Cache 端到端链：压缩写入 + 融合解压读取 + vllm-ascend 集成，面向 DeepSeek 系稀疏注意力 / GLM 系长上下文模型的 1M 长上下文推理；解压与 attention 单 kernel 融合，反量化不落 Global Memory（GM）。下一代 NPU 上用 MicroAPI 从零重写压缩 / 读取算子：真卡标定并行因子，梯子式索引改 Gather 直索引、标量 FP 向量化，压缩吞吐 3.6×，输出与上代 golden 逐字节一致。",
+    "expectedAnswer": [
+      "说明从 GM 读取 packed 索引和元数据、片上解码再消费的路径；未写 GM 不代表没有重建计算或数据移动，需按实际硬件说明寄存器/本地存储位置。",
+      "比较省去的中间 BF16 写入/重读与新增查表、解包、范数缩放的代价，并说明分块、复用、片上容量和同步怎样影响实际收益。",
+      "就本人改动给出 Gather 索引布局、向量化前后循环与实际访问证据；不把 NVIDIA warp/合并访存规则直接套到 Ascend。3.6 倍应注明同卡同输入与 baseline，不能算成全模型加速。",
+      "明确本人负责压缩/读取、团队负责 A2 端到端的边界；逐字节一致是相对哪个 golden、哪些输出和样本，并单独验证融合后的 attention 误差、端到端吞吐和质量。"
+    ]
+  }
+];
