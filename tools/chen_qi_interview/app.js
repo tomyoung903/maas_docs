@@ -19,7 +19,7 @@
     var questionInput = document.getElementById('editor-question');
     var answerInput = document.getElementById('editor-answer');
     var storageKey = 'chen-qi-interview:custom-questions:v1';
-    var firstCustomNumber = Math.max.apply(null, presetQuestions.map(function (q) { return q.number || 0; }).concat([6])) + 1;
+    var firstCustomNumber = Math.max.apply(null, presetQuestions.map(function (q) { return q.number || 0; }).concat([0])) + 1;
     var customState = { version: 1, nextNumber: firstCustomNumber, questions: [] };
     var unsavedIds = new Set();
     var editingId = null;
@@ -262,7 +262,7 @@
         stored.questions.forEach(function (item) {
           if (!item || typeof item.id !== 'string' || !/^custom-[a-z0-9-]+$/i.test(item.id) || ids.has(item.id)) return;
           // Preserve existing custom questions if a later preset takes their number.
-          if (!Number.isSafeInteger(item.number) || item.number < 7) return;
+          if (!Number.isSafeInteger(item.number) || item.number < 1) return;
           if (!findBlock(item.project, item.blockIndex) || typeof item.question !== 'string' || !item.question.trim()) return;
           ids.add(item.id);
           var block = findBlock(item.project, item.blockIndex);
