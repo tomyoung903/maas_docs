@@ -133,6 +133,28 @@ def report(data):
         +rollup_html
         +'<p>'+link('ledger.json','Download the full machine-readable tree and parameter ledger')+'. Exact integers express this convention, not an exact instruction count for every implementation.</p>'
     )
+    kda_video_html=(
+        '<p>An 88-second, silent walkthrough of one KDA module, with on-screen explanations and tensor shapes '
+        'for one 100,000-token sequence.</p>'
+        '<figure style="margin:24px 0">'
+        '<video controls playsinline preload="metadata" width="1920" height="1080" '
+        'poster="assets/kimi-k3-kda-tensor-flow-poster.png" '
+        'aria-label="Kimi K3 KDA tensor-flow video: projections, gates, recurrent memory and output" '
+        'aria-describedby="kda-video-caption" '
+        'style="display:block;width:100%;height:auto;aspect-ratio:16/9;background:#09111c;border-radius:12px">'
+        '<source src="assets/kimi-k3-kda-tensor-flow.mp4" type="video/mp4">'
+        'Your browser cannot play this video. '
+        '<a href="assets/kimi-k3-kda-tensor-flow.mp4">Open or download the MP4</a>.'
+        '</video>'
+        '<figcaption id="kda-video-caption" style="margin-top:12px">'
+        '<span class="math-mat">S</span><sub>t−1</sub> is memory before token '
+        '<span class="math-var">t</span>; <span class="math-mat">S</span><sub>t</sub> is memory after its update. '
+        'Each head has a 128 × 128 key-by-value state. The subscript is a token position, not a layer number. '
+        'The token-by-token animation explains the equivalent recurrence; 100K prefill executes in chunks.'
+        '</figcaption></figure>'
+        '<p>'+link('assets/kimi-k3-kda-tensor-flow.mp4','Open or download the video')+' · '
+        +link('#kda-contraction','Read the recurrence equations')+'</p>'
+    )
     contraction_html=(
         '<p>The main value uses <strong>expanded causal MLA</strong> and a <strong>sequential-equivalent KDA recurrence</strong>. '
         'Both are specified mathematical factorizations. They establish a logical numerator; a measured execution numerator also needs the backend, kernel path, padding and precision.</p>'
@@ -194,7 +216,7 @@ def report(data):
         overview=[{'label':label,'href':'#'+id,'depth':depth} for label,id,depth in [
             ('Execution Tree','execution-tree',1),('Layer Families','layer-families',1),('Logical Parameters','parameter-ledger',1),
             ('Depth Aggregation','depth-aggregation',1),('Counting Convention','accounting',1),('Parent Rollup','parent-rollup',2),
-            ('Contraction Choices','contractions',1),('MLA Formulation','mla-contraction',2),('KDA Recurrence','kda-contraction',2),
+            ('KDA Video','kda-video',1),('Contraction Choices','contractions',1),('MLA Formulation','mla-contraction',2),('KDA Recurrence','kda-contraction',2),
             ('MFU Handoff','mfu-handoff',2),('Evidence & Audit','sources',1)]],
         cards=[{'label':'prefill input','value':'100,000 token IDs'},
                {'label':'decoder stack','value':'93 ordered layers'},
@@ -219,6 +241,7 @@ def report(data):
             {'id':'parameter-ledger','title':'Logical Parameter Ledger','html':parameters_html},
             {'id':'depth-aggregation','title':'Attention Residual Schedule','html':residual_html},
             {'id':'accounting','title':'Arithmetic Convention and Reconciliation','html':convention_html},
+            {'id':'kda-video','title':'KDA Video Walkthrough','html':kda_video_html},
             {'id':'contractions','title':'Contraction Choices and Execution Boundary','html':contraction_html},
             {'id':'sources','title':'Evidence and Validation','html':sources_html},
         ],

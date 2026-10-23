@@ -18,6 +18,13 @@ python3 tools/kimi_k3_tree/verify_algebra.py
 
 The generated pack is `docs/kimi-k3-flops/`. It includes the tree, overview, pinned official configuration, exact integer ledger, full 93-layer schedule, source/claim map, checkpoint-header audit, and validation evidence.
 
+The tree page also embeds the 88-second KDA walkthrough at `#kda-video`.
+Its MP4 and poster are tracked assets in `docs/kimi-k3-flops/assets/`; rebuilding
+the page preserves the embed and does not regenerate those media files. The
+video is silent, with on-screen explanations. The accompanying caption and
+linked recurrence equations provide a text explanation of the state symbols.
+MP4 SHA-256: `3a77de0483d056e7a2b798507040016fb05e0499a880f62fa09d42474eb9a569`.
+
 ## Counting boundary
 
 - One uncached 100,000-token text prefill and one next-token logits row.
