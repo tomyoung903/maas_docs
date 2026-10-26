@@ -19,6 +19,20 @@
     var questionInput = document.getElementById('editor-question');
     var answerInput = document.getElementById('editor-answer');
     var storageKey = 'sun-shiniu-interview:custom-questions:v1';
+    var evaluationStorageKey = 'sun-shiniu-interview:evaluations:v1';
+    var evaluationFields = ['answer', 'gap', 'evaluation'];
+    var evaluationInputs = {
+      answer: document.getElementById('candidate-answer'),
+      gap: document.getElementById('expectation-gap'),
+      evaluation: document.getElementById('question-evaluation')
+    };
+    var evaluationState = { version: 1, entries: Object.create(null) };
+    var pendingEvaluations = new Map();
+    var displayedEvaluationId = null;
+    var evaluationSaveTimer = 0;
+    var evaluationSaveError = false;
+    var summaryDialog = document.getElementById('evaluation-summary');
+    var summaryReturnQuestionId = null;
     var firstCustomNumber = Math.max.apply(null, presetQuestions.map(function (q) { return q.number || 0; }).concat([0])) + 1;
     var customState = { version: 2, nextNumber: firstCustomNumber, questions: [] };
     var unsavedIds = new Set();
@@ -47,6 +61,206 @@
         paragraphBlocks.push({ project: projectIndex + 1, blockIndex: blockIndex, anchorId: node.dataset.anchor, label: node.dataset.paragraphLabel, node: node, textNode: textNode, text: textNode.textContent });
       });
     });
+
+    // Human-entered interview notes use a separate store from question definitions.
+    // Only dirty fields are merged, so another tab's unrelated edits are preserved.
+    function parseEvaluationState(raw) {
+      if (raw == null) return { version: 1, entries: Object.create(null) };
+      var parsed = JSON.parse(raw);
+      if (!parsed || parsed.version !== 1 || !parsed.entries || typeof parsed.entries !== 'object' || Array.isArray(parsed.entries)) throw new Error('Invalid interview-note format');
+      var entries = Object.create(null);
+      Object.keys(parsed.entries).forEach(function (id) {
+        if (!/^[a-z0-9_-]{1,200}$/i.test(id)) return;
+        var item = parsed.entries[id];
+        if (!item || typeof item !== 'object' || Array.isArray(item)) return;
+        var entry = {};
+        evaluationFields.forEach(function (field) { entry[field] = typeof item[field] === 'string' ? item[field] : ''; });
+        if (typeof item.questionText === 'string') entry.questionText = item.questionText;
+        if (Number.isSafeInteger(item.questionNumber) && item.questionNumber > 0) entry.questionNumber = item.questionNumber;
+        entries[id] = entry;
+      });
+      return { version: 1, entries: entries };
+    }
+    function evaluationStatus(message, isError) {
+      evaluationSaveError = Boolean(isError);
+      ['evaluation-save-status', 'summary-save-status'].forEach(function (id) {
+        var node = document.getElementById(id);
+        if (node) { node.textContent = message; node.classList.toggle('is-error', Boolean(isError)); }
+      });
+    }
+    function effectiveEvaluationEntries() {
+      var entries = Object.assign(Object.create(null), evaluationState.entries);
+      pendingEvaluations.forEach(function (draft, id) {
+        entries[id] = Object.assign({}, entries[id] || {}, draft);
+      });
+      return entries;
+    }
+    function captureEvaluationField(field) {
+      if (!displayedEvaluationId || !evaluationInputs[field]) return;
+      var entry = effectiveEvaluationEntries()[displayedEvaluationId] || {};
+      var value = evaluationInputs[field].value;
+      if (value === (entry[field] || '')) return;
+      var draft = pendingEvaluations.get(displayedEvaluationId) || {};
+      draft[field] = value;
+      var question = questions.find(function (item) { return item.id === displayedEvaluationId; });
+      if (question) { draft.questionText = question.question; draft.questionNumber = question.number; }
+      pendingEvaluations.set(displayedEvaluationId, draft);
+    }
+    function captureActiveEvaluation() {
+      evaluationFields.forEach(captureEvaluationField);
+    }
+    function flushEvaluations() {
+      if (evaluationSaveTimer) { clearTimeout(evaluationSaveTimer); evaluationSaveTimer = 0; }
+      captureActiveEvaluation();
+      if (!pendingEvaluations.size) return !evaluationSaveError;
+      try {
+        var latest = parseEvaluationState(window.localStorage.getItem(evaluationStorageKey));
+        pendingEvaluations.forEach(function (draft, id) {
+          latest.entries[id] = Object.assign({}, latest.entries[id] || {}, draft);
+        });
+        window.localStorage.setItem(evaluationStorageKey, JSON.stringify(latest));
+        evaluationState = latest;
+        pendingEvaluations.clear();
+        if (displayedEvaluationId) loadEvaluation(displayedEvaluationId);
+        evaluationStatus('已保存到当前浏览器。', false);
+        return true;
+      } catch (_) {
+        evaluationStatus('保存失败，改动暂留当前页面；关闭前请复制汇总。', true);
+        return false;
+      }
+    }
+    function loadEvaluation(id) {
+      displayedEvaluationId = id;
+      var entry = effectiveEvaluationEntries()[id] || {};
+      evaluationFields.forEach(function (field) {
+        var input = evaluationInputs[field];
+        var value = entry[field] || '';
+        if (input && input.value !== value) input.value = value;
+      });
+      if (pendingEvaluations.size) evaluationStatus(evaluationSaveError ? '保存失败，改动暂留当前页面；关闭前请复制汇总。' : '正在保存…', evaluationSaveError);
+      else if (!evaluationSaveError) evaluationStatus('已保存到当前浏览器。', false);
+    }
+    evaluationFields.forEach(function (field) {
+      var input = evaluationInputs[field];
+      if (!input) return;
+      input.addEventListener('input', function () {
+        captureEvaluationField(field);
+        if (!pendingEvaluations.size) { evaluationStatus('已保存到当前浏览器。', false); return; }
+        evaluationStatus('正在保存…', false);
+        if (evaluationSaveTimer) clearTimeout(evaluationSaveTimer);
+        evaluationSaveTimer = setTimeout(flushEvaluations, 400);
+      });
+      input.addEventListener('blur', flushEvaluations);
+    });
+    function filledEvaluations() {
+      var entries = effectiveEvaluationEntries();
+      var knownIds = new Set(questions.map(function (question) { return question.id; }));
+      var orderedIds = questions.map(function (question) { return question.id; }).concat(Object.keys(entries).filter(function (id) { return !knownIds.has(id); }));
+      return orderedIds.filter(function (id) {
+        return entries[id] && evaluationFields.some(function (field) { return (entries[id][field] || '').trim(); });
+      }).map(function (id) {
+        var question = questions.find(function (item) { return item.id === id; });
+        return { id: id, entry: entries[id], question: question, number: question ? question.number : entries[id].questionNumber, text: question ? question.question : (entries[id].questionText || '问题 ' + id) };
+      });
+    }
+    function evaluationSummaryText() {
+      var labels = { answer: '候选人回答', gap: '与预期的差距', evaluation: '本题评价' };
+      var lines = ['孙世牛 · 面试记录'];
+      filledEvaluations().forEach(function (item) {
+        lines.push('', '问题' + (item.number ? ' ' + item.number : '') + '：' + item.text);
+        evaluationFields.forEach(function (field) {
+          lines.push(labels[field] + '：', item.entry[field] || '（未填写）');
+        });
+      });
+      return lines.join('\n');
+    }
+    function renderEvaluationSummary() {
+      var list = document.getElementById('summary-entries');
+      if (!list) return;
+      list.replaceChildren();
+      var filled = filledEvaluations();
+      document.getElementById('copy-summary').disabled = !filled.length;
+      document.getElementById('summary-copy-fallback').hidden = true;
+      put('summary-copy-status', '');
+      put('summary-count', filled.length ? '已填写 ' + filled.length + ' 题。以下仅汇总你输入的记录。' : '还没有填写面试记录。');
+      var labels = { answer: '候选人回答', gap: '与预期的差距', evaluation: '本题评价' };
+      filled.forEach(function (item) {
+        var article = document.createElement('article'); article.className = 'summary-entry';
+        var heading = document.createElement('h3'); heading.textContent = '问题' + (item.number ? ' ' + item.number : ''); article.appendChild(heading);
+        var prompt = document.createElement('p'); prompt.className = 'summary-question'; prompt.textContent = item.text; article.appendChild(prompt);
+        evaluationFields.forEach(function (field) {
+          var label = document.createElement('h4'); label.textContent = labels[field]; article.appendChild(label);
+          var value = document.createElement('p'); value.className = 'summary-value'; value.textContent = item.entry[field] || '（未填写）'; article.appendChild(value);
+        });
+        if (item.question) {
+          var edit = document.createElement('button'); edit.type = 'button'; edit.className = 'summary-edit'; edit.textContent = '编辑记录';
+          edit.addEventListener('click', function () { closeEvaluationSummary(false); openQuestion(item.id, findPin(item.id)); });
+          article.appendChild(edit);
+        }
+        list.appendChild(article);
+      });
+    }
+    function openEvaluationSummary() {
+      flushEvaluations();
+      summaryReturnQuestionId = dialog.open && questions[currentIndex] ? questions[currentIndex].id : null;
+      closeDialog();
+      hideSelectionAction();
+      renderEvaluationSummary();
+      if (typeof summaryDialog.showModal === 'function') summaryDialog.showModal(); else summaryDialog.setAttribute('open', '');
+      syncDialogState();
+      document.getElementById('close-summary').focus();
+    }
+    function closeEvaluationSummary(restoreQuestion) {
+      var id = summaryReturnQuestionId; summaryReturnQuestionId = null;
+      if (typeof summaryDialog.close === 'function') summaryDialog.close(); else summaryDialog.removeAttribute('open');
+      syncDialogState();
+      if (restoreQuestion && id) openQuestion(id, findPin(id));
+      else document.getElementById('open-summary').focus();
+    }
+    ['open-summary', 'open-summary-from-question'].forEach(function (id) {
+      var button = document.getElementById(id);
+      if (button) button.addEventListener('click', openEvaluationSummary);
+    });
+    if (summaryDialog) {
+      document.getElementById('close-summary').addEventListener('click', function () { closeEvaluationSummary(true); });
+      summaryDialog.addEventListener('cancel', function (event) { event.preventDefault(); closeEvaluationSummary(true); });
+      summaryDialog.addEventListener('close', syncDialogState);
+      summaryDialog.addEventListener('click', function (event) {
+        if (event.target !== summaryDialog) return;
+        var bounds = summaryDialog.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeEvaluationSummary(true);
+      });
+      document.getElementById('copy-summary').addEventListener('click', async function () {
+        flushEvaluations();
+        var text = evaluationSummaryText();
+        try {
+          if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') throw new Error('Clipboard unavailable');
+          await navigator.clipboard.writeText(text);
+          put('summary-copy-status', '已复制面试记录。');
+        } catch (_) {
+          var fallback = document.getElementById('summary-copy-fallback');
+          fallback.hidden = false; fallback.value = text; fallback.focus(); fallback.select();
+          var copied = false;
+          try { copied = document.execCommand('copy'); } catch (_) {}
+          put('summary-copy-status', copied ? '已复制面试记录。' : '自动复制未成功，内容已选中，可按 Ctrl+C 复制。');
+        }
+      });
+    }
+    window.addEventListener('storage', function (event) {
+      if (event.key !== evaluationStorageKey) return;
+      captureActiveEvaluation();
+      try {
+        evaluationState = parseEvaluationState(event.newValue);
+        var entry = effectiveEvaluationEntries()[displayedEvaluationId] || {};
+        var dirty = pendingEvaluations.get(displayedEvaluationId) || {};
+        evaluationFields.forEach(function (field) {
+          if (!Object.prototype.hasOwnProperty.call(dirty, field) && evaluationInputs[field] && evaluationInputs[field].value !== (entry[field] || '')) evaluationInputs[field].value = entry[field] || '';
+        });
+        if (!pendingEvaluations.size) evaluationStatus('已保存到当前浏览器。', false);
+        if (summaryDialog && summaryDialog.open) renderEvaluationSummary();
+      } catch (_) { evaluationStatus('其他标签页的记录无法读取；当前输入仍保留。', true); }
+    });
+    window.addEventListener('pagehide', flushEvaluations);
 
     // Offsets refer to UTF-16 code units in the unmodified claim text.
     // Question controls stay outside .claim-text, so they never count as source text.
@@ -99,7 +313,7 @@
       return !state.open || state.tool === 'pointer';
     }
     function currentTextSelection() {
-      if (dialog.open || editor.open || !annotatorAllowsSelection()) return null;
+      if (dialog.open || editor.open || (summaryDialog && summaryDialog.open) || !annotatorAllowsSelection()) return null;
       var selected = window.getSelection();
       if (!selected || selected.rangeCount !== 1 || selected.isCollapsed) return null;
       var range = selected.getRangeAt(0);
@@ -214,10 +428,10 @@
       if (selectionButton && !selectionButton.contains(event.target)) hideSelectionAction();
     }, true);
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && pendingSelection && !dialog.open && !editor.open) {
+      if (event.key === 'Escape' && pendingSelection && !dialog.open && !editor.open && !(summaryDialog && summaryDialog.open)) {
         event.preventDefault(); hideSelectionAction(); window.getSelection().removeAllRanges();
       }
-      if (event.altKey && event.key.toLowerCase() === 'q' && pendingSelection && !dialog.open && !editor.open) {
+      if (event.altKey && event.key.toLowerCase() === 'q' && pendingSelection && !dialog.open && !editor.open && !(summaryDialog && summaryDialog.open)) {
         event.preventDefault(); addSelectedQuestion();
       }
     });
@@ -251,7 +465,7 @@
       return paragraphBlocks.find(function (block) { return typeof anchorId === 'string' && block.anchorId === anchorId; });
     }
     function syncDialogState() {
-      document.body.classList.toggle('dialog-open', Boolean(dialog.open || (editor && editor.open)));
+      document.body.classList.toggle('dialog-open', Boolean(dialog.open || (editor && editor.open) || (summaryDialog && summaryDialog.open)));
       requestAnimationFrame(function () {
         positionSelectionPins();
         updateTextHighlights(dialog.open && questions[currentIndex] ? questions[currentIndex].id : null);
@@ -310,7 +524,9 @@
     function render(index) {
       var question = questions[index];
       if (!question) return;
+      flushEvaluations();
       currentIndex = index;
+      loadEvaluation(question.id);
       put('question-index', '问题 ' + question.number + ' · 第 ' + (index + 1) + ' / ' + questions.length + ' 题');
       put('question-project', question.projectLabel || ('项目 ' + question.project));
       if (question.custom) put('question-project', '自定义 · ' + (projectLabels[question.project - 1] || ('项目 ' + question.project)));
@@ -368,12 +584,14 @@
       if (closeButton) closeButton.focus();
     }
     function finishClose() {
+      flushEvaluations();
       clearHighlight();
       syncDialogState();
       var returnTarget = pinsVisible && opener && document.contains(opener) ? opener : toggle;
-      if (returnTarget && !(editor && editor.open)) returnTarget.focus({ preventScroll: true });
+      if (returnTarget && !(editor && editor.open) && !(summaryDialog && summaryDialog.open)) returnTarget.focus({ preventScroll: true });
     }
     function closeDialog() {
+      flushEvaluations();
       if (!dialog.open) return;
       if (typeof dialog.close === 'function') dialog.close();
       else { dialog.removeAttribute('open'); finishClose(); }
@@ -636,6 +854,8 @@
         if (index >= 0) render(index); else closeDialog();
       }
     });
+    try { evaluationState = parseEvaluationState(window.localStorage.getItem(evaluationStorageKey)); }
+    catch (_) { evaluationStatus('已有面试记录无法读取；新输入暂留当前页面，请复制汇总。', true); }
     claimObserver = new MutationObserver(scheduleRepaint);
     customState = readCustomState();
     restoreCustomPins();
