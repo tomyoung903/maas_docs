@@ -1,0 +1,1 @@
+window.INTERVIEW_QUESTIONS = [];

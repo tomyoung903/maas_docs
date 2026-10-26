@@ -1,0 +1,71 @@
+{
+  "candidate": "孙世牛",
+  "sections": [
+    {
+      "title": "推理框架开发与模型部署",
+      "subtitle": "核心开发（2025.4-至今）",
+      "technologies": "SGLang / vLLM",
+      "context": "项目背景：随着事业部对话与代码助手服务的推广，部署模型的参数规模和服务负载持续增长，对显存容量与推理性能提出更高要求。为在现有 NVIDIA L20 集群上部署和高效运行大模型，引入量化、多卡并行与 Prefill/Decode 分离，并针对落地过程中遇到的模型格式、算子及并行功能适配问题，开展 SGLang/vLLM 推理框架开发。",
+      "excerpts": [
+        {
+          "id": "w4a16-native",
+          "text": "W4A16 原生推理与运行时解耦：为 SGLang 补齐 LLM Compressor Compressed-Tensors 对称 W4A16 原生支持，完成 packed INT4 权重加载、TP-aware 参数分片、scale permutation 及 Marlin 布局转换；将 WNA16 scheme 与执行链路从 vLLM 迁移并适配至 SGLang，消除对 vLLM 内部接口和算子注册的版本耦合，并在 Qwen3-235B-A22B 上完成推理验证。"
+        },
+        {
+          "id": "fp8-moe-marlin",
+          "text": "FP8 MoE 与 Marlin Kernel 适配：完成 MoE W13/W2 权重的逐 expert FP8 权重 Marlin repack 及 scale permutation；针对 FP8 权重场景引入 W8A16 Marlin 路径，替代原 W8A8 Triton 路径。在 Qwen3-235B-A22B-FP8 单机 TP4/PP2 上由 52 tokens/s 提升至 65 tokens/s（+25%）"
+        },
+        {
+          "id": "mixed-precision",
+          "text": "分层混合精度量化与大模型显存优化：设计 Attention FP8 + MoE INT4 的混合精度量化策略；量化后 Qwen3-235B-A22B 单机 PP2/TP4 下，单请求推理速度在 marlin kernel 下可达 78tokens/s，较 Qwen3-235B-A22B-FP8 提升 20%；且在模型评测中 c-eval（91.1%）与 gpqa-diamond（61.1%）可基本持平官方 Qwen3-235B-A22B-FP8 量化模型（91.6%，59.6%）；将 KV cache token capacity 从 1000k 提升至约 2100k，实现 2 倍容量。"
+        },
+        {
+          "id": "pd-pp",
+          "text": "PD 分离 PP 开发：针对 Qwen3-235B W4A16 在 TP8 + Marlin 下输出异常且 pp+ep 推理慢的问题，将 SGLang PD 并行能力由 TP 扩展至 PP+TP；基于既有 PP 调度实现非重叠流水线，打通请求转发、Hidden States 传递、采样结果回传与批次状态更新；扩展 Mooncake 链路路由，引入 PP/TP 多维路由与跨 PP stage 就绪同步。在双机 8 卡、输入/输出长度 4096/512 的同资源对比中，相较双实例 PP4×TP2 非 PD 部署，P99 ITL 从 298ms 降至 67 ms（降低 77.4%）"
+        },
+        {
+          "id": "pipeline-parallel",
+          "text": "模型 Pipeline Parallelism 适配：针对 Qwen3-Next 与 GLM-5.2 缺少 Pipeline Parallelism 推理支持的问题，实现按 PP Rank 的 Transformer Layer 切分、非本 Stage 权重裁剪及 Hidden States/Residual 传递；处理 GLM-5.2 每 4 层复用 Indexer 的 IndexShare 约束，传递 topk_indices，支持多机多卡部署。"
+        },
+        {
+          "id": "deepseek-v4",
+          "text": "DeepSeek V4 L20 / MXFP4 适配：",
+          "children": [
+            {
+              "id": "mxfp4-runner",
+              "text": "面向 DeepSeek V4 L20 的 MXFP4 推理适配需求，将 vLLM Marlin MoE CUDA 路径迁移并封装为独立 PyTorch Extension，完成 MXFP4 类型分发、torch.ops Binding 与构建集成；扩展 SGLang Marlin MoE Runner，打通 checkpoint 加载、MXFP4 权重 Repack、E8M0 Scale permutation 和 Marlin MoE Runner 执行路径。"
+            },
+            {
+              "id": "fp8-mqa-indexer",
+              "text": "FP8 Paged MQA Indexer：针对 SM89 路径依赖 Torch fallback、并与 DeepGEMM Indexer 硬耦合的问题，将 AITER Triton pa_mqa_logits 迁移至 SM89，保留 SplitKV、weighted-ReLU、next_n causal mask 与 FP32 head reduction；适配 SGLang C4 packed KV cache 的页寻址和 FP8 K/FP32 scale 双视图，替换 Torch fallback 实现，解除了对 DeepGEMM Indexer 的硬依赖。"
+            }
+          ]
+        },
+        {
+          "id": "pp-mtp",
+          "text": "PP + MTP 推理适配与优化：",
+          "children": [
+            {
+              "id": "dspark-proposal-cache",
+              "text": "基于社区已有 PP + MTP 提交完成工程化适配，并进一步完善 DeepSeek 原生 DSpark 的 PP 支持；针对 PP 验证未保留 draft 概率分布的问题，实现按请求 ID 管理的 proposal 缓存，解除 DSpark PP 仅支持贪婪验证的限制。"
+            },
+            {
+              "id": "mtp-evaluation",
+              "text": "对 DSpark / MTP 进行标准评测与实际编码任务对比，最终基于效果与性能综合选型 MTP；在 TP4 + PP2 配置下，128K 长上下文 prefill TTFT 仅增加 2.4%，1000 请求 8 并发负载下输出吞吐提升 15%，平均 E2E 延迟降低 13%。"
+            }
+          ]
+        },
+        {
+          "id": "dsv41-pp",
+          "text": "DSV4.1 PP 推理适配与优化：",
+          "children": [
+            {
+              "id": "small-m-kernel",
+              "text": "补齐模型的 PP 边界状态使支持 pp 并行： mHC 状态在 PP stage 间的传递；针对 DSV4.1 小 M block-FP8 Linear triton kernel 实现 tile 调整与 Split-K，接入 SGLang 形状分派及回退机制；在双机 PP2/TP8 部署下，单请求场景服务端 decode 吞吐由 27 提升至 54 tokens/s，2–16 并发场景提升约 23%–65%ß。"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
