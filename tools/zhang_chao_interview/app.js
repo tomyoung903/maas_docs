@@ -12,6 +12,10 @@
     var next = document.getElementById('next-question');
     var addQuestionButton = document.getElementById('add-question');
     var editQuestionButton = document.getElementById('edit-question');
+    var deleteQuestionButton = document.getElementById('delete-question');
+    var restoreQuestionsButton = document.getElementById('restore-deleted-questions');
+    var deletionKeyPrefix = 'zhang-chao-interview:deleted-question:v1:';
+    var deletedQuestionIds = new Set();
     var editor = document.getElementById('question-editor');
     var editorForm = document.getElementById('question-editor-form');
     var projectSelect = document.getElementById('editor-project');
@@ -157,7 +161,7 @@
       var knownIds = new Set(questions.map(function (question) { return question.id; }));
       var orderedIds = questions.map(function (question) { return question.id; }).concat(Object.keys(entries).filter(function (id) { return !knownIds.has(id); }));
       return orderedIds.filter(function (id) {
-        return entries[id] && evaluationFields.some(function (field) { return (entries[id][field] || '').trim(); });
+        return !deletedQuestionIds.has(id) && entries[id] && evaluationFields.some(function (field) { return (entries[id][field] || '').trim(); });
       }).map(function (id) {
         var question = questions.find(function (item) { return item.id === id; });
         return { id: id, entry: entries[id], question: question, number: question ? question.number : entries[id].questionNumber, text: question ? question.question : (entries[id].questionText || '问题 ' + id) };
@@ -527,6 +531,7 @@
       flushEvaluations();
       currentIndex = index;
       loadEvaluation(question.id);
+      put('question-delete-status', '');
       put('question-index', '问题 ' + question.number + ' · 第 ' + (index + 1) + ' / ' + questions.length + ' 题');
       put('question-project', question.projectLabel || ('项目 ' + question.project));
       if (question.custom) put('question-project', '自定义 · ' + (projectLabels[question.project - 1] || ('项目 ' + question.project)));
@@ -628,7 +633,7 @@
     });
     function updatePinVisibility() {
       document.body.classList.toggle('pins-hidden', !pinsVisible);
-      pins.forEach(function (pin) { pin.hidden = !pinsVisible; });
+      pins.forEach(function (pin) { pin.hidden = !pinsVisible || deletedQuestionIds.has(pin.dataset.question); });
       if (toggle) {
         toggle.setAttribute('aria-pressed', String(pinsVisible));
         toggle.textContent = pinsVisible ? '隐藏问题标记' : '显示问题标记';
@@ -647,6 +652,74 @@
       var warning = document.getElementById('custom-storage-warning');
       if (warning) { warning.textContent = message; warning.hidden = false; }
     }
+    // One tombstone per question avoids read/modify/write races between tabs.
+    // Definitions and interview notes remain intact, so restoring is lossless.
+    function readDeletedQuestions() {
+      var result = new Set();
+      try {
+        for (var index = 0; index < window.localStorage.length; index++) {
+          var key = window.localStorage.key(index);
+          if (key && key.indexOf(deletionKeyPrefix) === 0 && window.localStorage.getItem(key) === '1') {
+            var id = key.slice(deletionKeyPrefix.length);
+            if (/^[a-z0-9_-]{1,200}$/i.test(id)) result.add(id);
+          }
+        }
+        deletedQuestionIds = result;
+      } catch (_) {
+        warnStorage('浏览器暂时无法读取已删除问题；当前页面的删除状态仍保留。');
+      }
+    }
+    function updateDeletedQuestions(message) {
+      var panel = document.getElementById('deleted-questions-panel');
+      if (!panel) return;
+      panel.hidden = !deletedQuestionIds.size;
+      put('deleted-questions-count', message || ('已删除 ' + deletedQuestionIds.size + ' 个问题。原问题和面试记录已保留，可随时恢复。'));
+      if (restoreQuestionsButton) restoreQuestionsButton.disabled = !deletedQuestionIds.size;
+    }
+    function refreshQuestionList() {
+      var openId = dialog.open && questions[currentIndex] ? questions[currentIndex].id : null;
+      flushEvaluations();
+      restoreCustomPins();
+      if (openId) {
+        var index = questions.findIndex(function (question) { return question.id === openId; });
+        if (index >= 0) render(index);
+        else { closeDialog(); displayedEvaluationId = null; currentIndex = -1; }
+      }
+      if (summaryDialog && summaryDialog.open) renderEvaluationSummary();
+    }
+    if (deleteQuestionButton) deleteQuestionButton.addEventListener('click', function () {
+      var question = questions[currentIndex];
+      if (!question) return;
+      flushEvaluations();
+      try { window.localStorage.setItem(deletionKeyPrefix + question.id, '1'); }
+      catch (_) {
+        put('question-delete-status', '删除未保存：浏览器阻止了本地存储，问题和面试记录保持不变。');
+        return;
+      }
+      closeDialog();
+      displayedEvaluationId = null;
+      currentIndex = -1;
+      deletedQuestionIds.add(question.id);
+      restoreCustomPins();
+      updateDeletedQuestions('已删除问题 ' + question.number + '。原问题和面试记录已保留，可恢复全部已删除问题。');
+      if (restoreQuestionsButton) restoreQuestionsButton.focus({ preventScroll: true });
+    });
+    if (restoreQuestionsButton) restoreQuestionsButton.addEventListener('click', function () {
+      readDeletedQuestions();
+      var failed = false;
+      Array.from(deletedQuestionIds).forEach(function (id) {
+        try { window.localStorage.removeItem(deletionKeyPrefix + id); deletedQuestionIds.delete(id); }
+        catch (_) { failed = true; }
+      });
+      refreshQuestionList();
+      if (failed) warnStorage('部分问题尚未恢复：浏览器阻止了本地存储，请重试。');
+      if (addQuestionButton) addQuestionButton.focus({ preventScroll: true });
+    });
+    window.addEventListener('storage', function (event) {
+      if (event.key !== null && event.key.indexOf(deletionKeyPrefix) !== 0) return;
+      readDeletedQuestions();
+      refreshQuestionList();
+    });
     function normalizeCustomNumbers(state) {
       var used = new Set(presetQuestions.map(function (question) { return question.number; }));
       var ordered = state.questions.slice().sort(function (a, b) {
@@ -726,8 +799,8 @@
         if (block.textNode) block.text = block.textNode.textContent;
       });
       customState.questions.sort(function (a, b) { return a.number - b.number; });
-      questions = presetQuestions.concat(customState.questions);
-      customState.questions.forEach(function (question) {
+      questions = presetQuestions.concat(customState.questions).filter(function (question) { return !deletedQuestionIds.has(question.id); });
+      customState.questions.filter(function (question) { return !deletedQuestionIds.has(question.id); }).forEach(function (question) {
         var block = findBlockByAnchor(question.anchorId);
         if (!block || !block.textNode || !document.contains(block.node)) return;
         var range = question.textAnchor && rangeForAnchor(block, question.textAnchor);
@@ -750,6 +823,7 @@
       pins = Array.from(document.querySelectorAll('.question-pin'));
       pins.forEach(function (pin) { pin.setAttribute('aria-expanded', 'false'); });
       updatePinVisibility();
+      updateDeletedQuestions();
       if (claimObserver) claimObserver.observe(document.getElementById('resume'), { childList: true, characterData: true, subtree: true });
     }
     function updateParagraphOptions(selectedIndex) {
@@ -862,6 +936,7 @@
     catch (_) { evaluationStatus('已有面试记录无法读取；新输入暂留当前页面，请复制汇总。', true); }
     claimObserver = new MutationObserver(scheduleRepaint);
     customState = readCustomState();
+    readDeletedQuestions();
     restoreCustomPins();
     if (typeof ResizeObserver === 'function') new ResizeObserver(function () { positionSelectionPins(); updateTextHighlights(dialog.open && questions[currentIndex] ? questions[currentIndex].id : null); }).observe(document.getElementById('resume'));
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(positionSelectionPins);
