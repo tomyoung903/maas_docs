@@ -112,3 +112,58 @@ body{min-width:1100px}.paper{width:1000px;padding:48px 58px 52px;font-family:"Mi
 
 /* Keep the shared annotation overlay within the desktop document width. */
 svg[data-maas-annotation-layer]{max-width:100%}
+
+/* Selection-based questions and individual interview records. */
+
+.project-meta{display:flex;align-items:baseline;justify-content:space-between;gap:20px;font-size:14px;color:#41566c;font-weight:600}
+.project-technologies{color:#526783;white-space:nowrap}
+.experience-children{padding-left:1.4em;margin:10px 0 0;list-style-type:disc}
+.experience-children>li{margin-bottom:16px}
+.experience-children>li:last-child{margin-bottom:0}
+.claim{border-radius:4px}
+.claim.active-anchor{background:#fff1bc;box-shadow:0 2px 0 #d8ad3f}
+
+/* Text-range questions do not change the source DOM or its shared annotations. */
+::highlight(zhang-question-saved){background:#fff0b8;text-decoration:underline #c69727}
+::highlight(zhang-question-active){background:#ffd77b;color:#172b4f;text-decoration:underline #b46d00}
+.selection-action{position:fixed;z-index:4000;padding:9px 13px;border:1px solid #244f90;border-radius:7px;background:#265aac;color:#fff;font:600 13px/1.5 Inter,"Microsoft YaHei",sans-serif;box-shadow:0 4px 15px #142a4c33;white-space:nowrap}
+.selection-action:hover{background:#1d488c}
+.selection-question-pin{position:absolute;z-index:20;line-height:1}
+.selection-question-pin .question-pin{margin:0;top:0;box-shadow:0 1px 5px #142a4c26;background:#fff8df}
+.selection-question-pin .question-pin:hover,.selection-question-pin .question-pin[aria-expanded="true"]{background:var(--blue)}
+.question-range-fallback{position:absolute;z-index:2;background:#ffdf76;opacity:.38;pointer-events:none;border-bottom:1px solid #bc8b20}
+.question-range-fallback.is-active{background:#ffc14f;opacity:.55}
+.editor-anchor-note{margin:-12px 0 20px;color:#687385;font-size:12px;line-height:1.6}
+.editor-field select:disabled{opacity:.75;background:#f4f6f9}
+.claim-text:focus{outline:none}
+@media print{.selection-action,.selection-question-pin,.question-range-fallback{display:none!important}}
+
+#source-claim,#editor-quote{white-space:pre-wrap}
+
+/* Candidate answers and assessments are blank, human-entered local records. */
+#open-summary,#open-summary-from-question,.summary-edit,#copy-summary{border:1px solid #cbd7e8;border-radius:7px;background:#fff;color:#315b8c;padding:9px 13px;font-size:13px;font-weight:600;white-space:nowrap}
+#open-summary:hover,#open-summary-from-question:hover,.summary-edit:hover,#copy-summary:hover{background:#edf4ff;border-color:#8badde}
+.evaluation-inputs{margin-top:27px;padding-top:5px;border-top:1px solid #e3e9f1}
+#question-dialog .evaluation-inputs h3{color:#173663;font-size:16px;margin:17px 0 4px}
+.evaluation-local-note{font-size:12px;color:#748092;line-height:1.65;margin:6px 0 17px}
+.evaluation-field{margin:0 0 17px}
+.evaluation-field label{display:block;font-size:14px;font-weight:600;color:#344967;margin-bottom:7px}
+.evaluation-field textarea,#summary-copy-fallback{display:block;width:100%;padding:11px 13px;border:1px solid #cbd7e8;border-radius:6px;background:#fff;color:#23354f;font:400 15px/1.75 Inter,"Microsoft YaHei",sans-serif;resize:vertical;white-space:pre-wrap}
+.evaluation-field textarea:focus,#summary-copy-fallback:focus{border-color:#6993cf;box-shadow:0 0 0 3px #265aac13;outline:2px solid transparent}
+.evaluation-status{font-size:12px;color:#48745a;margin:10px 0;line-height:1.65}
+.evaluation-status.is-error{color:#a64129}
+#evaluation-summary{width:min(850px,calc(100% - 32px));max-height:calc(100dvh - 56px);padding:30px 34px;border:1px solid #dae3ef;border-radius:14px;box-shadow:0 24px 90px #10213730;color:var(--ink);background:#fff;overflow:auto;overscroll-behavior:contain;font-size:15px;line-height:1.75}
+#evaluation-summary::backdrop{background:#14263e63;backdrop-filter:blur(2px)}
+#evaluation-summary:not([open]){display:none}
+#summary-title{margin:0;color:#173663;font-size:23px;line-height:1.5}
+#close-summary{flex:none;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:#f1f4f8;color:#566274;font-size:23px;line-height:1}
+#summary-count{font-size:13px;color:#687385}
+.summary-entry{border-top:1px solid #e3e9f1;padding:19px 0}
+.summary-entry h3{margin:0 0 7px;color:#265aac;font-size:15px}
+.summary-question,.summary-value{margin:5px 0 13px;white-space:pre-wrap;overflow-wrap:anywhere}
+.summary-question{font-weight:600}
+.summary-entry h4{margin:14px 0 5px;color:#687385;font-size:12px}
+.summary-actions{display:flex;gap:14px;align-items:center;border-top:1px solid #e3e9f1;padding-top:18px;margin-top:8px}
+#summary-copy-status{font-size:12px;color:#687385}
+#summary-copy-fallback{margin-top:15px}
+@media print{#evaluation-summary{display:none!important}}
