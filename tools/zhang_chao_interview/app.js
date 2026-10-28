@@ -640,7 +640,7 @@
       }
       positionSelectionPins();
       updateTextHighlights(dialog.open && questions[currentIndex] ? questions[currentIndex].id : null);
-      put('pin-count', questions.length + ' 个问题 · ' + paragraphBlocks.length + ' 处简历节选');
+      put('pin-count', questions.length + ' 个问题 · ' + paragraphBlocks.length + ' 处关联文本');
     }
     if (toggle) toggle.addEventListener('click', function (event) {
       event.preventDefault();

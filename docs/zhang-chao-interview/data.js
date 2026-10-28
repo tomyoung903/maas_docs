@@ -248,5 +248,33 @@ window.INTERVIEW_QUESTIONS = [
       "考虑固定启动开销、每块工作量及数据复用；自动调参切换也可能让局部曲线下降，不要求严格线性。",
       "展示多形状正确性和预热后计时，与库基线同口径比较，再验证整体收益；不只展示一个获胜尺寸。"
     ]
+  },
+  {
+    "id": "q7",
+    "anchorId": "zhang-ai-tooling-experience",
+    "title": "AI 工具使用经验",
+    "question": "请介绍一下你使用 AI 工具的经验。",
+    "expected": [],
+    "number": 7,
+    "project": 3,
+    "blockIndex": 0,
+    "projectLabel": "AI 工具使用",
+    "claim": "请介绍一下你使用 AI 工具的经验。",
+    "expectedAnswer": [],
+    "sources": []
+  },
+  {
+    "id": "q8",
+    "anchorId": "zhang-ai-tooling-best-experience",
+    "title": "最好的 AI 工具使用经历",
+    "question": "请描述一次你使用 AI 工具时最好的经历。",
+    "expected": [],
+    "number": 8,
+    "project": 3,
+    "blockIndex": 1,
+    "projectLabel": "AI 工具使用",
+    "claim": "请描述一次你使用 AI 工具时最好的经历。",
+    "expectedAnswer": [],
+    "sources": []
   }
 ];

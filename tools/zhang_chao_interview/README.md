@@ -1,6 +1,6 @@
 # Zhang Chao interview page
 
-Source for the five marked resume excerpts and six interview questions.
+Source for the five marked resume excerpts, six original interview questions, and two AI tool-use questions in a separate section at the bottom.
 
 Run from the repository root:
 
@@ -21,4 +21,4 @@ Storage is isolated to this candidate:
 - Interview records: `zhang-chao-interview:evaluations:v1` (payload version 1).
 - Shared annotations retain page key `/zhang-chao-interview/`.
 
-The old question payload (version 1) used section/paragraph positions. It is migrated to version 2 by resolving those unchanged positions to the existing excerpt IDs. Question IDs, numbers and reference answers are retained; migration write failure leaves the recovered questions available in memory. New questions use stable excerpt IDs and optional text offsets, and the six preset questions remain unchanged.
+The old question payload (version 1) used section/paragraph positions. It is migrated to version 2 by resolving those unchanged positions to the existing excerpt IDs. Question IDs, numbers and reference answers are retained; migration write failure leaves the recovered questions available in memory. New questions use stable excerpt IDs and optional text offsets, and the six original preset questions remain unchanged. The two AI prompts are presets 7 and 8 with no reference answers. Existing custom questions numbered 7 or 8 move above the eight presets without changing their IDs, text anchors, reference answers, notes or deletion keys.
