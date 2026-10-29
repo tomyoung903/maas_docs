@@ -1,0 +1,306 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>B300 dense-down kernel timing reproduction | MaaS Docs</title><meta name="description" content="Measured reproduction of the GLM-5.2 dense down-projection kernel-time curve on one rented B300, compared with the retained GB300 reference."><link rel="stylesheet" href="style.css"></head><body>
+<header><div class="wrap"><p class="eyebrow">MaaS Docs · measured reproduction · 29 October 2026</p><h1>Dense down projection on one B300</h1><p>The same matrix-shape question on a newly rented GPU: how does kernel time grow as <i>M</i> changes, while <i>N</i> = 6144 and <i>K</i> = 1536 stay fixed?</p><a href="https://tomyoung903.github.io/maas_docs/tmp/glm52-gb300-dense-down-kernel-tutorial/">Original GB300 tutorial and reference curve ↗</a></div></header>
+<main class="wrap"><div class="cards"><div class="card"><span>Shape coverage</span><strong>259 / 259</strong><small>All reference M values measured</small></div><div class="card"><span>Measured composites</span><strong>7,770</strong><small>GPU-resident timed samples</small></div><div class="card"><span>Matrix contract</span><strong>6144 × 1536</strong><small>Fixed N × K; BF16 → FP8 → BF16</small></div><div class="card"><span>Median timing ratio</span><strong>1.068×</strong><small>B300 / GB300 over shared measured M</small></div></div>
+<section class="panel"><div class="panel-head"><div><h2>Kernel time versus input rows</h2><p class="muted">B300 component means and active-union median, with the original GB300 composite curve. The horizontal axis is logarithmic; the vertical axis is linear.</p></div><span class="tag">Full 259-shape sweep</span></div><div class="notice"><strong>Comparability boundary.</strong> Matrix shapes, FP8 scale contract, DeepGEMM source revision and GPU-active timing metric match the reference. The quantization kernel is a newer isolated JIT port, so this is a controlled reimplementation rather than an exact replay of the original production image.</div><img class="chart" src="kernel-time.svg" alt="Measured B300 active-union, GEMM and quantization times across M, compared with the original GB300 active-union curve."><div class="downloads"><a href="kernel-time.svg">Vector chart · SVG</a><a href="kernel-time.png">Chart · PNG</a><a href="results.csv">Measured table · CSV</a><a href="results.json">Data and metadata · JSON</a></div><div class="anchors table-scroll"><table><thead><tr><th>M · rows</th><th>B300 union · µs</th><th>Quant mean · µs</th><th>GEMM mean · µs</th><th>GB300 union · µs</th><th>B300 / GB300</th><th>Samples</th></tr></thead><tbody><tr><td>1</td><td>7.136</td><td>1.815</td><td>5.342</td><td>6.960</td><td>1.025×</td><td>30</td></tr>
+<tr><td>10</td><td>7.536</td><td>1.805</td><td>5.610</td><td>7.072</td><td>1.066×</td><td>30</td></tr>
+<tr><td>20</td><td>7.392</td><td>1.763</td><td>5.932</td><td>7.456</td><td>0.991×</td><td>30</td></tr>
+<tr><td>100</td><td>8.416</td><td>1.824</td><td>6.593</td><td>7.936</td><td>1.060×</td><td>30</td></tr>
+<tr><td>200</td><td>8.960</td><td>1.836</td><td>6.811</td><td>8.352</td><td>1.073×</td><td>30</td></tr>
+<tr><td>500</td><td>10.640</td><td>2.006</td><td>8.831</td><td>10.464</td><td>1.017×</td><td>30</td></tr>
+<tr><td>1,000</td><td>14.112</td><td>2.355</td><td>11.786</td><td>13.296</td><td>1.061×</td><td>30</td></tr>
+<tr><td>2,000</td><td>20.512</td><td>3.236</td><td>17.297</td><td>17.840</td><td>1.150×</td><td>30</td></tr>
+<tr><td>5,000</td><td>41.600</td><td>5.975</td><td>35.739</td><td>38.064</td><td>1.093×</td><td>30</td></tr>
+<tr><td>10,000</td><td>76.144</td><td>10.530</td><td>65.380</td><td>67.808</td><td>1.123×</td><td>30</td></tr></tbody></table></div><details><summary>All 259 measured shapes</summary><div class="table-scroll"><table><thead><tr><th>M · rows</th><th>B300 union · µs</th><th>Quant mean · µs</th><th>GEMM mean · µs</th><th>GB300 union · µs</th><th>B300 / GB300</th><th>Samples</th></tr></thead><tbody><tr><td>1</td><td>7.136</td><td>1.815</td><td>5.342</td><td>6.960</td><td>1.025×</td><td>30</td></tr>
+<tr><td>2</td><td>7.392</td><td>1.811</td><td>5.329</td><td>7.104</td><td>1.041×</td><td>30</td></tr>
+<tr><td>3</td><td>7.376</td><td>1.854</td><td>5.484</td><td>6.880</td><td>1.072×</td><td>30</td></tr>
+<tr><td>4</td><td>6.976</td><td>1.777</td><td>5.456</td><td>7.136</td><td>0.978×</td><td>30</td></tr>
+<tr><td>5</td><td>7.504</td><td>1.859</td><td>5.643</td><td>6.992</td><td>1.073×</td><td>30</td></tr>
+<tr><td>6</td><td>7.424</td><td>1.823</td><td>5.453</td><td>7.136</td><td>1.040×</td><td>30</td></tr>
+<tr><td>7</td><td>7.360</td><td>1.866</td><td>5.485</td><td>7.072</td><td>1.041×</td><td>30</td></tr>
+<tr><td>8</td><td>7.136</td><td>1.778</td><td>5.535</td><td>7.088</td><td>1.007×</td><td>30</td></tr>
+<tr><td>9</td><td>7.504</td><td>1.831</td><td>5.676</td><td>7.104</td><td>1.056×</td><td>30</td></tr>
+<tr><td>10</td><td>7.536</td><td>1.805</td><td>5.610</td><td>7.072</td><td>1.066×</td><td>30</td></tr>
+<tr><td>11</td><td>7.360</td><td>1.852</td><td>5.508</td><td>7.088</td><td>1.038×</td><td>30</td></tr>
+<tr><td>12</td><td>7.152</td><td>1.785</td><td>5.514</td><td>7.248</td><td>0.987×</td><td>30</td></tr>
+<tr><td>13</td><td>7.376</td><td>1.838</td><td>5.497</td><td>7.104</td><td>1.038×</td><td>30</td></tr>
+<tr><td>14</td><td>7.600</td><td>1.812</td><td>5.575</td><td>7.136</td><td>1.065×</td><td>30</td></tr>
+<tr><td>15</td><td>7.536</td><td>1.860</td><td>5.665</td><td>7.072</td><td>1.066×</td><td>30</td></tr>
+<tr><td>16</td><td>7.184</td><td>1.790</td><td>5.646</td><td>7.104</td><td>1.011×</td><td>30</td></tr>
+<tr><td>17</td><td>7.984</td><td>1.845</td><td>6.140</td><td>7.264</td><td>1.099×</td><td>30</td></tr>
+<tr><td>18</td><td>8.064</td><td>1.801</td><td>6.020</td><td>7.776</td><td>1.037×</td><td>30</td></tr>
+<tr><td>19</td><td>7.792</td><td>1.861</td><td>5.900</td><td>7.344</td><td>1.061×</td><td>30</td></tr>
+<tr><td>20</td><td>7.392</td><td>1.763</td><td>5.932</td><td>7.456</td><td>0.991×</td><td>30</td></tr>
+<tr><td>21</td><td>7.792</td><td>1.859</td><td>5.919</td><td>7.392</td><td>1.054×</td><td>30</td></tr>
+<tr><td>22</td><td>8.112</td><td>1.809</td><td>6.094</td><td>7.776</td><td>1.043×</td><td>30</td></tr>
+<tr><td>23</td><td>7.984</td><td>1.838</td><td>6.169</td><td>7.472</td><td>1.069×</td><td>30</td></tr>
+<tr><td>24</td><td>7.616</td><td>1.789</td><td>5.969</td><td>7.648</td><td>0.996×</td><td>30</td></tr>
+<tr><td>25</td><td>7.840</td><td>1.862</td><td>5.971</td><td>7.504</td><td>1.045×</td><td>30</td></tr>
+<tr><td>26</td><td>8.080</td><td>1.785</td><td>6.197</td><td>7.648</td><td>1.056×</td><td>30</td></tr>
+<tr><td>27</td><td>8.000</td><td>1.843</td><td>6.171</td><td>7.488</td><td>1.068×</td><td>30</td></tr>
+<tr><td>28</td><td>7.632</td><td>1.783</td><td>6.172</td><td>7.680</td><td>0.994×</td><td>30</td></tr>
+<tr><td>29</td><td>7.984</td><td>1.869</td><td>6.135</td><td>7.264</td><td>1.099×</td><td>30</td></tr>
+<tr><td>30</td><td>8.096</td><td>1.796</td><td>5.938</td><td>7.520</td><td>1.077×</td><td>30</td></tr>
+<tr><td>31</td><td>7.776</td><td>1.846</td><td>5.887</td><td>7.280</td><td>1.068×</td><td>30</td></tr>
+<tr><td>32</td><td>7.392</td><td>1.791</td><td>5.881</td><td>7.744</td><td>0.955×</td><td>30</td></tr>
+<tr><td>33</td><td>7.840</td><td>1.849</td><td>5.977</td><td>7.504</td><td>1.045×</td><td>30</td></tr>
+<tr><td>34</td><td>8.416</td><td>1.792</td><td>6.345</td><td>7.904</td><td>1.065×</td><td>30</td></tr>
+<tr><td>35</td><td>8.192</td><td>1.855</td><td>6.304</td><td>7.472</td><td>1.096×</td><td>30</td></tr>
+<tr><td>36</td><td>7.760</td><td>1.774</td><td>6.309</td><td>7.872</td><td>0.986×</td><td>30</td></tr>
+<tr><td>37</td><td>8.048</td><td>1.863</td><td>6.233</td><td>7.520</td><td>1.070×</td><td>30</td></tr>
+<tr><td>38</td><td>8.192</td><td>1.828</td><td>6.045</td><td>7.808</td><td>1.049×</td><td>30</td></tr>
+<tr><td>39</td><td>8.032</td><td>1.868</td><td>6.087</td><td>7.520</td><td>1.068×</td><td>30</td></tr>
+<tr><td>40</td><td>7.680</td><td>1.782</td><td>6.219</td><td>7.664</td><td>1.002×</td><td>30</td></tr>
+<tr><td>41</td><td>8.048</td><td>1.881</td><td>6.191</td><td>7.536</td><td>1.068×</td><td>30</td></tr>
+<tr><td>42</td><td>8.272</td><td>1.810</td><td>6.062</td><td>7.808</td><td>1.059×</td><td>30</td></tr>
+<tr><td>43</td><td>7.856</td><td>1.865</td><td>5.987</td><td>7.536</td><td>1.042×</td><td>30</td></tr>
+<tr><td>44</td><td>7.392</td><td>1.782</td><td>5.977</td><td>7.872</td><td>0.939×</td><td>30</td></tr>
+<tr><td>45</td><td>8.032</td><td>1.852</td><td>6.134</td><td>7.376</td><td>1.089×</td><td>30</td></tr>
+<tr><td>46</td><td>8.384</td><td>1.807</td><td>6.263</td><td>7.808</td><td>1.074×</td><td>30</td></tr>
+<tr><td>47</td><td>8.112</td><td>1.850</td><td>6.256</td><td>7.520</td><td>1.079×</td><td>30</td></tr>
+<tr><td>48</td><td>7.680</td><td>1.761</td><td>6.233</td><td>7.840</td><td>0.980×</td><td>30</td></tr>
+<tr><td>49</td><td>8.032</td><td>1.839</td><td>6.134</td><td>7.696</td><td>1.044×</td><td>30</td></tr>
+<tr><td>50</td><td>8.256</td><td>1.821</td><td>6.105</td><td>7.856</td><td>1.051×</td><td>30</td></tr>
+<tr><td>51</td><td>7.872</td><td>1.798</td><td>6.055</td><td>7.616</td><td>1.034×</td><td>30</td></tr>
+<tr><td>52</td><td>7.600</td><td>1.785</td><td>6.079</td><td>7.712</td><td>0.985×</td><td>30</td></tr>
+<tr><td>53</td><td>8.048</td><td>1.807</td><td>6.221</td><td>7.536</td><td>1.068×</td><td>30</td></tr>
+<tr><td>54</td><td>8.320</td><td>1.795</td><td>6.275</td><td>7.712</td><td>1.079×</td><td>30</td></tr>
+<tr><td>55</td><td>8.080</td><td>1.811</td><td>6.124</td><td>7.520</td><td>1.074×</td><td>30</td></tr>
+<tr><td>56</td><td>7.520</td><td>1.783</td><td>6.037</td><td>7.680</td><td>0.979×</td><td>30</td></tr>
+<tr><td>57</td><td>8.016</td><td>1.802</td><td>6.218</td><td>7.552</td><td>1.061×</td><td>30</td></tr>
+<tr><td>58</td><td>8.336</td><td>1.812</td><td>6.287</td><td>7.936</td><td>1.050×</td><td>30</td></tr>
+<tr><td>59</td><td>8.080</td><td>1.811</td><td>6.258</td><td>7.600</td><td>1.063×</td><td>30</td></tr>
+<tr><td>60</td><td>7.776</td><td>1.776</td><td>6.245</td><td>7.872</td><td>0.988×</td><td>30</td></tr>
+<tr><td>61</td><td>7.952</td><td>1.805</td><td>6.093</td><td>7.504</td><td>1.060×</td><td>30</td></tr>
+<tr><td>62</td><td>8.208</td><td>1.801</td><td>6.077</td><td>7.664</td><td>1.071×</td><td>30</td></tr>
+<tr><td>63</td><td>8.080</td><td>1.809</td><td>6.266</td><td>7.392</td><td>1.093×</td><td>30</td></tr>
+<tr><td>64</td><td>7.792</td><td>1.772</td><td>6.239</td><td>7.648</td><td>1.019×</td><td>30</td></tr>
+<tr><td>68</td><td>8.032</td><td>1.773</td><td>6.245</td><td>7.632</td><td>1.052×</td><td>30</td></tr>
+<tr><td>72</td><td>8.400</td><td>1.782</td><td>6.283</td><td>7.936</td><td>1.058×</td><td>30</td></tr>
+<tr><td>76</td><td>8.016</td><td>1.782</td><td>6.224</td><td>7.696</td><td>1.042×</td><td>30</td></tr>
+<tr><td>80</td><td>7.952</td><td>1.804</td><td>6.271</td><td>8.032</td><td>0.990×</td><td>30</td></tr>
+<tr><td>84</td><td>8.368</td><td>1.798</td><td>6.587</td><td>7.696</td><td>1.087×</td><td>30</td></tr>
+<tr><td>88</td><td>8.416</td><td>1.793</td><td>6.431</td><td>8.064</td><td>1.044×</td><td>30</td></tr>
+<tr><td>92</td><td>8.064</td><td>1.801</td><td>6.246</td><td>7.856</td><td>1.026×</td><td>30</td></tr>
+<tr><td>96</td><td>7.872</td><td>1.803</td><td>6.212</td><td>7.840</td><td>1.004×</td><td>30</td></tr>
+<tr><td>100</td><td>8.416</td><td>1.824</td><td>6.593</td><td>7.936</td><td>1.060×</td><td>30</td></tr>
+<tr><td>104</td><td>8.704</td><td>1.797</td><td>6.601</td><td>7.904</td><td>1.101×</td><td>30</td></tr>
+<tr><td>108</td><td>8.448</td><td>1.802</td><td>6.649</td><td>7.888</td><td>1.071×</td><td>30</td></tr>
+<tr><td>112</td><td>8.064</td><td>1.797</td><td>6.489</td><td>7.904</td><td>1.020×</td><td>30</td></tr>
+<tr><td>116</td><td>8.176</td><td>1.824</td><td>6.370</td><td>7.936</td><td>1.030×</td><td>30</td></tr>
+<tr><td>120</td><td>8.560</td><td>1.799</td><td>6.430</td><td>8.096</td><td>1.057×</td><td>30</td></tr>
+<tr><td>124</td><td>8.192</td><td>1.797</td><td>6.413</td><td>7.904</td><td>1.036×</td><td>30</td></tr>
+<tr><td>128</td><td>8.144</td><td>1.785</td><td>6.502</td><td>8.096</td><td>1.006×</td><td>30</td></tr>
+<tr><td>132</td><td>8.400</td><td>1.815</td><td>6.575</td><td>7.728</td><td>1.087×</td><td>30</td></tr>
+<tr><td>136</td><td>8.688</td><td>1.790</td><td>6.603</td><td>8.048</td><td>1.080×</td><td>30</td></tr>
+<tr><td>140</td><td>8.448</td><td>1.804</td><td>6.651</td><td>7.728</td><td>1.093×</td><td>30</td></tr>
+<tr><td>144</td><td>8.016</td><td>1.772</td><td>6.425</td><td>8.064</td><td>0.994×</td><td>30</td></tr>
+<tr><td>148</td><td>8.448</td><td>1.790</td><td>6.650</td><td>8.000</td><td>1.056×</td><td>30</td></tr>
+<tr><td>152</td><td>8.784</td><td>1.830</td><td>6.773</td><td>8.128</td><td>1.081×</td><td>30</td></tr>
+<tr><td>156</td><td>8.656</td><td>1.804</td><td>6.842</td><td>8.000</td><td>1.082×</td><td>30</td></tr>
+<tr><td>160</td><td>8.224</td><td>1.790</td><td>6.566</td><td>8.112</td><td>1.014×</td><td>30</td></tr>
+<tr><td>164</td><td>8.384</td><td>1.789</td><td>6.589</td><td>8.080</td><td>1.038×</td><td>30</td></tr>
+<tr><td>168</td><td>8.704</td><td>1.834</td><td>6.561</td><td>8.320</td><td>1.046×</td><td>30</td></tr>
+<tr><td>172</td><td>8.448</td><td>1.818</td><td>6.651</td><td>8.064</td><td>1.048×</td><td>30</td></tr>
+<tr><td>176</td><td>8.304</td><td>1.799</td><td>6.783</td><td>8.304</td><td>1.000×</td><td>30</td></tr>
+<tr><td>180</td><td>8.672</td><td>1.790</td><td>6.876</td><td>8.128</td><td>1.067×</td><td>30</td></tr>
+<tr><td>184</td><td>8.960</td><td>1.830</td><td>6.852</td><td>8.160</td><td>1.098×</td><td>30</td></tr>
+<tr><td>188</td><td>8.736</td><td>1.807</td><td>6.883</td><td>8.176</td><td>1.068×</td><td>30</td></tr>
+<tr><td>192</td><td>8.032</td><td>1.806</td><td>6.528</td><td>8.128</td><td>0.988×</td><td>30</td></tr>
+<tr><td>196</td><td>8.640</td><td>1.805</td><td>6.834</td><td>8.448</td><td>1.023×</td><td>30</td></tr>
+<tr><td>200</td><td>8.960</td><td>1.836</td><td>6.811</td><td>8.352</td><td>1.073×</td><td>30</td></tr>
+<tr><td>204</td><td>8.784</td><td>1.830</td><td>6.896</td><td>8.288</td><td>1.060×</td><td>30</td></tr>
+<tr><td>208</td><td>8.512</td><td>1.819</td><td>7.030</td><td>8.656</td><td>0.983×</td><td>30</td></tr>
+<tr><td>212</td><td>8.848</td><td>1.837</td><td>7.041</td><td>8.320</td><td>1.063×</td><td>30</td></tr>
+<tr><td>216</td><td>8.960</td><td>1.853</td><td>6.831</td><td>8.656</td><td>1.035×</td><td>30</td></tr>
+<tr><td>220</td><td>8.752</td><td>1.818</td><td>6.900</td><td>8.352</td><td>1.048×</td><td>30</td></tr>
+<tr><td>224</td><td>8.496</td><td>1.818</td><td>7.015</td><td>8.624</td><td>0.985×</td><td>30</td></tr>
+<tr><td>228</td><td>8.960</td><td>1.825</td><td>7.111</td><td>8.384</td><td>1.069×</td><td>30</td></tr>
+<tr><td>232</td><td>9.248</td><td>1.863</td><td>7.067</td><td>8.496</td><td>1.089×</td><td>30</td></tr>
+<tr><td>236</td><td>8.880</td><td>1.861</td><td>7.029</td><td>8.272</td><td>1.074×</td><td>30</td></tr>
+<tr><td>240</td><td>8.384</td><td>1.851</td><td>6.830</td><td>8.368</td><td>1.002×</td><td>30</td></tr>
+<tr><td>244</td><td>8.928</td><td>1.846</td><td>7.088</td><td>8.592</td><td>1.039×</td><td>30</td></tr>
+<tr><td>248</td><td>9.184</td><td>1.867</td><td>7.046</td><td>8.688</td><td>1.057×</td><td>30</td></tr>
+<tr><td>252</td><td>9.136</td><td>1.850</td><td>7.223</td><td>8.480</td><td>1.077×</td><td>30</td></tr>
+<tr><td>256</td><td>8.784</td><td>1.833</td><td>7.234</td><td>8.576</td><td>1.024×</td><td>30</td></tr>
+<tr><td>272</td><td>9.056</td><td>1.853</td><td>7.190</td><td>8.416</td><td>1.076×</td><td>30</td></tr>
+<tr><td>288</td><td>9.376</td><td>1.870</td><td>7.205</td><td>8.736</td><td>1.073×</td><td>30</td></tr>
+<tr><td>304</td><td>9.312</td><td>1.870</td><td>7.417</td><td>8.672</td><td>1.074×</td><td>30</td></tr>
+<tr><td>320</td><td>8.864</td><td>1.855</td><td>7.287</td><td>9.120</td><td>0.972×</td><td>30</td></tr>
+<tr><td>336</td><td>9.296</td><td>1.885</td><td>7.479</td><td>8.784</td><td>1.058×</td><td>30</td></tr>
+<tr><td>352</td><td>9.952</td><td>1.929</td><td>7.745</td><td>9.184</td><td>1.084×</td><td>30</td></tr>
+<tr><td>368</td><td>9.568</td><td>1.920</td><td>7.600</td><td>8.928</td><td>1.072×</td><td>30</td></tr>
+<tr><td>384</td><td>9.216</td><td>1.917</td><td>7.538</td><td>9.120</td><td>1.011×</td><td>30</td></tr>
+<tr><td>400</td><td>9.952</td><td>1.950</td><td>7.974</td><td>9.408</td><td>1.058×</td><td>30</td></tr>
+<tr><td>416</td><td>10.240</td><td>1.957</td><td>8.029</td><td>9.808</td><td>1.044×</td><td>30</td></tr>
+<tr><td>432</td><td>10.128</td><td>1.961</td><td>8.201</td><td>9.472</td><td>1.069×</td><td>30</td></tr>
+<tr><td>448</td><td>10.192</td><td>1.959</td><td>8.503</td><td>10.192</td><td>1.000×</td><td>30</td></tr>
+<tr><td>464</td><td>10.544</td><td>1.969</td><td>8.561</td><td>9.824</td><td>1.073×</td><td>30</td></tr>
+<tr><td>480</td><td>10.768</td><td>1.978</td><td>8.553</td><td>10.288</td><td>1.047×</td><td>30</td></tr>
+<tr><td>496</td><td>10.848</td><td>1.989</td><td>8.833</td><td>10.336</td><td>1.050×</td><td>30</td></tr>
+<tr><td>500</td><td>10.640</td><td>2.006</td><td>8.831</td><td>10.464</td><td>1.017×</td><td>30</td></tr>
+<tr><td>512</td><td>10.864</td><td>1.996</td><td>8.861</td><td>10.320</td><td>1.053×</td><td>30</td></tr>
+<tr><td>528</td><td>11.072</td><td>2.036</td><td>8.849</td><td>10.464</td><td>1.058×</td><td>30</td></tr>
+<tr><td>544</td><td>11.312</td><td>2.019</td><td>9.289</td><td>10.496</td><td>1.078×</td><td>30</td></tr>
+<tr><td>560</td><td>11.040</td><td>2.044</td><td>9.181</td><td>10.864</td><td>1.016×</td><td>30</td></tr>
+<tr><td>576</td><td>11.136</td><td>2.044</td><td>9.046</td><td>10.528</td><td>1.058×</td><td>30</td></tr>
+<tr><td>592</td><td>11.856</td><td>2.060</td><td>9.670</td><td>11.424</td><td>1.038×</td><td>30</td></tr>
+<tr><td>608</td><td>11.904</td><td>2.074</td><td>9.810</td><td>11.072</td><td>1.075×</td><td>30</td></tr>
+<tr><td>624</td><td>11.744</td><td>2.084</td><td>9.772</td><td>11.472</td><td>1.024×</td><td>30</td></tr>
+<tr><td>640</td><td>12.032</td><td>2.092</td><td>9.937</td><td>11.232</td><td>1.071×</td><td>30</td></tr>
+<tr><td>656</td><td>12.000</td><td>2.119</td><td>9.871</td><td>11.632</td><td>1.032×</td><td>30</td></tr>
+<tr><td>672</td><td>11.904</td><td>2.124</td><td>9.772</td><td>11.328</td><td>1.051×</td><td>30</td></tr>
+<tr><td>688</td><td>12.400</td><td>2.116</td><td>10.382</td><td>12.240</td><td>1.013×</td><td>30</td></tr>
+<tr><td>704</td><td>12.544</td><td>2.126</td><td>10.410</td><td>12.032</td><td>1.043×</td><td>30</td></tr>
+<tr><td>720</td><td>12.720</td><td>2.139</td><td>10.517</td><td>12.400</td><td>1.026×</td><td>30</td></tr>
+<tr><td>736</td><td>11.968</td><td>2.140</td><td>9.802</td><td>10.848</td><td>1.103×</td><td>30</td></tr>
+<tr><td>752</td><td>11.984</td><td>2.154</td><td>9.763</td><td>11.168</td><td>1.073×</td><td>30</td></tr>
+<tr><td>768</td><td>11.920</td><td>2.147</td><td>9.782</td><td>10.912</td><td>1.092×</td><td>30</td></tr>
+<tr><td>784</td><td>12.720</td><td>2.179</td><td>10.498</td><td>11.968</td><td>1.063×</td><td>30</td></tr>
+<tr><td>800</td><td>12.592</td><td>2.194</td><td>10.375</td><td>11.840</td><td>1.064×</td><td>30</td></tr>
+<tr><td>816</td><td>12.688</td><td>2.207</td><td>10.537</td><td>12.416</td><td>1.022×</td><td>30</td></tr>
+<tr><td>832</td><td>12.832</td><td>2.220</td><td>10.625</td><td>11.888</td><td>1.079×</td><td>30</td></tr>
+<tr><td>848</td><td>12.768</td><td>2.220</td><td>10.480</td><td>12.368</td><td>1.032×</td><td>30</td></tr>
+<tr><td>864</td><td>12.688</td><td>2.215</td><td>10.476</td><td>11.936</td><td>1.063×</td><td>30</td></tr>
+<tr><td>880</td><td>13.296</td><td>2.241</td><td>11.093</td><td>12.736</td><td>1.044×</td><td>30</td></tr>
+<tr><td>896</td><td>13.344</td><td>2.233</td><td>11.116</td><td>12.512</td><td>1.066×</td><td>30</td></tr>
+<tr><td>912</td><td>13.584</td><td>2.243</td><td>11.331</td><td>12.784</td><td>1.063×</td><td>30</td></tr>
+<tr><td>928</td><td>13.632</td><td>2.241</td><td>11.374</td><td>12.480</td><td>1.092×</td><td>30</td></tr>
+<tr><td>944</td><td>13.568</td><td>2.262</td><td>11.306</td><td>12.880</td><td>1.053×</td><td>30</td></tr>
+<tr><td>960</td><td>13.584</td><td>2.277</td><td>11.309</td><td>12.592</td><td>1.079×</td><td>30</td></tr>
+<tr><td>976</td><td>14.176</td><td>2.324</td><td>11.802</td><td>13.600</td><td>1.042×</td><td>30</td></tr>
+<tr><td>992</td><td>14.112</td><td>2.335</td><td>11.782</td><td>13.216</td><td>1.068×</td><td>30</td></tr>
+<tr><td>1,000</td><td>14.112</td><td>2.355</td><td>11.786</td><td>13.296</td><td>1.061×</td><td>30</td></tr>
+<tr><td>1,008</td><td>14.209</td><td>2.356</td><td>11.836</td><td>13.136</td><td>1.082×</td><td>30</td></tr>
+<tr><td>1,024</td><td>14.432</td><td>2.366</td><td>12.079</td><td>13.472</td><td>1.071×</td><td>30</td></tr>
+<tr><td>1,088</td><td>14.656</td><td>2.429</td><td>12.283</td><td>13.488</td><td>1.087×</td><td>30</td></tr>
+<tr><td>1,152</td><td>14.528</td><td>2.479</td><td>12.059</td><td>13.984</td><td>1.039×</td><td>30</td></tr>
+<tr><td>1,216</td><td>15.488</td><td>2.524</td><td>12.979</td><td>14.320</td><td>1.082×</td><td>30</td></tr>
+<tr><td>1,280</td><td>16.176</td><td>2.599</td><td>13.524</td><td>15.360</td><td>1.053×</td><td>30</td></tr>
+<tr><td>1,344</td><td>16.224</td><td>2.658</td><td>13.557</td><td>14.944</td><td>1.086×</td><td>30</td></tr>
+<tr><td>1,408</td><td>17.200</td><td>2.713</td><td>14.534</td><td>16.336</td><td>1.053×</td><td>30</td></tr>
+<tr><td>1,472</td><td>18.080</td><td>2.759</td><td>15.332</td><td>16.480</td><td>1.097×</td><td>30</td></tr>
+<tr><td>1,536</td><td>18.000</td><td>2.821</td><td>15.209</td><td>16.880</td><td>1.066×</td><td>30</td></tr>
+<tr><td>1,600</td><td>18.224</td><td>2.906</td><td>15.370</td><td>16.832</td><td>1.083×</td><td>30</td></tr>
+<tr><td>1,664</td><td>18.352</td><td>2.966</td><td>15.401</td><td>17.280</td><td>1.062×</td><td>30</td></tr>
+<tr><td>1,728</td><td>18.576</td><td>3.010</td><td>15.657</td><td>16.528</td><td>1.124×</td><td>30</td></tr>
+<tr><td>1,792</td><td>20.208</td><td>3.045</td><td>17.118</td><td>16.992</td><td>1.189×</td><td>30</td></tr>
+<tr><td>1,856</td><td>20.224</td><td>3.093</td><td>17.192</td><td>18.192</td><td>1.112×</td><td>30</td></tr>
+<tr><td>1,920</td><td>20.704</td><td>3.174</td><td>17.533</td><td>19.056</td><td>1.087×</td><td>30</td></tr>
+<tr><td>1,984</td><td>20.592</td><td>3.222</td><td>17.360</td><td>17.728</td><td>1.162×</td><td>30</td></tr>
+<tr><td>2,000</td><td>20.512</td><td>3.236</td><td>17.297</td><td>17.840</td><td>1.150×</td><td>30</td></tr>
+<tr><td>2,048</td><td>22.528</td><td>3.266</td><td>19.152</td><td>17.536</td><td>1.285×</td><td>30</td></tr>
+<tr><td>2,112</td><td>22.448</td><td>3.311</td><td>19.260</td><td>20.608</td><td>1.089×</td><td>30</td></tr>
+<tr><td>2,176</td><td>22.080</td><td>3.386</td><td>18.736</td><td>20.256</td><td>1.090×</td><td>30</td></tr>
+<tr><td>2,240</td><td>21.504</td><td>3.414</td><td>18.100</td><td>19.856</td><td>1.083×</td><td>30</td></tr>
+<tr><td>2,304</td><td>21.616</td><td>3.467</td><td>18.091</td><td>19.680</td><td>1.098×</td><td>30</td></tr>
+<tr><td>2,368</td><td>23.344</td><td>3.535</td><td>19.844</td><td>21.984</td><td>1.062×</td><td>30</td></tr>
+<tr><td>2,432</td><td>23.808</td><td>3.577</td><td>20.266</td><td>21.792</td><td>1.093×</td><td>30</td></tr>
+<tr><td>2,496</td><td>24.032</td><td>3.628</td><td>20.385</td><td>22.080</td><td>1.088×</td><td>30</td></tr>
+<tr><td>2,560</td><td>24.096</td><td>3.710</td><td>20.424</td><td>22.448</td><td>1.073×</td><td>30</td></tr>
+<tr><td>2,624</td><td>24.176</td><td>3.750</td><td>20.406</td><td>23.168</td><td>1.044×</td><td>30</td></tr>
+<tr><td>2,688</td><td>24.672</td><td>3.806</td><td>20.800</td><td>22.560</td><td>1.094×</td><td>30</td></tr>
+<tr><td>2,752</td><td>26.640</td><td>3.823</td><td>22.848</td><td>25.200</td><td>1.057×</td><td>30</td></tr>
+<tr><td>2,816</td><td>26.704</td><td>3.883</td><td>22.860</td><td>24.560</td><td>1.087×</td><td>30</td></tr>
+<tr><td>2,880</td><td>26.912</td><td>3.945</td><td>22.974</td><td>25.104</td><td>1.072×</td><td>30</td></tr>
+<tr><td>2,944</td><td>27.376</td><td>4.011</td><td>23.370</td><td>25.216</td><td>1.086×</td><td>30</td></tr>
+<tr><td>3,008</td><td>27.392</td><td>4.041</td><td>23.390</td><td>25.696</td><td>1.066×</td><td>30</td></tr>
+<tr><td>3,072</td><td>27.824</td><td>4.102</td><td>23.780</td><td>25.392</td><td>1.096×</td><td>30</td></tr>
+<tr><td>3,136</td><td>28.672</td><td>4.195</td><td>24.499</td><td>26.512</td><td>1.081×</td><td>30</td></tr>
+<tr><td>3,200</td><td>28.192</td><td>4.224</td><td>24.073</td><td>26.192</td><td>1.076×</td><td>30</td></tr>
+<tr><td>3,264</td><td>27.264</td><td>4.262</td><td>23.007</td><td>25.008</td><td>1.090×</td><td>30</td></tr>
+<tr><td>3,328</td><td>27.552</td><td>4.327</td><td>23.145</td><td>24.928</td><td>1.105×</td><td>30</td></tr>
+<tr><td>3,392</td><td>30.896</td><td>4.327</td><td>26.615</td><td>29.104</td><td>1.062×</td><td>30</td></tr>
+<tr><td>3,456</td><td>31.472</td><td>4.372</td><td>27.098</td><td>28.704</td><td>1.096×</td><td>30</td></tr>
+<tr><td>3,520</td><td>31.408</td><td>4.448</td><td>27.085</td><td>29.456</td><td>1.066×</td><td>30</td></tr>
+<tr><td>3,584</td><td>31.664</td><td>4.503</td><td>27.150</td><td>28.864</td><td>1.097×</td><td>30</td></tr>
+<tr><td>3,648</td><td>31.936</td><td>4.571</td><td>27.324</td><td>27.856</td><td>1.146×</td><td>30</td></tr>
+<tr><td>3,712</td><td>31.776</td><td>4.604</td><td>27.131</td><td>29.184</td><td>1.089×</td><td>30</td></tr>
+<tr><td>3,776</td><td>31.488</td><td>4.707</td><td>26.681</td><td>29.568</td><td>1.065×</td><td>30</td></tr>
+<tr><td>3,840</td><td>32.592</td><td>4.734</td><td>27.907</td><td>29.248</td><td>1.114×</td><td>30</td></tr>
+<tr><td>3,904</td><td>32.880</td><td>4.794</td><td>28.165</td><td>29.696</td><td>1.107×</td><td>30</td></tr>
+<tr><td>3,968</td><td>33.152</td><td>4.849</td><td>28.323</td><td>30.176</td><td>1.099×</td><td>30</td></tr>
+<tr><td>4,032</td><td>33.120</td><td>4.890</td><td>28.211</td><td>28.896</td><td>1.146×</td><td>30</td></tr>
+<tr><td>4,096</td><td>36.080</td><td>4.925</td><td>31.104</td><td>30.368</td><td>1.188×</td><td>30</td></tr>
+<tr><td>4,224</td><td>36.304</td><td>5.028</td><td>31.284</td><td>31.200</td><td>1.164×</td><td>30</td></tr>
+<tr><td>4,352</td><td>36.336</td><td>5.148</td><td>31.164</td><td>33.088</td><td>1.098×</td><td>30</td></tr>
+<tr><td>4,480</td><td>37.616</td><td>5.404</td><td>32.148</td><td>34.032</td><td>1.105×</td><td>30</td></tr>
+<tr><td>4,608</td><td>36.160</td><td>5.469</td><td>30.649</td><td>32.256</td><td>1.121×</td><td>30</td></tr>
+<tr><td>4,736</td><td>40.912</td><td>5.527</td><td>35.565</td><td>34.928</td><td>1.171×</td><td>30</td></tr>
+<tr><td>4,864</td><td>41.264</td><td>5.806</td><td>35.593</td><td>32.848</td><td>1.256×</td><td>30</td></tr>
+<tr><td>4,992</td><td>42.048</td><td>6.057</td><td>35.979</td><td>38.144</td><td>1.102×</td><td>30</td></tr>
+<tr><td>5,000</td><td>41.600</td><td>5.975</td><td>35.739</td><td>38.064</td><td>1.093×</td><td>30</td></tr>
+<tr><td>5,120</td><td>40.576</td><td>6.087</td><td>34.503</td><td>38.256</td><td>1.061×</td><td>30</td></tr>
+<tr><td>5,248</td><td>42.144</td><td>6.208</td><td>35.970</td><td>38.208</td><td>1.103×</td><td>30</td></tr>
+<tr><td>5,376</td><td>40.768</td><td>6.201</td><td>34.584</td><td>36.128</td><td>1.128×</td><td>30</td></tr>
+<tr><td>5,504</td><td>46.864</td><td>6.619</td><td>40.159</td><td>38.464</td><td>1.218×</td><td>30</td></tr>
+<tr><td>5,632</td><td>46.672</td><td>6.867</td><td>39.951</td><td>42.624</td><td>1.095×</td><td>30</td></tr>
+<tr><td>5,760</td><td>46.736</td><td>6.934</td><td>39.977</td><td>42.048</td><td>1.111×</td><td>30</td></tr>
+<tr><td>5,888</td><td>46.672</td><td>6.978</td><td>39.805</td><td>43.056</td><td>1.084×</td><td>30</td></tr>
+<tr><td>6,016</td><td>46.960</td><td>7.138</td><td>39.817</td><td>41.952</td><td>1.119×</td><td>30</td></tr>
+<tr><td>6,144</td><td>51.280</td><td>7.209</td><td>44.155</td><td>40.352</td><td>1.271×</td><td>30</td></tr>
+<tr><td>6,272</td><td>51.920</td><td>7.505</td><td>44.585</td><td>42.224</td><td>1.230×</td><td>30</td></tr>
+<tr><td>6,400</td><td>51.856</td><td>7.686</td><td>44.227</td><td>47.168</td><td>1.099×</td><td>30</td></tr>
+<tr><td>6,528</td><td>51.056</td><td>7.625</td><td>43.503</td><td>46.512</td><td>1.098×</td><td>30</td></tr>
+<tr><td>6,656</td><td>49.376</td><td>7.302</td><td>42.097</td><td>47.264</td><td>1.045×</td><td>30</td></tr>
+<tr><td>6,784</td><td>55.936</td><td>7.637</td><td>48.412</td><td>46.336</td><td>1.207×</td><td>30</td></tr>
+<tr><td>6,912</td><td>56.864</td><td>8.150</td><td>48.469</td><td>43.872</td><td>1.296×</td><td>30</td></tr>
+<tr><td>7,040</td><td>56.656</td><td>8.058</td><td>48.566</td><td>50.480</td><td>1.122×</td><td>30</td></tr>
+<tr><td>7,168</td><td>56.656</td><td>8.079</td><td>48.639</td><td>51.360</td><td>1.103×</td><td>30</td></tr>
+<tr><td>7,296</td><td>55.616</td><td>8.262</td><td>47.499</td><td>50.704</td><td>1.097×</td><td>30</td></tr>
+<tr><td>7,424</td><td>54.192</td><td>7.937</td><td>46.349</td><td>51.376</td><td>1.055×</td><td>30</td></tr>
+<tr><td>7,552</td><td>60.848</td><td>8.347</td><td>52.571</td><td>49.952</td><td>1.218×</td><td>30</td></tr>
+<tr><td>7,680</td><td>61.616</td><td>8.531</td><td>52.882</td><td>55.424</td><td>1.112×</td><td>30</td></tr>
+<tr><td>7,808</td><td>61.584</td><td>8.576</td><td>52.918</td><td>54.784</td><td>1.124×</td><td>30</td></tr>
+<tr><td>7,936</td><td>57.824</td><td>8.394</td><td>49.534</td><td>55.536</td><td>1.041×</td><td>30</td></tr>
+<tr><td>8,064</td><td>60.480</td><td>8.928</td><td>51.579</td><td>55.200</td><td>1.096×</td><td>30</td></tr>
+<tr><td>8,192</td><td>60.256</td><td>8.925</td><td>51.387</td><td>50.992</td><td>1.182×</td><td>30</td></tr>
+<tr><td>8,320</td><td>66.448</td><td>9.345</td><td>57.011</td><td>54.080</td><td>1.229×</td><td>30</td></tr>
+<tr><td>8,448</td><td>66.512</td><td>9.287</td><td>57.121</td><td>54.512</td><td>1.220×</td><td>30</td></tr>
+<tr><td>8,576</td><td>66.960</td><td>9.270</td><td>57.480</td><td>59.248</td><td>1.130×</td><td>30</td></tr>
+<tr><td>8,704</td><td>66.768</td><td>9.443</td><td>57.222</td><td>60.048</td><td>1.112×</td><td>30</td></tr>
+<tr><td>8,832</td><td>66.864</td><td>9.562</td><td>57.210</td><td>59.536</td><td>1.123×</td><td>30</td></tr>
+<tr><td>8,960</td><td>65.344</td><td>9.659</td><td>55.711</td><td>60.320</td><td>1.083×</td><td>30</td></tr>
+<tr><td>9,088</td><td>71.104</td><td>9.681</td><td>61.297</td><td>59.856</td><td>1.188×</td><td>30</td></tr>
+<tr><td>9,216</td><td>71.024</td><td>9.710</td><td>61.173</td><td>64.032</td><td>1.109×</td><td>30</td></tr>
+<tr><td>9,344</td><td>71.248</td><td>9.891</td><td>61.065</td><td>63.504</td><td>1.122×</td><td>30</td></tr>
+<tr><td>9,472</td><td>70.912</td><td>9.906</td><td>61.096</td><td>64.496</td><td>1.099×</td><td>30</td></tr>
+<tr><td>9,600</td><td>70.688</td><td>9.971</td><td>60.847</td><td>63.568</td><td>1.112×</td><td>30</td></tr>
+<tr><td>9,728</td><td>75.696</td><td>10.054</td><td>65.694</td><td>64.656</td><td>1.171×</td><td>30</td></tr>
+<tr><td>9,856</td><td>75.536</td><td>10.278</td><td>65.102</td><td>61.792</td><td>1.222×</td><td>30</td></tr>
+<tr><td>9,984</td><td>75.520</td><td>10.247</td><td>65.151</td><td>68.336</td><td>1.105×</td><td>30</td></tr>
+<tr><td>10,000</td><td>76.144</td><td>10.530</td><td>65.380</td><td>67.808</td><td>1.123×</td><td>30</td></tr></tbody></table></div></details></section>
+<div class="two"><section class="panel"><h2>What was timed</h2><p>One logical dense-down invocation: online activation quantization followed by an FP8 DeepGEMM matrix multiplication. Each input shape is warmed before measured samples; host allocation, data transfers and correctness checks are outside the measurement ranges.</p><dl class="spec"><dt>Input</dt><dd>BF16 <code>[M, 1536]</code>, resident on the GPU</dd><dt>Weight</dt><dd>FP8 E4M3 <code>[6144, 1536]</code>, resident on the GPU</dd><dt>Scale format</dt><dd>Group/block 128; packed UE8M0 scale representation</dd><dt>Output</dt><dd>BF16 <code>[M, 6144]</code></dd><dt>Primary metric</dt><dd>Median GPU-active interval union of the quantization and GEMM kernels</dd><dt>Components</dt><dd>Mean quantization kernel and mean GEMM kernel time</dd><dt>Cache policy</dt><dd>No explicit L2 flush between samples</dd></dl><div class="notice"><strong>Not wall-clock latency.</strong> CUDA events around eager Python dispatch also include gaps between launches. They are not substituted for the Nsight kernel-time metric in this chart.</div></section>
+<section class="panel"><h2>How to read the comparison</h2><p>The rented B300 has 148 SMs on an x86 host; the retained GB300 reference has 152 SMs with an ARM host. GPU variant, clocks, power limit, CPU architecture and software build can affect the result.</p><p>Quantization uses an isolated newer SGLang v2 JIT port, rather than the original production AOT v2 implementation. The operation and scale contract match, but this is not an exact production-image replay or an isolated hardware comparison.</p><p>The DeepGEMM source commit is authoritative. It is b4296edce3cd07e3b6392c8eb390cee9c41a6b70 (commit message: Bump to v0.1.3); the installed package can report a different version string.</p><p>The original curve aggregates two GB300 nodes at shared anchors; this reproduction uses one B300. A ratio below 1 means this measured B300 run was faster, not that every B300 is faster.</p><p>Active-union median is the measured GPU time covered by the component kernels. Quantization and GEMM are means; their sum need not exactly equal the median composite.</p><h3>Correctness and validation evidence</h3><pre class="small" style="white-space:pre-wrap;overflow-wrap:anywhere">{
+  &quot;1&quot;: {
+    &quot;finite&quot;: true,
+    &quot;relative_l2_vs_quantized_fp32&quot;: 0.0016586153069511056,
+    &quot;relative_l2_vs_unquantized_bf16_fp32&quot;: 0.038060229271650314
+  },
+  &quot;10&quot;: {
+    &quot;finite&quot;: true,
+    &quot;relative_l2_vs_quantized_fp32&quot;: 0.0016582113457843661,
+    &quot;relative_l2_vs_unquantized_bf16_fp32&quot;: 0.037560880184173584
+  },
+  &quot;100&quot;: {
+    &quot;finite&quot;: true,
+    &quot;relative_l2_vs_quantized_fp32&quot;: 0.0016599217196926475,
+    &quot;relative_l2_vs_unquantized_bf16_fp32&quot;: 0.037765149027109146
+  },
+  &quot;500&quot;: {
+    &quot;finite&quot;: true,
+    &quot;relative_l2_vs_quantized_fp32&quot;: 0.0016603412805125117,
+    &quot;relative_l2_vs_unquantized_bf16_fp32&quot;: 0.037723999470472336
+  },
+  &quot;2000&quot;: {
+    &quot;finite&quot;: true,
+    &quot;relative_l2_vs_quantized_fp32&quot;: 0.001660051173530519,
+    &quot;relative_l2_vs_unquantized_bf16_fp32&quot;: 0.03770258650183678
+  },
+  &quot;10000&quot;: {
+    &quot;finite&quot;: true,
+    &quot;relative_l2_vs_quantized_fp32&quot;: 0.001660476322285831,
+    &quot;relative_l2_vs_unquantized_bf16_fp32&quot;: 0.03771354258060455
+  }
+}</pre></section></div>
+<section class="panel"><h2>Reproduction record</h2><p class="muted">Pinned software, measurement settings and source evidence supplied by this run.</p><dl class="meta"><dt>gpu name</dt><dd><code>NVIDIA B300 SXM6 PC</code></dd><dt>sm count</dt><dd><code>148</code></dd><dt>compute capability</dt><dd><code>[10, 3]</code></dd><dt>cpu architecture</dt><dd><code>x86_64</code></dd><dt>torch</dt><dd><code>2.11.0+cu130</code></dd><dt>cuda</dt><dd><code>13.0</code></dd><dt>driver version</dt><dd><code>580.173.02</code></dd><dt>nvcc</dt><dd><code>13.0.88</code></dd><dt>nsys version</dt><dd><code>2025.3.2.474</code></dd><dt>triton</dt><dd><code>3.6.0</code></dd><dt>deepgemm package version</dt><dd><code>2.5.0</code></dd><dt>deepgemm commit</dt><dd><code>b4296edce3cd07e3b6392c8eb390cee9c41a6b70</code></dd><dt>quant source sha256</dt><dd><code>7719545131a8f77de08213f347f7b6ae242dcfb4ff2b9c4b25e42f0ad1e62020</code></dd><dt>quant source identity</dt><dd><code>SGLang isolated v2 JIT port; source differs from original production artifact</code></dd><dt>source hashes</dt><dd><code>{&quot;full_result_sha256&quot;: &quot;ff15514dcada03f7604bc51912f8c6bf8ac7c7f7926c9c96edbe8e4f96da43da&quot;}</code></dd><dt>warmups</dt><dd><code>3</code></dd><dt>samples per shape</dt><dd><code>30</code></dd><dt>seed</dt><dd><code>20261029</code></dd><dt>clock policy</dt><dd><code>Provider default clocks; no application clock lock or power-limit change</code></dd><dt>power limit w</dt><dd><code>1100</code></dd><dt>metric</dt><dd><code>GPU active interval union of exactly two correlation-owned kernels per NVTX range</code></dd><dt>input policy</dt><dd><code>seeded synthetic fixed CUDA-resident tensors; no L2 flush; no H2D in samples</code></dd><dt>nvtx range count</dt><dd><code>7770</code></dd><dt>valid sample count</dt><dd><code>7770</code></dd><dt>rejected sample count</dt><dd><code>0</code></dd><dt>status</dt><dd><code>complete</code></dd><dt>started at</dt><dd><code>2026-10-29T09:38:47+00:00</code></dd><dt>completed at</dt><dd><code>2026-10-29T09:38:52+00:00</code></dd></dl><div class="downloads"><a href="source/repro_benchmark.py">repro_benchmark.py</a><a href="source/parse_dense_down_nsys.py">parse_dense_down_nsys.py</a><span>quant_source/ included in the source tree</span><a href="source/setup-b300-bench.sh">setup-b300-bench.sh</a><a href="source/run-b300-steady.sh">run-b300-steady.sh</a><a href="source/prepare_public_report.py">prepare_public_report.py</a><a href="source/sweep-data.js">sweep-data.js</a><a href="source/REPRODUCE.md">REPRODUCE.md</a><a href="source/build_b300_report.py">Report generator</a><a href="reproduction-sources.zip">All reproduction sources · ZIP</a></div></section>
+<footer>Generated 2026-10-29T09:40:10+00:00. Reference: retained 19 August 2026 GB300 sweep. This page contains measured results only; omitted shapes are not interpolated as measurements.</footer></main></body></html>
