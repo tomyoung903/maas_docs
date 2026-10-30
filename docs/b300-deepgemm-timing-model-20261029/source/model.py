@@ -11,6 +11,12 @@ import numpy as np
 from scipy.optimize import nnls
 from selector import select
 
+# NVIDIA HGX B300: 72 PFLOP/s sparse FP8 per eight-GPU system;
+# dense throughput is half the sparse figure. This is an advertised reference,
+# not a measurement of the rental GPU's clock-dependent maximum.
+PEAK_DENSE_FP8_FLOPS = 72e15 / 2 / 8
+PEAK_SOURCE = 'https://www.nvidia.com/en-us/data-center/hgx/'
+
 def metrics(pred,y):
     e=pred-y; r=e/y
     return dict(mae_us=float(np.mean(abs(e))),rmse_us=float(np.mean(e**2)**.5),mape_pct=float(np.mean(abs(r))*100),median_ape_pct=float(np.median(abs(r))*100),p95_ape_pct=float(np.quantile(abs(r),.95)*100),max_ape_pct=float(max(abs(r))*100),rms_relative_pct=float(np.mean(r**2)**.5*100),relative_mse=float(np.mean(r**2)),r2=float(1-np.sum(e**2)/np.sum((y-y.mean())**2)))
@@ -48,10 +54,14 @@ def main(root):
     main,p=evaluate(X,y,first);linear,pl=evaluate(linearX,y,first);extended,p4=evaluate(X4,y,first)
     for i,r in enumerate(rows):
         r.update(predicted_us=float(p[i]),linear_us=float(pl[i]),tail_model_us=float(p4[i]),residual_us=float(p[i]-y[i]),residual_pct=float((p[i]/y[i]-1)*100))
+        useful_flops=2*r['m']*r['n']*r['k']
+        achieved_flops=useful_flops/(r['gemm_mean_us']*1e-6)
+        r.update(useful_gemm_flops=useful_flops,achieved_tflops=achieved_flops/1e12,compute_utilization_pct=100*achieved_flops/PEAK_DENSE_FP8_FLOPS)
     summary=dict(schema='b300-deepgemm-model-v1',measurement=payload['metadata'],n_shapes=len(rows),n_samples=len(rows)*30,primary=main,linear=linear,tail_sensitivity=extended,repeat_run=metrics(first,y),within_run=dict(median_sd_us=float(np.median([r['gemm_sd_us'] for r in rows]))),effective_sm_tflops=[2*128*1536/(b*1e-6)/1e12 for b in main['coefficients'][1:]],source_selector_matches=len(rows),max_absolute_error=max(rows,key=lambda r:abs(r['residual_us'])),max_relative_error=max(rows,key=lambda r:abs(r['residual_pct'])),anchors=[r for r in rows if r['m'] in [1,100,500,1000,2000,5000,10000]],rows=rows)
+    summary['compute_utilization']=dict(peak_dense_fp8_flops=PEAK_DENSE_FP8_FLOPS,peak_source=PEAK_SOURCE,peak_derivation='72 PFLOP/s sparse per system / 2 / 8 GPUs = 4.5 PFLOP/s dense per GPU',formula='100 * 2*M*N*K / (gemm_mean_us * 1e-6 * peak_dense_fp8_flops)',meaning='Useful dense GEMM throughput / advertised dense FP8 peak; not an SM-active or Tensor Core hardware counter',peak_verified_date='2026-10-30')
     (root/'model.json').write_text(json.dumps(summary,indent=2)+'\n')
     with (root/'predictions.csv').open('w',newline='') as f:
-        writer=csv.DictWriter(f,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
+        writer=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator='\n');writer.writeheader();writer.writerows(rows)
     draw(root,rows,main,linear)
     print(json.dumps({k:summary[k] for k in ['n_shapes','effective_sm_tflops','source_selector_matches']}))
     print('primary',main['coefficients'],main['fit'])
@@ -66,6 +76,27 @@ def draw(root,rows,main,linear):
     m=np.array([r['m'] for r in rows]);y=np.array([r['gemm_mean_us'] for r in rows]);p=np.array([r['predicted_us'] for r in rows]);pl=np.array([r['linear_us'] for r in rows]);er=np.array([r['residual_us'] for r in rows]);sw=np.array([r['swap'] for r in rows]);first=np.array([r['first_mean_us'] for r in rows])
     def save(fig,name):
         fig.savefig(root/f'{name}.svg',bbox_inches='tight');fig.savefig(root/f'{name}.png',dpi=180,bbox_inches='tight');plt.close(fig)
+    fig,a=plt.subplots(figsize=(12,7))
+    a.plot(m,pl,color='#9ba7b0',lw=1.3,label='Straight-line baseline')
+    a.plot(m,p,color='#dc7834',lw=1.7,label='Tile-wave model')
+    a.scatter(m,y,s=15,color='#087d91',label='Measured GEMM mean',zorder=3)
+    a.set_xscale('log');a.set_xlim(.85,12500);a.set_ylim(0,70)
+    a.set_xlabel('M (rows)');a.set_ylabel('GEMM duration (µs)');a.grid(alpha=.18)
+    right=a.twinx();purple='#7c3a9f'
+    utilization=np.array([r['compute_utilization_pct'] for r in rows])
+    right.plot(m,utilization,color=purple,lw=1.7,ls='--',label='Compute utilization (right axis)')
+    right.set_ylim(0,100);right.set_yticks(np.arange(0,101,20))
+    right.set_ylabel('Compute utilization (% of nominal dense FP8 peak)',color=purple,labelpad=12)
+    right.tick_params(axis='y',colors=purple);right.spines['right'].set_visible(True);right.spines['right'].set_color(purple)
+    right.scatter([m[-1]],[utilization[-1]],s=26,color=purple,zorder=4)
+    right.annotate(f'M = 10,000: {utilization[-1]:.1f}%',xy=(m[-1],utilization[-1]),xytext=(.66,.80),textcoords='axes fraction',ha='center',color=purple,fontweight='bold',arrowprops=dict(arrowstyle='->',color=purple,lw=.9))
+    handles,labels=a.get_legend_handles_labels();h2,l2=right.get_legend_handles_labels()
+    a.legend(handles+h2,labels+l2,loc='upper left',framealpha=.95,fontsize=10)
+    a.set_title('B300 DeepGEMM: kernel time and compute utilization',fontsize=16,pad=32)
+    a.text(.5,1.02,'All 259 measured shapes · N = 6144 · K = 1536 · 30 samples per shape',transform=a.transAxes,ha='center',fontsize=10)
+    fig.text(.5,.025,'Utilization = 2MNK ÷ (mean GEMM time × 4.5 PFLOP/s) × 100%\nOne B300 · advertised dense FP8 peak · useful GEMM FLOPs · not a hardware activity counter',ha='center',fontsize=10,color='#526675')
+    fig.subplots_adjust(left=.085,right=.885,bottom=.17,top=.84)
+    save(fig,'gemm-time-and-utilization')
     fig,ax=plt.subplots(2,2,figsize=(13,8),gridspec_kw={'height_ratios':[2.1,1]})
     for i in [0,1]:
         a=ax[0,i];a.plot(m,pl,color='#9ba7b0',lw=1.2,label='Straight-line baseline');a.plot(m,p,color='#dc7834',lw=1.5,label='Tile-wave model');a.scatter(m,y,s=11,color='#087d91',label='Measured GEMM mean',zorder=3)
