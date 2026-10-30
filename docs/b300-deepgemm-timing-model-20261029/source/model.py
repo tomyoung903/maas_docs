@@ -16,6 +16,8 @@ from selector import select
 # not a measurement of the rental GPU's clock-dependent maximum.
 PEAK_DENSE_FP8_FLOPS = 72e15 / 2 / 8
 PEAK_SOURCE = 'https://www.nvidia.com/en-us/data-center/hgx/'
+PEAK_HBM_BYTES_PER_SECOND = 7.7e12
+HBM_PEAK_SOURCE = 'https://dam-cdn.nvd.orangelogic.com/AssetLink/1k0p832eq8r5ca0u5383ie5o4tp3bst1.pdf'
 
 def metrics(pred,y):
     e=pred-y; r=e/y
@@ -57,8 +59,17 @@ def main(root):
         useful_flops=2*r['m']*r['n']*r['k']
         achieved_flops=useful_flops/(r['gemm_mean_us']*1e-6)
         r.update(useful_gemm_flops=useful_flops,achieved_tflops=achieved_flops/1e12,compute_utilization_pct=100*achieved_flops/PEAK_DENSE_FP8_FLOPS)
+        # User-requested cold-input payload assumption: one complete FP8 read
+        # of each input per GEMM and one BF16 output write, with no C read.
+        # This is not a counter-derived measurement of physical HBM traffic.
+        read_bytes=r['m']*r['k']+r['n']*r['k']
+        write_bytes=2*r['m']*r['n']
+        total_bytes=read_bytes+write_bytes
+        bandwidth=total_bytes/(r['gemm_mean_us']*1e-6)
+        r.update(assumed_hbm_read_bytes=read_bytes,assumed_hbm_write_bytes=write_bytes,assumed_hbm_total_bytes=total_bytes,assumed_hbm_tb_s=bandwidth/1e12,assumed_hbm_utilization_pct=100*bandwidth/PEAK_HBM_BYTES_PER_SECOND)
     summary=dict(schema='b300-deepgemm-model-v1',measurement=payload['metadata'],n_shapes=len(rows),n_samples=len(rows)*30,primary=main,linear=linear,tail_sensitivity=extended,repeat_run=metrics(first,y),within_run=dict(median_sd_us=float(np.median([r['gemm_sd_us'] for r in rows]))),effective_sm_tflops=[2*128*1536/(b*1e-6)/1e12 for b in main['coefficients'][1:]],source_selector_matches=len(rows),max_absolute_error=max(rows,key=lambda r:abs(r['residual_us'])),max_relative_error=max(rows,key=lambda r:abs(r['residual_pct'])),anchors=[r for r in rows if r['m'] in [1,100,500,1000,2000,5000,10000]],rows=rows)
     summary['compute_utilization']=dict(peak_dense_fp8_flops=PEAK_DENSE_FP8_FLOPS,peak_source=PEAK_SOURCE,peak_derivation='72 PFLOP/s sparse per system / 2 / 8 GPUs = 4.5 PFLOP/s dense per GPU',formula='100 * 2*M*N*K / (gemm_mean_us * 1e-6 * peak_dense_fp8_flops)',meaning='Useful dense GEMM throughput / advertised dense FP8 peak; not an SM-active or Tensor Core hardware counter',peak_verified_date='2026-10-30')
+    summary['assumed_hbm_utilization']=dict(peak_hbm_bytes_per_second=PEAK_HBM_BYTES_PER_SECOND,peak_source=HBM_PEAK_SOURCE,peak_source_page=5,peak_verified_date='2026-10-30',formula='100 * (M*K + N*K + 2*M*N) / (gemm_mean_us * 1e-6 * peak_hbm_bytes_per_second)',assumptions=['Each FP8 input element is read from HBM once per GEMM invocation','Each BF16 output element is written once; no previous output is read','No input data persists in cache across invocations; perfect reuse after the first read within an invocation'],exclusions=['Scale metadata','Padding and transaction granularity','Additional input fetches or writeback overhead'],meaning='Assumed logical tensor-payload bandwidth / nominal HBM peak, not measured physical HBM traffic')
     (root/'model.json').write_text(json.dumps(summary,indent=2)+'\n')
     with (root/'predictions.csv').open('w',newline='') as f:
         writer=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator='\n');writer.writeheader();writer.writerows(rows)
@@ -82,20 +93,24 @@ def draw(root,rows,main,linear):
     a.scatter(m,y,s=15,color='#087d91',label='Measured GEMM mean',zorder=3)
     a.set_xscale('log');a.set_xlim(.85,12500);a.set_ylim(0,70)
     a.set_xlabel('M (rows)');a.set_ylabel('GEMM duration (µs)');a.grid(alpha=.18)
-    right=a.twinx();purple='#7c3a9f'
+    right=a.twinx();purple='#7c3a9f';green='#397a36'
     utilization=np.array([r['compute_utilization_pct'] for r in rows])
     right.plot(m,utilization,color=purple,lw=1.7,ls='--',label='Compute utilization (right axis)')
+    hbm=np.array([r['assumed_hbm_utilization_pct'] for r in rows])
+    right.plot(m,hbm,color=green,lw=1.7,ls='-.',label='Assumed HBM utilization (right axis)')
     right.set_ylim(0,100);right.set_yticks(np.arange(0,101,20))
-    right.set_ylabel('Compute utilization (% of nominal dense FP8 peak)',color=purple,labelpad=12)
-    right.tick_params(axis='y',colors=purple);right.spines['right'].set_visible(True);right.spines['right'].set_color(purple)
+    right.set_ylabel('Utilization (% of respective nominal peak)',color='#26384b',labelpad=12)
+    right.spines['right'].set_visible(True)
     right.scatter([m[-1]],[utilization[-1]],s=26,color=purple,zorder=4)
-    right.annotate(f'M = 10,000: {utilization[-1]:.1f}%',xy=(m[-1],utilization[-1]),xytext=(.66,.80),textcoords='axes fraction',ha='center',color=purple,fontweight='bold',arrowprops=dict(arrowstyle='->',color=purple,lw=.9))
+    right.annotate(f'Compute at M = 10,000: {utilization[-1]:.1f}%',xy=(m[-1],utilization[-1]),xytext=(.66,.80),textcoords='axes fraction',ha='center',color=purple,fontweight='bold',arrowprops=dict(arrowstyle='->',color=purple,lw=.9))
+    right.scatter([m[-1]],[hbm[-1]],s=26,color=green,zorder=4)
+    right.annotate(f'HBM at M = 10,000: {hbm[-1]:.1f}%',xy=(m[-1],hbm[-1]),xytext=(.44,.40),textcoords='axes fraction',ha='center',color=green,fontweight='bold',arrowprops=dict(arrowstyle='->',color=green,lw=.9))
     handles,labels=a.get_legend_handles_labels();h2,l2=right.get_legend_handles_labels()
     a.legend(handles+h2,labels+l2,loc='upper left',framealpha=.95,fontsize=10)
-    a.set_title('B300 DeepGEMM: kernel time and compute utilization',fontsize=16,pad=32)
+    a.set_title('B300 DeepGEMM: time, compute and HBM utilization',fontsize=16,pad=32)
     a.text(.5,1.02,'All 259 measured shapes · N = 6144 · K = 1536 · 30 samples per shape',transform=a.transAxes,ha='center',fontsize=10)
-    fig.text(.5,.025,'Utilization = 2MNK ÷ (mean GEMM time × 4.5 PFLOP/s) × 100%\nOne B300 · advertised dense FP8 peak · useful GEMM FLOPs · not a hardware activity counter',ha='center',fontsize=10,color='#526675')
-    fig.subplots_adjust(left=.085,right=.885,bottom=.17,top=.84)
+    fig.text(.5,.022,'Compute: 2MNK / (t × 4.5 PFLOP/s) · HBM: (MK + NK + 2MN) / (t × 7.7 TB/s) · both × 100%\nHBM assumption: read each FP8 input once from HBM + write BF16 output once per GEMM\nLogical tensor payload only; actual HBM traffic and cache hits were not measured',ha='center',fontsize=9.5,color='#526675')
+    fig.subplots_adjust(left=.085,right=.885,bottom=.20,top=.84)
     save(fig,'gemm-time-and-utilization')
     fig,ax=plt.subplots(2,2,figsize=(13,8),gridspec_kw={'height_ratios':[2.1,1]})
     for i in [0,1]:
