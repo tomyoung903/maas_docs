@@ -1,0 +1,135 @@
+{
+  "candidate": "孟子清",
+  "sections": [
+    {
+      "title": "一段式端到端自动驾驶模型推理性能优化",
+      "subtitle": "文远知行 · 模型优化工程师 · AI 基础架构 · 2024.06 – 至今",
+      "excerpts": [
+        {
+          "id": "weride-e2e-1",
+          "text": "面向 NVIDIA Orin-Y + QNX Safety + TensorRT 车端环境，负责端到端模型 Profiling 与性能优化；通过 INT8 量化、关键算子重写/融合及计算图优化，将推理延迟从约 210 ms 降至 130 ms（-38%）。"
+        },
+        {
+          "id": "weride-e2e-2",
+          "text": "在图像编码模块中落地 QAT INT8 推理，采用权重 Per-Channel、激活 Per-Tensor 对称量化；对 LayerNorm 等精度敏感算子保留高精度，并优化 QDQ Placement 以保留 TensorRT Conv/Add Fusion，端到端延迟降低约 11 ms。"
+        },
+        {
+          "id": "weride-e2e-3",
+          "text": "针对 Safety Runtime 下大矩阵拆分为多次 GEMM + Concat 的开销，基于 CUTLASS 实现 GEMM、GEMM+ReLU、GEMM+Add TensorRT Plugin，通过矩阵乘优化与 Epilogue Fusion 替换原执行链路，端到端延迟降低约 67 ms。"
+        },
+        {
+          "id": "weride-e2e-4",
+          "text": "开发 RoPE TensorRT Plugin，并基于 Pattern Matching 实现 ONNX Graph Rewrite 规则，消除冗余 Cast、Reshape、Concat 等结构，减少 Kernel Launch 与数据转换开销。"
+        }
+      ]
+    },
+    {
+      "title": "模型转换与部署基础设施",
+      "subtitle": "文远知行 · 模型优化工程师 · AI 基础架构 · 2024.06 – 至今",
+      "excerpts": [
+        {
+          "id": "weride-deployment-1",
+          "text": "负责模型交付链路关键能力设计与开发，参与内部模型转换 Toolchain 演进，覆盖 ONNX、图优化、量化、TensorRT / QNN Backend 与 Profiling，支持新硬件平台接入、工具链升级及模型转换/性能问题定位。"
+        },
+        {
+          "id": "weride-deployment-2",
+          "text": "主导设计并实现模型打包与按需加载机制：编译期按目标平台与配置裁剪模型资源，运行期根据硬件与 Runtime 环境选择模型；通过统一 Model Manager 提供模型转换、打包与交付能力。"
+        },
+        {
+          "id": "weride-deployment-3",
+          "text": "设计 Toolchain 升级过程中的模型版本兼容机制，支持不同硬件、Runtime 与软件版本组合下的模型稳定交付和持续演进。"
+        }
+      ]
+    },
+    {
+      "title": "异构 Hybrid Runtime 与高吞吐仿真系统",
+      "subtitle": "文远知行 · 模型优化工程师 · AI 基础架构 · 2024.06 – 至今",
+      "excerpts": [
+        {
+          "id": "weride-hybrid-1",
+          "text": "面向 Qualcomm 8650 平台 INT16 / 非对称量化与多 NPU 分区执行方式，设计并实现离线推理与仿真框架，支持大规模正确性验证与轨迹 ADE 评测。"
+        },
+        {
+          "id": "weride-hybrid-2",
+          "text": "抽象统一的分段推理与中间 Tensor 接口，允许各 Partition 独立选择 QNN / ONNX Runtime 等 Backend，支持跨 Backend 组合执行、分区级结果比对与误差定位。"
+        },
+        {
+          "id": "weride-hybrid-3",
+          "text": "针对串行推理、文件同步、Inferer 反复初始化及 NPU 吞吐瓶颈，基于 Python Coroutine + Backend Resource Pool 构建多 Bag 异步流水线，以 gRPC 封装远端硬件推理服务并复用 Inferer Session，吞吐从 0.16 提升至 3.3 frame/s（20.6×）。"
+        }
+      ]
+    },
+    {
+      "title": "AI 芯片性能评测与分析",
+      "subtitle": "文远知行 · 模型优化工程师 · AI 基础架构 · 2024.06 – 至今",
+      "excerpts": [
+        {
+          "id": "weride-profiling-1",
+          "text": "主导自动驾驶场景下的 AI 芯片性能评测方法设计，从端到端模型中抽取代表性片段，结合量化策略及计算特征，构建推理延迟预测与跨平台性能对比方法。"
+        },
+        {
+          "id": "weride-profiling-2",
+          "text": "在模型与数据脱敏后，开展 NVIDIA Orin / Thor、神玑、芯擎等平台的性能评测及瓶颈分析，为算力规划、硬件选型与平台演进提供量化依据。"
+        }
+      ]
+    },
+    {
+      "title": "CUDA GEMM Kernel 性能优化",
+      "subtitle": "个人项目",
+      "excerpts": [
+        {
+          "id": "personal-gemm-1",
+          "text": "独立实现并优化 Jetson Orin（Ampere）FP32 GEMM 与 Jetson Thor（Blackwell）GEMM Kernel；在 4096×4096×4096 矩阵规模下，两平台均取得超过 CUTLASS 的性能。"
+        },
+        {
+          "id": "personal-gemm-2",
+          "text": "Ampere / FP32：构建全局内存、Shared Memory 与 Register 多级 Tiling，通过 cp.async、Shared Memory 多级流水线、Bank Conflict 消除、Register Ping-Pong 等优化，结合 Nsight Compute 分析访存、Warp Stall、指令吞吐及寄存器/Occupancy 权衡。"
+        },
+        {
+          "id": "personal-gemm-3",
+          "text": "Blackwell / INT8：围绕 TMA 搬运、Tensor Core MMA、Warp Specialization 设计多级异步计算流水线；分析 TMA 延迟与 Shared Memory 容量对在途数据量的约束，通过扩大 Tile、优化 L2 数据复用及 8×8 Grouped-Snake 遍历改善访存局部性并突破性能瓶颈。"
+        }
+      ]
+    },
+    {
+      "title": "家庭多渠道账单自动归集与入账 Agent",
+      "subtitle": "个人项目",
+      "excerpts": [
+        {
+          "id": "personal-accounting-1",
+          "text": "基于 Qwen3.5-4B 构建家庭记账 Agent，将微信、支付宝、借记卡与信用卡流水自动标准化，识别跨渠道关联交易与亲友代付，生成可执行的合并、分类和入账结果。"
+        },
+        {
+          "id": "personal-accounting-2",
+          "text": "设计结构化记账 DSL 作为统一推理与执行接口，通过 SFT + OPD 提升交易解析和 DSL 生成能力，利用 RLFT 增强复杂关联交易的推理与匹配；输出带置信度的入账方案，由 Harness 执行校验并兜底处理低置信度或失败条目。"
+        },
+        {
+          "id": "personal-accounting-3",
+          "text": "构建数据闭环：回流自动入账错误/失败案例，生成虚拟交易样本并持续开展 RLFT 迭代；项目实现自动合并入账率 90%+、自动入账正确率 99%。"
+        }
+      ]
+    },
+    {
+      "title": "常问问题",
+      "excerpts": [
+        {
+          "id": "meng-ai-tooling-experience",
+          "text": "请介绍一下你使用 AI 工具的经验。"
+        },
+        {
+          "id": "meng-ai-tooling-best-experience",
+          "text": "请描述一次你使用 AI 工具时最好的经历。"
+        },
+        {
+          "id": "meng-kernel-gemm-mnk",
+          "text": "GEMM kernel 的实现与 M、N、K 有什么关系？"
+        },
+        {
+          "id": "meng-kernel-time-estimate",
+          "text": "前一题回答较好时追问：给定任意 kernel 及其输入规模，假设实现合理，你如何粗略估算它的运行时间（kernel time）？"
+        }
+      ],
+      "subtitle": "面试补充问题"
+    }
+  ]
+}
