@@ -23,6 +23,12 @@ ii = group['ii']['selected_ii_s'] * 1e6
 offsets = {k: v * 1e6 for k, v in group['ii']['witness']}
 tile_us = region['total_s'] * 1e6
 arch = load('model-provenance.json')['arch']
+calibration = load('bandwidth-calibration.json')
+bw = calibration['selected_bandwidth_Bps']
+assert arch['ddr_bandwidth'] == bw and arch['ddr_max_util'] == 1.0
+expected_arch = load('upstream/model-provenance.json')['arch'] | {'ddr_bandwidth': bw}
+assert expected_arch == arch, 'Only the HBM bandwidth parameter may change.'
+assert load('upstream/plan.json') == load('plan.json'), 'The tile plan must remain unchanged.'
 meta = load('kernel-metadata.json')
 slots = arch['sm_count'] * meta['max_active_blocks']
 steps = case['k'] // meta['tile'][2]
@@ -73,6 +79,8 @@ numbers = dict(case, slots=slots, k_steps=steps, tile_us=tile_us, ii_us=ii, offs
                ops=ops, flops=2*case['m']*case['n']*case['k'])
 numbers['ideal_bytes'] = 2*(case['m']*case['k']+case['k']*case['n']+case['m']*case['n'])
 numbers['ai'] = numbers['flops']/numbers['ideal_bytes']
+numbers['hbm_bandwidth_Bps'] = bw
+numbers['bandwidth_source'] = 'Independent cp.async microbenchmark, 1 GiB working set'
 (DATA/'numbers.json').write_text(json.dumps(numbers,indent=2)+'\n')
 recipe = (OUT/'source/predict.py').read_text()
 recipe = recipe[recipe.index("    kb=KernelBuilder"):recipe.index("    (dest/'plan.json')")]
@@ -82,6 +90,23 @@ replace = {
     'ROWS':rows,'FIRST':timeline(),'LAST':timeline(True),'RECIPE':html.escape(recipe),
     'PRED':f'{case["predicted_us"]:.2f}','MEAS':f'{case["device_cold_us"]:.2f}',
     'ERROR':f'{abs(case["error_pct"]):.2f}','TILE':f'{tile_us:.9f}',
+    'TILE2':f'{tile_us:.2f}', 'BODY6':f'{case["predicted_us"]:.6f}',
+    'BODY9':f'{case["predicted_us"]:.9f}', 'BW':f'{bw/1e12:.9f}',
+    'SHARE':f'{bw/slots/1e9:.4f}', 'RIDGE':f'{arch["fp16_tensor_flops"]/bw:.2f}',
+    'LOWER':f'{numbers["ideal_bytes"]/bw*1e6:.2f}',
+    'II6':f'{ii:.6f}', 'II9':f'{ii:.9f}',
+    'STORE6':f'{ops["store_C"]["us"]:.6f}', 'STORE9':f'{ops["store_C"]["us"]:.9f}',
+    'MMASTART':f'{offsets["mma"]:.6f}', 'LOAD_RATIO':f'{ops["load_B"]["us"]/ops["mma"]["us"]:.2f}',
+    'GAP2':f'{case["device_cold_us"]-case["predicted_us"]:.2f}',
+    'WARMGAP3':f'{case["device_warm_us"]-case["predicted_us"]:.3f}',
+    'WARMERROR':f'{100*(1-case["predicted_us"]/case["device_warm_us"]):.2f}',
+    'BWPCT':f'{2*case["k"]*case["n"]/(case["device_cold_us"]*1e-6)/bw*100:.2f}',
+    'DELTA':f'{case["predicted_us"]-load("upstream/comparison.json")["cases"][0]["predicted_us"]:.3f}',
+    'RATE_TABLE': ''.join(
+        '<tr><td>'+html.escape(r['label'])+'</td>'
+        f'<td>{r["bandwidth_Bps"]/1e12:.9f} TB/s</td><td>{r["predicted_us"]:.3f} µs</td>'
+        f'<td>{r["below_cold_us"]:.3f} µs · {abs(r["cold_error_pct"]):.2f}%</td></tr>'
+        for r in load('bandwidth-comparison.json')),
 }
 page = Path(__file__).with_name('template.html').read_text()
 for key,value in replace.items():page=page.replace('@@'+key+'@@',value)

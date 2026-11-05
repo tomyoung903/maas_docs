@@ -1,17 +1,26 @@
 from dataclasses import replace
-import hashlib,json,subprocess
+import argparse,hashlib,json,subprocess
 from pathlib import Path
 import tilesight
 from tilesight.arch.h20 import H20
 from tilesight.modeling import program as sight
 from tilesight.modeling.program.builder import KernelBuilder
-root=Path(__file__).resolve().parents[1]/'data'
-cases=json.loads((root/'cases.json').read_text())
+data=Path(__file__).resolve().parents[1]/'data'
+parser=argparse.ArgumentParser(description='Reproduce the H20 memory-bound GEMM prediction on CPU.')
+parser.add_argument('--output-dir', type=Path, default=data/'rerun')
+parser.add_argument('--hbm-bps', type=float, help='Optional bandwidth sensitivity override, in decimal bytes/s.')
+args=parser.parse_args()
+root=args.output_dir
+root.mkdir(parents=True,exist_ok=True)
+cases=json.loads((data/'cases.json').read_text())
+calibration=json.loads((data/'bandwidth-calibration.json').read_text())
 arch=H20().set_to_microbench()
-metadata=json.loads((root/'kernel-metadata.json').read_text())
+arch.ddr_bandwidth=args.hbm_bps if args.hbm_bps is not None else calibration['selected_bandwidth_Bps']
+assert arch.ddr_bandwidth > 0 and arch.ddr_max_util == 1.0
+metadata=json.loads((data/'kernel-metadata.json').read_text())
 residency=metadata['max_active_blocks']
 commit=subprocess.check_output(['git','-C',str(Path(tilesight.__file__).parent),'rev-parse','HEAD'],text=True).strip()
-(root/'model-provenance.json').write_text(json.dumps(dict(tilesight_commit=commit,cases_sha256=hashlib.sha256((root/'cases.json').read_bytes()).hexdigest(),arch={k:v for k,v in vars(arch).items() if isinstance(v,(int,float,str,bool))},residency_source='CUDA occupancy query on the compiled kernel, before measurement'),indent=2))
+(root/'model-provenance.json').write_text(json.dumps(dict(tilesight_commit=commit,cases_sha256=hashlib.sha256((data/'cases.json').read_bytes()).hexdigest(),arch={k:v for k,v in vars(arch).items() if isinstance(v,(int,float,str,bool))},bandwidth_calibration_sha256=hashlib.sha256((data/'bandwidth-calibration.json').read_bytes()).hexdigest(),bandwidth_source='Independent cp.async microbenchmark' if args.hbm_bps is None else 'Explicit sensitivity override',residency_source='CUDA occupancy query on the compiled kernel, before measurement'),indent=2))
 summary=[]
 for case in cases:
     dest=root/case['name'];dest.mkdir(exist_ok=True)
