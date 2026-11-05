@@ -1,0 +1,75 @@
+{
+  "status": "verified",
+  "paragraphs": [
+    "Hardware counters now directly show additional HBM write traffic after write-based eviction. Three independent one-pass pairs measured 24.04\u201325.25 MB of additional HBM writes (22.93\u201324.08 MiB), while HBM reads stayed near 146.65 MB.",
+    "A separate complete metric comparison also found identical arithmetic instruction counts and identical SM-origin write requests to L2. Those 26,624 write sectors represent 851,968 bytes\u2014the size of the output matrix. The extra HBM writes therefore do not come from the GEMM executing more output stores."
+  ],
+  "columns": [
+    {
+      "key": "metric",
+      "label": "Hardware counter"
+    },
+    {
+      "key": "read_only",
+      "label": "Read-only eviction"
+    },
+    {
+      "key": "write_based",
+      "label": "Write-based eviction"
+    }
+  ],
+  "rows": [
+    {
+      "metric": "HBM bytes read",
+      "read_only": "146,650,112",
+      "write_based": "146,650,112"
+    },
+    {
+      "metric": "HBM bytes written",
+      "read_only": "2,149,376",
+      "write_based": "28,330,496"
+    },
+    {
+      "metric": "SM-origin L2 write requests (32-byte sectors)",
+      "read_only": "26,624",
+      "write_based": "26,624"
+    },
+    {
+      "metric": "Tensor instructions",
+      "read_only": "572,416",
+      "write_based": "572,416"
+    },
+    {
+      "metric": "ALU instructions",
+      "read_only": "1,970,176",
+      "write_based": "1,970,176"
+    },
+    {
+      "metric": "FMA instructions",
+      "read_only": "356,096",
+      "write_based": "356,096"
+    },
+    {
+      "metric": "Load/store-unit instructions",
+      "read_only": "1,145,664",
+      "write_based": "1,145,664"
+    },
+    {
+      "metric": "L2 sector hit rate",
+      "read_only": "4.81%",
+      "write_based": "4.37%"
+    },
+    {
+      "metric": "Tensor pipeline activity (% of peak sustained elapsed)",
+      "read_only": "13.52%",
+      "write_based": "11.61%"
+    }
+  ],
+  "notes": [
+    "The complete comparison used three application-replay passes. The repeated HBM-only comparisons used one pass each. Compare traffic within each matched collection; do not pool different metric sets.",
+    "Counter collection perturbs execution. The 42.080 and 52.032 \u00b5s timings elsewhere on this page remain the earlier Nsight Systems measurements, not times obtained under Nsight Compute.",
+    "NVIDIA documents that DRAM byte counters include cache writebacks. These counters count traffic, not individual write addresses. Extra write traffic is measured directly; assigning every byte to a specific prior cache line remains an inference.",
+    "Combined with the wait, read-only replacement, and write-size controls, this provides strong evidence that dirty-cache eviction/writeback explains most of the timing gap. It does not yield an exact byte-by-byte explanation of every microsecond.",
+    "The Tensor activity percentage uses elapsed time in its denominator. Lower activity with unchanged Tensor instruction count is consistent with the same work taking longer; this percentage is not GEMM FLOPS utilization."
+  ]
+}
