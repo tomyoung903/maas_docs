@@ -28,7 +28,7 @@ The benchmark initializes inputs, checks against cuBLAS, performs 100 warmups,
 then measures repeated-input and cold-prepared samples and CUDA Graph replay.
 Its flush kernel touches 512 MiB outside the timed GEMM interval.
 CUDA-event results printed by the benchmark are not the same timing definition
-as the separate Nsight Systems device-duration samples saved in data/samples.csv.
+as the separate Nsight Systems device-duration samples saved in data/kernel-times.csv.
 
 ## CPU prediction
 
@@ -56,6 +56,16 @@ Per-CTA time is 128 × 1.187411846690 + 0.078658218841 + 0.587479729924
 + 0.043717744765 + 0.296852961672 = 152.995425031509 µs.
 624 CTAs / (78 SMs × 4 resident CTAs/SM) gives two waves, or 305.990850063017 µs.
 The separate 2 µs launch term is excluded from the device-only comparison.
+
+## Bandwidth sensitivity
+
+The original profiler database's TARGET_INFO_GPU row for the measured GPU
+records memoryBandwidth=4,022,784,000,000 bytes/s. This is nominal hardware
+metadata, not a measured traffic counter. data/board-bandwidth.json retains
+that narrow extract. data/gap-sensitivity.json records the CPU-only comparison
+that substitutes this rate for 4.305 TB/s and predicts 327.357855717 µs.
+This is an independent hardware-rate sensitivity, not a fitted calibration.
+The original 305.990850063 µs prediction remains the main comparison.
 
 This is an aggregate tile model. It does not itemize all shared-to-register
 instructions, epilogue exchanges, address work, barriers or fixed latencies.

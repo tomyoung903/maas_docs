@@ -4,6 +4,8 @@ import hashlib
 import html
 import json
 import math
+import csv
+import statistics
 import sys
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -28,6 +30,11 @@ parts = steps * ii + sum(ops[n]['us'] for n in ['load_A', 'mma', 'cast_C', 'stor
 assert math.isclose(parts, tile_us, rel_tol=1e-10)
 assert math.isclose(case['waves'] * tile_us, case['predicted_us'], rel_tol=1e-10)
 assert slots * case['waves'] == case['ctas']
+samples = list(csv.DictReader((DATA / 'kernel-times.csv').open()))
+for phase, key in [('cold', 'device_cold_us'), ('warm', 'device_warm_us')]:
+    durations = [float(r['device_us']) for r in samples if r['phase'] == phase]
+    assert len(durations) == 51
+    assert statistics.median(durations) == case[key]
 
 def timeline(last=False):
     start = (steps-2) * ii if last else 0
