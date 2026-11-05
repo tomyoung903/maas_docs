@@ -114,3 +114,7 @@ traffic within a matched collection rather than pooling metric sets with
 different replay-pass counts. The counters directly measure extra writes;
 they do not identify each written address or allocate each microsecond of delay
 to a specific transaction.
+
+The evidence archive includes all eight raw `.ncu-rep` files under
+`data/raw-profiles/`: six one-pass HBM collections and the two full metric
+collections. Open these files in Nsight Compute to inspect the original counters.
