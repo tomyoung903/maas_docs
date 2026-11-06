@@ -1,0 +1,149 @@
+{
+  "candidate": "杨晨熠",
+  "sections": [
+    {
+      "title": "Hyperloom 推理自动优化平台",
+      "subtitle": "AMD GPU Infra｜(BeyondSoft) · 2025.11 - 至今",
+      "excerpts": [
+        {
+          "id": "hyperloom-scope",
+          "text": "负责 KernelForge 调优接入、编译产物处理、性能与数值验证及批量任务编排。"
+        }
+      ]
+    },
+    {
+      "title": "GEMM 调优与端到端收益",
+      "subtitle": "AMD GPU Infra｜(BeyondSoft) · Hyperloom 推理自动优化平台 · 2026.04 - 至今",
+      "excerpts": [
+        {
+          "id": "gemm-load",
+          "text": "固定负载实测：MI325X 单卡、SGLang/Qwen3-8B BF16、TP=1，输入/输出各 1024 tokens、并发 64；正反序四组配对测试中，请求吞吐 +4.1%~5.1%，TPOT mean 降低 4.0%~4.5%。"
+        },
+        {
+          "id": "gemm-runtime",
+          "text": "运行时驱动调优：独立打通 profiling、实际 shape 提取、调优、加载验证与 A/B 评测。以 serving 需求构建 padded-M 调优输入，tuned 表 lookup 命中率达到 92.3% / 94.9%，decode 段命中与 TPOT 改善相符。实测方法与验证脚本已开源。"
+        }
+      ]
+    },
+    {
+      "title": "AMDGPU 汇编优化后端与数值验收 · PR1426",
+      "subtitle": "AMD GPU Infra｜(BeyondSoft) · Hyperloom 推理自动优化平台 · 2026.04 - 至今",
+      "excerpts": [
+        {
+          "id": "amdgpu-launcher",
+          "text": "捕获 FlyDSL、Triton/Gluon、HIP 编译产物，将候选汇编接回原 launcher、ABI 和 stream；以编译错误、no-op 阴性对照及新进程复测核验执行路径，同时检查参考误差与重复执行误差。"
+        },
+        {
+          "id": "amdgpu-lds",
+          "text": "LDS 竞态修复与模型验证：定位并修复 MoE Stage1 的跨 wave 复用竞态；在 Kimi-K3 A16W4、8×MI355X、SGLang 固定负载下，相对已优化 FlyDSL 基线，Stage1-only 吞吐进一步提升 1.86%；完成 32 组输入/执行模式验收及八个 rank 加载核验。"
+        }
+      ]
+    },
+    {
+      "title": "vLLM 融合算子验证与性能归因",
+      "subtitle": "AMD GPU Infra｜(BeyondSoft) · Hyperloom 推理自动优化平台 · 2026.04 - 至今",
+      "excerpts": [
+        {
+          "id": "vllm-fusion",
+          "text": "在 Qwen3-4B/MI355X 上验证 Q/K RMSNorm + RoPE 融合实现，经显式 ABI 的 HIP 加载器与 vLLM 插件接入；扩大测试定位归约精度和 BF16 舍入边界，修复后维持原容差并补充回归。"
+        },
+        {
+          "id": "vllm-attribution",
+          "text": "对比原生、同融合 Triton、修复后汇编基线和 Agent 候选，后续四组复测共 5,280 个计时请求，每组 3 个独立服务（实验记录）。结合 GPU trace、质量筛选与尾延迟分析区分收益来源，识别 TTFT/长尾退化。"
+        }
+      ]
+    },
+    {
+      "title": "自动调优交付与资源治理",
+      "subtitle": "AMD GPU Infra｜(BeyondSoft) · Hyperloom 推理自动优化平台 · 2026.04 - 至今",
+      "excerpts": [
+        {
+          "id": "tuning-delivery",
+          "text": "候选生成与验收：按 serving dispatch miss 识别调优覆盖缺口，打通候选生成、协议校验、GPU 数值/性能复测及产物晋级（PR1452）。完善加载证据与准确率检查：实测退化超阈值则回退，缺分数按条件复核或记录降级。"
+        },
+        {
+          "id": "tuning-integration",
+          "text": "多候选累计集成：处理共同基线补丁顺序合入时的上下文失效，实现三方合并、冲突区域受限解析与失败清理，再交由性能/准确率流程验收；真实 MoE 案例三个测试 case 的整算子微基准加速 1.21~1.25×。PR1528"
+        },
+        {
+          "id": "tuning-capacity",
+          "text": "编排与容量：实现候选池切片、兼容性预检、并发提交、去重与结果聚合；按 cgroup 内存预算约束 JIT 编译并发，在 128 GiB 容器预算下实测 44 个编译作业全部完成，耗时 177 秒、峰值内存 58.4 GiB。"
+        }
+      ]
+    },
+    {
+      "title": "GPU 集群故障检测与受控处置",
+      "subtitle": "AMD GPU Infra｜(BeyondSoft) · 2026.02 - 2026.07",
+      "excerpts": [
+        {
+          "id": "fault-modules",
+          "text": "核心模块：从 0 实现 Go 故障检测 Agent、Fault Manager 与 SLURM 任务感知模块；支持 K8s DaemonSet/SLURM 裸节点、Fault CRD 管理与 gRPC 诊断。"
+        },
+        {
+          "id": "fault-control",
+          "text": "处置与误报控制：提供观察、隔离、驱逐、修复四档可配置模式；隔离阶段通过 K8s 污点或 SLURM DRAIN 阻止新任务调度，以时间窗内隔离数量触发熔断；结合 Prolog/Epilog 与 sacct 补偿关联节点故障及受影响任务。"
+        }
+      ]
+    },
+    {
+      "title": "Primus-SaFE 长任务控制面与训练交付",
+      "subtitle": "AMD GPU Infra｜(BeyondSoft) · 2025.11 - 2026.07",
+      "excerpts": [
+        {
+          "id": "primus-recovery",
+          "text": "任务恢复：会话创建请求携带首条消息，修复初始空闲被误判完成；实现 Running 任务重启恢复、取消传播与分类重试，处理十余小时级任务的状态滞留及重复创建风险。"
+        },
+        {
+          "id": "primus-events",
+          "text": "事件一致性：分离上游稳定 event_id 与本地排序序号，数据库去重且重复事件不再广播；支持 SSE 分页重放，恢复时从数据库高水位重建序列，修复重连后的事件丢弃。"
+        },
+        {
+          "id": "primus-training",
+          "text": "资源与训练：并发上限配置化，按活跃沙箱计数实施准入限制；在既有平台落地 SFT/RL 任务模块，打通单/多节点资源、RDMA 配置、checkpoint 与模型导出校验。"
+        }
+      ]
+    },
+    {
+      "title": "北京蓝色光标技术有限公司",
+      "subtitle": "系统研发工程师 · 2025.03 - 2025.07",
+      "excerpts": [
+        {
+          "id": "bluefocus-backend",
+          "text": "负责程序化广告 DSP 平台后端；设计 Kafka 多协程消费、批量拉取与背压控制，处理突发积压；通过热 Key 分片、Pipeline 和本地缓存优化 Redis 读写。"
+        }
+      ]
+    },
+    {
+      "title": "北京山石网科信息技术有限公司",
+      "subtitle": "软件研发工程师 · 2022.07 - 2025.02",
+      "excerpts": [
+        {
+          "id": "hillstone-security",
+          "text": "负责 Go 终端安全研发，实现 EDR 事件自适应降噪；作为技术负责人实现云环境批量杀毒任务的资源自适应调度。以第一发明人申请发明专利 CN118502867A（已公开），获公司内部优秀专利评选。"
+        }
+      ]
+    },
+    {
+      "title": "常问问题",
+      "excerpts": [
+        {
+          "id": "yang-ai-tooling-experience",
+          "text": "请介绍一下你使用 AI 工具的经验。"
+        },
+        {
+          "id": "yang-ai-tooling-best-experience",
+          "text": "请描述一次你使用 AI 工具时最好的经历。"
+        },
+        {
+          "id": "yang-kernel-gemm-mnk",
+          "text": "GEMM kernel 的实现与 M、N、K 有什么关系？"
+        },
+        {
+          "id": "yang-kernel-time-estimate",
+          "text": "前一题回答较好时追问：给定任意 kernel 及其输入规模，假设实现合理，你如何粗略估算它的运行时间（kernel time）？"
+        }
+      ],
+      "subtitle": "面试补充问题"
+    }
+  ]
+}
