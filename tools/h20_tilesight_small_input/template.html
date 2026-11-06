@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How TileSight models the smaller H20 GEMM | MaaS Docs</title>
+<meta name="description" content="M=16, N=26,624, K=2,752: follow 208 CTAs, 43 K steps, resource costs and partial-wave scheduling to a 41.064 µs prediction versus 42.080 µs measured.">
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="walkthrough.css"></head><body>
+<header><div class="wrap"><nav class="crumb"><a href="../">MaaS Docs</a> / <a href="../h20-tilesight-memory-bound/#grid">Larger memory-bound example</a> / Smaller input</nav>
+<div class="hero"><div class="eyebrow">A worked example · H20 · M = 16, N = 26,624, K = 2,752</div>
+<h1>The same kernel,<br>a smaller grid</h1>
+<p class="lede">Follow the smaller input through the same modeling steps: choose tiles, price each operation, overlap K steps, then schedule one partially filled wave.</p>
+<div class="path">Matrix shape <span>→</span> tile plan <span>→</span> resource costs <span>→</span> overlap <span>→</span> GPU time</div>
+<div class="stats"><div class="stat"><strong>@@PRED@@ µs</strong><span>TileSight · kernel body</span></div><div class="stat"><strong>@@MEAS@@ µs</strong><span>Measured · read-only eviction</span></div><div class="stat warning"><strong>@@ERROR@@% low</strong><span>Prediction relative to measurement</span></div></div>
+</div></div></header>
+<div class="wrap layout"><aside class="toc" aria-label="Contents"><b>This calculation</b>@@NAV@@</aside><main>
+
+<section id="setup"><h2>1. Use the latest, smaller input</h2>
+<div class="equation math"><div><b>A</b><sub>16 × 2,752</sub> × <b>B</b><sub>2,752 × 26,624</sub> = <b>C</b><sub>16 × 26,624</sub></div><div>FP16 inputs and output · FP32 accumulation</div></div>
+<p>N is one third of the earlier 79,872. K = 2,752 is the nearest multiple of 64 to 8,192 / 3. M stays 16. This retains about 11.20% of the earlier arithmetic work.</p>
+<p>A occupies <strong>86 KiB</strong>, B <strong>139.75 MiB</strong>, and C <strong>832 KiB</strong>. B still exceeds the H20’s 60 MiB L2 cache. Each B value contributes to 16 output rows.</p>
+<div class="equation math"><div>Useful work = 2MNK = 2,344,615,936 FLOPs</div><div>Ideal traffic = 2(MK + KN + MN) = 147,478,528 bytes</div><div class="answer">Arithmetic intensity ≈ @@AI@@ FLOPs/byte</div></div>
+<p>The profile uses 139.22 TFLOP/s of calibrated FP16 Tensor throughput and @@BW@@ TB/s of independently measured HBM bandwidth. Their ratio is about 36.06 FLOPs/byte, above this workload’s intensity.</p>
+<div class="two"><div class="baseline"><b>Full-device compute-only lower bound</b><div class="math">2.3446 GFLOPs / 139.22 TFLOP/s<br>≈ @@COMPUTELOWER@@ µs</div></div><div class="baseline"><b>Ideal HBM-traffic lower bound</b><div class="math">147.479 MB / @@BW@@ TB/s<br>≈ @@MEMLOWER@@ µs</div></div></div>
+<p class="small">These bounds precede the detailed scheduling and partial-wave assumptions. They are not the final prediction. MB and TB use decimal units; KiB and MiB use powers of two.</p>
+</section>
+
+<section id="tiles"><h2>2. Divide the output, then divide K</h2>
+<div class="two"><div><h3>Across the GPU</h3><div class="equation math">(16 / 16) × (26,624 / 128)<br>= 208 output tiles</div><p>Each CTA owns a 16 × 128 output tile. All use the same rows of A and a different 128-column slice of B.</p></div><div><h3>Inside one CTA</h3><div class="equation math">2,752 / 64 = 43 K steps</div><p>The CTA accumulates all 43 products into its one output tile. Its 128 threads form four warps.</p></div></div>
+<div class="tile-demo"><h3>Inspect one output tile and K step</h3><div class="controls"><label>Output tile column <output id="n-value">0</output><input id="tile-n" type="range" min="0" max="207" value="0"></label><label>K step <output id="k-value">0</output><input id="tile-k" type="range" min="0" max="42" value="0"></label></div>
+<svg class="strip" viewBox="0 0 660 78" role="img" aria-label="A row of 208 output tiles"><rect x="18" y="25" width="624" height="25" rx="3" fill="#e0eeec"/><rect id="selected-tile" x="18" y="21" width="3" height="33" fill="#146b67"/><text x="18" y="72">Tile 0</text><text x="642" y="72" text-anchor="end">Tile 207</text></svg>
+<div aria-live="polite"><p id="c-range" class="math"></p><p id="a-range" class="math"></p><p id="b-range" class="math"></p></div><p class="small">Ranges exclude the end index. These controls inspect the recorded shape; they do not run the model or GPU.</p></div>
+<p>Every tile is full: there are no padded output rows or columns. The chosen tile height is 16, matching M. Across the grid, each repeated operation occurs 208 × 43 = <strong>8,944 times</strong>.</p>
+</section>
+
+<section id="plan"><h2>3. Describe one tile’s execution</h2>
+<p>The CUTLASS kernel uses <code>cp.async</code> to move inputs to shared memory and <code>mma.sync</code> Tensor Core instructions. The accumulator lives in registers. TileSight receives an explicit plan for that work.</p>
+<div class="flow"><div><strong>Load A · 43 times</strong><span>16 × 64 FP16 values → shared memory</span></div><div><strong>Load B · 43 times</strong><span>64 × 128 FP16 values → shared memory</span></div><div class="wide"><strong>MMA · 43 times</strong><span>Update the 16 × 128 FP32 accumulator</span></div><div><strong>Cast C · once</strong><span>Convert final values to FP16</span></div><div><strong>Store C · once</strong><span>Write the 16 × 128 output to global memory</span></div></div>
+<div class="table-wrap"><table><thead><tr><th>Quantity</th><th>Calculation</th><th>Per CTA</th></tr></thead><tbody>
+<tr><td>One A load</td><td>16 × 64 × 2 bytes</td><td>2 KiB</td></tr><tr><td>One B load</td><td>64 × 128 × 2 bytes</td><td>16 KiB</td></tr><tr><td>Three input-buffer stages</td><td>3 × (2 + 16) KiB</td><td>54 KiB</td></tr><tr><td>Logical accumulator</td><td>16 × 128 × 4 bytes</td><td>8 KiB</td></tr><tr><td>Final output</td><td>16 × 128 × 2 bytes</td><td>4 KiB</td></tr><tr><td>One MMA step</td><td>2 × 16 × 128 × 64</td><td>262,144 FLOPs</td></tr></tbody></table></div>
+<p>The compiled kernel allocates 64 registers/thread and 55,296 bytes of shared memory. Logical accumulator size is only part of register usage. The plan abstracts some address calculations, synchronization and internal data movement.</p>
+<details><summary>Show the plan-building code</summary><p class="small">The builder is given m = 16, n = 26,624, k = 2,752 and residency = 4. It records operations; it does not discover them from machine code.</p><pre><code>@@RECIPE@@</code></pre></details>
+</section>
+
+<section id="costs"><h2>4. Turn each operation into resource time</h2>
+<p>The device has 78 SMs. Its maximum occupancy is four of these CTAs per SM, giving 312 possible slots. Only 208 CTAs exist. The model packs them into <strong>52 active SMs</strong>, at four CTAs each. Section 6 shows this assumption.</p>
+<p>This changes the rate allocation: device-wide HBM and L2 rates are shared by <strong>208 concurrent CTAs</strong>. Per-SM compute and shared-memory rates still use four resident CTAs per SM.</p>
+<div class="table-wrap"><table><thead><tr><th>Resource</th><th>Model rate and divisor</th><th>Share per CTA</th></tr></thead><tbody>
+<tr><td>HBM</td><td>@@BW@@ TB/s ÷ 208</td><td>@@HBMSHARE@@ GB/s</td></tr>
+<tr><td>L2</td><td>8.123448629 TB/s ÷ 208</td><td>@@L2SHARE@@ GB/s</td></tr>
+<tr><td>Tensor Core work</td><td>(139.22 TFLOP/s ÷ 78 SMs) ÷ 4</td><td>0.446218 TFLOP/s</td></tr>
+<tr><td>Shared-memory ports</td><td>(19.768320312 TB/s ÷ 78) ÷ 4</td><td>63.3600 GB/s</td></tr></tbody></table></div>
+<p class="small">Equal sharing and packing are model assumptions, not measurements of private bandwidth channels or actual physical placement. The calibrated Tensor rate is distinct from the reported 148 TFLOP/s peak.</p>
+<h3>One 16 KiB B load</h3><div class="equation math"><div><i>t</i><sub>HBM</sub> = 16,384 / (@@BW@@ × 10<sup>12</sup> / 208) = @@B@@ µs</div><div><i>t</i><sub>L2</sub> = 16,384 / (8.123448629 × 10<sup>12</sup> / 208) = 0.419510500 µs</div><div><i>t</i><sub>SMEM</sub> = <i>t</i><sub>cp.async proxy</sub> = 0.258585855 µs</div><div class="answer"><i>t</i><sub>load B</sub> = max(0.882719, 0.419511, 0.258586, 0.258586)<br>= @@B@@ µs</div></div>
+<p>These are demands on different resources, not sequential travel times to add. The move-cost model takes their maximum. The copy-engine rate uses shared-memory bandwidth as a proxy.</p>
+<h3>A reuse and Tensor Core work</h3><p>The selected cache estimate charges about 99.04% of representative A requests as L2-served. Its average HBM demand is only 0.001060960 µs; L2 determines its @@A@@ µs completion time. B is modeled as 100% HBM misses. These are estimated request rates within this launch, not a measured statement that A was already warm.</p>
+<div class="equation math"><div><i>t</i><sub>MMA</sub> = 262,144 / (139.22 × 10<sup>12</sup> / 78 / 4)<br>= @@MMA@@ µs</div></div>
+<h3>Full resource-time vector</h3><p class="small">All values are µs per operation. “—” means no explicit charge, rather than proof of no physical traffic. Completion is the operation’s modeled latency.</p>
+<div class="table-wrap wide-table"><table><thead><tr><th>Operation</th><th>HBM</th><th>L2</th><th>SMEM</th><th>cp.async</th><th>Tensor</th><th>CUDA</th><th>Registers</th><th>LD/ST</th><th>Completion</th></tr></thead><tbody>@@ROWS@@</tbody></table></div>
+<details><summary>Final cast and store</summary><div class="equation math"><div><i>t</i><sub>cast</sub> = 2,048 / (29.231883 × 10<sup>12</sup> / 2 / 78 / 4)<br>= @@CAST@@ µs</div><div><i>t</i><sub>store</sub> = 4,096 / (@@BW@@ × 10<sup>12</sup> / 208)<br>= @@STORE@@ µs</div></div><p>The cast uses an instruction-rate proxy derived from the FP32 FMA rate. Store uses the same aggregate HBM rate as reads. Both are model approximations.</p></details>
+</section>
+
+<section id="overlap"><h2>5. Use the saved overlap schedule</h2>
+<p>The solver selects an <strong>initiation interval (II) of @@II@@ µs</strong>: the time between starting successive K steps. The raw resource lower bound is @@RESOURCEII@@ µs. The selected schedule also has to satisfy ordering, dependencies, accumulator reuse and buffer limits.</p>
+<div class="equation math"><div>Step 0: A starts at 0; B starts at @@BSTART@@ µs</div><div>MMA starts at @@MMASTART@@ µs</div><div class="answer">Selected II ≈ load A + load B<br>= @@A@@ + @@B@@ = @@II@@ µs</div></div>
+<p>At that MMA start, the next step’s A load can begin. Most earlier MMA work therefore overlaps subsequent loads. This is the recorded solver’s schedule; using only the longest single-operation time would miss part of its interval.</p>
+<div class="schedule"><div class="schedule-controls"><button type="button" data-view="first" aria-pressed="true">First four K steps</button><button type="button" data-view="last" aria-pressed="false">Last two + output</button></div><div id="schedule-first">@@FIRST@@</div><div id="schedule-last" hidden>@@LAST@@</div><p class="small">Modeled operation timeline, not a measured internal GPU trace. Hover for exact times. The two views use different horizontal scales. Separate lanes do not imply one dedicated warp per lane.</p></div>
+<h3>One CTA’s completion time</h3><div class="equation math"><div>First step’s input lead-in = @@FIRSTUS@@ µs</div><div>42 further initiation intervals = @@STEADYUS@@ µs</div><div>Final MMA + cast + store = @@DRAINUS@@ µs</div><div class="answer"><i>T</i><sub>CTA</sub> = @@FIRSTUS@@ + @@STEADYUS@@ + @@DRAINUS@@<br>= @@BODY@@ µs</div></div>
+<div class="equation math"><div>Equivalently: 43 × @@II@@ + @@MMA@@ + @@CAST@@ + @@STORE@@</div><div class="answer">= @@BODY@@ µs</div></div>
+<p class="small">Displayed numbers are rounded. The renderer checks the calculation using the full precision stored in the prediction.</p>
+<p>Do not add another initial A-load term: it is already included in this schedule’s II. The formula differs from the larger example because the saved overlap schedule changed.</p>
+</section>
+
+<section id="grid"><h2>6. Schedule 208 CTAs in one partial wave</h2>
+<div class="equation math"><div>Capacity = 78 SMs × 4 CTAs/SM = 312 slots</div><div>Concurrent work = min(208 CTAs, 312 slots) = 208 CTAs</div><div>Waves = ceiling(208 / 312) = 1</div><div class="answer"><i>T</i><sub>kernel body</sub> = 1 × @@BODY@@ = @@BODY@@ µs</div></div>
+<div class="model-packing"><h3>Illustrative packing used by the model</h3>@@GRID@@<p class="packing-legend"><span class="occupied-key"></span>208 occupied slots <span class="unused-key"></span>104 unused slots</p></div>
+<p>Under the model’s packing rule, active SMs = ceiling(208 / 4) = <strong>52</strong>. The diagram illustrates 52 groups of four occupied slots, with 26 groups unused. It explains the rate allocation in section 4.</p>
+<div class="note"><strong>This is not a measured map of the physical SMs.</strong> CUDA decides actual CTA placement. Four is the measured maximum occupancy, while 52 active SMs is the model’s packing assumption. A real launch may distribute its CTAs differently.</div>
+<p>The earlier larger grid had 624 CTAs and two full 312-slot waves. This grid has one partial wave. Do not multiply the small-case time by two, and do not assume that a partial wave leaves every resource at its full-wave per-CTA rate.</p>
+<p class="small">A wave is a scheduling summary; it does not insert a global synchronization barrier. TileSight separately reports a 2 µs launch term. It is excluded when comparing kernel-body prediction with device-only timing.</p>
+</section>
+
+<section id="result"><h2>7. Compare with the measured kernel</h2>
+<div class="table-wrap"><table><thead><tr><th>Quantity</th><th>Time</th><th>Interpretation</th></tr></thead><tbody>
+<tr><th>TileSight kernel body</th><td>@@BODY@@ µs</td><td>Same saved prediction throughout</td></tr>
+<tr><th>Read-only eviction · median</th><td>@@MEAS@@ µs</td><td>51 device-only samples; primary comparison</td></tr>
+<tr><th>Read-only eviction · p10–p90</th><td>@@P10@@–@@P90@@ µs</td><td>Observed spread</td></tr>
+<tr><th>Write-based eviction · median</th><td>@@DIRTY@@ µs</td><td>51 samples; extra prior dirty-cache state</td></tr>
+</tbody></table></div>
+<div class="equation math"><div>Error = (prediction − measurement) / measurement</div><div>= (@@PRED@@ − @@MEAS@@) / @@MEAS@@</div><div class="answer">≈ −@@ERROR@@% · prediction is @@GAP@@ µs lower</div></div>
+<p>The primary measurement prepares the cache with a separate read-only sweep of 512 MiB, outside the timed interval. It replaces useful cached input copies with unrelated clean data. It does not make L2 literally empty.</p>
+<p>The earlier write-based preparation produced an apparent @@DIRTYERROR@@% discrepancy. Subsequent controls and hardware counters showed extra HBM writes despite identical GEMM instructions. The prediction was not retuned. <a href="../h20-tilesight-cache-writeback/#counters">Read the cache-state investigation</a> or <a href="../h20-tilesight-cache-writeback/#video">watch the animation</a>.</p>
+<div class="two"><div class="baseline"><b>Useful B-byte throughput</b><div class="math">146,538,496 B / 42.080 µs<br>= @@USEFULBW@@ TB/s</div><p class="small">@@BWUTIL@@% of the measured 3.860654536 TB/s reference. This is useful bytes/time, not total traffic measured by a counter.</p></div><div class="baseline"><b>Useful arithmetic throughput</b><div class="math">2,344,615,936 FLOPs / 42.080 µs<br>= @@TFLOPS@@ TFLOP/s</div><p class="small">@@FLOPSUTIL@@% of the reported 148 TFLOP/s peak; distinct from the model’s 139.22 TFLOP/s calibration.</p></div></div>
+<p>The remaining @@GAP@@ µs gap is unresolved. This agreement supports this particular workload and model configuration, not every matrix shape or every cache state.</p>
+</section>
+
+<section id="source"><h2>Code and saved evidence</h2>
+<p>The renderer reads the saved plan and prediction, extracts the actual operation costs and solver witness, and verifies all 1,020 samples across the two configuration runs. The formulas above are checked against the recorded 41.063650671 µs result.</p>
+<div class="downloads"><a class="button" href="evidence.zip">Evidence + source</a><a class="button" href="data/numbers.json">Walkthrough numbers</a><a class="button" href="data/prediction.json">Full prediction</a><a class="button" href="data/plan.json">Tile plan</a><a class="button" href="data/operation-times.json">Operation costs</a><a class="button" href="README.md">Reproduction notes</a></div>
+<ul class="provenance"><li><a href="https://github.com/tomyoung903/TileSight/tree/6673bc3941d23572caad5d25473c9f129c3f000a">Recorded TileSight development revision</a>. HBM rate 3.860654536 TB/s, cache mode <code>fast</code>, schedule mode <code>periodic_best</code>, explicit residency 4.</li><li><a href="https://github.com/NVIDIA/cutlass/tree/954c8d7be60d730cc3f51e8f1ffe9850dce054d5">CUTLASS revision</a>; CUDA 12.8, <code>-O3 -DNDEBUG -arch=sm_90a</code>.</li><li><a href="source/predict.py">CPU plan builder</a> · <a href="source/benchmark.cu">CUDA benchmark and preparation controls</a> · <a href="data/small_default_trace.csv">Device samples</a> · <a href="SHA256SUMS">Artifact hashes</a>.</li></ul>
+<p><a href="../h20-tilesight-memory-bound/#grid">Compare with the larger two-wave example →</a></p>
+</section><footer>Experiment: 5 November 2026 · Smaller-input walkthrough · Units and model assumptions are stated explicitly.</footer>
+</main></div><script src="walkthrough.js" defer></script></body></html>
