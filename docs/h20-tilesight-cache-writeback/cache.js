@@ -1,6 +1,16 @@
 'use strict';
 (() => {
   const $ = id => document.getElementById(id);
+  const video = $('cache-video');
+  if (video) {
+    document.querySelectorAll('[data-video-seek]').forEach(button => {
+      button.addEventListener('click', () => {
+        video.currentTime = Number(button.dataset.videoSeek);
+        video.play().catch(() => {});
+      });
+    });
+  }
+
   let dirty = false;
   let step = 0;
   const descriptions = {

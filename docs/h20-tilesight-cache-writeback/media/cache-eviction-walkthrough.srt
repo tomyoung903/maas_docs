@@ -1,0 +1,43 @@
+1
+00:00:00,000 --> 00:00:09,000
+HBM holds the data. L2 holds temporary cached copies. SMs run the GPU kernels.
+
+2
+00:00:09,000 --> 00:00:18,000
+A and B are still in HBM. Some copies of their data also remain in L2.
+
+3
+00:00:18,000 --> 00:00:27,000
+We want to displace those cached copies before timing the next GEMM. We do not delete A or B.
+
+4
+00:00:27,000 --> 00:00:40,000
+A GPU kernel reads a separate 512 MiB buffer. These reads replace earlier A/B copies in the 60 MiB L2.
+
+5
+00:00:40,000 --> 00:00:50,000
+The large buffer is unchanged. Its cached copies are clean. Only 4 KiB of checksum results are written.
+
+6
+00:00:50,000 --> 00:01:02,000
+The GEMM brings A/B back from HBM. Unrelated clean cache lines can be discarded without writeback.
+
+7
+00:01:02,000 --> 00:01:10,000
+Rewind to the same A/B data. This time, the preparation reads AND modifies the unrelated buffer.
+
+8
+00:01:10,000 --> 00:01:23,000
+Modified copies are newer than their HBM backing data. Some remain in L2 after preparation ends.
+
+9
+00:01:23,000 --> 00:01:37,000
+Replacing those dirty lines generates writes to HBM alongside the GEMM reads. The GEMM does the same math.
+
+10
+00:01:37,000 --> 00:01:50,000
+HBM reads and GEMM instruction counts match. Write-based preparation produces many more HBM writes.
+
+11
+00:01:50,000 --> 00:02:02,000
+Eviction removes cached copies, not the original data. Clean copies can be dropped; dirty copies need writeback.

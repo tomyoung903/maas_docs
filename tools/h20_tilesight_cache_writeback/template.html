@@ -10,7 +10,22 @@
 <div class="path">Unchanged kernel <span>→</span> controlled cache state <span>→</span> observed traffic <span>→</span> explained timing</div>
 <div class="stats"><div class="stat"><strong>@@PRED@@ µs</strong><span>TileSight prediction · unchanged</span></div><div class="stat warning"><strong>@@DIRTY@@ µs</strong><span>Measured · write-based eviction</span></div><div class="stat"><strong>@@CLEAN@@ µs</strong><span>Measured · read-only eviction</span></div></div>
 </div></div></header>
-<div class="wrap layout"><aside class="toc" aria-label="Contents"><b>This investigation</b><a href="#setup">1 · Fix the workload</a><a href="#result">2 · Reproduce the gap</a><a href="#mechanism">3 · Clean and dirty lines</a><a href="#overlap">4 · Locate the extra time</a><a href="#controls">5 · Test the explanation</a><a href="#counters">6 · Read the counters</a><a href="#scale">7 · Why 21% appeared</a><a href="#model">8 · Keep the model fixed</a><a href="#source">Evidence and reproduction</a></aside><main>
+<div class="wrap layout"><aside class="toc" aria-label="Contents"><b>This investigation</b><a href="#video">Watch the animation</a><a href="#setup">1 · Fix the workload</a><a href="#result">2 · Reproduce the gap</a><a href="#mechanism">3 · Clean and dirty lines</a><a href="#overlap">4 · Locate the extra time</a><a href="#controls">5 · Test the explanation</a><a href="#counters">6 · Read the counters</a><a href="#scale">7 · Why 21% appeared</a><a href="#model">8 · Keep the model fixed</a><a href="#source">Evidence and reproduction</a></aside><main>
+
+<section id="video"><h2>Watch the two-minute walkthrough</h2>
+<p>Follow the original A/B data, its cached copies, and the unrelated eviction buffer. English captions are built in; the animation is silent.</p>
+<video id="cache-video" controls preload="metadata" playsinline poster="media/poster.png" aria-label="Read-only versus write-based cache eviction, animated walkthrough">
+<source src="media/cache-eviction-walkthrough.mp4" type="video/mp4">
+<a href="media/cache-eviction-walkthrough.mp4">Download the captioned video</a>.
+</video>
+<div class="video-chapters" role="group" aria-label="Jump to a video chapter">
+<button type="button" data-video-seek="0">Start · 00:00</button>
+<button type="button" data-video-seek="27">Read-only eviction · 00:27</button>
+<button type="button" data-video-seek="70">Write-based eviction · 01:10</button>
+<button type="button" data-video-seek="83">Extra writeback · 01:23</button>
+</div>
+<p class="small">Motion and cache boxes are schematic. The displayed kernel timings and counter values come from the experiment. <a href="media/cache-eviction-walkthrough.mp4">Download MP4</a> · <a href="media/cache-eviction-walkthrough.srt">Captions</a></p>
+</section>
 
 <section id="setup"><h2>1. Fix the workload and the kernel</h2>
 <div class="equation math"><div><b>A</b><sub>16 × 2,752</sub> × <b>B</b><sub>2,752 × 26,624</sub> = <b>C</b><sub>16 × 26,624</sub></div><div>FP16 inputs and output · FP32 accumulation</div></div>

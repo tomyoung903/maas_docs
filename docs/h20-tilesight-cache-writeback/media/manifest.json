@@ -1,0 +1,100 @@
+{
+  "width": 1280,
+  "height": 720,
+  "fps": 24,
+  "duration_seconds": 122,
+  "audio": "silent",
+  "captions": "English burned into the video; companion SRT",
+  "scope": "Original schematic animation, not a recording or a cycle-accurate simulation.",
+  "measurements": {
+    "shape": [
+      16,
+      26624,
+      2752
+    ],
+    "prediction_us": 41.06365067144186,
+    "read_only_us": 42.08,
+    "write_based_us": 52.032,
+    "full_counter_hbm_reads_B": [
+      146650112,
+      146650112
+    ],
+    "full_counter_hbm_writes_B": [
+      2149376,
+      28330496
+    ],
+    "tensor_instructions": [
+      572416,
+      572416
+    ]
+  },
+  "source": "https://tomyoung903.github.io/maas_docs/h20-tilesight-cache-writeback/",
+  "chapters": [
+    {
+      "start": 0,
+      "end": 9,
+      "title": "Three places to follow",
+      "caption": "HBM holds the data. L2 holds temporary cached copies. SMs run the GPU kernels."
+    },
+    {
+      "start": 9,
+      "end": 18,
+      "title": "A previous GEMM leaves cached copies",
+      "caption": "A and B are still in HBM. Some copies of their data also remain in L2."
+    },
+    {
+      "start": 18,
+      "end": 27,
+      "title": "Prepare a cold-input benchmark",
+      "caption": "We want to displace those cached copies before timing the next GEMM. We do not delete A or B."
+    },
+    {
+      "start": 27,
+      "end": 40,
+      "title": "Read-only eviction: stream unrelated data",
+      "caption": "A GPU kernel reads a separate 512 MiB buffer. These reads replace earlier A/B copies in the 60 MiB L2."
+    },
+    {
+      "start": 40,
+      "end": 50,
+      "title": "The read kernel finishes",
+      "caption": "The large buffer is unchanged. Its cached copies are clean. Only 4 KiB of checksum results are written."
+    },
+    {
+      "start": 50,
+      "end": 62,
+      "title": "Now start timing the GEMM",
+      "caption": "The GEMM brings A/B back from HBM. Unrelated clean cache lines can be discarded without writeback."
+    },
+    {
+      "start": 62,
+      "end": 70,
+      "title": "Same starting point; change the preparation",
+      "caption": "Rewind to the same A/B data. This time, the preparation reads AND modifies the unrelated buffer."
+    },
+    {
+      "start": 70,
+      "end": 83,
+      "title": "Write-based eviction leaves some dirty lines",
+      "caption": "Modified copies are newer than their HBM backing data. Some remain in L2 after preparation ends."
+    },
+    {
+      "start": 83,
+      "end": 97,
+      "title": "The next GEMM causes extra writeback",
+      "caption": "Replacing those dirty lines generates writes to HBM alongside the GEMM reads. The GEMM does the same math."
+    },
+    {
+      "start": 97,
+      "end": 110,
+      "title": "Hardware counters show the extra traffic",
+      "caption": "HBM reads and GEMM instruction counts match. Write-based preparation produces many more HBM writes."
+    },
+    {
+      "start": 110,
+      "end": 122,
+      "title": "Eviction changes the cache state",
+      "caption": "Eviction removes cached copies, not the original data. Clean copies can be dropped; dirty copies need writeback."
+    }
+  ]
+}

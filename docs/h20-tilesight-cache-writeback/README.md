@@ -118,3 +118,10 @@ to a specific transaction.
 The evidence archive includes all eight raw `.ncu-rep` files under
 `data/raw-profiles/`: six one-pass HBM collections and the two full metric
 collections. Open these files in Nsight Compute to inspect the original counters.
+
+## Captioned video
+
+`media/cache-eviction-walkthrough.mp4` is a 122-second, 1280×720, 24 fps
+original schematic animation. English captions are burned in; the SRT and
+chapter manifest are alongside it. The video illustrates the mechanism and
+uses the saved measured values; it is not a recording of GPU execution.
