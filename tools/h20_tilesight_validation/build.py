@@ -10,7 +10,7 @@ OUT = ROOT / 'docs/h20-tilesight-gemm-validation'
 d = json.loads((OUT/'data/numbers.json').read_text())
 ops = {x['id']: x for x in d['ops']}
 repo = 'https://github.com/tomyoung903/TileSight/blob/71c51b223230b4bc13cfcaf3cb1ca25363e6ffb9/'
-toc = [('setup','1 · The input'),('tiles','2 · Divide the work'),('plan','3 · Describe one tile'),('costs','4 · Price the operations'),('overlap','5 · Overlap the K steps'),('grid','6 · Schedule the grid'),('result','7 · Compare with measurement'),('source','Code and saved data')]
+toc = [('setup','1 · The input'),('tiles','2 · Divide the work'),('plan','3 · Describe one tile'),('costs','4 · Price the operations'),('overlap','5 · Overlap the K steps'),('grid','6 · Schedule the grid'),('l2-reuse','6b · Explore L2 reuse'),('result','7 · Compare with measurement'),('source','Code and saved data')]
 nav = ''.join(f'<a href="#{key}">{text}</a>' for key,text in toc)
 resources = ['ddr','l2','smem','tma','tensor','cuda','register','ldst']
 resource_rows = ''
@@ -67,7 +67,7 @@ recipe='''with kb.loop("k", 64, stages=3) as loop:
 page='''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>How TileSight predicts a 4096³ GEMM on H20 | MaaS Docs</title>
 <meta name="description" content="A worked single-case explanation: matrix shape to CTA tiles, operation resource times, pipeline overlap, 14 waves, and a 1.066705 ms prediction on H20.">
-<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="walkthrough.css"></head><body>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="walkthrough.css?v=l2-reuse-20261110"></head><body>
 <header><div class="wrap"><nav class="crumb"><a href="../">MaaS Docs</a> / GPU performance modeling</nav><div class="hero"><div class="eyebrow">A worked example · H20 · 4,096 × 4,096 × 4,096</div><h1>How TileSight arrives at 1.067 ms</h1><p class="lede">Follow one GEMM from its matrix dimensions to the final prediction. Every number below comes from the original 4K-cubed run, or is arithmetic using that run’s configuration.</p><div class="path">Matrix shape <span>→</span> one tile’s plan <span>→</span> operation costs <span>→</span> overlapping K steps <span>→</span> the whole grid</div></div></div></header>
 <div class="wrap layout"><aside class="toc" aria-label="Contents"><b>This calculation</b>@@NAV@@</aside><main>
 <section id="setup"><h2>1. Start with an explicit configuration</h2><div class="equation math"><div><b>C</b> = <b>A</b><b>B</b>, &nbsp; <i>M</i> = <i>N</i> = <i>K</i> = 4,096</div><div>FP16 inputs and output · FP32 accumulation</div></div><p>There are no quantization scales, bias, or activation functions. This H20 path accumulates in ordinary registers, not Blackwell Tensor Memory.</p><p>We supplied a <strong>128 × 128 output tile</strong>, a <strong>64-element K step</strong>, and <strong>three pipeline stages</strong>. TileSight did not search for those dimensions. The actual CUTLASS kernel uses the same choices.</p><details><summary>Show the Python call used to describe this GEMM</summary><pre><code>@@EXAMPLE@@</code></pre></details><p class="small">“Residency = 1” means one concurrent CTA per SM. We set it explicitly after checking that the compiled kernel permits one.</p></section>
@@ -100,10 +100,14 @@ page='''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="v
 
 <section id="source"><h2>Connect each step to the code</h2><p>This page uses the saved original analysis. It introduces no new GPU measurements.</p><div class="table-wrap"><table><thead><tr><th>Question</th><th>Implementation</th></tr></thead><tbody><tr><td>Who declares the five operations?</td><td><a href="@@REPO@@tilesight/modeling/program/examples/gemm.py">GEMM example builder</a></td></tr><tr><td>Where are the hardware rates?</td><td><a href="@@REPO@@tilesight/arch/h20.py">H20 profile</a></td></tr><tr><td>How are operations priced?</td><td><a href="@@REPO@@tilesight/modeling/program/generic_oracle.py">Generic operation cost model</a></td></tr><tr><td>How are tiles assigned to slots?</td><td><a href="@@REPO@@tilesight/modeling/program/spatial.py">Spatial scheduling</a></td></tr><tr><td>Where is the recorded overlap schedule?</td><td><a href="data/periodic_best.json">Full analysis snapshot</a></td></tr></tbody></table></div><div class="downloads"><a class="button" href="data/numbers.json">Numbers used on this page</a><a class="button" href="data/plan.json">Recorded tile plan</a><a class="button" href="data/prediction-summary.json">Prediction summary</a><a class="button" href="data/measurement.jsonl">Original correctness and timing log</a></div><p class="small">This walkthrough explains only the original 4K-cubed case. The later five-case measurements remain available as <a href="comparison.csv">archived comparison data</a>.</p></section>
 <footer>Original experiment: 5 November 2026 · H20 · FP16 GEMM · Times shown with rounded decimal values.</footer></main></div>
-<script src="walkthrough.js" defer></script>
+<script src="walkthrough.js?v=l2-reuse-20261110" defer></script>
   <script defer src="../assets/maas-annotator.js" data-maas-annotator data-page-key="/h20-tilesight-gemm-validation/"></script>
 </body></html>'''
-substitutions={'NAV':nav,'EXAMPLE':html.escape(example),'RECIPE':html.escape(recipe),'RESOURCES':resource_rows,'FIRST':timeline(),'LAST':timeline(True),'REPO':repo,'WAVES':''.join(f'<span class="wave {"tail" if i==14 else ""}" title="Wave {i}: {10 if i==14 else 78} CTAs">{i}<small>{10 if i==14 else 78}</small></span>' for i in range(1,15))}
+page = page.replace('Every number below comes from the original 4K-cubed run, or is arithmetic using that run’s configuration.', 'The timing calculation preserves the original 4K-cubed run; the L2 explorer adds a later full-access cache calculation.')
+reuse_section = (Path(__file__).parent/'l2-reuse-section.html').read_text()
+assert page.count('<section id="result">') == 1
+page = page.replace('<section id="result">', reuse_section + '\n<section id="result">')
+substitutions={'NAV':nav,'EXAMPLE':html.escape(example),'RECIPE':html.escape(recipe),'RESOURCES':resource_rows,'FIRST':timeline(),'LAST':timeline(True),'REPO':repo,'L2REV':hashlib.sha256((OUT/'assets/l2-reuse.html').read_bytes()).hexdigest()[:12],'WAVES':''.join(f'<span class="wave {"tail" if i==14 else ""}" title="Wave {i}: {10 if i==14 else 78} CTAs">{i}<small>{10 if i==14 else 78}</small></span>' for i in range(1,15))}
 for k,v in substitutions.items():page=page.replace('@@'+k+'@@',v)
 assert '@@' not in page
 assert abs(d['tile_us']*14-d['kernel_us'])<1e-8

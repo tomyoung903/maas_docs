@@ -1,0 +1,8 @@
+<section id="l2-reuse">
+<h2>6b. Inspect A and B reuse at every K step</h2>
+<p>Each of the 32 × 32 output tiles has 64 K steps. Move the K slider or select a cell to inspect its A and B loads. The left half of each cell is A; the right half is B. Colors show the modeled probability of an L2 hit, and a cross marks a compulsory first read from HBM. The view combines all 14 modeled waves; it is not a snapshot of simultaneous execution.</p>
+<iframe id="l2-reuse-frame" class="l2-reuse-frame" src="assets/l2-reuse.html?v=@@L2REV@@" title="Interactive 32 by 32 by 64 A and B L2 reuse explorer" loading="lazy" referrerpolicy="no-referrer"></iframe>
+<p class="small"><a href="assets/l2-reuse.html?v=@@L2REV@@" target="_blank" rel="noopener">Open the explorer separately</a> · <a href="data/l2-reuse-model.json">Model configuration and provenance</a></p>
+<div class="note"><strong>Full-access calculation, not measured cache counters.</strong> This explorer examines all 65,536 A loads and all 65,536 B loads without event sampling. Its mean L2-hit estimates are <strong>96.71% for A</strong> and <strong>91.70% for B</strong>. L2 capacity is 60 MiB, shared across the GPU. One A or B tile occupies 16 KiB, so that is the capacity equivalent of 3,840 input tiles.</div>
+<p class="small">The historical timing calculation above used the fast sampled cache model. A later audit found that its 324.54-byte A estimate undercounts compulsory reads: a cold, uncompressed A matrix requires at least 512 HBM bytes per load on average. The full-access calculation gives 538.72 bytes for A and 1,359.58 bytes for B. Those updated cache estimates are used in this explorer; the original timing results above are retained as recorded.</p>
+</section>
