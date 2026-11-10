@@ -1,0 +1,98 @@
+{
+  "shape_mnk": [
+    64,
+    9984,
+    2048
+  ],
+  "tile": [
+    16,
+    128,
+    64
+  ],
+  "stages": 3,
+  "residency": 4,
+  "grid": [
+    4,
+    78
+  ],
+  "steps": 32,
+  "body_us": 23.615784017821912,
+  "with_launch_us": 25.615784017821916,
+  "waves": 1,
+  "slots": 312,
+  "ops": [
+    {
+      "name": "main/k/load_A",
+      "count": 9984,
+      "completion_us": 0.07865821884056873,
+      "resources_us": {
+        "cp_async": 0.032323231813080305,
+        "ddr": 0.0021219199810837462,
+        "l2": 0.07865821884056873,
+        "smem": 0.032323231813080305
+      }
+    },
+    {
+      "name": "main/k/load_B",
+      "count": 9984,
+      "completion_us": 0.6292657507245498,
+      "resources_us": {
+        "cp_async": 0.25858585450464244,
+        "ddr": 0.3310195170490645,
+        "l2": 0.6292657507245498,
+        "smem": 0.25858585450464244
+      }
+    },
+    {
+      "name": "main/k/mma",
+      "count": 9984,
+      "completion_us": 0.5874797299238615,
+      "resources_us": {
+        "tensor": 0.5874797299238615
+      }
+    },
+    {
+      "name": "main/k/cast_C",
+      "count": 312,
+      "completion_us": 0.043717744765193536,
+      "resources_us": {
+        "cuda": 0.043717744765193536
+      }
+    },
+    {
+      "name": "main/k/store_C",
+      "count": 312,
+      "completion_us": 0.3310195170490645,
+      "resources_us": {
+        "ddr": 0.3310195170490645,
+        "l2": 0.15731643768113746,
+        "ldst": 0.01616161616161616,
+        "register": 0.01616161616161616
+      }
+    }
+  ],
+  "flops": 2617245696,
+  "A_bytes": 262144,
+  "B_bytes": 40894464,
+  "C_bytes": 1277952,
+  "l2_read_bytes": 184025088,
+  "arch": {
+    "sm_count": 78,
+    "l2_capacity": 62914560,
+    "l2_bandwidth": 8123448629000.0,
+    "ddr_bandwidth": 3860654536000.0,
+    "fp16_tensor_flops": 139220000000000.0,
+    "smem_bandwidth": 19768320312000.0
+  },
+  "source_commit": "6673bc3941d23572caad5d25473c9f129c3f000a",
+  "assumptions": [
+    "Full declared-access cache trace, initially cold",
+    "Four CTAs per SM, matching the earlier compiled 16x128x64 kernel",
+    "No new GPU measurement; no timing fitted to this shape"
+  ],
+  "rate_sensitivity": {
+    "l2_bandwidth_doubled": 19.544437245847178,
+    "ddr_bandwidth_doubled": 23.45027425929738,
+    "fp16_tensor_flops_doubled": 23.32204415285998
+  }
+}
