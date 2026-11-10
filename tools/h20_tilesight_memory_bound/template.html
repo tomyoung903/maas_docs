@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>How TileSight models a memory-bound GEMM on H20 | MaaS Docs</title>
 <meta name="description" content="A worked H20 GEMM example: M=16, N=79,872, K=8,192. Follow the tile plan, resource costs and overlap to a @@PRED@@ µs prediction versus 363.26 µs measured.">
-<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="walkthrough.css"></head><body>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="walkthrough.css?v=l2-reuse-20261110"></head><body>
 <header><div class="wrap"><nav class="crumb"><a href="../">MaaS Docs</a> / <a href="../h20-tilesight-gemm-validation/">The 4K compute-bound example</a> / Memory-bound GEMM</nav>
 <div class="hero"><div class="eyebrow">A worked example · H20 · M = 16, N = 79,872, K = 8,192</div>
 <h1>When loading B sets the pace</h1><p class="lede">The same modeling steps as the 4K-cubed walkthrough, applied to a narrow matrix multiplication. Follow the data movement, overlap, and two waves of work to the predicted kernel time.</p>
@@ -64,6 +64,17 @@
 <p class="small">Waves summarize the model’s scheduling cost. The GPU does not execute a global barrier between these two groups. The model separately reports a 2 µs launch term; this page excludes it when comparing with device-only kernel duration.</p>
 </section>
 
+<section id="l2-reuse"><h2>6b. Explore A and B reuse at every K step</h2>
+<p>This is the memory-bound counterpart of the <a href="../h20-tilesight-gemm-validation/#l2-reuse">4K L2-reuse explorer</a>. It uses this page’s <strong>1 × 624 output grid, 128 K steps, and 60 MiB L2 cache</strong>. Select a tile and move the K slider to see which A and B chunks it requests and their predicted L2-hit probabilities.</p>
+<p>The display wraps the one output row into 24 columns so it fits on screen. These display rows are <strong>not additional M tiles</strong>. The boundary separates the model’s two groups of 312 resident CTAs. Each cell shows A on the left and B on the right.</p>
+<iframe id="l2-reuse-frame" class="l2-reuse-frame" src="assets/l2-reuse.html?v=@@L2REV@@" title="Interactive A and B L2 reuse for the memory-bound GEMM" loading="lazy" referrerpolicy="no-referrer"></iframe>
+<div class="table-wrap"><table><thead><tr><th>Full-trace prediction</th><th>A</th><th>B</th></tr></thead><tbody><tr><td>Bytes requested per load</td><td>2,048 bytes</td><td>16,384 bytes</td></tr><tr><td>Average L2-hit probability</td><td>99.6795%</td><td>0%</td></tr><tr><td>Average HBM bytes per load</td><td>6.5641 bytes</td><td>16,384 bytes</td></tr><tr><td>Total modeled HBM reads</td><td>524,288 bytes · 512 KiB</td><td>1,308,622,848 bytes · 1.21875 GiB</td></tr></tbody></table></div>
+<p><strong>Why A has two misses per K step:</strong> tile 0 first requests that A chunk. Tiles 1–311 reuse it. The model advances that group through all K steps before the next group, allowing the streaming B data to evict A. Tile 312 then reloads the A chunk, and tiles 313–623 reuse it. Thus 622 of 624 A requests hit in the model. Every B request uses a new combination of K slice and output columns, so no B chunk is reused within this GEMM.</p>
+<p>The pattern is the same at all 128 K steps; the A and B index ranges change. This is a modeled access order, <strong>not a measured GPU schedule or cache counter</strong>. The actual GPU need not advance CTAs in these exact groups.</p>
+<div class="note"><strong>Different cache calculation from the historical timing above.</strong> The explorer evaluates every declared access with <code>cache="trace"</code>. The archived 341.05 µs prediction uses <code>cache="fast"</code>, whose sampled calculation assigned zero HBM traffic to A. The full trace restores A’s first reads and the second group’s reloads. This addition does not rerun the GPU experiment or replace the archived timing result.</div>
+<p class="small"><a href="assets/l2-reuse.html?v=@@L2REV@@" target="_blank" rel="noopener">Open the explorer on its own</a> · <a href="data/l2-reuse-model.json">Full-trace configuration and results</a></p>
+</section>
+
 <section id="result"><h2>7. Compare with the measured kernel</h2>
 <div class="table-wrap"><table><thead><tr><th>Quantity</th><th>Time</th></tr></thead><tbody><tr><td>TileSight kernel-body prediction</td><td>@@BODY6@@ µs</td></tr><tr><td>Nsight Systems · cold-prepared median</td><td>363.264 µs</td></tr><tr><td>Cold-prepared p10–p90, 51 samples</td><td>361.857–364.577 µs</td></tr><tr><td>Nsight Systems · repeated-input median</td><td>353.504 µs</td></tr><tr><td>Unprofiled CUDA events · cold-prepared median</td><td>366.656 µs</td></tr><tr><td>Unprofiled CUDA Graph · time per kernel</td><td>354.261 µs</td></tr></tbody></table></div>
 <div class="equation math"><div>Error = (prediction − measurement) / measurement</div><div>= (@@BODY6@@ − 363.264) / 363.264</div><div class="answer">= −@@ERROR@@% · the model is @@GAP2@@ µs optimistic</div></div>
@@ -93,4 +104,4 @@
 <p class="small">The CUTLASS template selects an Sm80-compatible instruction path and compiles it for H20’s sm_90a target. This is still an H20 measurement. No new GPU run is triggered by this page.</p>
 <p><a href="../h20-tilesight-gemm-validation/#overlap">Compare with the compute-bound 4K overlap diagram →</a></p>
 </section><footer>Experiment: 5 November 2026 · Times in µs · Predictions and observations are labeled separately.</footer></main></div>
-<script src="walkthrough.js" defer></script></body></html>
+<script src="walkthrough.js?v=l2-reuse-20261110" defer></script></body></html>

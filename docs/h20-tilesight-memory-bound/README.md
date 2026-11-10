@@ -97,3 +97,13 @@ The renderer rebuilds the overlap timeline from the saved solver witness and ver
 
 The remaining 22.218 µs cold-prepared gap is unresolved. Access concurrency, cache state, unmodeled instructions and synchronization can contribute.
 This result improves the comparison; it does not isolate each physical cause or establish accuracy for other workloads.
+
+## Interactive L2 reuse explorer
+
+The `#l2-reuse` section evaluates every access in the saved plan with TileSight's full trace cache model. It uses 60 MiB L2, 78 SMs, four resident CTAs per SM, and the two 312-CTA modeled waves. This is a CPU-only model calculation, not a new GPU measurement.
+
+The display wraps the logical 1 × 624 output grid into 24 columns. Moving the K slider changes the A/B slice, while the predicted hit pattern is the same for all 128 K steps. A misses at output columns 0 and 312, then hits at the remaining 622 columns. Every B request is a first access. Across the entire plan, A's average L2-hit probability is 99.679487%; B's is 0%.
+
+Full tracing assigns 512 KiB of HBM reads to A, including the second wave's reload, and 1.21875 GiB to B. The archived timing uses the original sampled `cache="fast"` result, which assigned zero HBM reads to A. The explorer does not silently change that historical prediction or its measurement comparison.
+
+`data/l2-reuse-model.json` records the plan hash, TileSight commit, cache size, and full-trace results. `assets/l2-reuse.html` is a portable export retaining the visualization's sandbox and content security policy. Editable sources and reproduction commands are in `tools/h20_tilesight_memory_bound/l2-reuse/` in the MaaS Docs repository.

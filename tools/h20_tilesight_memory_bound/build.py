@@ -74,7 +74,7 @@ rows = ''
 for name,o in ops.items():
     values = ''.join(f'<td>{o["resources_us"][r]:.6f}</td>' if r in o['resources_us'] else '<td>—</td>' for r in resources)
     rows += f'<tr><th scope="row"><code>{name}</code></th>{values}<td><b>{o["us"]:.6f}</b></td></tr>'
-toc = [('setup','1 · Choose the workload'),('tiles','2 · Divide the work'),('plan','3 · Describe one tile'),('costs','4 · Price the operations'),('overlap','5 · Overlap the K steps'),('grid','6 · Schedule the grid'),('result','7 · Compare with measurement'),('source','Code and saved data')]
+toc = [('setup','1 · Choose the workload'),('tiles','2 · Divide the work'),('plan','3 · Describe one tile'),('costs','4 · Price the operations'),('overlap','5 · Overlap the K steps'),('grid','6 · Schedule the grid'),('l2-reuse','6b · Explore L2 reuse'),('result','7 · Compare with measurement'),('source','Code and saved data')]
 numbers = dict(case, slots=slots, k_steps=steps, tile_us=tile_us, ii_us=ii, offsets_us=offsets,
                ops=ops, flops=2*case['m']*case['n']*case['k'])
 numbers['ideal_bytes'] = 2*(case['m']*case['k']+case['k']*case['n']+case['m']*case['n'])
@@ -87,6 +87,7 @@ recipe = recipe[recipe.index("    kb=KernelBuilder"):recipe.index("    (dest/'pl
 recipe = '\n'.join(line[4:] if line.startswith('    ') else line for line in recipe.splitlines())
 replace = {
     'NAV': ''.join(f'<a href="#{key}">{label}</a>' for key,label in toc),
+    'L2REV': hashlib.sha256((OUT/'assets/l2-reuse.html').read_bytes()).hexdigest()[:12],
     'ROWS':rows,'FIRST':timeline(),'LAST':timeline(True),'RECIPE':html.escape(recipe),
     'PRED':f'{case["predicted_us"]:.2f}','MEAS':f'{case["device_cold_us"]:.2f}',
     'ERROR':f'{abs(case["error_pct"]):.2f}','TILE':f'{tile_us:.9f}',
