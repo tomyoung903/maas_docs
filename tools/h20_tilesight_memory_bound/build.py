@@ -11,6 +11,9 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(ROOT))
+from tools.h20_gemm_utilization import utilization_section
 OUT = ROOT / 'docs/h20-tilesight-memory-bound'
 DATA = OUT / 'data'
 load = lambda name: json.loads((DATA / name).read_text())
@@ -109,7 +112,10 @@ replace = {
         f'<td>{r["below_cold_us"]:.3f} µs · {abs(r["cold_error_pct"]):.2f}%</td></tr>'
         for r in load('bandwidth-comparison.json')),
 }
+toc.append(('utilization', '8 · Utilization rates'))
+replace['NAV'] = ''.join(f'<a href="#{key}">{label}</a>' for key,label in toc)
 page = Path(__file__).with_name('template.html').read_text()
+page = page.replace('<footer>', utilization_section(OUT, (case['m'], case['n'], case['k']), case['device_cold_us'], 'cold-cache preparation') + '\n<footer>', 1)
 for key,value in replace.items():page=page.replace('@@'+key+'@@',value)
 assert '@@' not in page
 sys.path.insert(0,str(ROOT))

@@ -12,6 +12,8 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from tools.h20_gemm_utilization import utilization_section
 OUT = ROOT / 'docs/h20-tilesight-small-input'
 DATA = OUT / 'data'
 load = lambda name: json.loads((DATA / name).read_text())
@@ -133,7 +135,9 @@ repl={
  'USEFULBW':f'{2*N*K/(meas["median_us"]*1e-6)/1e12:.6f}',
  'BWUTIL':f'{2*N*K/(meas["median_us"]*1e-6)/arch["ddr_bandwidth"]*100:.2f}',
 }
+repl['NAV'] += '<a href="#utilization">8 · Utilization rates</a>'
 text=Path(__file__).with_name('template.html').read_text()
+text=text.replace('<footer>', utilization_section(OUT, (M, N, K), meas['median_us'], 'read-only cache eviction') + '\n<footer>', 1)
 for key,value in repl.items():text=text.replace('@@'+key+'@@',value)
 assert '@@' not in text
 sys.path.insert(0,str(ROOT))

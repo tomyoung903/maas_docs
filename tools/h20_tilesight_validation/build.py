@@ -3,14 +3,19 @@
 import html
 import hashlib
 import json
+import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from tools.h20_gemm_utilization import utilization_section
 OUT = ROOT / 'docs/h20-tilesight-gemm-validation'
 d = json.loads((OUT/'data/numbers.json').read_text())
 ops = {x['id']: x for x in d['ops']}
 repo = 'https://github.com/tomyoung903/TileSight/blob/71c51b223230b4bc13cfcaf3cb1ca25363e6ffb9/'
 toc = [('setup','1 · The input'),('tiles','2 · Divide the work'),('plan','3 · Describe one tile'),('costs','4 · Price the operations'),('overlap','5 · Overlap the K steps'),('grid','6 · Schedule the grid'),('l2-reuse','6b · Explore L2 reuse'),('result','7 · Compare with measurement'),('source','Code and saved data')]
+toc.append(('utilization', '8 · Utilization rates'))
 nav = ''.join(f'<a href="#{key}">{text}</a>' for key,text in toc)
 resources = ['ddr','l2','smem','tma','tensor','cuda','register','ldst']
 resource_rows = ''
@@ -107,6 +112,7 @@ page = page.replace('Every number below comes from the original 4K-cubed run, or
 reuse_section = (Path(__file__).parent/'l2-reuse-section.html').read_text()
 assert page.count('<section id="result">') == 1
 page = page.replace('<section id="result">', reuse_section + '\n<section id="result">')
+page = page.replace('<footer>', utilization_section(OUT, d['shape'], d['measured_us'], 'cold-cache preparation') + '\n<footer>', 1)
 substitutions={'NAV':nav,'EXAMPLE':html.escape(example),'RECIPE':html.escape(recipe),'RESOURCES':resource_rows,'FIRST':timeline(),'LAST':timeline(True),'REPO':repo,'L2REV':hashlib.sha256((OUT/'assets/l2-reuse.html').read_bytes()).hexdigest()[:12],'WAVES':''.join(f'<span class="wave {"tail" if i==14 else ""}" title="Wave {i}: {10 if i==14 else 78} CTAs">{i}<small>{10 if i==14 else 78}</small></span>' for i in range(1,15))}
 for k,v in substitutions.items():page=page.replace('@@'+k+'@@',v)
 assert '@@' not in page
