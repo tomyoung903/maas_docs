@@ -82,7 +82,8 @@ data=dict(NAV=''.join(f'<a href="#{i}">{t}</a>' for i,t in toc),PRED=f'{model["b
 page=Path(__file__).with_name('template.html').read_text()
 page=page.replace('@@INVESTIGATION@@',render_investigation(OUT))
 for key,value in data.items():page=page.replace('@@'+key+'@@',value)
-page=page.replace('@@UTILIZATION@@',utilization_section(OUT,model['shape_mnk'],cold['median_us'],'read-only cache eviction'))
+utilization=utilization_section(OUT,model['shape_mnk'],cold['median_us'],'read-only cache eviction')
+page=page.replace('@@UTILIZATION@@',utilization.replace('<h2>8. FLOP and bandwidth utilization</h2>', '<h2>9. FLOP and bandwidth utilization</h2>'))
 assert '@@' not in page
 path=OUT/'index.html';path.write_text(expected_text(path.resolve(),page))
 with ZipFile(OUT/'evidence.zip','w',ZIP_DEFLATED) as z:
