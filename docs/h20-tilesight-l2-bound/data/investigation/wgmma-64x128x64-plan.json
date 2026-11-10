@@ -1,0 +1,440 @@
+{
+  "schema": "tilesight.program/1",
+  "name": "gemm",
+  "launches": [
+    {
+      "name": "main",
+      "body": {
+        "type": "Loop",
+        "loop_id": "k",
+        "trip_count": 32,
+        "body": {
+          "type": "Pipeline",
+          "actors": [
+            {
+              "name": "producer",
+              "ops": [
+                {
+                  "op_id": "load_A",
+                  "actor": "producer",
+                  "reads": [],
+                  "writes": [
+                    "A_s"
+                  ],
+                  "timing": null,
+                  "latency_extra_s": null,
+                  "metadata": {
+                    "tensor_dtype": "fp16"
+                  },
+                  "type": "Load",
+                  "source": "global",
+                  "destination": "smem",
+                  "engine": "tma",
+                  "access": {
+                    "tensor": "A",
+                    "index_map": {
+                      "kind": "projection",
+                      "work_axes": [
+                        "m",
+                        "k"
+                      ]
+                    },
+                    "tile_shape": [
+                      64,
+                      64
+                    ],
+                    "element_bytes": 2.0,
+                    "valid_shape": null,
+                    "tensor_shape": [
+                      64,
+                      2048
+                    ],
+                    "transaction_bytes": null,
+                    "allocation_bytes": null,
+                    "access_id": null
+                  },
+                  "bytes": null
+                },
+                {
+                  "op_id": "load_B",
+                  "actor": "producer",
+                  "reads": [],
+                  "writes": [
+                    "B_s"
+                  ],
+                  "timing": null,
+                  "latency_extra_s": null,
+                  "metadata": {
+                    "tensor_dtype": "fp16"
+                  },
+                  "type": "Load",
+                  "source": "global",
+                  "destination": "smem",
+                  "engine": "tma",
+                  "access": {
+                    "tensor": "B",
+                    "index_map": {
+                      "kind": "projection",
+                      "work_axes": [
+                        "k",
+                        "n"
+                      ]
+                    },
+                    "tile_shape": [
+                      64,
+                      128
+                    ],
+                    "element_bytes": 2.0,
+                    "valid_shape": null,
+                    "tensor_shape": [
+                      2048,
+                      9984
+                    ],
+                    "transaction_bytes": null,
+                    "allocation_bytes": null,
+                    "access_id": null
+                  },
+                  "bytes": null
+                }
+              ],
+              "sequence": [
+                [
+                  "load_A",
+                  0
+                ],
+                [
+                  "load_B",
+                  0
+                ]
+              ],
+              "order": "issue",
+              "resource": "tma",
+              "execution_scope": "unspecified"
+            },
+            {
+              "name": "tensor",
+              "ops": [
+                {
+                  "op_id": "mma",
+                  "actor": "tensor",
+                  "reads": [
+                    "A_s",
+                    "B_s",
+                    "acc"
+                  ],
+                  "writes": [],
+                  "timing": null,
+                  "latency_extra_s": null,
+                  "metadata": {},
+                  "type": "Compute",
+                  "spec": {
+                    "type": "GemmOpSpec",
+                    "op_id": "gemm.dense",
+                    "m": 64,
+                    "n": 128,
+                    "k": 64,
+                    "batch": 1,
+                    "a_storage_dtype": "fp16",
+                    "b_storage_dtype": "fp16",
+                    "result_storage_dtype": "fp32",
+                    "compute_dtype": "fp16",
+                    "accumulation_dtype": "fp32",
+                    "engine": "tensor",
+                    "attrs": {}
+                  },
+                  "engine": "tensor",
+                  "effective_fraction": 1.0
+                }
+              ],
+              "sequence": [
+                [
+                  "mma",
+                  0
+                ]
+              ],
+              "order": "issue",
+              "resource": "tensor",
+              "execution_scope": "warpgroup"
+            }
+          ],
+          "buffers": [
+            {
+              "name": "A_s",
+              "storage": "smem",
+              "shape": [
+                64,
+                64
+              ],
+              "dtype": "fp16",
+              "slots": 3,
+              "execution_scope": "cta"
+            },
+            {
+              "name": "B_s",
+              "storage": "smem",
+              "shape": [
+                64,
+                128
+              ],
+              "dtype": "fp16",
+              "slots": 3,
+              "execution_scope": "cta"
+            },
+            {
+              "name": "acc",
+              "storage": "register",
+              "shape": [
+                64,
+                128
+              ],
+              "dtype": "fp32",
+              "slots": 1,
+              "execution_scope": "warpgroup"
+            },
+            {
+              "name": "C_r",
+              "storage": "register",
+              "shape": [
+                64,
+                128
+              ],
+              "dtype": "fp16",
+              "slots": 1,
+              "execution_scope": "warpgroup"
+            }
+          ],
+          "dependencies": [],
+          "carries": [
+            {
+              "state": "carry_acc",
+              "source": {
+                "op_id": "mma",
+                "kind": "done"
+              },
+              "target": {
+                "op_id": "mma",
+                "kind": "start"
+              },
+              "distance": 1,
+              "storage": "acc",
+              "lag_s": 0.0
+            }
+          ],
+          "buffer_slots": [
+            {
+              "buffer": "A_s",
+              "acquire": {
+                "op_id": "load_A",
+                "kind": "start"
+              },
+              "release": {
+                "op_id": "mma",
+                "kind": "done"
+              },
+              "capacity": 3
+            },
+            {
+              "buffer": "B_s",
+              "acquire": {
+                "op_id": "load_B",
+                "kind": "start"
+              },
+              "release": {
+                "op_id": "mma",
+                "kind": "done"
+              },
+              "capacity": 3
+            }
+          ],
+          "resource_orders": [],
+          "storage_groups": [],
+          "stages": 3
+        },
+        "prologue": null,
+        "epilogue": {
+          "type": "Sequence",
+          "name": null,
+          "children": [
+            {
+              "op_id": "cast_C",
+              "actor": "epilogue",
+              "reads": [
+                "acc"
+              ],
+              "writes": [
+                "C_r"
+              ],
+              "timing": null,
+              "latency_extra_s": null,
+              "metadata": {},
+              "type": "Compute",
+              "spec": {
+                "type": "ElementwiseOpSpec",
+                "op_id": "cast_C",
+                "operands": [
+                  {
+                    "name": "acc",
+                    "shape": [
+                      64,
+                      128
+                    ],
+                    "storage_dtype": "fp32",
+                    "access": "identity",
+                    "index_map": {}
+                  }
+                ],
+                "result": {
+                  "name": "C_r",
+                  "shape": [
+                    64,
+                    128
+                  ],
+                  "storage_dtype": "fp16"
+                },
+                "operations": [
+                  {
+                    "op_class": "convert",
+                    "count": 8192.0,
+                    "engine": "cuda",
+                    "dtype": "fp32",
+                    "semantic_flops_per_op": 1.0,
+                    "issue_equivalent_flops_per_op": 1.0,
+                    "attrs": {
+                      "issue_unit": "cuda_instruction"
+                    }
+                  }
+                ],
+                "compute_dtype": "fp32",
+                "accumulation_dtype": "fp32",
+                "attrs": {}
+              },
+              "engine": null,
+              "effective_fraction": 1.0
+            },
+            {
+              "op_id": "store_C",
+              "actor": "epilogue",
+              "reads": [
+                "C_r"
+              ],
+              "writes": [],
+              "timing": null,
+              "latency_extra_s": null,
+              "metadata": {
+                "tensor_dtype": "fp16"
+              },
+              "type": "Store",
+              "source": "register",
+              "destination": "global",
+              "engine": "ldst",
+              "access": {
+                "tensor": "C",
+                "index_map": {
+                  "kind": "projection",
+                  "work_axes": [
+                    "m",
+                    "n"
+                  ]
+                },
+                "tile_shape": [
+                  64,
+                  128
+                ],
+                "element_bytes": 2.0,
+                "valid_shape": null,
+                "tensor_shape": [
+                  64,
+                  9984
+                ],
+                "transaction_bytes": null,
+                "allocation_bytes": null,
+                "access_id": null
+              },
+              "bytes": null
+            }
+          ]
+        },
+        "ii_mode": "inherit",
+        "boundary_anchor_op": null
+      },
+      "work_axes": [
+        {
+          "name": "m",
+          "extent": 1
+        },
+        {
+          "name": "n",
+          "extent": 78
+        }
+      ],
+      "threads": 256,
+      "grid": null,
+      "cluster": [
+        1,
+        1,
+        1
+      ],
+      "residency": 1,
+      "work_units": null,
+      "scheduler": "static_dispatch",
+      "dispatch_order": "linear_block_id",
+      "requires_arch": [
+        "wgmma"
+      ],
+      "metadata": {
+        "kernel": "gemm",
+        "reference": "tilelang/examples/gemm/example_gemm.py",
+        "tilelang_commit": "4c9cf5c7ea485e62312fb205c01cec68ad836075"
+      },
+      "buffers": [
+        {
+          "name": "A_s",
+          "storage": "smem",
+          "shape": [
+            64,
+            64
+          ],
+          "dtype": "fp16",
+          "slots": 3,
+          "execution_scope": "cta"
+        },
+        {
+          "name": "B_s",
+          "storage": "smem",
+          "shape": [
+            64,
+            128
+          ],
+          "dtype": "fp16",
+          "slots": 3,
+          "execution_scope": "cta"
+        },
+        {
+          "name": "acc",
+          "storage": "register",
+          "shape": [
+            64,
+            128
+          ],
+          "dtype": "fp32",
+          "slots": 1,
+          "execution_scope": "warpgroup"
+        },
+        {
+          "name": "C_r",
+          "storage": "register",
+          "shape": [
+            64,
+            128
+          ],
+          "dtype": "fp16",
+          "slots": 1,
+          "execution_scope": "warpgroup"
+        }
+      ],
+      "storage_groups": []
+    }
+  ],
+  "edges": [],
+  "metadata": {}
+}

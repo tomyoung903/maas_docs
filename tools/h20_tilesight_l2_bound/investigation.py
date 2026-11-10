@@ -1,0 +1,49 @@
+"""Render the follow-up; keep the original fixed prediction visible."""
+import json
+
+def render(out):
+    d=json.loads((out/'data/investigation/summary.json').read_text())
+    sweep=''.join(f'<tr><td>{r["k"]:,}</td><td>{r["model_body_us"]:.3f}</td><td>{r["measured_cold_us"]:.3f}</td><td>{r["cold_remaining_gap_us"]:.3f}</td></tr>' for r in d['hmma_k_sweep'])
+    bars=[]
+    for i,(label,value,color) in enumerate([
+        ('Original prediction',d['original_prediction_us'],'#397ca2'),
+        ('HMMA-rate correction',d['corrected_prediction_us'],'#146b67'),
+        ('Original measurement',d['archived_measurement_us'],'#333e48')]):
+        y=20+i*52
+        bars.append(f'<text x="4" y="{y+21}" font-size="15">{label}</text><rect x="200" y="{y}" width="{value*14:.2f}" height="30" rx="3" fill="{color}"/><text x="{212+value*14:.2f}" y="{y+21}" font-size="15">{value:.3f} µs</text>')
+    chart='<svg viewBox="0 0 810 185" role="img" aria-label="Original prediction 23.616 microseconds; independently corrected prediction 28.401; original measurement 34.368">'+''.join(bars)+'</svg>'
+    return f'''<section id="investigation"><h2>8. What the follow-up investigation established</h2>
+<div class="note"><strong>The original plan used the wrong compute rate for its instruction family.</strong>
+The kernel uses <code>mma.sync</code>, which compiles to HMMA. Independent tests on our H20 sustain about <strong>95.8 TFLOP/s</strong> on that path, compared with <strong>142.6 TFLOP/s</strong> for Hopper WGMMA. TileSight assigned both paths the same generic 139.22 TFLOP/s. Correcting that assumption changes the modeled bottleneck from L2 to Tensor throughput. It reduces the error, but does not eliminate it.</div>
+<p>The original 31.29% result above is retained. Its prediction and measurement were not replaced after seeing the answer. This follow-up ran on two H20 nodes; the final paired comparison used one idle GPU on the second node. No other workload was stopped and no paid GPU rental was needed.</p>
+<h3>Measure the instruction family independently</h3>
+<p>The HMMA microbenchmark performs a long stream of register-resident <code>mma.sync.aligned.m16n8k16</code> operations. Each warp instruction does 4,096 FLOPs. It varies independent accumulator groups and warp supply, checks every output exactly, and compares two loop lengths. None of the GEMM timings enters this calibration.</p>
+<div class="table-wrap"><table><thead><tr><th>Independent test</th><th>Measured throughput</th><th>Interpretation</th></tr></thead><tbody>
+<tr><td>HMMA · largest configuration median</td><td>95.804 TFLOP/s</td><td>Highest measured configuration median; optimistic timing input</td></tr>
+<tr><td>HMMA · four groups, 128 threads, four CTAs/SM grid</td><td>95.344 TFLOP/s</td><td>Matches the original kernel’s accumulator groups and warp supply</td></tr>
+<tr><td>WGMMA · one to eight CTAs/SM grid</td><td>142.206–142.650 TFLOP/s</td><td>Separate Hopper instruction path</td></tr>
+<tr><td>Original generic profile</td><td>139.220 TFLOP/s</td><td>Plausible for WGMMA; too high for the measured HMMA path</td></tr>
+</tbody></table></div>
+<p>All 72 valid HMMA configurations passed correctness. High-supply configurations form a stable 95–96 TFLOP/s plateau; the result is not one slow sample. Both probes reached the same 1,980 MHz SM and 2,619 MHz memory clocks during active execution. The stored H20 profile remains unchanged: the new rate is an explicit override for this HMMA analysis, not a global replacement that would slow WGMMA predictions.</p>
+<h3>Recalculate the same five-operation plan</h3>
+{chart}
+<div class="equation math"><div>Tensor time per K64 step = 81,788,928 FLOPs / (95.804007744 × 10¹² FLOP/s)</div><div>= 0.853710924 µs</div><div>II = max(L2 0.707923970, Tensor 0.853710924, other demands)</div><div>= 0.853710924 µs</div><div>T = 31 × II + input-load chain + final MMA + cast + store</div><div>= 31 × 0.853710924 + 0.707923970 + 0.853710924 + 0.043717745 + 0.331019517</div><div class="answer">= 28.401411 µs · 17.36% below the original 34.368 µs measurement</div></div>
+<p>Thus the justified rate change raises the prediction by 4.786 µs. The remaining 5.967 µs is not explained by that change. These numbers are model comparisons, not a measured additive breakdown of time spent in hardware units.</p>
+<h3>Is our implementation contributing?</h3>
+<p><strong>Yes.</strong> A second CUTLASS implementation computes the same FP16 matrices with Hopper TMA/WGMMA and a 64 × 128 × 64 tile. On the same GPU, it takes 24.576 µs instead of 34.239 µs for the original implementation, a 28.2% latency reduction. Both pass the same correctness and cache-preparation checks.</p>
+<div class="table-wrap"><table><thead><tr><th>Implementation</th><th>CTA tile / count</th><th>Matching prediction</th><th>Measured cold</th></tr></thead><tbody>
+<tr><td>Original cp.async + HMMA</td><td>16 × 128 × 64 / 312</td><td>28.401 µs · measured HMMA rate</td><td>34.239 µs</td></tr>
+<tr><td>Hopper TMA + WGMMA</td><td>64 × 128 × 64 / 78</td><td>19.584 µs · original 139.22 rate</td><td>24.576 µs</td></tr>
+</tbody></table></div>
+<p>The WGMMA change also reduces repeated operand requests and changes warp roles and output handling. It is not an isolated instruction replacement. Its model uses the new tile and one CTA per SM; hardware counters confirm exactly one CTA on each of the 78 SMs. Comparing its time with the old 23.616 µs plan would be invalid even though those two numbers look close.</p>
+<h3>What remains outside the simple model?</h3>
+<p>Nsight Compute attributes 1,097 of 1,115 sampled math-pipeline-throttle events to HMMA instructions. Shared-memory excessive wavefronts are zero in that profile. This locates execution pressure and weakens the bank-conflict hypothesis; stall samples cannot be added up as microseconds.</p>
+<p>The five-operation plan does not explicitly time the kernel’s shared-to-register fragment loads, address instructions, waits, barriers, or unequal progress of resident CTAs. The compiled loop contains those operations. Diagnostic timestamps show four CTAs on each SM starting close together but finishing at different times. They are thread-0 observations from an instrumented build, not an exact timeline of every warp.</p>
+<p>A separate long-running operand-loading probe sustains <strong>94.68 TFLOP/s</strong> while interleaving the same three matrix loads per four HMMA instructions. The compiled loop was checked to retain those loads. Thus shared-to-register reads alone do not reproduce the residual slowdown: global copies, barriers, finite pipeline effects and scheduling still need separate attribution. The probe omits those mechanisms and is not a replacement generic compute rate.</p>
+<div class="table-wrap"><table><thead><tr><th>K</th><th>HMMA-rate prediction · µs</th><th>Measured cold · µs</th><th>Residual · µs</th></tr></thead><tbody>{sweep}</tbody></table></div>
+<p>The HMMA residual grows with K, so a fixed launch term cannot close it. In the WGMMA control, K = 512, 1,024, 2,048 and 4,096 leave roughly 4.75–5.27 µs above the original-rate model. Its incremental time per K64 is 0.5783 µs, close to the model’s 0.5875 µs. That supports a mostly fixed missing cost for that control, but does not uniquely identify the cost or justify silently adding a fitted offset.</p>
+<details><summary>Why we did not claim a numerically closer detailed plan was validated</summary><p>An exploratory plan adds fragment operations and compiled instruction ordering. With the measured HMMA rate it predicts 32.595 µs. However, it groups four independently scheduled warps into one actor, conservatively delays register reuse, and does not exhaust its schedule search. Its numerical proximity is not enough to call it correct. Earlier source-text ordering also disagreed with compiled SASS; that result was withdrawn. All these experiments are retained separately from the accepted rate correction.</p></details>
+<div class="note"><strong>Conclusion:</strong> there is no evidence of incorrect GEMM arithmetic or an accidental timing inclusion. Implementation choice matters, and the model supplied too much compute capacity to this instruction family. The remaining gap is consistent with missing execution details; their separate costs remain unresolved. We have a defensible partial reconciliation, not a validated sub-5% prediction for this workload.</div>
+<div class="downloads"><a class="button" href="data/investigation/summary.json">Follow-up results</a><a class="button" href="data/investigation/MEASURED-HMMA-RATE.md">Rate correction and K sweep</a><a class="button" href="data/investigation/WGMMA-K-SWEEP.md">WGMMA control</a><a class="button" href="data/investigation/HMMA-REVIEW.md">Independent probe review</a><a class="button" href="evidence.zip">Sources and evidence</a></div>
+<p class="small">The instruction distinction is also documented in <a href="https://docs.nvidia.com/nsight-compute/ComputeTriage/#symptom-tensor-cuda-core-utilization-interpretation-is-ambiguous">NVIDIA’s Tensor/CUDA Core profiling guidance</a>. Our numerical rates are local measurements, not official universal specifications. Correctness uses the same exactly representable fixture as the original experiment. Nsight replay durations remain separate from primary Nsight Systems device timings.</p>
+</section>'''

@@ -11,6 +11,7 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
 from tools.h20_gemm_utilization import utilization_section
 from tools.inject_maas_annotator import expected_text
+from tools.h20_tilesight_l2_bound.investigation import render as render_investigation
 OUT=ROOT/'docs/h20-tilesight-l2-bound'
 load=lambda name:json.loads((OUT/'data'/name).read_text())
 model=load('summary.json'); measured=load('measurement-summary.json'); snapshot=load('prediction.json')
@@ -59,7 +60,7 @@ def resource_rows():
         result.append(f'<tr><th><code>{name}</code></th>{cells}<td>{op["completion_us"]:.6f}</td></tr>')
     return ''.join(result)
 
-toc=[('setup','1 · The candidate'),('grid','2 · Divide the work'),('cache','3 · Reuse the inputs'),('costs','4 · Resource costs'),('overlap','5 · Model the pipeline'),('result','6 · Measure the kernel'),('counters','7 · Inspect counters'),('source','Evidence and limits'),('utilization','8 · Utilization rates')]
+toc=[('investigation','Follow-up · Explain the gap'),('setup','1 · The candidate'),('grid','2 · Divide the work'),('cache','3 · Reuse the inputs'),('costs','4 · Resource costs'),('overlap','5 · Model the pipeline'),('result','6 · Measure the kernel'),('counters','7 · Inspect counters'),('source','Evidence and limits'),('utilization','Utilization rates')]
 data=dict(NAV=''.join(f'<a href="#{i}">{t}</a>' for i,t in toc),PRED=f'{model["body_us"]:.3f}',MEAS=f'{cold["median_us"]:.3f}',ERROR=f'{abs(measured["error_pct"]):.2f}',GAP=f'{cold["median_us"]-model["body_us"]:.3f}',
           WARM=f'{warm["median_us"]:.3f}',P10=f'{cold["p10_us"]:.3f}',P90=f'{cold["p90_us"]:.3f}',
           EVENT=f'{measured["measurements"]["read_cg512"]["events_events"]["median_us"]:.3f}',
@@ -79,6 +80,7 @@ data=dict(NAV=''.join(f'<a href="#{i}">{t}</a>' for i,t in toc),PRED=f'{model["b
           WARMDELTA=f'{cold["median_us"]-warm["median_us"]:.3f}',
           DOUBLING=''.join(f'<tr><td>{html.escape(label)}</td><td>{model["rate_sensitivity"][key]:.3f} µs</td></tr>' for key,label in [('l2_bandwidth_doubled','Double only L2 bandwidth'),('ddr_bandwidth_doubled','Double only HBM bandwidth'),('fp16_tensor_flops_doubled','Double only Tensor throughput')]))
 page=Path(__file__).with_name('template.html').read_text()
+page=page.replace('@@INVESTIGATION@@',render_investigation(OUT))
 for key,value in data.items():page=page.replace('@@'+key+'@@',value)
 page=page.replace('@@UTILIZATION@@',utilization_section(OUT,model['shape_mnk'],cold['median_us'],'read-only cache eviction'))
 assert '@@' not in page
