@@ -1,0 +1,621 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tomyoung903.github.io/maas_docs/hy4-100k-prefill/input-schema.json",
+  "title": "HY4 100K prefill event/work input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "request",
+    "hardware",
+    "artifacts",
+    "nodes",
+    "events",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "hy4-prefill-profile-v1"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "measured"
+      ]
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "cached_tokens",
+        "wall_time_ms",
+        "layer_partition",
+        "configuration",
+        "execution_coverage_complete",
+        "coverage_artifact_ids"
+      ],
+      "properties": {
+        "input_tokens": {
+          "const": 100000
+        },
+        "output_tokens": {
+          "const": 1
+        },
+        "cached_tokens": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "wall_time_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "layer_partition": {
+          "const": [
+            16,
+            21,
+            21,
+            20
+          ]
+        },
+        "configuration": {
+          "type": "string"
+        },
+        "execution_coverage_complete": {
+          "type": "boolean"
+        },
+        "coverage_artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "profiled_server_prefill_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "warmup_server_prefill_ms": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "timing_artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "devices",
+        "compute_roofs_tflops",
+        "bandwidth_roof_tb_s",
+        "roof_artifact_ids"
+      ],
+      "properties": {
+        "devices": {
+          "const": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "compute_roofs_tflops": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "nvfp4": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "fp8": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "bf16": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "fp16": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "tf32": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "fp32": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "fp64": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "bandwidth_roof_tb_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "roof_artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "uniqueItems": true
+        },
+        "device_name": {
+          "type": "string"
+        },
+        "roof_note": {
+          "type": "string"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clock_alignment",
+        "origin_ns",
+        "artifact_id",
+        "clock_evidence",
+        "chunks"
+      ],
+      "properties": {
+        "clock_alignment": {
+          "enum": [
+            "unavailable",
+            "single_host_nsight_common_origin"
+          ]
+        },
+        "origin_ns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "clock_evidence": {
+          "type": "string"
+        },
+        "chunks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "node_id",
+              "rank",
+              "forward_ordinal",
+              "start_ns",
+              "duration_ns",
+              "new_tokens"
+            ],
+            "properties": {
+              "node_id": {
+                "type": "string"
+              },
+              "rank": {
+                "enum": [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "forward_ordinal": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "start_ns": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "duration_ns": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "new_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "target_model_work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "flops_by_precision",
+        "scope",
+        "source_artifact_ids",
+        "request_artifact_ids",
+        "request_completed",
+        "input_tokens",
+        "output_tokens"
+      ],
+      "properties": {
+        "flops_by_precision": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "request_artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "request_completed": {
+          "const": true
+        },
+        "input_tokens": {
+          "const": 100000
+        },
+        "output_tokens": {
+          "const": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "flops_by_precision",
+        "scalar_ops",
+        "useful_bytes",
+        "useful_bytes_note",
+        "dram_bytes",
+        "dram_counter_artifact_id"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "unavailable",
+            "source_estimate",
+            "verified"
+          ]
+        },
+        "flops_by_precision": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "nvfp4": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "fp8": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "bf16": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "fp16": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "tf32": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "fp32": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "fp64": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "scalar_ops": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "useful_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "useful_bytes_note": {
+          "type": "string"
+        },
+        "dram_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "dram_counter_artifact_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "parent_id",
+        "kind",
+        "label",
+        "rank",
+        "chunk",
+        "layer",
+        "work",
+        "work_matches_events",
+        "artifact_ids"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "enum": [
+            "model",
+            "rank",
+            "chunk",
+            "layer",
+            "operator"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "rank": {
+          "enum": [
+            null,
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "chunk": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "layer": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "work": {
+          "$ref": "#/$defs/work"
+        },
+        "work_matches_events": {
+          "type": "boolean"
+        },
+        "artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "uniqueItems": true
+        },
+        "note": {
+          "type": "string"
+        },
+        "formula": {
+          "type": "string"
+        },
+        "boundary": {
+          "type": "boolean"
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rank",
+        "start_ns",
+        "duration_ns",
+        "owner_id",
+        "artifact_id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "rank": {
+          "enum": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "start_ns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ns": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "owner_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "kind": {
+          "enum": [
+            "kernel",
+            "memcpy",
+            "memset"
+          ]
+        },
+        "category": {
+          "enum": [
+            "compute",
+            "communication",
+            "memory",
+            "unclassified"
+          ]
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        }
+      }
+    }
+  },
+  "description": "Validate JSON shape, then use build.validate for cross-record ownership, exact cold baseline, pending/null, public-reference and metric-evidence constraints."
+}
