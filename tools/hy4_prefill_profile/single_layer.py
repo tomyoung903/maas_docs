@@ -71,9 +71,11 @@ def select(report, selection):
         completion=load_completion(selection)
         if completion is not None:
             apply(payload,completion,report['hardware']['compute_roofs_tflops'],report['hardware']['bandwidth_roof_tb_s'])
-    from physical_replay import load_replay
+    from physical_replay import load_replay, load_moe_range
     replay=load_replay(payload,report['hardware']['bandwidth_roof_tb_s'])
     if replay is not None:payload['physical_replay']=replay
+    moe_range=load_moe_range(payload)
+    if moe_range is not None:payload['moe_range_replay']=moe_range
     public_safe(payload)
     return payload
 
@@ -82,6 +84,8 @@ def render(report, selection, output):
     payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'metric_completion.py',HERE/'physical_replay.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
     if payload.get('physical_replay'):
         (output/'isolated-replay-counters.json').write_text(json.dumps(payload['physical_replay'],indent=2)+'\n')
+    if payload.get('moe_range_replay'):
+        (output/'isolated-moe-range-counters.json').write_text(json.dumps(payload['moe_range_replay'],indent=2)+'\n')
     (output/'selected-layer-data.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':'))+'\n')
     html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload))
     (output/'index.html').write_text(html)

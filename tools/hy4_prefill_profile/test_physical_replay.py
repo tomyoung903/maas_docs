@@ -41,4 +41,36 @@ class PhysicalReplayTests(unittest.TestCase):
   with self.assertRaises(ValueError):physical_replay.derive(self.summary,self.payload,7.7)
  def test_optional_replay_not_attached_to_unrelated_fixture(self):
   self.assertIsNone(physical_replay.load_replay({'selection':{}},7.7))
+
+class MoERangeTests(unittest.TestCase):
+ def setUp(self):
+  self.summary=json.loads((HERE/'isolated-moe-range-counters.json').read_text())
+  self.selection=json.loads((HERE/'representative-selection.json').read_text())
+  self.payload={'selection':self.selection,'full_report_input_sha256':self.selection['source_input_sha256'],
+   'tree':{'time_ms':2.18463,'mfu_percent':17,'mbu_percent':23},'events':[{'duration_ns':2184630}]}
+ def test_aggregate_uses_only_matching_range_and_preserves_trace(self):
+  before=copy.deepcopy(self.payload);summary=copy.deepcopy(self.summary)
+  result=physical_replay.derive_moe_range(self.summary,self.payload)
+  self.assertEqual(self.payload,before);self.assertEqual(self.summary,summary)
+  self.assertEqual(result['counters']['dram_total_bytes'],7515448832)
+  self.assertEqual(result['counters']['l2_requested_sector_bytes'],25455027392)
+  self.assertEqual(result['range_wallclock_ms'],5.20944)
+  self.assertAlmostEqual(result['profiled_range_bandwidth_tb_s'],1.4426596394238152)
+  for key in ('per_fc_attribution','cache_hit_ratio','physical_kernel_mbu_percent','unprofiled_latency_ms','candidate_speedup'):
+   self.assertIsNone(result[key])
+ def test_rejects_wrong_scope_denominator_or_unqualified_results(self):
+  mutations=[lambda s:s['timing'].update(metric='gpu__time_duration.sum'),
+   lambda s:s['timing'].update(deprecation_warning_at_measured_callsite=False),
+   lambda s:s['collection'].update(profiling_passes=2),
+   lambda s:s['numerical'].update(values_per_call=1024),
+   lambda s:s['counters'].update(l2_sector_bytes=64),
+   lambda s:s.update(physical_kernel_mbu_percent=18.7),
+   lambda s:s['capture'].update(cached_tokens=90112)]
+  for change in mutations:
+   s=copy.deepcopy(self.summary);change(s)
+   with self.assertRaises(ValueError):physical_replay.derive_moe_range(s,self.payload)
+ def test_optional_and_checksum_bound(self):
+  self.assertIsNone(physical_replay.load_moe_range({'selection':{}}))
+  self.payload['selection']['moe_range_replay_sha256']='0'*64
+  with self.assertRaises(ValueError):physical_replay.load_moe_range(self.payload)
 if __name__=='__main__':unittest.main()

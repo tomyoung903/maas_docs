@@ -358,3 +358,14 @@ launches MQA then TopK without an intermediate host copy or synchronization.
 Initial cache state is uncontrolled, clock/cache controls are disabled, and each
 profiled native kernel has exactly one pass. Counter-run durations are never
 substituted for original trace durations.
+
+The adjacent routed-MoE block uses the separately checksum-bound
+`isolated-moe-range-counters.json`. It reports one complete PDL-preserving
+app-range, not individual kernels: 7,515,448,832 DRAM bytes and 795,469,606
+requested L2 sectors. Its 5.20944 ms denominator is the explicit NCU range
+wall clock, including unquantified host/profiler overhead and a deprecation
+warning at the measured callsite. The derived 1.44266 TB/s is complete
+profiled-range bandwidth; no native-kernel MBU, per-FC attribution, cache-hit
+ratio, unprofiled latency or speedup is derived. Two full 50,331,648-value
+outputs match the captured baseline exactly. The public download retains
+integer counters, separate capture identity and raw artifact hashes.

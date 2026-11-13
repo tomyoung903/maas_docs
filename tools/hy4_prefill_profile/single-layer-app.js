@@ -35,6 +35,17 @@
     $('physical-replay-validation').textContent=`Both chains matched all ${num(replay.numerical.valid_logits_per_chain,0)} valid MQA logits bitwise. TopK selected the same token sets with different index order. This is a native baseline observation, not FP64 candidate validation, a calibrated TileSight prediction, or an optimization gain.`;
     for(const note of replay.limitations)$('physical-replay-notes').append(el('li','',note));
   }
+  const moe=data.moe_range_replay;
+  if(moe){
+    $('physical-memory').hidden=false;$('moe-physical-memory').hidden=false;
+    const b=moe.counters;
+    $('moe-range-scope').textContent=`Separate cold 100,000-token capture, at the same layer ${s.layer} and ${num(s.new_tokens,0)}-token chunk geometry. One GPU4 NCU app-range pass aggregates routing, FC1, FC2 and finalization with PDL preserved. These are whole-invocation counters, not per-kernel measurements.`;
+    const rows=[['DRAM read',`${num(b.dram_read_bytes/1e9,6)} GB`],['DRAM write',`${num(b.dram_write_bytes/1e9,6)} GB`],['DRAM total',`${num(b.dram_total_bytes/1e9,6)} GB`],['L2 requested sectors',`${num(b.l2_sectors,0)} × 32 B = ${num(b.l2_requested_sector_bytes/1e9,6)} GB`],['NCU range wall clock',`${num(moe.range_wallclock_ms,5)} ms`],['Complete profiled-range bandwidth',`${num(moe.profiled_range_bandwidth_tb_s,5)} TB/s`]];
+    for(const [label,value] of rows){const tr=el('tr'),th=el('th','',label);th.scope='row';tr.append(th,el('td','',value));$('moe-range-rows').append(tr);}
+    $('moe-range-timing').textContent=`The ${num(moe.range_wallclock_ms,5)} ms denominator includes host/profiler overhead. A native API deprecation warning was observed at the measured callsite; its contribution is unquantified. The bandwidth divides total DRAM bytes by this complete profiled range. It is not native-kernel MBU or unprofiled latency. L2 requested bytes do not establish a cache-hit ratio. GB and TB are decimal.`;
+    $('moe-range-validation').textContent=`Both native calls matched all ${num(moe.numerical.values_per_call,0)} BF16 output values bitwise against the capture and each other, with no nonfinite values; route IDs and weights were unchanged. Observers were removed before the selected range. One pass, zero profiler warmups, uncontrolled initial cache; cache and clock controls disabled. No optimization gain or FP64 candidate validation is claimed.`;
+    for(const note of moe.limitations)$('moe-range-notes').append(el('li','',note));
+  }
   const toggles=[];
   const eventById=new Map(data.events.map(event=>[event.id,event]));
   const semanticEventTitles=new Map();

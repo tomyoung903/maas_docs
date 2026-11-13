@@ -1,0 +1,102 @@
+{
+  "schema_version": "hy4-isolated-moe-range-counters-v1",
+  "status": "measured_isolated_app_range",
+  "comparison_source_input_sha256": "7a5f4910df3ac78a77457cdd28210aeb9bcad8127da95efa4c6e58055807b9e7",
+  "geometry": {
+    "layer": 53,
+    "new_tokens": 8192,
+    "context_before": 90112,
+    "context_after": 98304
+  },
+  "capture": {
+    "scope": "Separate real-weight cold 100,000-token request; same layer/chunk geometry as the original tree, not the same execution.",
+    "input_tokens": 100000,
+    "cached_tokens": 0,
+    "packet_manifest_sha256": "ca80359bcff2d4a07856b20eef83e1ae3b1ed52136ec838f093a6f110000b3bf",
+    "qualification_sha256": "657beab427997adadffdeeebe6af55cb45d7443ecf3b8c4d4b646fd6f50f3988"
+  },
+  "hardware": {
+    "gpu": "NVIDIA B300",
+    "physical_gpu_index": 4
+  },
+  "collection": {
+    "ncu_version": "2026.2.1.0",
+    "replay_mode": "app-range",
+    "range": "HY4_MOE_NATIVE_COUNTER",
+    "preparation_calls": 1,
+    "profiled_calls": 1,
+    "profiling_passes": 1,
+    "profiler_warmup_passes": 0,
+    "observers_restored_before_range": true,
+    "pdl_preserved": true,
+    "cache_control": "none",
+    "clock_control": "none",
+    "initial_cache_state": "uncontrolled",
+    "buffer_reuse": "Unchanged prepared inputs and disjoint output; no re-upload, poisoning or cache priming between calls."
+  },
+  "counters": {
+    "dram_read_bytes": 6522388992,
+    "dram_write_bytes": 993059840,
+    "dram_total_bytes": 7515448832,
+    "l2_sectors": 795469606,
+    "l2_sector_bytes": 32,
+    "l2_requested_sector_bytes": 25455027392
+  },
+  "timing": {
+    "metric": "gpu__time_duration_measured_wallclock.sum",
+    "range_wallclock_ns": 5209440,
+    "scope": "Complete profiled application range, including host/profiler overhead; overhead is unquantified.",
+    "deprecation_warning_at_measured_callsite": true,
+    "warning": "Omitted hidden_states_scale_layout triggers native API deprecation warning; original omission semantics were preserved."
+  },
+  "numerical": {
+    "calls": 2,
+    "values_per_call": 50331648,
+    "bit_mismatches_per_call": [
+      0,
+      0
+    ],
+    "nonfinite_per_call": [
+      0,
+      0
+    ],
+    "repeat_bit_mismatches": 0,
+    "route_ids_and_weights_unchanged": true,
+    "output_bits_sha256": "787b88c04a1c87142f7ae9d33c53cb4b00e993a8da6731c4d4392646a900e7c9",
+    "fp64_candidate_validation": false
+  },
+  "per_fc_attribution": null,
+  "cache_hit_ratio": null,
+  "physical_kernel_mbu_percent": null,
+  "unprofiled_latency_ms": null,
+  "candidate_speedup": null,
+  "artifacts": [
+    {
+      "label": "moe-native-range.ncu-rep",
+      "bytes": 29258423,
+      "sha256": "1cea9bcd7485fa5d1b8ec3302358232d0f6066decc98e96b445c40a0553506c0"
+    },
+    {
+      "label": "moe-native-range.csv",
+      "bytes": 13249,
+      "sha256": "f1d5e19a23a9911817239821456788ccd4f2af859025276481cb92f38dc4e7d7"
+    },
+    {
+      "label": "numerical.json",
+      "bytes": 19076,
+      "sha256": "d7881d621b02545a5f3247cf558418fee03f17ae1bfb06275443a69f5cb9240f"
+    },
+    {
+      "label": "ncu.stderr.log",
+      "bytes": 1364,
+      "sha256": "6577a8d7a1a66ef227bb94c63977fc09e3384009f4c876630d0fa84959991bf4"
+    }
+  ],
+  "limitations": [
+    "All four internal native kernels are aggregated in one PDL-preserving application range; this report does not attribute traffic to FC1 or FC2.",
+    "L2 requested sector bytes are not DRAM bytes and do not establish a cache-hit ratio.",
+    "The matching 5.20944 ms denominator is the complete profiled range wall clock, including unquantified host/profiler overhead and an observed API deprecation warning at the measured callsite.",
+    "This range is not an unprofiled kernel or endpoint latency, and its bandwidth is not native-kernel MBU. Original trace timings and MFU remain separate.",
+    "Two complete native outputs match the captured baseline bitwise; this is baseline qualification, not FP64 candidate validation, a calibrated TileSight prediction or an optimization gain."
+  ]
+}
