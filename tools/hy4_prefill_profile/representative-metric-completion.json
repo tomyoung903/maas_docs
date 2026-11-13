@@ -1,0 +1,511 @@
+{
+  "schema_version": "hy4-selected-metric-completion-v1",
+  "source_input_sha256": "7a5f4910df3ac78a77457cdd28210aeb9bcad8127da95efa4c6e58055807b9e7",
+  "selected_event_ids_sha256": "0b461af1713d6a6a17626823bb76ffa6a3ba69c0cac72e966d57e25aae5c6e8d",
+  "original_selected_data_sha256": "66ef20d420b0f4e791062f7fb94d5f80c6431cfc4a5dc99d7832303fc7cb316b",
+  "original_semantics_sha256": "c7c7986ce384fe495da21a567aac0435ba713ae8b377c27101c333d35be663c4",
+  "matrix_scope_definition": "Model matrix projections, iHC linear mixing dots, and attention QK/SV contractions, under the existing reviewed precision convention. Scalar reductions, fast Hadamard butterflies, rotary transforms, quantization, selection and copies are excluded from this numerator; exclusion does not mean zero arithmetic.",
+  "scalar_convention": "Source-level arithmetic convention, not executed-instruction count. Normalization counts each reduction addition and treats rsqrt as one semantic operation; compare/sort/convert and physical pipeline work remain separate.",
+  "entries": [
+    {
+      "operator_id": "pp2-forward11-layer53-rmsnorm-d2085368",
+      "family": "rmsnorm",
+      "event_ids": [
+        "sqlite-kernel-9582",
+        "sqlite-kernel-9583"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_reduction",
+      "matrix_scope_note": "Two RMSNorm reductions/scales; no model matrix projection or attention contraction.",
+      "source_anchors": [
+        {
+          "label": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py",
+          "line": 480,
+          "anchor": "q = self.q_a_layernorm(q)"
+        },
+        {
+          "label": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py",
+          "line": 482,
+          "anchor": "k_nope = self.kv_a_layernorm(k_nope)"
+        }
+      ],
+      "scalar_ops": 83918848,
+      "scalar_formula": "T × [(4 × 2048 + 2) + (4 × 512 + 2)]",
+      "scalar_scope_status": "source_convention",
+      "useful_bytes": 83891200,
+      "useful_byte_formula": "T × (2048 + 512) × (2 read + 2 write) + (2048 + 512) × 2 weight bytes",
+      "useful_bytes_scope_status": "source_operand_interface_estimate",
+      "useful_bytes_note": "Standalone useful operand interfaces: each distinct input/output operand counted once per invocation. Source-derived estimate, not physical HBM traffic; excludes repeated loads, cache behavior, padding and internal movement. These values must not be added across operators.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 rows: query width 2,048 and KV-latent width 512; BF16 operands/weights.",
+      "estimated_mbu_percent": 57.51140751140751
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-indexer-k-layernorm-00306326",
+      "family": "indexer_k_layernorm",
+      "event_ids": [
+        "sqlite-kernel-9587"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_reduction",
+      "matrix_scope_note": "LayerNorm mean/variance/affine arithmetic; no model matrix contraction.",
+      "source_anchors": [
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 1088,
+          "anchor": "key = self.k_norm(key)"
+        },
+        {
+          "label": "sglang/srt/layers/layernorm.py",
+          "line": 1188,
+          "anchor": "class LayerNorm"
+        }
+      ],
+      "scalar_ops": 7356416,
+      "scalar_formula": "T × (7 × 128 + 2)",
+      "scalar_scope_status": "source_convention",
+      "useful_bytes": 4195328,
+      "useful_byte_formula": "T × 128 × (2 read + 2 write) + 2 × 128 × 4 affine bytes",
+      "useful_bytes_scope_status": "source_operand_interface_estimate",
+      "useful_bytes_note": "Standalone useful operand interfaces: each distinct input/output operand counted once per invocation. Source-derived estimate, not physical HBM traffic; excludes repeated loads, cache behavior, padding and internal movement. These values must not be added across operators.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 × 128 BF16 input/output; 128 FP32 scale and 128 FP32 bias values.",
+      "estimated_mbu_percent": 7.601113172541744
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-rope-fe4d55b9",
+      "family": "rope",
+      "event_ids": [
+        "sqlite-kernel-9588",
+        "sqlite-kernel-9601"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_rotation",
+      "matrix_scope_note": "Two 64-coordinate rotary position transforms use paired scalar multiply/add, not a matrix projection.",
+      "source_anchors": [
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 1100,
+          "anchor": "self._apply_rope_qk(positions, query, key)"
+        },
+        {
+          "label": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py",
+          "line": 728,
+          "anchor": "self.prepare_mla_qkv("
+        }
+      ],
+      "scalar_ops": 154140672,
+      "scalar_formula": "3 × T × 64 × [(32 + 1) + (64 + 1)]",
+      "scalar_scope_status": "source_convention",
+      "useful_bytes": null,
+      "useful_byte_formula": null,
+      "useful_bytes_scope_status": "unresolved",
+      "useful_bytes_note": "Exact useful interface bytes remain unreviewed; no physical DRAM counter was collected.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "Indexer: T × (32 query heads + 1 key head) × 64; attention: T × (64 query heads + 1 shared key head) × 64.",
+      "estimated_mbu_percent": null,
+      "per_event_scalar_ops": {
+        "sqlite-kernel-9588": 51904512,
+        "sqlite-kernel-9601": 102236160
+      },
+      "per_event_scalar_formula": {
+        "sqlite-kernel-9588": "3 × T × 64 × (32 + 1)",
+        "sqlite-kernel-9601": "3 × T × 64 × (64 + 1)"
+      },
+      "per_event_shape": {
+        "sqlite-kernel-9588": "8,192 rows × (32 query heads + 1 key head) × 64 rotary coordinates.",
+        "sqlite-kernel-9601": "8,192 rows × (64 query heads + 1 shared key head) × 64 rotary coordinates."
+      }
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-indexer-hadamard-f94d3c7c",
+      "family": "indexer_hadamard",
+      "event_ids": [
+        "sqlite-kernel-9589",
+        "sqlite-kernel-9590"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_butterfly_transform",
+      "matrix_scope_note": "Fast Hadamard is represented by seven butterfly add/subtract stages and one scale per 128-coordinate vector. It is not charged as dense 128×128 GEMM work.",
+      "source_anchors": [
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 282,
+          "anchor": "return hadamard_transform(x, scale=hidden_size**-0.5)"
+        },
+        {
+          "label": "sglang/kernels/jit/csrc/fast-hadamard-transform/hadamard_jit.cuh",
+          "line": 119,
+          "anchor": "void fast_hadamard_transform_kernel"
+        }
+      ],
+      "scalar_ops": 276824064,
+      "scalar_formula": "T × (32 + 1) × 128 × (7 butterfly stages + 1 scale)",
+      "scalar_scope_status": "source_convention",
+      "useful_bytes": 138412032,
+      "useful_byte_formula": "T × (32 + 1) × 128 × (2 read + 2 write)",
+      "useful_bytes_scope_status": "source_operand_interface_estimate",
+      "useful_bytes_note": "Standalone useful operand interfaces: each distinct input/output operand counted once per invocation. Source-derived estimate, not physical HBM traffic; excludes repeated loads, cache behavior, padding and internal movement. These values must not be added across operators.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "Query: 8,192 × 32 × 128; key: 8,192 × 128; BF16 input/output, FP32 butterfly arithmetic.",
+      "estimated_mbu_percent": 11.143298166563495
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-indexer-activation-fp8-quant-9fca3f11",
+      "family": "indexer_activation_fp8_quant",
+      "event_ids": [
+        "sqlite-kernel-9591"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_quantization",
+      "matrix_scope_note": "Per-128-feature absolute maximum, scale calculation, clipping and FP8 conversion; no matrix contraction.",
+      "source_anchors": [
+        {
+          "label": "sglang/kernels/ops/quantization/act_quant_triton.py",
+          "line": 10,
+          "anchor": "def _act_quant_kernel("
+        },
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 2400,
+          "anchor": "self._quantize_query(query, act_quant)"
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": 101711872,
+      "useful_byte_formula": "T × 32 × [128 × (2 input + 1 output) + 4 output-scale bytes]",
+      "useful_bytes_scope_status": "source_operand_interface_estimate",
+      "useful_bytes_note": "Standalone useful operand interfaces: each distinct input/output operand counted once per invocation. Source-derived estimate, not physical HBM traffic; excludes repeated loads, cache behavior, padding and internal movement. These values must not be added across operators.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 × 32 × 128 BF16 query → FP8 query plus 8,192 × 32 FP32 scales.",
+      "estimated_mbu_percent": 61.24221811847571
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-indexer-cache-store-05b7ba3b",
+      "family": "indexer_cache_store",
+      "event_ids": [
+        "sqlite-kernel-9592"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_quantization_and_scatter",
+      "matrix_scope_note": "Fused key amax/scale, BF16-to-FP8 conversion and indexed cache write; no matrix contraction.",
+      "source_anchors": [
+        {
+          "label": "sglang/kernels/jit/csrc/dsa/fused_store_index_cache.cuh",
+          "line": 42,
+          "anchor": "void fused_store_indexer_cache"
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": null,
+      "useful_byte_formula": null,
+      "useful_bytes_scope_status": "unresolved",
+      "useful_bytes_note": "Valid destination slots are not captured; exact written-row count remains unresolved. The full-row useful interface would be T × (256 + 8 + 132) bytes, but no numerical MBU is admitted here.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 rows × 128 BF16 values → 128 FP8 values + FP32 scale per valid destination.",
+      "title": "Quantize and store indexer keys",
+      "estimated_mbu_percent": null
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-indexer-weight-scale-f9582deb",
+      "family": "indexer_weight_scale",
+      "event_ids": [
+        "sqlite-kernel-9594"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_elementwise",
+      "matrix_scope_note": "Scalar multiplication of projected head weights and per-head query scales; no matrix contraction.",
+      "source_anchors": [
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 660,
+          "anchor": "def _get_logits_head_gate_fp32("
+        },
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 669,
+          "anchor": "def _apply_q_scale_and_softmax_scale("
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": null,
+      "useful_byte_formula": null,
+      "useful_bytes_scope_status": "unresolved",
+      "useful_bytes_note": "Exact compiled fusion boundary and head-weight intermediate dtype remain unreviewed; useful bytes and scalar count are withheld.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 × 32 head weights and per-head quantization scales.",
+      "estimated_mbu_percent": null
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-aten-metadata-elementwise-4211dcb7",
+      "family": "aten_metadata_elementwise",
+      "event_ids": [
+        "sqlite-kernel-9595"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "integer_fill",
+      "matrix_scope_note": "Captured symbol is an integer FillFunctor; it cannot contribute floating-point matrix work. Exact filled buffer identity/extent remains unresolved.",
+      "source_anchors": [
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 1725,
+          "anchor": "def _get_topk_ragged("
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": null,
+      "useful_byte_formula": null,
+      "useful_bytes_scope_status": "unresolved",
+      "useful_bytes_note": "Exact useful interface bytes remain unreviewed; no physical DRAM counter was collected.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "estimated_mbu_percent": null
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-aten-bf16-copy-71eebdc0",
+      "family": "aten_bf16_copy",
+      "event_ids": [
+        "sqlite-kernel-9600",
+        "sqlite-kernel-9602"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "memory_copy",
+      "matrix_scope_note": "Two captured direct_copy kernels copy BF16 elements with no matrix arithmetic; exact buffer ownership remains unresolved.",
+      "source_anchors": [
+        {
+          "label": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py",
+          "line": 728,
+          "anchor": "self.prepare_mla_qkv("
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": null,
+      "useful_byte_formula": null,
+      "useful_bytes_scope_status": "unresolved",
+      "useful_bytes_note": "The two calls bracket the attention RoPE call. Grid size alone is insufficient evidence for exact buffer identity/valid element count; no byte numerator is admitted.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "estimated_mbu_percent": null
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-kv-fp8-quant-a2f36d18",
+      "family": "kv_fp8_quant",
+      "event_ids": [
+        "sqlite-kernel-9603"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_quantization",
+      "matrix_scope_note": "Per-group K-latent amax/scale/FP8 conversion plus BF16 rotary-tail copy; no matrix contraction.",
+      "source_anchors": [
+        {
+          "label": "sglang/kernels/ops/quantization/dsa_quant_k_cache.py",
+          "line": 325,
+          "anchor": "def _quantize_k_cache_fast_kernel("
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": 14811136,
+      "useful_byte_formula": "T × [(512 + 64) × 2 input + 512 FP8 + 4 × 4 scale + 64 × 2 rotary output]",
+      "useful_bytes_scope_status": "source_operand_interface_estimate",
+      "useful_bytes_note": "Standalone useful operand interfaces: each distinct input/output operand counted once per invocation. Source-derived estimate, not physical HBM traffic; excludes repeated loads, cache behavior, padding and internal movement. These values must not be added across operators.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 rows: 512 BF16 latent + 64 BF16 rotary values → 512 FP8 + 4 FP32 scales + 64 BF16 rotary values.",
+      "estimated_mbu_percent": 7.430176745380701
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-kv-cache-store-e914e9d5",
+      "family": "kv_cache_store",
+      "event_ids": [
+        "sqlite-kernel-9604"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "memory_scatter",
+      "matrix_scope_note": "Captured set_mla_kv_buffer<528,128> copies packed bytes at token locations; no floating matrix work.",
+      "source_anchors": [
+        {
+          "label": "sglang/kernels/jit/csrc/elementwise/set_mla_kv_buffer.cuh",
+          "line": 32,
+          "anchor": "void set_mla_kv_buffer_kernel"
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": null,
+      "useful_byte_formula": null,
+      "useful_bytes_scope_status": "unresolved",
+      "useful_bytes_note": "The implementation skips stores to reserved_skip_index. Exact valid destination coverage is unobserved, so the full-row expression T × [2 × (528 + 128) + 8] bytes is not promoted to a numerical MBU.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 source rows × (528 packed latent/scale bytes + 128 rotary bytes), indexed by int64 token locations.",
+      "estimated_mbu_percent": null
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-router-top8-weights-e14079bb",
+      "family": "router_top8_weights",
+      "event_ids": [
+        "sqlite-kernel-9614"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "scalar_selection",
+      "matrix_scope_note": "Sigmoid/bias/top-eight selection and weight normalization over 256 logits per token; no matrix contraction.",
+      "source_anchors": [
+        {
+          "label": "sglang/kernels/jit/csrc/moe/route_warp.cuh",
+          "line": 192,
+          "anchor": "void route_warp_kernel"
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": null,
+      "useful_byte_formula": null,
+      "useful_bytes_scope_status": "unresolved",
+      "useful_bytes_note": "Exact useful interface bytes remain unreviewed; no physical DRAM counter was collected.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 × 256 FP32 logits → eight expert IDs and eight route weights per token.",
+      "estimated_mbu_percent": null
+    },
+    {
+      "operator_id": "pp2-forward11-layer53-expert-route-indices-7ae7cf4e",
+      "family": "expert_route_indices",
+      "event_ids": [
+        "sqlite-kernel-9616"
+      ],
+      "matrix_scope_reviewed": true,
+      "matrix_flops_by_precision": {},
+      "operation_kind": "integer_routing_and_scalar_preprocessing",
+      "matrix_scope_note": "The captured routingIndicesClusterKernel prepares route indices/counts and scalar routing data. The two subsequent bmm kernels own routed matrix work.",
+      "source_anchors": [
+        {
+          "label": "sglang/srt/layers/moe/moe_runner/flashinfer_trtllm.py",
+          "line": 74,
+          "anchor": "class FlashInferTrtllmDeferredFinalizeOutput"
+        }
+      ],
+      "scalar_ops": null,
+      "scalar_formula": null,
+      "scalar_scope_status": "unresolved",
+      "useful_bytes": null,
+      "useful_byte_formula": null,
+      "useful_bytes_scope_status": "unresolved",
+      "useful_bytes_note": "Exact useful interface bytes remain unreviewed; no physical DRAM counter was collected.",
+      "dram_bytes": null,
+      "dram_counter_artifact_id": null,
+      "shape": "8,192 tokens × eight logical expert assignments across 256 experts; padded route layout remains unknown.",
+      "estimated_mbu_percent": null
+    }
+  ],
+  "source_pins": [
+    {
+      "label": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py",
+      "sha256": "4b20261de805fc7d0ea823c98a53ab648745a5dab385b858bdea966b1b7fdbc1",
+      "bytes": 49436
+    },
+    {
+      "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+      "sha256": "1ecc4e00b8f1bc37c587fb60ed13743f937b1c80290c953bdf6c37c3f4735c32",
+      "bytes": 103778
+    },
+    {
+      "label": "sglang/srt/layers/layernorm.py",
+      "sha256": "9f9c5f2bf0b8930437b377988675ef4eeeeae3a914660372b8ca9ea853bb96a7",
+      "bytes": 66964
+    },
+    {
+      "label": "sglang/kernels/jit/csrc/fast-hadamard-transform/hadamard_jit.cuh",
+      "sha256": "3f19e8cea407057d158e4f7b07546dc7b691ff49c6d694fb7291f9360b7ea744",
+      "bytes": 19723
+    },
+    {
+      "label": "sglang/kernels/ops/quantization/act_quant_triton.py",
+      "sha256": "b41967420e3242d0cfb3970375ccdfdc829cfd36656499c0b72bf8c20e38ca39",
+      "bytes": 4112
+    },
+    {
+      "label": "sglang/kernels/jit/csrc/dsa/fused_store_index_cache.cuh",
+      "sha256": "f94cf0479c6258dce8a30a3fe4a3c97e38ac66f608d05c2437689568764aabe3",
+      "bytes": 5184
+    },
+    {
+      "label": "sglang/kernels/ops/quantization/dsa_quant_k_cache.py",
+      "sha256": "b278dd6185b94e5490b18bb3ab3317e53ba262ba81838a57ed890478628ff68a",
+      "bytes": 15604
+    },
+    {
+      "label": "sglang/kernels/jit/csrc/elementwise/set_mla_kv_buffer.cuh",
+      "sha256": "3c9268f27813d184da72d8381e0ecc5898a737114efb0698431a8b94b90aae51",
+      "bytes": 5424
+    },
+    {
+      "label": "sglang/kernels/jit/csrc/moe/route_warp.cuh",
+      "sha256": "bbc9a1f38df27b54caef0bb96ed7df914c71fc7403e6e382af27a5dcbb9247d1",
+      "bytes": 20727
+    },
+    {
+      "label": "sglang/srt/layers/moe/moe_runner/flashinfer_trtllm.py",
+      "sha256": "872a017f89d678b41b5bfe6d9acabae5ac0c08104a42d402b918e0f8ba05e889",
+      "bytes": 95879
+    }
+  ],
+  "result": {
+    "prior_reviewed_family_count": 28,
+    "newly_classified_nonmatrix_families": 13,
+    "newly_classified_events": 17,
+    "selected_family_count": 41,
+    "selected_event_count": 45,
+    "matrix_flops_by_precision_unchanged": {
+      "fp32": 32212254720,
+      "bf16": 7461431934976,
+      "fp8": 6322225414144,
+      "nvfp4": 4947802324992
+    },
+    "ideal_compute_ms": 5.517131557546667,
+    "selected_device_union_ms": 14.436754,
+    "nominal_matrix_mfu_percent": 38.21587288629193,
+    "newly_available_useful_byte_family_count": 5,
+    "physical_dram_mbu": null,
+    "calibrated_tilesight_latency": null
+  },
+  "limits": [
+    "Applies only to the 45 selected captured events. Collector warnings/full-request capture coverage limitations remain unchanged.",
+    "No existing full-report work binding, event, timing or FLOP count is modified. matrix_scope_reviewed is deliberately separate from work_bound and byte/scalar completeness.",
+    "Nominal precision-weighted MFU is an algebraic roof ratio, not measured SM activity or a calibrated TileSight latency prediction.",
+    "New source files are checksum-pinned retained source; no live GPU or installed-source read was made in this CPU-only review. Symbol/shape matching and existing pinned model source provide operation classification.",
+    "Useful-byte estimates are not additive across operations and do not determine physical parent DRAM MBU."
+  ]
+}

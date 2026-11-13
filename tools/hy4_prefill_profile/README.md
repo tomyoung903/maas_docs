@@ -14,8 +14,11 @@ It is a normal routed/shared-MoE layer with a full indexer refresh, selected by
 structure and an existing raw-trace witness, not by its performance. It is not
 an average layer. `representative-selection.json` pins its source and complete
 45-event set and partitions its41 operator families into eight readable groups.
-All28 reviewed leaf work/byte joins retain their existing metrics. The whole
-layer's MFU and MBU remain unavailable because work coverage is incomplete.
+All28 reviewed leaf work/byte joins retain their existing metrics. The selected
+tree additionally classifies the remaining13 families as scalar operations or
+movement and supplies five independently derived useful-byte estimates.
+Compute MFU is38.2158728863% for the45 captured events. Physical DRAM MBU remains
+unmeasured; complete request capture coverage is not asserted.
 
 `single_layer.py` and `semantic_tree.py` maintain the expanded model hierarchy
 and selected-kernel timeline. `representative-semantics.json` is a checksum-bound
@@ -26,8 +29,16 @@ Its 42 terminal display operations partition the original 45 events; only the
 unbound RoPE family is split into its indexer and main-attention invocations.
 All 41 original family work/metric objects and all 28 reviewed work joins remain
 unchanged. The tree is a semantic ownership hierarchy, not a dependency DAG.
-Unknown complete module MFU stays null, partial known FLOPs are explicitly
-labeled, and interface bytes never roll up through module parents.
+`metric_completion.py` applies checksum-bound `representative-metric-completion.json`
+after the original semantic projection. It keeps every original family work
+object, raw event, count, time and full-report metric unchanged. `compute_work`
+holds separate matrix-work coverage; `additional_work` holds new per-field
+evidence and `scalar_work` records partial scalar coverage. An empty matrix
+numerator classifies a scalar/copy operation; it does not assert zero arithmetic
+or complete scalar/byte coverage. Parent compute MFU sums each precision's model
+FLOPs divided by its matching nominal peak, then divides that ideal time by the
+same-device interval union. It is not a calibrated TileSight latency or measured
+SM activity. Interface bytes never roll up through module parents.
 
 Rows show precision-specific useful model FLOPs, numeric interface-byte estimates,
 source-derived geometry and exact captured-kernel evidence. “Locate kernels”

@@ -67,12 +67,16 @@ def select(report, selection):
         payload['tree']=project(payload,semantics,report['hardware']['compute_roofs_tflops'])
         payload['event_evidence']=semantics['event_evidence']
         payload['semantic_provenance']=semantics['provenance']
+        from metric_completion import load_completion, apply
+        completion=load_completion(selection)
+        if completion is not None:
+            apply(payload,completion,report['hardware']['compute_roofs_tflops'],report['hardware']['bandwidth_roof_tb_s'])
     public_safe(payload)
     return payload
 
 def render(report, selection, output):
     payload=select(report,selection);output.mkdir(parents=True,exist_ok=True)
-    payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
+    payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'metric_completion.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
     (output/'selected-layer-data.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':'))+'\n')
     html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload))
     (output/'index.html').write_text(html)

@@ -18,7 +18,8 @@
   card('Aggregate GPU time',ms(data.layer_metrics.summed_residency_ms),'Sum of recorded kernel durations');
   card('Kernel window',ms((data.end_ns-data.origin_ns)/1e6),'First selected start → last selected end');
   $('launch-equation').append(el('span','equation-label','Selected-layer reconciliation'),document.createTextNode(`${data.events.length} recorded kernels · ${data.operator_count} uniquely owned operator families · one selected layer`));
-  $('metric-scope').textContent=`${data.bound_operators} of ${data.operator_count} families have reviewed work/byte joins. Whole-layer MFU and MBU remain unavailable; “—” does not mean zero. Matrix/dot MFU uses precision-matched nominal roofs and each row’s active interval union; it excludes scalar semantic operations. Known parent work is shown as a partial rollup when coverage is incomplete. Estimated MBU uses useful interface-byte floors, not measured DRAM traffic; caching can make it exceed 100%.`;
+  const matrix=data.matrix_scope_metrics;
+  $('metric-scope').textContent=matrix?`Compute MFU is ${pct(matrix.nominal_mfu_active_union_percent)} for these ${matrix.selected_events} captured events. All ${matrix.classified_families} operator families have a reviewed matrix-work classification. For each precision, divide its model matrix FLOPs by the matching nominal GPU peak; add those ideal times, then divide by the row’s active interval union. Normalization, Hadamard butterflies, rotation, conversion and selection are scalar work, so their compute MFU is not applicable. Physical DRAM bandwidth was not measured. Per-operation byte estimates count useful interfaces once; they cannot be added into a parent MBU. This is not measured SM activity or a calibrated TileSight prediction.`:`${data.bound_operators} of ${data.operator_count} families have reviewed work/byte joins. Complete compute MFU is unavailable. Compute MFU uses precision-matched nominal roofs and each row’s active interval union. Physical DRAM bandwidth was not measured; source-derived interface bytes do not establish physical traffic.`;
   const toggles=[];
   const eventById=new Map(data.events.map(event=>[event.id,event]));
   const semanticEventTitles=new Map();
@@ -30,12 +31,12 @@
     return String(value);
   };
   const workLine=row=>{
-    const flops=row.work?.flops_by_precision;
+    const flops=row.compute_work?.flops_by_precision??row.work?.flops_by_precision;
     if(flops==null)return '';
     const parts=Object.entries(flops).map(([precision,flops])=>`${precision.toUpperCase()} · ${num(flops/1e9,3)} model GFLOPs`);
-    return parts.length?parts.join(' · '):'No matrix/dot FLOPs assigned to this operation';
+    return parts.length?parts.join(' · '):'No matrix work; scalar arithmetic or data movement';
   };
-  const byteLine=row=>row.work?.useful_bytes==null?'':`${num(row.work.useful_bytes/1e6,3)} MB useful interface · not measured DRAM`;
+  const byteLine=row=>{const bytes=row.additional_work?.useful_bytes??row.work?.useful_bytes;return bytes==null?'':`${num(bytes/1e6,3)} MB useful interface · not measured DRAM`;};
   function metric(value,label,note){
     const n=el('div','flow-metric');n.append(el('strong','',value),el('span','',label));
     if(note)n.append(el('small','',note));
@@ -43,11 +44,18 @@
   }
   function details(row){
     const source=textValue(row.source);
-    const byteNote=row.work?.useful_bytes_note;
+    const byteNote=row.additional_work?.useful_bytes_note??row.work?.useful_bytes_note;
     const eventIds=(row.selected_event_ids||[]).filter(id=>data.event_evidence?.[id]);
     if(!source&&!byteNote&&!row.note&&!eventIds.length)return null;
     const d=el('details','row-details'),sum=el('summary','','Source and measurement scope');d.append(sum);
     if(source)d.append(el('p','mono',source));
+    if(row.additional_work){
+      const extra=row.additional_work;
+      d.append(el('p','',`Matrix-work classification: ${extra.matrix_scope_note}`));
+      for(const anchor of extra.source_anchors||[])d.append(el('p','mono',`${anchor.label}:${anchor.line} · ${anchor.anchor}`));
+      if(extra.scalar_formula)d.append(el('p','',`Scalar-operation convention: ${extra.scalar_formula}. This is model arithmetic, not an executed-instruction count.`));
+      if(extra.useful_byte_formula)d.append(el('p','',`Useful-byte formula: ${extra.useful_byte_formula}.`));
+    }
     if(row.note)d.append(el('p','',textValue(row.note)));
     if(byteNote)d.append(el('p','',byteNote));
     d.append(el('p','',`Active-union denominator: ${ms(row.union_ms)}. Physical DRAM counters are unavailable. Summed kernel duration is not isolated operator latency.`));
@@ -87,7 +95,8 @@
     if(kernels)evidence.append(el('div','kernel-evidence',kernels));
     const work=workLine(row),mode=textValue(row.actual_mode);
     if(mode||work)evidence.append(el('div','precision-note',[mode,work].filter(Boolean).join(' · ')));
-    if(row.work?.scalar_ops!=null&&row.work.scalar_ops!==0)evidence.append(el('div','scalar-note',`${num(row.work.scalar_ops/1e9,3)} G scalar semantic operations · separate from matrix/dot MFU`));
+    const scalar=row.scalar_work?.known_ops??row.additional_work?.scalar_ops??row.work?.scalar_ops;
+    if(scalar!=null&&scalar!==0)evidence.append(el('div','scalar-note',`${num(scalar/1e9,3)} G scalar semantic operations${row.scalar_work?.coverage_complete===false?' · partial reviewed sum':''} · excluded from compute MFU`));
     if(row.coverage_note)evidence.append(el('div','coverage-note',textValue(row.coverage_note)));
     const bytes=byteLine(row);if(bytes)evidence.append(el('div','byte-note',bytes));
     if(evidence.childElementCount)copy.append(evidence);
@@ -110,11 +119,14 @@
       const locate=el('button','locate-kernels','Locate kernels');locate.type='button';locate.setAttribute('aria-label',`Locate ${rowEventIds.length} kernels for ${row.title} on the timeline`);
       locate.addEventListener('click',()=>locateKernels(row,li,rowEventIds));copy.append(locate);
     }
-    const completeWork=row.work?.flops_by_precision!=null;
-    const matrixScope=completeWork&&Object.keys(row.work.flops_by_precision).length===0;
-    const mfuNote=row.mfu_note||(row.mfu_percent==null?(children.length?'Incomplete work scope':matrixScope?'No matrix/dot numerator':'Work scope unavailable'):'Precision-matched nominal roof · active union');
-    const mbuNote=row.mbu_note||(row.mbu_percent==null?(children.length?'Interfaces are not additive':'Byte scope unavailable'):'Useful interface bytes · active union');
-    body.append(heading,metric(num(row.count,0),children.length?'inclusive launches':'launches'),metric(num(row.time_ms,3),'summed kernel ms',`union ${num(row.union_ms,3)} ms`),metric(pct(row.mfu_percent),'matrix/dot MFU',mfuNote),metric(pct(row.mbu_percent),'est. useful-byte MBU',mbuNote));
+    const flops=row.compute_work?.flops_by_precision??row.work?.flops_by_precision;
+    const completeWork=row.compute_work?.complete??(row.work_bound&&flops!=null);
+    const noMatrix=completeWork&&Object.keys(flops||{}).length===0;
+    const mfuValue=row.mfu_percent!=null?pct(row.mfu_percent):noMatrix?'N/A':'Unknown';
+    const mfuNote=row.mfu_note||(row.mfu_percent==null?(noMatrix?'No matrix work':'Matrix-work scope incomplete'):'Precision-weighted nominal peaks · active union');
+    const mbuValue=row.mbu_percent!=null?pct(row.mbu_percent):'Not measured';
+    const mbuNote=row.mbu_note||(row.mbu_percent==null?(children.length?'Physical DRAM traffic unavailable; child interface bytes cannot be added':'Physical DRAM traffic unavailable; useful-byte estimate unresolved'):'Useful-byte estimate · physical DRAM not measured');
+    body.append(heading,metric(num(row.count,0),children.length?'inclusive launches':'launches'),metric(num(row.time_ms,3),'summed kernel ms',`union ${num(row.union_ms,3)} ms`),metric(mfuValue,'compute MFU',mfuNote),metric(mbuValue,row.mbu_percent==null?'physical MBU':'est. useful-byte MBU',mbuNote));
     li.append(body);
     if(children.length){
       const list=el('ol','flow-children');list.id=listId;children.forEach((c,i)=>list.append(drawRow(c,`${number}.${i+1}`,c.color||row.color||color,c.children||[],depth+1)));li.append(list);
@@ -152,6 +164,11 @@
   $('notes').append(el('li','',s.grouping_note));
   function evidence(label,value){$('evidence-grid').append(el('dt','',label),el('dd','mono',value));}
   evidence('Selection audit SHA-256',s.selection_audit_sha256);evidence('Complete source SHA-256',data.full_report_input_sha256);evidence('Selected event-set SHA-256',s.event_ids_sha256);
+  if(data.metric_completion_evidence){
+    evidence('Metric completion evidence SHA-256',data.metric_completion_evidence.evidence_sha256);
+    for(const pin of data.metric_completion_evidence.source_pins)evidence(pin.label,pin.sha256);
+    for(const note of data.metric_completion_evidence.limits)$('notes').append(el('li','',note));
+  }
   for(const a of data.artifacts)evidence(a.label,a.sha256);
   const request=data.request_context;
   $('request-context').textContent=`Full capture context: ${num(request.input_tokens,0)} cold input tokens; server prefill ${ms(request.server_prefill_ms)}; client wall ${ms(request.client_wall_ms)}. Whole-request useful target-model MFU ${pct(request.target_model_mfu_percent)} is a separate quantity, not this layer’s MFU.`;
