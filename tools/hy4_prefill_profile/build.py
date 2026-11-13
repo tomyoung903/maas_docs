@@ -181,7 +181,7 @@ def validate(data):
         require(n is roots[0], 'disconnected hierarchy')
     ids = set()
     for e in data['events']:
-        keys(e, ['id','rank','start_ns','duration_ns','owner_id','artifact_id'], ['kind','category'])
+        keys(e, ['id','rank','start_ns','duration_ns','owner_id','artifact_id'], ['kind','category','communication_direction','classification_artifact_id'])
         require(e.get('category','unclassified') in {'compute','communication','memory','unclassified'}, 'unknown timeline category')
         require(e.get('kind','kernel') in {'kernel','memcpy','memset'}, 'unknown GPU event kind')
         require(e['id'] not in ids, 'duplicate event ID'); ids.add(e['id'])
@@ -189,6 +189,9 @@ def validate(data):
         number(e['start_ns'], 'event start', integer=True)
         number(e['duration_ns'], 'event duration', integer=True, positive=True)
         require(e['artifact_id'] in artifacts, 'event artifact required')
+        if 'communication_direction' in e or 'classification_artifact_id' in e:
+            require(e.get('communication_direction') in {'send','recv'} and e.get('category')=='communication' and e.get('kind')=='kernel', 'audited communication direction requires a communication kernel')
+            require(e.get('classification_artifact_id') in artifacts,'communication classification evidence required')
         owner = nodes.get(e['owner_id'])
         require(e['owner_id'] is None or (owner and owner['kind'] == 'operator' and owner['rank'] == e['rank']), 'event requires one matching operator owner or null')
     if data['status'] == 'pending':

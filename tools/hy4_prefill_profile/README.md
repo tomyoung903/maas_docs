@@ -266,3 +266,23 @@ python3 tools/hy4_prefill_profile/build.py \
 The no-argument command selects that same current source when it exists. For a
 new capture, pass the newly reviewed normalized input explicitly. A pending
 preview requires an explicit pending input whenever a current source exists.
+
+### Audited NCCL identity without forward ownership
+
+A separate identity audit can color known NCCL intervals as communication while
+leaving `owner_id=null`. `enrich_nccl.py` verifies the audit manifest, sidecar and
+SQLite hashes, shared origin, and each event ID/rank/interval before adding only
+`category=communication`, `communication_direction`, and a classification
+artifact reference. It adds public-safe audit hashes and a scope limitation;
+private audit payloads are not copied. It never infers a peer, byte count,
+forward, work numerator, or recoverable time. The enriched normalized source is
+preserved by the normal default rebuild.
+
+```bash
+python3 tools/hy4_prefill_profile/enrich_nccl.py \
+  --input docs/hy4-100k-prefill/source-data.json \
+  --audit /path/to/reviewed-nccl/result.json \
+  --manifest /path/to/reviewed-nccl/manifest.json \
+  --output /path/to/enriched-source.json
+python3 tools/hy4_prefill_profile/build.py --input /path/to/enriched-source.json
+```
