@@ -1,0 +1,1757 @@
+{
+  "schema_version": "hy4-semantic-display-evidence-v1",
+  "source_input_sha256": "7a5f4910df3ac78a77457cdd28210aeb9bcad8127da95efa4c6e58055807b9e7",
+  "event_ids_sha256": "0b461af1713d6a6a17626823bb76ffa6a3ba69c0cac72e966d57e25aae5c6e8d",
+  "tree": {
+    "id": "layer53-model",
+    "title": "HY4 decoder layer 53 on PP2",
+    "role": "One full-indexer MoE layer invocation: chunk 12/13, 8,192 new tokens, context 90,112 → 98,304. Parent counts/time are inclusive; terminal rows partition the recorded kernels.",
+    "children": [
+      {
+        "id": "attention-sublayer",
+        "title": "Sparse MLA attention sublayer",
+        "role": "iHC input, latent projections, selector refresh, attention inputs, sparse core and output projection.",
+        "children": [
+          {
+            "id": "pp2-forward11-layer53-ihc-pre-3b4fca28",
+            "operator_id": "pp2-forward11-layer53-ihc-pre-3b4fca28"
+          },
+          {
+            "id": "latent-projections",
+            "title": "Latent query/KV projections and normalization",
+            "role": "Produce latent Q/KV, normalize both paths, then expand the attention queries.",
+            "children": [
+              {
+                "id": "pp2-forward11-layer53-qkv-latent-projection-5c82792e",
+                "operator_id": "pp2-forward11-layer53-qkv-latent-projection-5c82792e"
+              },
+              {
+                "id": "pp2-forward11-layer53-rmsnorm-d2085368",
+                "operator_id": "pp2-forward11-layer53-rmsnorm-d2085368"
+              },
+              {
+                "id": "pp2-forward11-layer53-q-b-projection-c3e40fb8",
+                "operator_id": "pp2-forward11-layer53-q-b-projection-c3e40fb8"
+              }
+            ],
+            "color": "#16845b"
+          },
+          {
+            "id": "indexer-refresh",
+            "title": "Refresh the sparse token selector",
+            "role": "This layer executes the full indexer. Other layers reuse indices and do not incur this complete branch.",
+            "children": [
+              {
+                "id": "pp2-forward11-layer53-indexer-q-projection-7bf6fed2",
+                "operator_id": "pp2-forward11-layer53-indexer-q-projection-7bf6fed2"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-k-projection-6b8c60dc",
+                "operator_id": "pp2-forward11-layer53-indexer-k-projection-6b8c60dc"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-k-layernorm-00306326",
+                "operator_id": "pp2-forward11-layer53-indexer-k-layernorm-00306326"
+              },
+              {
+                "id": "pp2-forward11-layer53-rope-fe4d55b9-indexer",
+                "operator_id": "pp2-forward11-layer53-rope-fe4d55b9",
+                "event_ids": [
+                  "sqlite-kernel-9588"
+                ],
+                "title": "Indexer Q/K rotary positions",
+                "role": "Apply indexer rotary positions before the Q/K Hadamard transforms.",
+                "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:1092 · _apply_rope_qk (body at 810)",
+                "note": "One of the original unbound RoPE family’s two calls. No work numerator is divided or duplicated."
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-hadamard-f94d3c7c",
+                "operator_id": "pp2-forward11-layer53-indexer-hadamard-f94d3c7c"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-activation-fp8-quant-9fca3f11",
+                "operator_id": "pp2-forward11-layer53-indexer-activation-fp8-quant-9fca3f11"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-cache-store-05b7ba3b",
+                "operator_id": "pp2-forward11-layer53-indexer-cache-store-05b7ba3b"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-weight-projection-94b5dca4",
+                "operator_id": "pp2-forward11-layer53-indexer-weight-projection-94b5dca4"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-weight-scale-f9582deb",
+                "operator_id": "pp2-forward11-layer53-indexer-weight-scale-f9582deb"
+              },
+              {
+                "id": "pp2-forward11-layer53-aten-metadata-elementwise-4211dcb7",
+                "operator_id": "pp2-forward11-layer53-aten-metadata-elementwise-4211dcb7"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-cache-gather-14ad518b",
+                "operator_id": "pp2-forward11-layer53-indexer-cache-gather-14ad518b"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-fp8-mqa-logits-9234d697",
+                "operator_id": "pp2-forward11-layer53-indexer-fp8-mqa-logits-9234d697"
+              },
+              {
+                "id": "pp2-forward11-layer53-indexer-topk-00c4a28f",
+                "operator_id": "pp2-forward11-layer53-indexer-topk-00c4a28f"
+              }
+            ],
+            "color": "#c27a16"
+          },
+          {
+            "id": "mla-input-preparation",
+            "title": "Prepare absorbed queries and the KV cache",
+            "role": "The indexed token IDs feed sparse attention; prepare main Q/KV in their recorded execution order.",
+            "children": [
+              {
+                "id": "pp2-forward11-layer53-q-absorb-bmm-c19539f6",
+                "operator_id": "pp2-forward11-layer53-q-absorb-bmm-c19539f6"
+              },
+              {
+                "id": "pp2-forward11-layer53-aten-bf16-copy-71eebdc0",
+                "operator_id": "pp2-forward11-layer53-aten-bf16-copy-71eebdc0",
+                "note": "Two recorded layout-copy calls bracket the main RoPE call. Their exact buffer identities are unreviewed; grouping these calls does not assert serial stage order."
+              },
+              {
+                "id": "pp2-forward11-layer53-rope-fe4d55b9-attention",
+                "operator_id": "pp2-forward11-layer53-rope-fe4d55b9",
+                "event_ids": [
+                  "sqlite-kernel-9601"
+                ],
+                "title": "Attention Q/shared-K rotary positions",
+                "role": "Apply the main attention rotary positions after query absorption and layout preparation.",
+                "source": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:721 · prepare_mla_qkv",
+                "note": "The other original unbound RoPE call. Attribution follows the pinned source path and distinct trace interval."
+              },
+              {
+                "id": "pp2-forward11-layer53-kv-fp8-quant-a2f36d18",
+                "operator_id": "pp2-forward11-layer53-kv-fp8-quant-a2f36d18"
+              },
+              {
+                "id": "pp2-forward11-layer53-kv-cache-store-e914e9d5",
+                "operator_id": "pp2-forward11-layer53-kv-cache-store-e914e9d5"
+              },
+              {
+                "id": "pp2-forward11-layer53-prefix-kv-gather-dequant-vector-0d2567de",
+                "operator_id": "pp2-forward11-layer53-prefix-kv-gather-dequant-vector-0d2567de"
+              },
+              {
+                "id": "pp2-forward11-layer53-q-absorb-concat-65dc0173",
+                "operator_id": "pp2-forward11-layer53-q-absorb-concat-65dc0173"
+              }
+            ],
+            "color": "#16808a"
+          },
+          {
+            "id": "pp2-forward11-layer53-sparse-attention-7aaa6164",
+            "operator_id": "pp2-forward11-layer53-sparse-attention-7aaa6164"
+          },
+          {
+            "id": "attention-output",
+            "title": "Expand, gate and project the attention output",
+            "role": "The gate GEMM also applies sigmoid and multiplication; its fused duration is counted once.",
+            "children": [
+              {
+                "id": "pp2-forward11-layer53-value-expand-bmm-e7316856",
+                "operator_id": "pp2-forward11-layer53-value-expand-bmm-e7316856"
+              },
+              {
+                "id": "pp2-forward11-layer53-attention-gate-gemm-99df08fb",
+                "operator_id": "pp2-forward11-layer53-attention-gate-gemm-99df08fb"
+              },
+              {
+                "id": "pp2-forward11-layer53-attention-o-projection-30052950",
+                "operator_id": "pp2-forward11-layer53-attention-o-projection-30052950"
+              }
+            ],
+            "color": "#326b9a"
+          }
+        ],
+        "color": "#16845b"
+      },
+      {
+        "id": "pp2-forward11-layer53-ihc-post-pre-ec49e968",
+        "operator_id": "pp2-forward11-layer53-ihc-post-pre-ec49e968",
+        "title": "Fused iHC attention-post / FFN-pre boundary"
+      },
+      {
+        "id": "moe-sublayer",
+        "title": "Sparse MoE feed-forward sublayer",
+        "role": "Choose eight routed experts, run the routed and shared MLPs, then merge their outputs. This is a semantic hierarchy; parallelism is shown only in the measured timeline.",
+        "children": [
+          {
+            "id": "routed-expert-branch",
+            "title": "Routing and routed expert branch",
+            "role": "Route the 8,192 tokens and evaluate eight logical experts per token.",
+            "children": [
+              {
+                "id": "routing-dispatch",
+                "title": "Expert routing and dispatch",
+                "role": "FP32 router logits, top-eight selection, NVFP4 input quantization and route indexing.",
+                "children": [
+                  {
+                    "id": "pp2-forward11-layer53-router-bf16-to-fp32-cast-5e040426",
+                    "operator_id": "pp2-forward11-layer53-router-bf16-to-fp32-cast-5e040426"
+                  },
+                  {
+                    "id": "pp2-forward11-layer53-router-fp32-gemm-f6339569",
+                    "operator_id": "pp2-forward11-layer53-router-fp32-gemm-f6339569"
+                  },
+                  {
+                    "id": "pp2-forward11-layer53-router-top8-weights-e14079bb",
+                    "operator_id": "pp2-forward11-layer53-router-top8-weights-e14079bb"
+                  },
+                  {
+                    "id": "pp2-forward11-layer53-expert-input-nvfp4-quant-a2ea58cf",
+                    "operator_id": "pp2-forward11-layer53-expert-input-nvfp4-quant-a2ea58cf"
+                  },
+                  {
+                    "id": "pp2-forward11-layer53-expert-route-indices-7ae7cf4e",
+                    "operator_id": "pp2-forward11-layer53-expert-route-indices-7ae7cf4e"
+                  }
+                ],
+                "color": "#7c4d9e"
+              },
+              {
+                "id": "pp2-forward11-layer53-expert-fp4-gate-up-swiglu-quant-6a086f18",
+                "operator_id": "pp2-forward11-layer53-expert-fp4-gate-up-swiglu-quant-6a086f18"
+              },
+              {
+                "id": "pp2-forward11-layer53-expert-fp4-down-3bed0d03",
+                "operator_id": "pp2-forward11-layer53-expert-fp4-down-3bed0d03"
+              },
+              {
+                "id": "pp2-forward11-layer53-expert-finalize-a99a8fd4",
+                "operator_id": "pp2-forward11-layer53-expert-finalize-a99a8fd4"
+              }
+            ],
+            "color": "#7c4d9e"
+          },
+          {
+            "id": "shared-expert-branch",
+            "title": "Always-active shared expert",
+            "role": "One BF16 shared MLP; separate SwiGLU activation remains a distinct kernel.",
+            "children": [
+              {
+                "id": "pp2-forward11-layer53-shared-ffn-gate-up-4f08eb28",
+                "operator_id": "pp2-forward11-layer53-shared-ffn-gate-up-4f08eb28"
+              },
+              {
+                "id": "pp2-forward11-layer53-ffn-swiglu-187b2390",
+                "operator_id": "pp2-forward11-layer53-ffn-swiglu-187b2390"
+              },
+              {
+                "id": "pp2-forward11-layer53-shared-ffn-down-00784a04",
+                "operator_id": "pp2-forward11-layer53-shared-ffn-down-00784a04"
+              }
+            ],
+            "color": "#a04e6c"
+          },
+          {
+            "id": "pp2-forward11-layer53-shared-routed-sum-28e5b6d2",
+            "operator_id": "pp2-forward11-layer53-shared-routed-sum-28e5b6d2"
+          }
+        ],
+        "color": "#7c4d9e"
+      },
+      {
+        "id": "pp2-forward11-layer53-ihc-post-6d2816fe",
+        "operator_id": "pp2-forward11-layer53-ihc-post-6d2816fe"
+      }
+    ],
+    "color": "#126a56"
+  },
+  "operator_metadata": {
+    "pp2-forward11-layer53-ihc-pre-3b4fca28": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "2 × T × (4H) × 8 ; T × [2 × (4H)+2+15 × 4+7H+4H+2]",
+      "source": "sglang/srt/models/hunyuan_v4.py:187 · HYV4HCPreLayer",
+      "actual_mode": "FP32_SIMT + FP32_scalar/BF16_boundary",
+      "semantic_rows": [
+        "ihc_attn_mix",
+        "ihc_attn_pre"
+      ]
+    },
+    "pp2-forward11-layer53-qkv-latent-projection-5c82792e": {
+      "shape": "Source-derived GEMM: M=8,192, N=2,624, K=6,144",
+      "formula": "2 × T × H × (2048+512+64)",
+      "source": "sglang/srt/models/deepseek_v2.py:2063 · DeepseekV2AttentionMLA",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "qkv_a"
+      ]
+    },
+    "pp2-forward11-layer53-rmsnorm-d2085368": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:414 · forward_absorb_prepare",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-q-b-projection-c3e40fb8": {
+      "shape": "Source-derived GEMM: M=8,192, N=16,384, K=2,048",
+      "formula": "2 × T × 2048 × 64 × (192+64)",
+      "source": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:414 · forward_absorb_prepare",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "q_b"
+      ]
+    },
+    "pp2-forward11-layer53-indexer-q-projection-7bf6fed2": {
+      "shape": "Source-derived GEMM: M=8,192, N=4,096, K=2,048",
+      "formula": "2 × T × 2048 × 4096",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "index_q"
+      ]
+    },
+    "pp2-forward11-layer53-indexer-k-projection-6b8c60dc": {
+      "shape": "Source-derived GEMM: M=8,192, N=128, K=6,144",
+      "formula": "2 × T × 6144 × 128",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "index_k"
+      ]
+    },
+    "pp2-forward11-layer53-indexer-k-layernorm-00306326": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-rope-fe4d55b9": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:414 · forward_absorb_prepare",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-indexer-hadamard-f94d3c7c": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-indexer-activation-fp8-quant-9fca3f11": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-indexer-cache-store-05b7ba3b": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-indexer-weight-projection-94b5dca4": {
+      "shape": "Source-derived GEMM: M=8,192, N=32, K=6,144",
+      "formula": "2 × T × 6144 × 32",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "index_weights"
+      ]
+    },
+    "pp2-forward11-layer53-indexer-weight-scale-f9582deb": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-aten-metadata-elementwise-4211dcb7": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "Exact source suboperation not independently identified.",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-indexer-cache-gather-14ad518b": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:1725 · _get_topk_ragged",
+      "actual_mode": "FP8/FP32",
+      "semantic_rows": [
+        "index_k_gather"
+      ]
+    },
+    "pp2-forward11-layer53-indexer-fp8-mqa-logits-9234d697": {
+      "shape": "8,192 queries × 32 heads × 128 dimensions · 98,304 visible keys · 771,756,032 useful causal pairs.",
+      "formula": "2 × 32 × 128 × C ; 2 × 32 × C",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:1387 · _mqa_logits",
+      "actual_mode": "FP8_tensor + FP32_scalar",
+      "semantic_rows": [
+        "index_qk",
+        "index_score_reduce"
+      ]
+    },
+    "pp2-forward11-layer53-indexer-topk-00c4a28f": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa/dsa_indexer.py:285 · Indexer",
+      "actual_mode": "FP32_scores/int32_IDs",
+      "semantic_rows": [
+        "index_topk"
+      ]
+    },
+    "pp2-forward11-layer53-q-absorb-bmm-c19539f6": {
+      "shape": "Source-derived GEMM: M=8,192, N=512, K=192 · batch=64",
+      "formula": "2 × T × 64 × 192 × 512",
+      "source": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:414 · forward_absorb_prepare",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "q_absorb"
+      ]
+    },
+    "pp2-forward11-layer53-aten-bf16-copy-71eebdc0": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "Exact source suboperation not independently identified.",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-kv-fp8-quant-a2f36d18": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa_backend.py:2631 · forward_extend",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-kv-cache-store-e914e9d5": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa_backend.py:2631 · forward_extend",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-prefix-kv-gather-dequant-vector-0d2567de": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa_backend.py:3542 · _forward_flashmla_sparse",
+      "actual_mode": "FP8_to_BF16",
+      "semantic_rows": [
+        "prefix_kv"
+      ]
+    },
+    "pp2-forward11-layer53-q-absorb-concat-65dc0173": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/attention/dsa_backend.py:3542 · _forward_flashmla_sparse",
+      "actual_mode": "BF16",
+      "semantic_rows": [
+        "q_pack"
+      ]
+    },
+    "pp2-forward11-layer53-sparse-attention-7aaa6164": {
+      "shape": "8,192 queries × 64 heads · QK width 576, V width 512 · 16,777,216 useful selected pairs.",
+      "formula": "2 × 64 × 576 × S ; 64 × S + 4 × 64 × S - T × 64 + 3 × T × 64 ; 2 × 64 × 512 × S",
+      "source": "sglang/srt/layers/attention/dsa_backend.py:3542 · _forward_flashmla_sparse",
+      "actual_mode": "BF16_tensor + FP32_scalar/BF16_probability + BF16/int32/FP32",
+      "semantic_rows": [
+        "attn_qk",
+        "attn_softmax",
+        "attn_sv",
+        "attention_boundary"
+      ]
+    },
+    "pp2-forward11-layer53-value-expand-bmm-e7316856": {
+      "shape": "Source-derived GEMM: M=8,192, N=256, K=512 · batch=64",
+      "formula": "2 × T × 64 × 512 × 256",
+      "source": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:1057 · project_mla_values",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "v_expand"
+      ]
+    },
+    "pp2-forward11-layer53-attention-gate-gemm-99df08fb": {
+      "shape": "Source-derived GEMM: M=8,192, N=16,384, K=6,144",
+      "formula": "2 × T × 6144 × 16384 ; 4 × T × 64 × 256",
+      "source": "sglang/srt/models/hunyuan_v4.py:429 · HYV4Attention ; sglang/srt/models/hunyuan_v4.py:621 · apply_attention_output_gate",
+      "actual_mode": "BF16_tensor + FP32_scalar/BF16_boundary",
+      "semantic_rows": [
+        "gate",
+        "gate_apply"
+      ]
+    },
+    "pp2-forward11-layer53-attention-o-projection-30052950": {
+      "shape": "Source-derived GEMM: M=8,192, N=6,144, K=16,384",
+      "formula": "2 × T × 16384 × 6144",
+      "source": "sglang/srt/models/deepseek_common/attention_forward_methods/forward_mla.py:160 · _finish_absorb_output",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "o_proj"
+      ]
+    },
+    "pp2-forward11-layer53-ihc-post-pre-ec49e968": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "2 × T × 4H ; 2 × T × (4H) × 8 ; T × [2 × (4H)+2+15 × 4+7H+4H+2]",
+      "source": "sglang/srt/models/hunyuan_v4.py:271 · HYV4HCLayer ; sglang/srt/models/hunyuan_v4.py:187 · HYV4HCPreLayer",
+      "actual_mode": "FP32_scalar/BF16_boundary + FP32_SIMT",
+      "semantic_rows": [
+        "ihc_attn_post",
+        "ihc_ffn_mix",
+        "ihc_ffn_pre"
+      ]
+    },
+    "pp2-forward11-layer53-router-bf16-to-fp32-cast-5e040426": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/models/deepseek_v2.py:504 · MoEGate",
+      "actual_mode": "BF16_to_FP32",
+      "semantic_rows": [
+        "router_cast"
+      ]
+    },
+    "pp2-forward11-layer53-router-fp32-gemm-f6339569": {
+      "shape": "Source-derived GEMM: M=8,192, N=256, K=6,144",
+      "formula": "2 × T × H × 256",
+      "source": "sglang/srt/models/deepseek_v2.py:504 · MoEGate",
+      "actual_mode": "FP32_SIMT",
+      "semantic_rows": [
+        "router"
+      ]
+    },
+    "pp2-forward11-layer53-router-top8-weights-e14079bb": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/models/deepseek_v2.py:657 · DeepseekV2MoE",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-expert-input-nvfp4-quant-a2ea58cf": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/layers/moe/moe_runner/flashinfer_trtllm.py:1922 · fused_experts_none_to_flashinfer_trtllm_fp4",
+      "actual_mode": "BF16_to_NVFP4",
+      "semantic_rows": [
+        "route_quant"
+      ]
+    },
+    "pp2-forward11-layer53-expert-route-indices-7ae7cf4e": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "",
+      "source": "sglang/srt/models/deepseek_v2.py:657 · DeepseekV2MoE",
+      "actual_mode": "Work/byte scope unreviewed",
+      "semantic_rows": []
+    },
+    "pp2-forward11-layer53-expert-fp4-gate-up-swiglu-quant-6a086f18": {
+      "shape": "Logical route rows=65,536 · input width 6,144 → gate/up width 4,096 → SwiGLU/NVFP4 output width 2,048. Actual active-expert union and padded route rows are unmeasured.",
+      "formula": "4 × T × 8 × H × 2048 ; 5 × T × 8 × 2048",
+      "source": "sglang/srt/models/deepseek_v2.py:657 · DeepseekV2MoE",
+      "actual_mode": "NVFP4 matrix operands · fused SwiGLU and NVFP4 output boundary",
+      "semantic_rows": [
+        "routed_up",
+        "routed_activation"
+      ]
+    },
+    "pp2-forward11-layer53-expert-fp4-down-3bed0d03": {
+      "shape": "Logical route rows=65,536 · width 2,048 → 6,144. Actual active-expert union and padded route rows are unmeasured.",
+      "formula": "2 × T × 8 × 2048 × H",
+      "source": "sglang/srt/models/deepseek_v2.py:657 · DeepseekV2MoE",
+      "actual_mode": "NVFP4_tensor",
+      "semantic_rows": [
+        "routed_down"
+      ]
+    },
+    "pp2-forward11-layer53-expert-finalize-a99a8fd4": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "T × (8H+7H)",
+      "source": "sglang/srt/layers/moe/moe_runner/flashinfer_trtllm.py:1922 · fused_experts_none_to_flashinfer_trtllm_fp4",
+      "actual_mode": "FP32_accum/BF16_boundary",
+      "semantic_rows": [
+        "finalize"
+      ]
+    },
+    "pp2-forward11-layer53-shared-ffn-gate-up-4f08eb28": {
+      "shape": "Source-derived GEMM: M=8,192, N=4,096, K=6,144",
+      "formula": "4 × T × 1 × H × 2048",
+      "source": "sglang/srt/models/deepseek_v2.py:291 · DeepseekV2MLP",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "shared_up"
+      ]
+    },
+    "pp2-forward11-layer53-ffn-swiglu-187b2390": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "5 × T × 1 × 2048",
+      "source": "sglang/srt/models/deepseek_v2.py:291 · DeepseekV2MLP",
+      "actual_mode": "BF16 input/output boundary · scalar activation and multiplication",
+      "semantic_rows": [
+        "shared_activation"
+      ]
+    },
+    "pp2-forward11-layer53-shared-ffn-down-00784a04": {
+      "shape": "Source-derived GEMM: M=8,192, N=6,144, K=2,048",
+      "formula": "2 × T × 1 × 2048 × H",
+      "source": "sglang/srt/models/deepseek_v2.py:291 · DeepseekV2MLP",
+      "actual_mode": "BF16_tensor",
+      "semantic_rows": [
+        "shared_down"
+      ]
+    },
+    "pp2-forward11-layer53-shared-routed-sum-28e5b6d2": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "T × H",
+      "source": "sglang/srt/models/deepseek_v2.py:640 · _scale_routed_and_add_shared",
+      "actual_mode": "BF16/FP32_scalar",
+      "semantic_rows": [
+        "shared_add"
+      ]
+    },
+    "pp2-forward11-layer53-ihc-post-6d2816fe": {
+      "shape": "Model-work shape not separately bound; source role and recorded launch evidence are retained.",
+      "formula": "2 × T × 4H",
+      "source": "sglang/srt/models/hunyuan_v4.py:271 · HYV4HCLayer",
+      "actual_mode": "FP32_scalar/BF16_boundary",
+      "semantic_rows": [
+        "ihc_ffn_post"
+      ]
+    }
+  },
+  "event_evidence": {
+    "sqlite-kernel-9580": {
+      "selected_ordinal": 1,
+      "kernel_name": "void hpc::iHC::kernels::fuse_ihc_pre_or_head_kernel<(int)4, (int)6144, (int)8, (int)1, (int)256, (bool)1, (bool)1, (bool)1, (bool)1>(__nv_bfloat16 *, float *, const __nv_bfloat16 *, const float *, const float *, const float *, int, float, float, float, const __nv_bfloat16 *, float)",
+      "kernel_symbol_sha256": "517269508346701dd18fce0515df2adab00d1f4cbfee37c95221b18ef368a868",
+      "family": "ihc_pre",
+      "sqlite_rowid": 9580,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 54,
+        "staticSharedMemory": 304,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9581": {
+      "selected_ordinal": 2,
+      "kernel_name": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+      "kernel_symbol_sha256": "8c0a830f31fc1408960fe27635517306c7b39c2028746f1adc44763465d4ef44",
+      "family": "qkv_latent_projection",
+      "sqlite_rowid": 9581,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 704,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 213280,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9582": {
+      "selected_ordinal": 3,
+      "kernel_name": "void sglang::rmsnorm_kernel<sglang::RMSNormTile<__nv_bfloat16, (long)2048, (unsigned int)32, (unsigned int)64, (unsigned int)4>, (sglang::RMSNormMode)0, (bool)0, (bool)1>(sglang::RMSNormParams)",
+      "kernel_symbol_sha256": "ccb93df65e2fbf566fad2fcbb198610dec9c29f723d233c32a855749a93f9046",
+      "family": "rmsnorm",
+      "sqlite_rowid": 9582,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 2048,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 46,
+        "staticSharedMemory": 32,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9583": {
+      "selected_ordinal": 4,
+      "kernel_name": "void sglang::rmsnorm_kernel<sglang::RMSNormTile<__nv_bfloat16, (long)512, (unsigned int)32, (unsigned int)32, (unsigned int)8>, (sglang::RMSNormMode)0, (bool)0, (bool)1>(sglang::RMSNormParams)",
+      "kernel_symbol_sha256": "db38bc76725b980af6efe89b38356a18a9ea8a9bdc855ac3b68d269441a3bf75",
+      "family": "rmsnorm",
+      "sqlite_rowid": 9583,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 1024,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 32,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9584": {
+      "selected_ordinal": 5,
+      "kernel_name": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+      "kernel_symbol_sha256": "8c0a830f31fc1408960fe27635517306c7b39c2028746f1adc44763465d4ef44",
+      "family": "q_b_projection",
+      "sqlite_rowid": 9584,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 4096,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 213280,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9585": {
+      "selected_ordinal": 6,
+      "kernel_name": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+      "kernel_symbol_sha256": "8c0a830f31fc1408960fe27635517306c7b39c2028746f1adc44763465d4ef44",
+      "family": "indexer_q_projection",
+      "sqlite_rowid": 9585,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 1024,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 213280,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9586": {
+      "selected_ordinal": 7,
+      "kernel_name": "nvjet_sm103_tst_64x128_64x13_2x2_2cta_h_bz_TNT",
+      "kernel_symbol_sha256": "d3b4952cc0322087b00823628f694bcf885e4bc4ade3249ed20d97fc1e49e4e7",
+      "family": "indexer_k_projection",
+      "sqlite_rowid": 9586,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 128,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 229824,
+        "clusterX": 4,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9587": {
+      "selected_ordinal": 8,
+      "kernel_name": "kernel_cutlass_kernel_flashinfernormkernelslayernormLayerNormKernel_object_at__tensorptrbf16gmemalign16oi64128i64div41_tensorptrbf16gmemalign16oi64128i64div41_tensorptrf32gmemalign16o1281_0",
+      "kernel_symbol_sha256": "3c81eb2a5c89ed90426923547776a4c915dfc04988974305201e832f442eb28c",
+      "family": "indexer_k_layernorm",
+      "sqlite_rowid": 9587,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 32,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 26,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 8,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9588": {
+      "selected_ordinal": 9,
+      "kernel_name": "_triton_mrope_forward_fused",
+      "kernel_symbol_sha256": "0ed43f2ec08198c6fb8a57d5d3578574c1ebf0a2a72c8e416d5a0660023c3364",
+      "family": "rope",
+      "sqlite_rowid": 9588,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 29,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9589": {
+      "selected_ordinal": 10,
+      "kernel_name": "void sglang::fast_hadamard_transform_kernel<sglang::FastHadamardKernelTraits<(int)16, (int)7, __nv_bfloat16>>(HadamardParamsBase)",
+      "kernel_symbol_sha256": "a648baacca38cb6728f02a18baf517d9d6442a4173fd7a6bcd9d6934242295a6",
+      "family": "indexer_hadamard",
+      "sqlite_rowid": 9589,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 262144,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 16,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 22,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 512,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9590": {
+      "selected_ordinal": 11,
+      "kernel_name": "void sglang::fast_hadamard_transform_kernel<sglang::FastHadamardKernelTraits<(int)16, (int)7, __nv_bfloat16>>(HadamardParamsBase)",
+      "kernel_symbol_sha256": "a648baacca38cb6728f02a18baf517d9d6442a4173fd7a6bcd9d6934242295a6",
+      "family": "indexer_hadamard",
+      "sqlite_rowid": 9590,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 16,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 22,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 512,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9591": {
+      "selected_ordinal": 12,
+      "kernel_name": "_act_quant_kernel",
+      "kernel_symbol_sha256": "2333ef67f53a29d2ee55cbf7eaabf86a87f9f1bbf7c44fd25e7a9f5d9dd8d975",
+      "family": "indexer_activation_fp8_quant",
+      "sqlite_rowid": 9591,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 32,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 128,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9592": {
+      "selected_ordinal": 13,
+      "kernel_name": "void sglang::fused_store_indexer_cache<__nv_bfloat16, long, (unsigned int)6, (bool)1>(sglang::FusedStoreCacheParam)",
+      "kernel_symbol_sha256": "24dfa6644eb5b305b87ddbefb33ee83504db8b6331dd8c894a206ae1a4fc1cf0",
+      "family": "indexer_cache_store",
+      "sqlite_rowid": 9592,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 2048,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 20,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9593": {
+      "selected_ordinal": 14,
+      "kernel_name": "nvjet_sm103_tss_32x64_64x16_1x2_2cta_h_bz_TNN",
+      "kernel_symbol_sha256": "2aec8a002521812374c394f076c4117f29f72cbc54fcad2a9b3d83a47d7ab2c1",
+      "family": "indexer_weight_projection",
+      "sqlite_rowid": 9593,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 128,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 172552,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9594": {
+      "selected_ordinal": 15,
+      "kernel_name": "triton_poi_fused_mul_unsqueeze_0",
+      "kernel_symbol_sha256": "cfa08fedb59fa3e3d4124856074ad0221b8bae9ce294c104984249344b562466",
+      "family": "indexer_weight_scale",
+      "sqlite_rowid": 9594,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 512,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 16,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9595": {
+      "selected_ordinal": 16,
+      "kernel_name": "void at::native::vectorized_elementwise_kernel<(int)4, at::native::FillFunctor<int>, std::array<char *, (unsigned long)1>, (bool)0>(int, T2, T3)",
+      "kernel_symbol_sha256": "b0a79aaf216911b9347a93c689cb020eeefc866d6046bc41377dea599945b81e",
+      "family": "aten_metadata_elementwise",
+      "sqlite_rowid": 9595,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 16384,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 16,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9596": {
+      "selected_ordinal": 17,
+      "kernel_name": "_get_k_and_s_triton_kernel",
+      "kernel_symbol_sha256": "51b8bc61f75603dd8a9f599c6dd6cbe71216f25430081d30f41e21dda5533031",
+      "family": "indexer_cache_gather",
+      "sqlite_rowid": 9596,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 1,
+        "gridY": 384,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 112,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 2048,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9597": {
+      "selected_ordinal": 18,
+      "kernel_name": "void deep_gemm::legacy::sm100_mqa_logits<(unsigned int)32, (unsigned int)128, (bool)0, (bool)0, (bool)0, (bool)0, (unsigned int)4, (unsigned int)256, (unsigned int)3, (unsigned int)5, (unsigned int)147, (unsigned int)128, (unsigned int)256, cutlass::float_e4m3_t, float, float, (unsigned int)2>(unsigned int, unsigned int, unsigned int, const unsigned int *, const unsigned int *, const unsigned int *, T15 *, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st, CUtensorMap_st)",
+      "kernel_symbol_sha256": "fcab7057885a22ccf424471de124bccfb79a028c191a873ffa076cc08fc45aca",
+      "family": "indexer_fp8_mqa_logits",
+      "sqlite_rowid": 9597,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 147,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 384,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 168,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 220160,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9598": {
+      "selected_ordinal": 19,
+      "kernel_name": "void sglang::topk_mode_1::topk_ragged_kernel<(bool)1>(sglang::topk_mode_1::TopKRaggedParams)",
+      "kernel_symbol_sha256": "bf0890eaf89768f995b14e4005b1e2b679d1812a0399eea4f04346d61588038d",
+      "family": "indexer_topk",
+      "sqlite_rowid": 9598,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 1024,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 32,
+        "staticSharedMemory": 43328,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9599": {
+      "selected_ordinal": 20,
+      "kernel_name": "nvjet_sm103_tst_256x256_64x4_2x1_2cta_v_bz_TNT",
+      "kernel_symbol_sha256": "014a1d713f19e938e1803f5dd301147c28f2f62382ea38bdd386ed4ac2e2474a",
+      "family": "q_absorb_bmm",
+      "sqlite_rowid": 9599,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 4096,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 213224,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9600": {
+      "selected_ordinal": 21,
+      "kernel_name": "void at::native::elementwise_kernel<(int)128, (int)4, void at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 12)]::operator ()() const::[lambda(c10::BFloat16) (instance 1)]>(at::TensorIteratorBase &, const T1 &)::[lambda(int) (instance 1)]>(int, T3)",
+      "kernel_symbol_sha256": "b6bd650f349a7a79940d7866c92c3be8b8609330edbac4b87a8101ab8133741e",
+      "family": "aten_bf16_copy",
+      "sqlite_rowid": 9600,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 65536,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 20,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9601": {
+      "selected_ordinal": 22,
+      "kernel_name": "_triton_mrope_forward_fused",
+      "kernel_symbol_sha256": "0ed43f2ec08198c6fb8a57d5d3578574c1ebf0a2a72c8e416d5a0660023c3364",
+      "family": "rope",
+      "sqlite_rowid": 9601,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 32,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9602": {
+      "selected_ordinal": 23,
+      "kernel_name": "void at::native::elementwise_kernel<(int)128, (int)4, void at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 12)]::operator ()() const::[lambda(c10::BFloat16) (instance 1)]>(at::TensorIteratorBase &, const T1 &)::[lambda(int) (instance 1)]>(int, T3)",
+      "kernel_symbol_sha256": "b6bd650f349a7a79940d7866c92c3be8b8609330edbac4b87a8101ab8133741e",
+      "family": "aten_bf16_copy",
+      "sqlite_rowid": 9602,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 1024,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 20,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9603": {
+      "selected_ordinal": 24,
+      "kernel_name": "_quantize_k_cache_fast_kernel",
+      "kernel_symbol_sha256": "1a6f27d3246214b65b802622fdf6fde00fa8ff423216ddffed9109cdb7ccf74b",
+      "family": "kv_fp8_quant",
+      "sqlite_rowid": 9603,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 5,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 18,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 16,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9604": {
+      "selected_ordinal": 25,
+      "kernel_name": "void sglang::set_mla_kv_buffer_kernel<(long)528, (long)128, (bool)1, long>(sglang::SetMlaKVBufferParams)",
+      "kernel_symbol_sha256": "27ecf83156837028f761dfdb2a123cefaa6ae724b64f549d04de209961947a83",
+      "family": "kv_cache_store",
+      "sqlite_rowid": 9604,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 1024,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 32,
+        "blockY": 8,
+        "blockZ": 1,
+        "registersPerThread": 21,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9605": {
+      "selected_ordinal": 26,
+      "kernel_name": "_gather_dequant_bf16_fp8_paged_vec_kernel",
+      "kernel_symbol_sha256": "9a77a171b85029f1b8ecee1e1c087db959db36389da016af0729490fffa2a1e3",
+      "family": "prefix_kv_gather_dequant_vector",
+      "sqlite_rowid": 9605,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 24576,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 28,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 4096,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9606": {
+      "selected_ordinal": 27,
+      "kernel_name": "void sglang::concat_mla_absorb_q_kernel<(bool)1>(const __nv_bfloat16 *, const __nv_bfloat16 *, __nv_bfloat16 *, int, int, long, int, long, int, long, int)",
+      "kernel_symbol_sha256": "3c31ce8eaf9311446ca179cc8c9a0ebfa11f2938a2698227277659fd58c84c95",
+      "family": "q_absorb_concat",
+      "sqlite_rowid": 9606,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 16384,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 1024,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 22,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9607": {
+      "selected_ordinal": 28,
+      "kernel_name": "void legacy::sm100::prefill::sparse_fwd::head64::sparse_attn_fwd_kernel<legacy::sm100::prefill::sparse_fwd::head64::KernelTemplate<(SparseAttnFwdMode)0, (int)576>, legacy::sm100::prefill::sparse_fwd::head64::KernelTemplate<(SparseAttnFwdMode)0, (int)576>::TmaParams<cute::tuple<int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)8>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)4096>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)512>>>, cute::tuple<int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_LOAD, cute::C<(int)32768>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>>, const cute::Layout<cute::tuple<cute::C<(int)32>, cute::C<(int)64>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>>> &, const cute::Swizzle<(int)2, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)32>, cute::C<(int)64>>, cute::C<(int)2>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)2048>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)64>>>, cute::tuple<int, int, int>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_STORE, cute::C<(int)65536>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)64>, cute::C<(int)1>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>, cute::ScaledBasis<cute::C<(int)1>, (int)2>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)64>>, cute::C<(int)1>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)1>>, cute::C<(int)0>>>>>, cute::tuple<cute::C<(int)64>, cute::C<(int)64>>>>>(SparseAttnFwdParams, T2)",
+      "kernel_symbol_sha256": "b44ab62581ed48f1c27e8913a0da7b7f45b1ca632c10541d35dd538fe1873c9f",
+      "family": "sparse_attention",
+      "sqlite_rowid": 9607,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 384,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 152,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 230704,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9608": {
+      "selected_ordinal": 29,
+      "kernel_name": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+      "kernel_symbol_sha256": "8c0a830f31fc1408960fe27635517306c7b39c2028746f1adc44763465d4ef44",
+      "family": "value_expand_bmm",
+      "sqlite_rowid": 9608,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 4096,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 213280,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9609": {
+      "selected_ordinal": 30,
+      "kernel_name": "void hpc::gemm::kernels::gated_mla_gemm_kernel<hpc::gemm::GatedMlaGemmConfig<cutlass::bfloat16_t, cutlass::bfloat16_t, (int)256, (int)2, (int)6, (int)2, (int)32, (int)8>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM100_TMA_2SM_LOAD, cute::C<(int)262144>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)256>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)2>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)256>>, cute::C<(int)1>>>>, cute::tuple<cute::C<(int)128>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)256>, cute::C<(int)1>>, cute::C<(int)0>>>>>, cute::tuple<cute::C<(int)256>, cute::C<(int)64>>>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM100_TMA_2SM_LOAD, cute::C<(int)262144>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)256>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)2>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)256>>, cute::C<(int)1>>>>, cute::tuple<cute::C<(int)128>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)256>, cute::C<(int)1>>, cute::C<(int)0>>>>>, cute::tuple<cute::C<(int)256>, cute::C<(int)64>>>, cute::TiledCopy<cute::Copy_Atom<cute::Copy_Traits<cute::SM90_TMA_STORE, cute::C<(int)32768>, cute::AuxTmaParams<cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>>, const cute::Layout<cute::tuple<cute::C<(int)64>, cute::C<(int)32>>, cute::tuple<cute::ScaledBasis<cute::C<(int)1>, (int)1>, cute::ScaledBasis<cute::C<(int)1>, (int)0>>> &, const cute::Swizzle<(int)3, (int)4, (int)3> &>>, cutlass::bfloat16_t>, cute::Layout<cute::tuple<cute::C<(int)1>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)64>, cute::C<(int)32>>, cute::C<(int)1>>>>, cute::tuple<cute::C<(int)0>, cute::tuple<cute::tuple<cute::tuple<cute::C<(int)32>, cute::C<(int)1>>, cute::C<(int)0>>>>>, cute::tuple<cute::C<(int)32>, cute::C<(int)64>>>>(T2, T3, T4, const T1::TA *, int, int, int, int, cutlass::FastDivmod, cutlass::FastDivmod, cutlass::FastDivmod)",
+      "kernel_symbol_sha256": "339140b4d967fc8d6c0516d9c33e0bc4befc32269b743e07820f8f0aac638861",
+      "family": "attention_gate_gemm",
+      "sqlite_rowid": 9609,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 4096,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 88,
+        "staticSharedMemory": 256,
+        "dynamicSharedMemory": 221184,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9610": {
+      "selected_ordinal": 31,
+      "kernel_name": "nvjet_sm103_tst_256x256_64x4_2x2_2cta_h_bz_TNT",
+      "kernel_symbol_sha256": "584b060593f359b8a0251696a2cdfe0755df9e7622244dfdf45e6578a956d841",
+      "family": "attention_o_projection",
+      "sqlite_rowid": 9610,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 768,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 213224,
+        "clusterX": 4,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9611": {
+      "selected_ordinal": 32,
+      "kernel_name": "void hpc::iHC::kernels::fuse_ihc_post_pre_kernel<(int)4, (int)6144, (int)8, (int)256, (bool)1, (bool)1, (bool)1>(__nv_bfloat16 *, __nv_bfloat16 *, float *, const __nv_bfloat16 *, const __nv_bfloat16 *, const float *, const float *, const float *, const float *, int, float, float, float, const __nv_bfloat16 *, float)",
+      "kernel_symbol_sha256": "d24eeea4e508c9d4e3d446d0231cdc0aa3b3b22c4d3b8b1787c623130954b9c7",
+      "family": "ihc_post_pre",
+      "sqlite_rowid": 9611,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 64,
+        "staticSharedMemory": 304,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9612": {
+      "selected_ordinal": 33,
+      "kernel_name": "void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase &)::[lambda() (instance 3)]::operator ()() const::[lambda() (instance 7)]::operator ()() const::[lambda(float) (instance 1)], std::array<char *, (unsigned long)2>, (int)4, TrivialOffsetCalculator<(int)1, unsigned int>, TrivialOffsetCalculator<(int)1, unsigned int>, at::native::memory::LoadWithCast<(int)1>, at::native::memory::StoreWithCast<(int)1>>(int, T1, T2, T4, T5, T6, T7)",
+      "kernel_symbol_sha256": "4f807c08dd33d0bc8983738b10bded7c9a1ca172bfe42219940ba32fda9a4db3",
+      "family": "router_bf16_to_fp32_cast",
+      "sqlite_rowid": 9612,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 98304,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 30,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9613": {
+      "selected_ordinal": 34,
+      "kernel_name": "cutlass3x_sm100_simt_sgemm_f32_f32_f32_f32_f32_128x128x16_1x1x1_3_tnn_align1_bias_f32_relu",
+      "kernel_symbol_sha256": "154e99d2a3edf0321bc408739ce917f12564bf7824ca0f1a880f380da30f416d",
+      "family": "router_fp32_gemm",
+      "sqlite_rowid": 9613,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 2,
+        "gridY": 64,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 49920,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9614": {
+      "selected_ordinal": 35,
+      "kernel_name": "void sglang::moe::route_warp::route_warp_kernel<(unsigned int)256, (unsigned int)8, (unsigned int)1, (unsigned int)1, (sglang::moe::route_warp::Scoring)0, float, float, (bool)1, (bool)1, (bool)0, (bool)0, (unsigned int)4>(sglang::moe::route_warp::Params)",
+      "kernel_symbol_sha256": "1243fd0adf78fbf69d3c850015035e2d8b541f4e0008ad2f255fd3da857c4a4c",
+      "family": "router_top8_weights",
+      "sqlite_rowid": 9614,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 2048,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 36,
+        "staticSharedMemory": 12288,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9615": {
+      "selected_ordinal": 36,
+      "kernel_name": "kernel_cutlass_kernel_flashinferquantizationkernelsnvfp4_quantizeNVFP4QuantizeLinearKernel_object_at__tensorptrbf16gmemalign16o614461441_tensorptri8gmemalign16o307230721_tensorptri8gmemal_0",
+      "kernel_symbol_sha256": "fbc759b256f12c9b65d35f6daea7839c33f95fb3947ec3e8c440a54f2d802834",
+      "family": "expert_input_nvfp4_quant",
+      "sqlite_rowid": 9615,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 592,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 512,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 32,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9616": {
+      "selected_ordinal": 37,
+      "kernel_name": "void moe::dev::routing::routingCustom::routingIndicesClusterKernel<moe::dev::routing::routingCustom::KernelParams<__nv_bfloat16, __nv_bfloat16, (int)256, (int)8, moe::dev::routing::TopKExpertSelect<moe::dev::routing::NoOpPreprocess, moe::dev::routing::SoftmaxPostprocess>>, (int)1024>(T1)",
+      "kernel_symbol_sha256": "73755c4f64e15292e37373d4a762e625366be16e58e6e3d747131ec771c7eda5",
+      "family": "expert_route_indices",
+      "sqlite_rowid": 9616,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 1024,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 58,
+        "staticSharedMemory": 5632,
+        "dynamicSharedMemory": 0,
+        "clusterX": 8,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9617": {
+      "selected_ordinal": 38,
+      "kernel_name": "bmm_E2m1_E2m1E2m1_Fp32_Ab16_Bb16_Cb16_t128x192x256u2_s3_et128x64_m256x192x64_c2x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_tma_tmaSf_rgTma_clmp_swiGlu_dynB_sm100f",
+      "kernel_symbol_sha256": "5544dc10c03a45ae4ab5bb5d1624edf4dd574f1b5686c5b811a091ab4c465791",
+      "family": "expert_fp4_gate_up_swiglu_quant",
+      "sqlite_rowid": 9617,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 32,
+        "gridY": 596,
+        "gridZ": 1,
+        "blockX": 896,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 72,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 122520,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9618": {
+      "selected_ordinal": 39,
+      "kernel_name": "bmm_Bfloat16_E2m1E2m1_Fp32_Ab16_Bb16_t128x192x256u2_s3_et128x64_m128x192x64_c1x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_rgTma_clmp_dynB_sm100f",
+      "kernel_symbol_sha256": "61f2b78380690a6bc3781c4b566368854b0e4dbd0fcdbdb7753ca6e2bc5889cc",
+      "family": "expert_fp4_down",
+      "sqlite_rowid": 9618,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 48,
+        "gridY": 596,
+        "gridZ": 1,
+        "blockX": 512,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 128,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 162448,
+        "clusterX": 1,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9619": {
+      "selected_ordinal": 40,
+      "kernel_name": "void moe::dev::finalize::finalizeKernelVecLoad<moe::dev::finalize::KernelParams<cutlass::bfloat16_t, float, (int)4, (bool)0, (bool)1>>(T1)",
+      "kernel_symbol_sha256": "bda0a953720cce62abd6917457daa76dc7c14aebc58089d854313d9ddab0ea58",
+      "family": "expert_finalize",
+      "sqlite_rowid": 9619,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 48,
+        "staticSharedMemory": 512,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9620": {
+      "selected_ordinal": 41,
+      "kernel_name": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+      "kernel_symbol_sha256": "8c0a830f31fc1408960fe27635517306c7b39c2028746f1adc44763465d4ef44",
+      "family": "shared_ffn_gate_up",
+      "sqlite_rowid": 9620,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 1024,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 213280,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9621": {
+      "selected_ordinal": 42,
+      "kernel_name": "void sglang::act_and_mul_kernel<__nv_bfloat16, (sglang::ActivationKind)0, (bool)1, (bool)0, (bool)0, (bool)0, (bool)0, (bool)0>(sglang::ActivationParams)",
+      "kernel_symbol_sha256": "9b10deac97f511db2ebffa53d5a1da1f5a9ad7785f3ad2f82f04e0dfb4572380",
+      "family": "ffn_swiglu",
+      "sqlite_rowid": 9621,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 4096,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 32,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9622": {
+      "selected_ordinal": 43,
+      "kernel_name": "nvjet_sm103_tst_128x256_64x6_2x1_2cta_v_bz_TNT",
+      "kernel_symbol_sha256": "8c0a830f31fc1408960fe27635517306c7b39c2028746f1adc44763465d4ef44",
+      "family": "shared_ffn_down",
+      "sqlite_rowid": 9622,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 1536,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 256,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 255,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 213280,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9623": {
+      "selected_ordinal": 44,
+      "kernel_name": "void at::native::vectorized_elementwise_kernel<(int)8, at::native::CUDAFunctor_add<c10::BFloat16>, std::array<char *, (unsigned long)3>, (bool)0>(int, T2, T3)",
+      "kernel_symbol_sha256": "b851344cf9699ac9e56a7499cb7dece1225d8896ba54c4dea6b906ab303a5d9f",
+      "family": "shared_routed_sum",
+      "sqlite_rowid": 9623,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 49152,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 40,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    },
+    "sqlite-kernel-9624": {
+      "selected_ordinal": 45,
+      "kernel_name": "void hpc::iHC::kernels::fuse_ihc_post_kernel<(int)4, (int)6144, (int)8, (bool)1>(__nv_bfloat16 *, const __nv_bfloat16 *, const __nv_bfloat16 *, const float *)",
+      "kernel_symbol_sha256": "6d0ca6e95e23c65e5e81560908b497cac5c1809edbe9d016e860a424935877bd",
+      "family": "ihc_post",
+      "sqlite_rowid": 9624,
+      "stream_id": 23,
+      "launch_geometry": {
+        "gridX": 8192,
+        "gridY": 1,
+        "gridZ": 1,
+        "blockX": 128,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 40,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 0,
+        "clusterX": 0,
+        "clusterY": 0,
+        "clusterZ": 0,
+        "launchType": 0
+      },
+      "owner_evidence": "Positive runtime/forward correlation; layer and suboperation are reviewed source-order inference."
+    }
+  },
+  "provenance": [
+    {
+      "label": "actual-trace-sidecar-v2.json",
+      "sha256": "26cc23b28346b2000037f283e4aa0093686bac3fdb49c05e30e186f4aeb883cd"
+    },
+    {
+      "label": "actual-work-binding-audit-v2.json",
+      "sha256": "4d33e1fe6db8e161112f6351362b1c77c911cbf28c2343875dd2314dd79a3721"
+    },
+    {
+      "label": "operator-ledger.json",
+      "sha256": "510d73b5a02255c1dc4e1b1f1d48fdf2ae628a67abf4d3652f34b1e3e9743f17"
+    },
+    {
+      "label": "selection.json",
+      "sha256": "0bc97facbc6b1820650de893d3a11d5fcf7d5b13fbf64691fc39a97890acc961"
+    }
+  ],
+  "source_pins": {
+    "model": {
+      "label": "hunyuan_v4.py",
+      "sha256": "b1860f950e356a15ae50aba5d784d1e26e0ced7bb701fa10d54f276df6f0e33d"
+    },
+    "config_adapter": {
+      "label": "hy_v4.py",
+      "sha256": "8e7302921d16b54c8b04789be0a60b57272e6552644810d37c1e4c6d5bd34edb"
+    },
+    "mla": {
+      "label": "forward_mla.py",
+      "sha256": "4b20261de805fc7d0ea823c98a53ab648745a5dab385b858bdea966b1b7fdbc1"
+    },
+    "ffn": {
+      "label": "deepseek_v2.py",
+      "sha256": "314e533c1606278d8294334edf13a23f082f1687a06f5e9bdf92a4958775ea83"
+    },
+    "indexer": {
+      "label": "dsa_indexer.py",
+      "sha256": "1ecc4e00b8f1bc37c587fb60ed13743f937b1c80290c953bdf6c37c3f4735c32"
+    },
+    "backend": {
+      "label": "dsa_backend.py",
+      "sha256": "0001a11a0b5249dd651ec19a27a888aa196f8b0c0f9d8f815d6a819bd421f5dc"
+    },
+    "logits": {
+      "label": "logits_processor.py",
+      "sha256": "b3e0ea02bc1249f8bc32e7a46bb7147bf6e9d1ce9b3aac9bb0cd4797ac1fa191"
+    },
+    "moe_runner": {
+      "label": "flashinfer_trtllm.py",
+      "sha256": "872a017f89d678b41b5bfe6d9acabae5ac0c08104a42d402b918e0f8ba05e889"
+    }
+  }
+}

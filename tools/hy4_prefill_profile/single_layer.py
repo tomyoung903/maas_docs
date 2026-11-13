@@ -61,12 +61,18 @@ def select(report, selection):
             client_wall_ms=report['request']['wall_time_ms'],target_model_mfu_percent=report['derived'].get('target_model_request_mfu_percent')),
         artifacts=[a for a in report['artifacts'] if a['id'] in used_artifacts],selection_sha256=digest(selection),
         full_report_input_sha256=report['input_sha256'])
+    from semantic_tree import load_semantics, project
+    semantics=load_semantics(selection)
+    if semantics is not None:
+        payload['tree']=project(payload,semantics,report['hardware']['compute_roofs_tflops'])
+        payload['event_evidence']=semantics['event_evidence']
+        payload['semantic_provenance']=semantics['provenance']
     public_safe(payload)
     return payload
 
 def render(report, selection, output):
     payload=select(report,selection);output.mkdir(parents=True,exist_ok=True)
-    payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
+    payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
     (output/'selected-layer-data.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':'))+'\n')
     html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload))
     (output/'index.html').write_text(html)

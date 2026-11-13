@@ -17,8 +17,24 @@ an average layer. `representative-selection.json` pins its source and complete
 All28 reviewed leaf work/byte joins retain their existing metrics. The whole
 layer's MFU and MBU remain unavailable because work coverage is incomplete.
 
-`single_layer.py` maintains the compact connected flow tree and selected-kernel
-timeline. The main HTML embeds only selected-layer data. `full-report.html`
+`single_layer.py` and `semantic_tree.py` maintain the expanded model hierarchy
+and selected-kernel timeline. `representative-semantics.json` is a checksum-bound
+public projection of the reviewed trace/source evidence: exact safe symbols,
+stream/launch geometry, useful model-work shapes, formulas and source anchors.
+The layer root contains attention, the fused iHC bridge, MoE and output branches.
+Its 42 terminal display operations partition the original 45 events; only the
+unbound RoPE family is split into its indexer and main-attention invocations.
+All 41 original family work/metric objects and all 28 reviewed work joins remain
+unchanged. The tree is a semantic ownership hierarchy, not a dependency DAG.
+Unknown complete module MFU stays null, partial known FLOPs are explicitly
+labeled, and interface bytes never roll up through module parents.
+
+Rows show precision-specific useful model FLOPs, numeric interface-byte estimates,
+source-derived geometry and exact captured-kernel evidence. “Locate kernels”
+selects the corresponding measured timeline intervals. The full kernel symbols,
+SQLite event IDs and launch geometry are available in each row's evidence details.
+
+The main HTML embeds only selected-layer data. `full-report.html`
 retains the complete rank/chunk explorer; `source-data.json`, `report-data.json`
 and `input-schema.json` remain complete downloadable artifacts. The legacy
 renderer (`template.html`, `app.js`, `timeline.js`, `style.css`) is maintained for

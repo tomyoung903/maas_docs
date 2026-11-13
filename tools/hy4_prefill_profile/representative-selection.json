@@ -13,7 +13,7 @@
   "event_count": 45,
   "event_ids_sha256": "0b461af1713d6a6a17626823bb76ffa6a3ba69c0cac72e966d57e25aae5c6e8d",
   "rationale": "A normal interior MoE layer with a full indexer refresh, in the last complete 8,192-token chunk. Chosen by structure and existing raw-trace review, not by speed; this is one invocation, not a statistical average.",
-  "grouping_note": "This alternative partitions all41 existing family leaves once. Indexer refresh and Q/KV preparation share one group because the current RoPE family merges an indexer call and an attention call. Split only via the separately supplied event partition, never by duplicating a family node.",
+  "grouping_note": "The model tree partitions all45 selected events once. The unbound RoPE family is split into its two source-reviewed invocations; existing41 family metrics and28 work joins are retained unchanged. Semantic grouping does not establish serialization or a dependency DAG.",
   "limitations": [
     "This index-refresh example does not represent index-reuse layers, the dense first layer, the padded final chunk, draft work or PP communication.",
     "Layer ownership is reviewed source-order inference after runtime/forward correlation. Nsight warned that some records might be missing.",
@@ -205,5 +205,7 @@
     "pp2-forward11-layer53-shared-routed-sum-28e5b6d2": "Merge shared and routed outputs",
     "pp2-forward11-layer53-ihc-post-6d2816fe": "iHC output mixing"
   },
-  "event_ids_sha256_format": "chronological_ids_newline_terminated"
+  "event_ids_sha256_format": "chronological_ids_newline_terminated",
+  "semantic_evidence_file": "representative-semantics.json",
+  "semantic_evidence_sha256": "c7c7986ce384fe495da21a567aac0435ba713ae8b377c27101c333d35be663c4"
 }
