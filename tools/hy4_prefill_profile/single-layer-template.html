@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="description" content="One representative HY4 prefill layer: measured operator time, model compute fraction and estimated useful-byte bandwidth.">
+<link rel="icon" href="data:,"><title>HY4 prefill — one layer, step by step</title>
+<style>/*LAYER_STYLE*/</style></head><body>
+<header class="topbar"><strong>MaaS · HY4 kernel understanding</strong><nav><a href="#operator-flow">Operator flow</a><a href="#timeline-section">Timeline</a><a href="#evidence">Evidence</a></nav></header>
+<section class="hero"><p class="eyebrow">HY4 · B300 · NVFP4 · measured prefill</p><h1>One layer, step by step</h1><p id="hero-description"></p><div class="hero-meta" id="hero-meta"></div></section>
+<div class="layout"><aside class="toc" aria-label="On this page"><h2>Contents</h2><a href="#overview">Selected invocation</a><a href="#operator-flow">Operator flow</a><a href="#timeline-section">Kernel timeline</a><a href="#evidence">Method &amp; full data</a></aside><main>
+<section class="band" id="overview"><h2>Selected invocation</h2><p class="lede" id="selection-description"></p><div class="summary-grid" id="summary"></div><div class="callout"><strong>What this example represents</strong><span id="selection-rationale"></span></div></section>
+<section class="band" id="operator-flow"><span id="execution-tree" class="anchor-alias" aria-hidden="true"></span><h2>From layer input to layer output</h2><p class="lede">Numbered rows follow the model's operator groups. Expand a group to inspect its recorded operators; a group subtotal already includes its children. Groups can interleave in the measured timeline.</p>
+<div class="launch-equation" id="launch-equation"></div>
+<div class="toolbar"><button class="icon-button" id="expand-all" title="Expand all groups" aria-label="Expand all groups">+</button><button class="icon-button" id="collapse-all" title="Collapse groups" aria-label="Collapse groups">−</button><span class="selected-scope">GPU ms = summed recorded duration. MFU and estimated MBU use each row's active GPU interval union.</span></div>
+<div class="flow-tree-header"><span>Operator / role</span><span>Launches</span><span>GPU ms</span><span>MFU</span><span>Est. MBU</span></div><ol class="flow-tree" id="decoder-tree" aria-label="Selected HY4 layer operator flow"></ol>
+<div class="callout warning tree-method"><strong>Read the percentages as model-based ratios</strong><span id="metric-scope"></span></div></section>
+<section class="band" id="timeline-section"><h2>Recorded kernel timeline</h2><p class="lede">Only this layer's captured kernels are shown. Rows are logical operator groups, not physical CUDA streams. Hover for the exact duration and capture offset.</p>
+<div class="tool"><div class="tool-head"><div><h3 id="timeline-title"></h3><p>Time zero is this layer's first captured kernel. Widths are measured durations, including any waiting inside a kernel.</p></div></div>
+<div class="toolbar"><button class="icon-button" id="pan-left" aria-label="Pan earlier">←</button><button class="icon-button" id="zoom-out" aria-label="Zoom out">−</button><button class="icon-button" id="zoom-in" aria-label="Zoom in">+</button><button class="icon-button" id="pan-right" aria-label="Pan later">→</button><button class="icon-button" id="reset-view" aria-label="Reset timeline">↺</button><span id="view-range"></span></div>
+<div class="canvas-wrap"><canvas id="timeline" aria-label="Selected layer's measured kernels by logical operator group"></canvas></div><div class="status-line" id="timeline-status">Hover a kernel to inspect it.</div></div>
+<p class="selected-scope">Communication without a proven owner is not attached to this layer. The full capture, including separately identified NCCL intervals, remains in the archive.</p></section>
+<section class="band" id="evidence"><span id="method" class="anchor-alias" aria-hidden="true"></span><span id="coverage" class="anchor-alias" aria-hidden="true"></span><span id="provenance" class="anchor-alias" aria-hidden="true"></span><h2>Method &amp; full data</h2><ul class="notes" id="notes"></ul><details><summary>Selection and evidence hashes</summary><dl class="evidence-grid" id="evidence-grid"></dl></details>
+<div class="download-links"><a href="selected-layer-data.json" download>Selected-layer data</a><a href="full-report.html">Full capture explorer</a><a href="report-data.json" download>Complete report data</a><a href="source-data.json" download>Complete normalized source</a><a href="input-schema.json" download>Source schema</a></div>
+<p class="selected-scope" id="request-context"></p></section>
+</main></div><footer>Measured intervals and source-derived work are distinct. This is one invocation, not an average layer or a prediction for the whole model.</footer>
+<script id="selected-layer-data" type="application/json"><!--LAYER_DATA--></script><script>/*LAYER_APP*/</script>
+  <script defer src="../assets/maas-annotator.js" data-maas-annotator data-page-key="/hy4-100k-prefill/"></script>
+</body></html>

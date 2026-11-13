@@ -1,0 +1,209 @@
+{
+  "schema_version": "hy4-representative-layer-v1",
+  "source_input_sha256": "7a5f4910df3ac78a77457cdd28210aeb9bcad8127da95efa4c6e58055807b9e7",
+  "selection_audit_sha256": "0bc97facbc6b1820650de893d3a11d5fcf7d5b13fbf64691fc39a97890acc961",
+  "node_id": "pp2-forward11-layer53",
+  "rank": 2,
+  "chunk": 11,
+  "layer": 53,
+  "local_layer_index": 16,
+  "new_tokens": 8192,
+  "context_before": 90112,
+  "context_after": 98304,
+  "event_count": 45,
+  "event_ids_sha256": "0b461af1713d6a6a17626823bb76ffa6a3ba69c0cac72e966d57e25aae5c6e8d",
+  "rationale": "A normal interior MoE layer with a full indexer refresh, in the last complete 8,192-token chunk. Chosen by structure and existing raw-trace review, not by speed; this is one invocation, not a statistical average.",
+  "grouping_note": "This alternative partitions all41 existing family leaves once. Indexer refresh and Q/KV preparation share one group because the current RoPE family merges an indexer call and an attention call. Split only via the separately supplied event partition, never by duplicating a family node.",
+  "limitations": [
+    "This index-refresh example does not represent index-reuse layers, the dense first layer, the padded final chunk, draft work or PP communication.",
+    "Layer ownership is reviewed source-order inference after runtime/forward correlation. Nsight warned that some records might be missing.",
+    "13 operator families have no reviewed work-to-event join. Their measured times remain visible; full-layer MFU and MBU remain unavailable.",
+    "Useful-byte MBU is an interface estimate, not measured DRAM traffic. Cache/on-chip reuse can make it exceed 100%; values are not clipped."
+  ],
+  "groups": [
+    {
+      "id": "g1",
+      "title": "iHC input and latent query projections",
+      "role": "Prepare the residual stream and produce attention queries.",
+      "operator_ids": [
+        "pp2-forward11-layer53-ihc-pre-3b4fca28",
+        "pp2-forward11-layer53-qkv-latent-projection-5c82792e",
+        "pp2-forward11-layer53-rmsnorm-d2085368",
+        "pp2-forward11-layer53-q-b-projection-c3e40fb8"
+      ]
+    },
+    {
+      "id": "g2",
+      "title": "Indexer refresh and query/KV preparation",
+      "role": "Refresh sparse token selection and prepare the attention inputs.",
+      "operator_ids": [
+        "pp2-forward11-layer53-indexer-q-projection-7bf6fed2",
+        "pp2-forward11-layer53-indexer-k-projection-6b8c60dc",
+        "pp2-forward11-layer53-indexer-k-layernorm-00306326",
+        "pp2-forward11-layer53-rope-fe4d55b9",
+        "pp2-forward11-layer53-indexer-hadamard-f94d3c7c",
+        "pp2-forward11-layer53-indexer-activation-fp8-quant-9fca3f11",
+        "pp2-forward11-layer53-indexer-cache-store-05b7ba3b",
+        "pp2-forward11-layer53-indexer-weight-projection-94b5dca4",
+        "pp2-forward11-layer53-indexer-weight-scale-f9582deb",
+        "pp2-forward11-layer53-aten-metadata-elementwise-4211dcb7",
+        "pp2-forward11-layer53-indexer-cache-gather-14ad518b",
+        "pp2-forward11-layer53-indexer-fp8-mqa-logits-9234d697",
+        "pp2-forward11-layer53-indexer-topk-00c4a28f",
+        "pp2-forward11-layer53-q-absorb-bmm-c19539f6",
+        "pp2-forward11-layer53-aten-bf16-copy-71eebdc0",
+        "pp2-forward11-layer53-kv-fp8-quant-a2f36d18",
+        "pp2-forward11-layer53-kv-cache-store-e914e9d5",
+        "pp2-forward11-layer53-prefix-kv-gather-dequant-vector-0d2567de",
+        "pp2-forward11-layer53-q-absorb-concat-65dc0173"
+      ]
+    },
+    {
+      "id": "g3",
+      "title": "Sparse attention",
+      "role": "Attend to the selected key/value tokens.",
+      "operator_ids": [
+        "pp2-forward11-layer53-sparse-attention-7aaa6164"
+      ]
+    },
+    {
+      "id": "g4",
+      "title": "Attention output and gating",
+      "role": "Expand values, apply the attention gate and project back to the hidden state.",
+      "operator_ids": [
+        "pp2-forward11-layer53-value-expand-bmm-e7316856",
+        "pp2-forward11-layer53-attention-gate-gemm-99df08fb",
+        "pp2-forward11-layer53-attention-o-projection-30052950"
+      ]
+    },
+    {
+      "id": "g5",
+      "title": "Fused iHC post/pre",
+      "role": "Merge the attention branch and prepare the expert block.",
+      "operator_ids": [
+        "pp2-forward11-layer53-ihc-post-pre-ec49e968"
+      ]
+    },
+    {
+      "id": "g6",
+      "title": "Routing and routed experts",
+      "role": "Choose experts, execute the routed MLPs and combine their outputs.",
+      "operator_ids": [
+        "pp2-forward11-layer53-router-bf16-to-fp32-cast-5e040426",
+        "pp2-forward11-layer53-router-fp32-gemm-f6339569",
+        "pp2-forward11-layer53-router-top8-weights-e14079bb",
+        "pp2-forward11-layer53-expert-input-nvfp4-quant-a2ea58cf",
+        "pp2-forward11-layer53-expert-route-indices-7ae7cf4e",
+        "pp2-forward11-layer53-expert-fp4-gate-up-swiglu-quant-6a086f18",
+        "pp2-forward11-layer53-expert-fp4-down-3bed0d03",
+        "pp2-forward11-layer53-expert-finalize-a99a8fd4"
+      ]
+    },
+    {
+      "id": "g7",
+      "title": "Shared expert and merge",
+      "role": "Execute the shared MLP and add it to the routed result.",
+      "operator_ids": [
+        "pp2-forward11-layer53-shared-ffn-gate-up-4f08eb28",
+        "pp2-forward11-layer53-ffn-swiglu-187b2390",
+        "pp2-forward11-layer53-shared-ffn-down-00784a04",
+        "pp2-forward11-layer53-shared-routed-sum-28e5b6d2"
+      ]
+    },
+    {
+      "id": "g8",
+      "title": "iHC output",
+      "role": "Write the layer output back into the residual streams.",
+      "operator_ids": [
+        "pp2-forward11-layer53-ihc-post-6d2816fe"
+      ]
+    }
+  ],
+  "operator_roles": {
+    "pp2-forward11-layer53-ihc-pre-3b4fca28": "Mix residual streams and normalize the attention input.",
+    "pp2-forward11-layer53-qkv-latent-projection-5c82792e": "Project the hidden state into latent attention inputs.",
+    "pp2-forward11-layer53-rmsnorm-d2085368": "Normalize the query and key/value paths.",
+    "pp2-forward11-layer53-q-b-projection-c3e40fb8": "Expand latent queries into attention heads.",
+    "pp2-forward11-layer53-indexer-q-projection-7bf6fed2": "Build queries used to select relevant tokens.",
+    "pp2-forward11-layer53-indexer-k-projection-6b8c60dc": "Build the indexer keys.",
+    "pp2-forward11-layer53-indexer-k-layernorm-00306326": "Normalize the indexer keys.",
+    "pp2-forward11-layer53-rope-fe4d55b9": "Apply rotary positions in the indexer and attention paths.",
+    "pp2-forward11-layer53-indexer-hadamard-f94d3c7c": "Rotate indexer features before quantization.",
+    "pp2-forward11-layer53-indexer-activation-fp8-quant-9fca3f11": "Quantize the indexer activations.",
+    "pp2-forward11-layer53-indexer-cache-store-05b7ba3b": "Update the indexer cache.",
+    "pp2-forward11-layer53-indexer-weight-projection-94b5dca4": "Produce weights for combining indexer heads.",
+    "pp2-forward11-layer53-indexer-weight-scale-f9582deb": "Apply the indexer weight scales.",
+    "pp2-forward11-layer53-aten-metadata-elementwise-4211dcb7": "Prepare the recorded auxiliary metadata.",
+    "pp2-forward11-layer53-indexer-cache-gather-14ad518b": "Read cached keys for token scoring.",
+    "pp2-forward11-layer53-indexer-fp8-mqa-logits-9234d697": "Score candidate tokens across the available context.",
+    "pp2-forward11-layer53-indexer-topk-00c4a28f": "Choose the sparse attention token indices.",
+    "pp2-forward11-layer53-q-absorb-bmm-c19539f6": "Transform queries into the latent key space.",
+    "pp2-forward11-layer53-aten-bf16-copy-71eebdc0": "Prepare the recorded attention operand layouts.",
+    "pp2-forward11-layer53-kv-fp8-quant-a2f36d18": "Convert new key/value entries to FP8.",
+    "pp2-forward11-layer53-kv-cache-store-e914e9d5": "Update the attention KV cache.",
+    "pp2-forward11-layer53-prefix-kv-gather-dequant-vector-0d2567de": "Prepare cached key/value operands for attention.",
+    "pp2-forward11-layer53-q-absorb-concat-65dc0173": "Join query components for sparse attention.",
+    "pp2-forward11-layer53-sparse-attention-7aaa6164": "Compute attention over the selected tokens.",
+    "pp2-forward11-layer53-value-expand-bmm-e7316856": "Project latent attention output to value heads.",
+    "pp2-forward11-layer53-attention-gate-gemm-99df08fb": "Compute and apply the fused attention gate.",
+    "pp2-forward11-layer53-attention-o-projection-30052950": "Project attention heads back to the hidden state.",
+    "pp2-forward11-layer53-ihc-post-pre-ec49e968": "Merge attention output and prepare the expert input.",
+    "pp2-forward11-layer53-router-bf16-to-fp32-cast-5e040426": "Convert the routing input to FP32.",
+    "pp2-forward11-layer53-router-fp32-gemm-f6339569": "Score the routed experts in FP32.",
+    "pp2-forward11-layer53-router-top8-weights-e14079bb": "Choose expert routes and their weights.",
+    "pp2-forward11-layer53-expert-input-nvfp4-quant-a2ea58cf": "Quantize routed expert activations to NVFP4.",
+    "pp2-forward11-layer53-expert-route-indices-7ae7cf4e": "Arrange tokens for the selected experts.",
+    "pp2-forward11-layer53-expert-fp4-gate-up-swiglu-quant-6a086f18": "Execute the gated up projection and quantize its output.",
+    "pp2-forward11-layer53-expert-fp4-down-3bed0d03": "Project expert hidden activations back down.",
+    "pp2-forward11-layer53-expert-finalize-a99a8fd4": "Weight and combine routed expert outputs.",
+    "pp2-forward11-layer53-shared-ffn-gate-up-4f08eb28": "Execute the shared gated up projection.",
+    "pp2-forward11-layer53-ffn-swiglu-187b2390": "Apply the shared expert activation.",
+    "pp2-forward11-layer53-shared-ffn-down-00784a04": "Project shared expert activations back down.",
+    "pp2-forward11-layer53-shared-routed-sum-28e5b6d2": "Add the shared and routed expert branches.",
+    "pp2-forward11-layer53-ihc-post-6d2816fe": "Write the final branch into the residual streams."
+  },
+  "operator_titles": {
+    "pp2-forward11-layer53-ihc-pre-3b4fca28": "iHC input mixing",
+    "pp2-forward11-layer53-qkv-latent-projection-5c82792e": "Latent Q/K/V projection",
+    "pp2-forward11-layer53-rmsnorm-d2085368": "RMS normalization",
+    "pp2-forward11-layer53-q-b-projection-c3e40fb8": "Query expansion",
+    "pp2-forward11-layer53-indexer-q-projection-7bf6fed2": "Indexer query projection",
+    "pp2-forward11-layer53-indexer-k-projection-6b8c60dc": "Indexer key projection",
+    "pp2-forward11-layer53-indexer-k-layernorm-00306326": "Indexer key normalization",
+    "pp2-forward11-layer53-rope-fe4d55b9": "Rotary positions",
+    "pp2-forward11-layer53-indexer-hadamard-f94d3c7c": "Indexer Hadamard transform",
+    "pp2-forward11-layer53-indexer-activation-fp8-quant-9fca3f11": "Indexer FP8 quantization",
+    "pp2-forward11-layer53-indexer-cache-store-05b7ba3b": "Store indexer keys",
+    "pp2-forward11-layer53-indexer-weight-projection-94b5dca4": "Indexer head weights",
+    "pp2-forward11-layer53-indexer-weight-scale-f9582deb": "Scale indexer weights",
+    "pp2-forward11-layer53-aten-metadata-elementwise-4211dcb7": "Indexer metadata",
+    "pp2-forward11-layer53-indexer-cache-gather-14ad518b": "Gather indexer keys",
+    "pp2-forward11-layer53-indexer-fp8-mqa-logits-9234d697": "FP8 token scoring",
+    "pp2-forward11-layer53-indexer-topk-00c4a28f": "Select top tokens",
+    "pp2-forward11-layer53-q-absorb-bmm-c19539f6": "Absorb queries",
+    "pp2-forward11-layer53-aten-bf16-copy-71eebdc0": "BF16 layout copies",
+    "pp2-forward11-layer53-kv-fp8-quant-a2f36d18": "Quantize KV cache input",
+    "pp2-forward11-layer53-kv-cache-store-e914e9d5": "Store new KV entries",
+    "pp2-forward11-layer53-prefix-kv-gather-dequant-vector-0d2567de": "Gather and dequantize prefix KV",
+    "pp2-forward11-layer53-q-absorb-concat-65dc0173": "Assemble attention queries",
+    "pp2-forward11-layer53-sparse-attention-7aaa6164": "Sparse QK / softmax / SV",
+    "pp2-forward11-layer53-value-expand-bmm-e7316856": "Expand attention values",
+    "pp2-forward11-layer53-attention-gate-gemm-99df08fb": "Attention output gate",
+    "pp2-forward11-layer53-attention-o-projection-30052950": "Attention output projection",
+    "pp2-forward11-layer53-ihc-post-pre-ec49e968": "Fused iHC bridge",
+    "pp2-forward11-layer53-router-bf16-to-fp32-cast-5e040426": "Router input conversion",
+    "pp2-forward11-layer53-router-fp32-gemm-f6339569": "Router logits",
+    "pp2-forward11-layer53-router-top8-weights-e14079bb": "Select eight experts",
+    "pp2-forward11-layer53-expert-input-nvfp4-quant-a2ea58cf": "Expert input quantization",
+    "pp2-forward11-layer53-expert-route-indices-7ae7cf4e": "Expert routing indices",
+    "pp2-forward11-layer53-expert-fp4-gate-up-swiglu-quant-6a086f18": "Routed FC1 + SwiGLU",
+    "pp2-forward11-layer53-expert-fp4-down-3bed0d03": "Routed FC2",
+    "pp2-forward11-layer53-expert-finalize-a99a8fd4": "Combine routed experts",
+    "pp2-forward11-layer53-shared-ffn-gate-up-4f08eb28": "Shared expert FC1",
+    "pp2-forward11-layer53-ffn-swiglu-187b2390": "Shared expert SwiGLU",
+    "pp2-forward11-layer53-shared-ffn-down-00784a04": "Shared expert FC2",
+    "pp2-forward11-layer53-shared-routed-sum-28e5b6d2": "Merge shared and routed outputs",
+    "pp2-forward11-layer53-ihc-post-6d2816fe": "iHC output mixing"
+  },
+  "event_ids_sha256_format": "chronological_ids_newline_terminated"
+}

@@ -320,19 +320,30 @@ def encoded(data):
     return json.dumps(data,ensure_ascii=False,allow_nan=False,separators=(',',':')).replace('&','\\u0026').replace('<','\\u003c').replace('>','\\u003e').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 
 
-def build(source, output):
+def build(source, output, representative=None):
     raw = source.read_bytes()
     data = load_json(raw)
     result = compile_report(data)
     result['input_sha256'] = hashlib.sha256(raw).hexdigest()
     result['generator_sources'] = [{'label':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in [HERE/'build.py',HERE/'app.js',HERE/'style.css',HERE/'template.html',HERE/'schema.json',HERE/'timeline.js']]
+    selection=None
+    if representative is not None and result['status']=='measured':
+        from single_layer import select
+        selection=load_json(representative.read_bytes())
+        select(result,selection)  # Fail before replacing any output on a stale selection.
     output.mkdir(parents=True, exist_ok=True)
     (output/'input-schema.json').write_bytes((HERE/'schema.json').read_bytes())
     (output/'source-data.json').write_bytes(raw)
     (output/'report-data.json').write_text(json.dumps(result,ensure_ascii=False,allow_nan=False,separators=(',',':'))+'\n')
     html = (HERE/'template.html').read_text().replace('<!--REPORT_DATA-->',encoded(result)).replace('/*REPORT_STYLE*/',(HERE/'style.css').read_text()).replace('/*REPORT_APP*/',(HERE/'app.js').read_text()).replace('/*REPORT_TIMELINE*/',(HERE/'timeline.js').read_text())
     require(html.count('data-maas-annotator') == 1, 'one annotator required')
-    (output/'index.html').write_text(html)
+    archive=html.replace('data-page-key="/hy4-100k-prefill/"','data-page-key="/hy4-100k-prefill/full-report.html"')
+    (output/'full-report.html').write_text(archive)
+    if selection is not None:
+        from single_layer import render
+        render(result,selection,output)
+    else:
+        (output/'index.html').write_text(html)
     return result
 
 
@@ -345,13 +356,19 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--input',type=Path,help='Defaults to the current published-source ledger; pending bootstrap only if no current ledger exists')
     p.add_argument('--output',type=Path,default=ROOT/'docs/hy4-100k-prefill')
+    p.add_argument('--representative',type=Path,default=HERE/'representative-selection.json',help='Reviewed single-layer selection for the main page')
     p.add_argument('--validate-only',action='store_true')
     a=p.parse_args()
     if a.input is None:a.input=default_input()
     if a.validate_only:
-        r=compile_report(load_json(a.input.read_bytes()))
+        raw=a.input.read_bytes()
+        r=compile_report(load_json(raw))
+        if r['status']=='measured':
+            from single_layer import select
+            r['input_sha256']=hashlib.sha256(raw).hexdigest()
+            select(r,load_json(a.representative.read_bytes()))
     else:
-        r=build(a.input,a.output)
+        r=build(a.input,a.output,a.representative)
     print(json.dumps({'status':r['status'],'nodes':len(r['nodes']),'events':len(r['events']),'unattributed':r['derived']['unattributed_event_count']}))
 
 if __name__=='__main__': main()

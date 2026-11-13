@@ -8,11 +8,35 @@ publication. Only a checkout without that file falls back to the pending
 bootstrap snapshot. An invalid current source fails validation; it is never
 silently replaced with pending data.
 
+The main page presents one reviewed invocation: global layer index53 (the 54th
+layer), PP2 local index16, chunk12 of13,8192 new tokens after90112 prior tokens.
+It is a normal routed/shared-MoE layer with a full indexer refresh, selected by
+structure and an existing raw-trace witness, not by its performance. It is not
+an average layer. `representative-selection.json` pins its source and complete
+45-event set and partitions its41 operator families into eight readable groups.
+All28 reviewed leaf work/byte joins retain their existing metrics. The whole
+layer's MFU and MBU remain unavailable because work coverage is incomplete.
+
+`single_layer.py` maintains the compact connected flow tree and selected-kernel
+timeline. The main HTML embeds only selected-layer data. `full-report.html`
+retains the complete rank/chunk explorer; `source-data.json`, `report-data.json`
+and `input-schema.json` remain complete downloadable artifacts. The legacy
+renderer (`template.html`, `app.js`, `timeline.js`, `style.css`) is maintained for
+that archive. Semantic groups can interleave; their order is not a serialized
+execution claim.
+
 ```bash
 python3 tools/hy4_prefill_profile/build.py --validate-only
 python3 -m unittest discover -s tools/hy4_prefill_profile -p 'test_*.py' -v
 python3 tools/hy4_prefill_profile/build.py
 ```
+
+The final command reproduces both the selected-layer main page and complete
+archive from the committed source. A stale source or event-set selection fails
+before replacing output. For a new measured source, supply a separately reviewed
+selection with `--representative /path/to/selection.json`. To render the complete
+explorer alone, call the Python `build(source, output)` function without a
+representative selection. The CLI uses the committed selection by default.
 
 For a new source ledger (private local input, public-safe output):
 
@@ -34,7 +58,8 @@ paths and internal URLs are not published.
 For normalized measured evidence:
 
 ```bash
-python3 tools/hy4_prefill_profile/build.py --input /path/to/measured-input.json
+python3 tools/hy4_prefill_profile/build.py --input /path/to/measured-input.json \
+  --representative /path/to/reviewed-selection.json
 ```
 
 This command writes only the selected output pack (`--output` is optional). It
@@ -127,11 +152,11 @@ Source estimates and nominal roof percentages are not TileSight predictions.
 Neither CUPTI residency nor overlap subtraction identifies intrinsic service time
 or removable waits. The report is an evidence viewer, not an optimization claim.
 
-The browser lazily creates expanded descendants, keeping the full 3000+ operator
-inventory usable. Rank/chunk filters select the visible subtree; parent/overview
-metrics retain complete input scope and are labeled accordingly. Source JSON is
-embedded safely and also downloadable; exact integer FLOPs have string tooltips
-to avoid JavaScript's large-integer rounding.
+The full archive lazily creates expanded descendants and provides rank/chunk
+filters; its parent/overview metrics retain the complete input scope. The main
+page has no global explorer controls. It displays the selected invocation's
+existing leaf metrics, keeps unknown group ratios null, and never sums interface
+bytes through groups. Source JSON is embedded safely and downloadable.
 
 ## Reviewed nominal B300 preset
 
