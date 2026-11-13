@@ -94,14 +94,15 @@ class MetricCompletionTests(unittest.TestCase):
         self.assertEqual(payload['tree']['children'][1]['additional_work']['scalar_ops'],1)
         self.assertEqual(payload['tree']['children'][2]['additional_work']['scalar_ops'],2)
 
-    def test_frozen_hy4_completion_preserves_five_exact_byte_scopes_and_rope_sum(self):
+    def test_frozen_hy4_completion_preserves_six_exact_byte_scopes_and_rope_sum(self):
         completion=json.loads((Path(__file__).parent/'representative-metric-completion.json').read_text())
         entries={e['family']:e for e in completion['entries']}
         self.assertEqual(len(entries),13)
         self.assertEqual(sum(len(e['event_ids']) for e in entries.values()),17)
         self.assertEqual({k:v['useful_bytes'] for k,v in entries.items() if v['useful_bytes'] is not None},
             dict(rmsnorm=83_891_200,indexer_k_layernorm=4_195_328,indexer_hadamard=138_412_032,
-                 indexer_activation_fp8_quant=101_711_872,kv_fp8_quant=14_811_136))
+                 indexer_activation_fp8_quant=101_711_872,kv_fp8_quant=14_811_136,
+                 aten_metadata_elementwise=67_108_864))
         self.assertEqual(entries['rope']['scalar_ops'],sum(entries['rope']['per_event_scalar_ops'].values()))
         self.assertTrue(all(e['matrix_flops_by_precision']=={} for e in entries.values()))
         self.assertTrue(all(e['dram_bytes'] is None for e in entries.values()))

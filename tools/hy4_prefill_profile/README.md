@@ -16,7 +16,7 @@ an average layer. `representative-selection.json` pins its source and complete
 45-event set and partitions its41 operator families into eight readable groups.
 All28 reviewed leaf work/byte joins retain their existing metrics. The selected
 tree additionally classifies the remaining13 families as scalar operations or
-movement and supplies five independently derived useful-byte estimates.
+movement and supplies six independently derived useful-byte estimates.
 Compute MFU is38.2158728863% for the45 captured events. Physical DRAM MBU remains
 unmeasured for the original capture; a separate GPU4 replay table reports native
 MQA and TopK DRAM counters with their matching NCU times. Complete request

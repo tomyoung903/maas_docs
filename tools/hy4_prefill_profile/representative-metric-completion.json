@@ -265,24 +265,41 @@
       "matrix_scope_reviewed": true,
       "matrix_flops_by_precision": {},
       "operation_kind": "integer_fill",
-      "matrix_scope_note": "Captured symbol is an integer FillFunctor; it cannot contribute floating-point matrix work. Exact filled buffer identity/extent remains unresolved.",
+      "matrix_scope_note": "The original int32 FillFunctor is source-order bound to initialization of the eager ragged TopK output. Integer data movement; no floating-point matrix work.",
       "source_anchors": [
         {
           "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
-          "line": 1725,
-          "anchor": "def _get_topk_ragged("
+          "line": 1777,
+          "anchor": "token_nums, _, _ = q_fp8.shape"
+        },
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 1782,
+          "anchor": "if topk_result is None:"
+        },
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 1784,
+          "anchor": "(token_nums, self.index_topk), -1, device=device, dtype=torch.int32"
+        },
+        {
+          "label": "sglang/srt/layers/attention/dsa/dsa_indexer.py",
+          "line": 2553,
+          "anchor": "topk_result = self._get_topk_ragged("
         }
       ],
       "scalar_ops": null,
       "scalar_formula": null,
       "scalar_scope_status": "unresolved",
-      "useful_bytes": null,
-      "useful_byte_formula": null,
-      "useful_bytes_scope_status": "unresolved",
-      "useful_bytes_note": "Exact useful interface bytes remain unreviewed; no physical DRAM counter was collected.",
+      "useful_bytes": 67108864,
+      "useful_byte_formula": "T × index_topk × sizeof(int32) = 8,192 × 2,048 × 4 = 67,108,864 B",
+      "useful_bytes_scope_status": "source_operand_interface_estimate",
+      "useful_bytes_note": "Logical initialization writes, counted once per output slot. The scalar -1 argument is not a tensor read. These are this operation's output-interface bytes, not physical DRAM traffic or a claim that initialization is mathematically necessary. Ownership remains reviewed source-order inference; runtime pointer/numel arguments were not captured.",
       "dram_bytes": null,
       "dram_counter_artifact_id": null,
-      "estimated_mbu_percent": null
+      "shape": "8,192 × 2,048 int32 output IDs initialized to -1 before key gathering and token selection.",
+      "title": "Initialize TopK output buffer",
+      "estimated_mbu_percent": 77.37426210153482
     },
     {
       "operator_id": "pp2-forward11-layer53-aten-bf16-copy-71eebdc0",
@@ -497,7 +514,7 @@
     "ideal_compute_ms": 5.517131557546667,
     "selected_device_union_ms": 14.436754,
     "nominal_matrix_mfu_percent": 38.21587288629193,
-    "newly_available_useful_byte_family_count": 5,
+    "newly_available_useful_byte_family_count": 6,
     "physical_dram_mbu": null,
     "calibrated_tilesight_latency": null
   },
