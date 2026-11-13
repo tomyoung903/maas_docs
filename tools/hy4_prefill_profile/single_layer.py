@@ -71,12 +71,17 @@ def select(report, selection):
         completion=load_completion(selection)
         if completion is not None:
             apply(payload,completion,report['hardware']['compute_roofs_tflops'],report['hardware']['bandwidth_roof_tb_s'])
+    from physical_replay import load_replay
+    replay=load_replay(payload,report['hardware']['bandwidth_roof_tb_s'])
+    if replay is not None:payload['physical_replay']=replay
     public_safe(payload)
     return payload
 
 def render(report, selection, output):
     payload=select(report,selection);output.mkdir(parents=True,exist_ok=True)
-    payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'metric_completion.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
+    payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'metric_completion.py',HERE/'physical_replay.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
+    if payload.get('physical_replay'):
+        (output/'isolated-replay-counters.json').write_text(json.dumps(payload['physical_replay'],indent=2)+'\n')
     (output/'selected-layer-data.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':'))+'\n')
     html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload))
     (output/'index.html').write_text(html)

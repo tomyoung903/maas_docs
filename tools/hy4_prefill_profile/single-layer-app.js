@@ -19,7 +19,22 @@
   card('Kernel window',ms((data.end_ns-data.origin_ns)/1e6),'First selected start → last selected end');
   $('launch-equation').append(el('span','equation-label','Selected-layer reconciliation'),document.createTextNode(`${data.events.length} recorded kernels · ${data.operator_count} uniquely owned operator families · one selected layer`));
   const matrix=data.matrix_scope_metrics;
-  $('metric-scope').textContent=matrix?`Compute MFU is ${pct(matrix.nominal_mfu_active_union_percent)} for these ${matrix.selected_events} captured events. All ${matrix.classified_families} operator families have a reviewed matrix-work classification. For each precision, divide its model matrix FLOPs by the matching nominal GPU peak; add those ideal times, then divide by the row’s active interval union. Normalization, Hadamard butterflies, rotation, conversion and selection are scalar work, so their compute MFU is not applicable. Physical DRAM bandwidth was not measured. Per-operation byte estimates count useful interfaces once; they cannot be added into a parent MBU. This is not measured SM activity or a calibrated TileSight prediction.`:`${data.bound_operators} of ${data.operator_count} families have reviewed work/byte joins. Complete compute MFU is unavailable. Compute MFU uses precision-matched nominal roofs and each row’s active interval union. Physical DRAM bandwidth was not measured; source-derived interface bytes do not establish physical traffic.`;
+  $('metric-scope').textContent=matrix?`Compute MFU is ${pct(matrix.nominal_mfu_active_union_percent)} for these ${matrix.selected_events} captured events. All ${matrix.classified_families} operator families have a reviewed matrix-work classification. For each precision, divide its model matrix FLOPs by the matching nominal GPU peak; add those ideal times, then divide by the row’s active interval union. Normalization, Hadamard butterflies, rotation, conversion and selection are scalar work, so their compute MFU is not applicable. Physical DRAM bandwidth was not measured in this original capture; the separate GPU4 replay is reported below. Per-operation byte estimates count useful interfaces once; they cannot be added into a parent MBU. This is not measured SM activity or a calibrated TileSight prediction.`:`${data.bound_operators} of ${data.operator_count} families have reviewed work/byte joins. Complete compute MFU is unavailable. Compute MFU uses precision-matched nominal roofs and each row’s active interval union. Physical DRAM bandwidth was not measured in this original capture; source-derived interface bytes do not establish physical traffic. The separate GPU4 replay is reported below.`;
+  const replay=data.physical_replay;
+  const replayEventIds=new Set((replay?.rows||[]).map(row=>row.original_event_id));
+  if(replay){
+    $('physical-memory').hidden=false;
+    $('physical-replay-scope').textContent=`Separate GPU${replay.hardware.physical_gpu_index} replay of real captured layer ${s.layer} inputs: ${num(s.new_tokens,0)} queries at context ${num(s.context_after,0)}. Each native kernel was collected in one NCU pass. Initial cache state was uncontrolled; cache and clock controls were disabled.`;
+    for(const row of replay.rows){
+      const tr=el('tr');tr.id=`physical-replay-${row.family}`;
+      const title=el('th','',row.label);title.scope='row';tr.append(title);
+      for(const value of [num(row.read_bytes/1e9,3),num(row.write_bytes/1e9,3),num(row.total_bytes/1e9,3),num(row.profiled_duration_ms,6),num(row.matched_bandwidth_tb_s,3),pct(row.matched_physical_mbu_percent)])tr.append(el('td','',value));
+      $('physical-replay-rows').append(tr);
+    }
+    $('physical-replay-definition').textContent=`Physical MBU = (DRAM read + write bytes) ÷ (matched NCU duration × ${num(replay.hardware.nominal_bandwidth_roof_tb_s,1)} TB/s nominal HBM roof). GB and TB use decimal units. These counter-run times do not replace the original tree or timeline; their MFU and useful-byte MBU remain unchanged.`;
+    $('physical-replay-validation').textContent=`Both chains matched all ${num(replay.numerical.valid_logits_per_chain,0)} valid MQA logits bitwise. TopK selected the same token sets with different index order. This is a native baseline observation, not FP64 candidate validation, a calibrated TileSight prediction, or an optimization gain.`;
+    for(const note of replay.limitations)$('physical-replay-notes').append(el('li','',note));
+  }
   const toggles=[];
   const eventById=new Map(data.events.map(event=>[event.id,event]));
   const semanticEventTitles=new Map();
@@ -58,7 +73,10 @@
     }
     if(row.note)d.append(el('p','',textValue(row.note)));
     if(byteNote)d.append(el('p','',byteNote));
-    d.append(el('p','',`Active-union denominator: ${ms(row.union_ms)}. Physical DRAM counters are unavailable. Summed kernel duration is not isolated operator latency.`));
+    d.append(el('p','',`Active-union denominator: ${ms(row.union_ms)}. Physical DRAM counters are unavailable for this original captured interval. Summed kernel duration is not isolated operator latency.`));
+    if(eventIds.length===1&&replayEventIds.has(eventIds[0])){
+      const line=el('p'),link=el('a','','See physical counters from the separate replay');link.href='#physical-memory';line.append(link);d.append(line);
+    }
     if(eventIds.length){
       const raw=el('details','raw-kernel-evidence');raw.append(el('summary','',`${eventIds.length} raw kernel ${eventIds.length===1?'record':'records'} · symbol and launch geometry`));
       let built=false;
@@ -125,7 +143,7 @@
     const mfuValue=row.mfu_percent!=null?pct(row.mfu_percent):noMatrix?'N/A':'Unknown';
     const mfuNote=row.mfu_note||(row.mfu_percent==null?(noMatrix?'No matrix work':'Matrix-work scope incomplete'):'Precision-weighted nominal peaks · active union');
     const mbuValue=row.mbu_percent!=null?pct(row.mbu_percent):'Not measured';
-    const mbuNote=row.mbu_note||(row.mbu_percent==null?(children.length?'Physical DRAM traffic unavailable; child interface bytes cannot be added':'Physical DRAM traffic unavailable; useful-byte estimate unresolved'):'Useful-byte estimate · physical DRAM not measured');
+    const mbuNote=row.mbu_note||(row.mbu_percent==null?(children.length?'Original-capture DRAM traffic unavailable; child interfaces cannot be added':'Original-capture DRAM traffic unavailable; useful-byte estimate unresolved'):'Useful-byte estimate · original-capture DRAM unmeasured');
     body.append(heading,metric(num(row.count,0),children.length?'inclusive launches':'launches'),metric(num(row.time_ms,3),'summed kernel ms',`union ${num(row.union_ms,3)} ms`),metric(mfuValue,'compute MFU',mfuNote),metric(mbuValue,row.mbu_percent==null?'physical MBU':'est. useful-byte MBU',mbuNote));
     li.append(body);
     if(children.length){

@@ -18,7 +18,9 @@ All28 reviewed leaf work/byte joins retain their existing metrics. The selected
 tree additionally classifies the remaining13 families as scalar operations or
 movement and supplies five independently derived useful-byte estimates.
 Compute MFU is38.2158728863% for the45 captured events. Physical DRAM MBU remains
-unmeasured; complete request capture coverage is not asserted.
+unmeasured for the original capture; a separate GPU4 replay table reports native
+MQA and TopK DRAM counters with their matching NCU times. Complete request
+capture coverage is not asserted.
 
 `single_layer.py` and `semantic_tree.py` maintain the expanded model hierarchy
 and selected-kernel timeline. `representative-semantics.json` is a checksum-bound
@@ -338,3 +340,21 @@ python3 tools/hy4_prefill_profile/enrich_nccl.py \
   --output /path/to/enriched-source.json
 python3 tools/hy4_prefill_profile/build.py --input /path/to/enriched-source.json
 ```
+
+## Separate physical-counter replay
+
+`physical_replay.py` validates `isolated-replay-counters.json`, whose checksum is
+pinned in the representative selection. It derives physical bandwidth and MBU
+only from each replay kernel's measured bytes and matching NCU duration, using
+the page's existing7.7 TB/s nominal roof. Exact native symbols and the original
+selected event set bind the comparison; no replay value modifies an original
+event, tree time, MFU or useful-byte MBU. The public summary retains raw integer
+bytes/durations, numerical scope, replay conditions and artifact hashes, without
+private inputs, tensors, host paths or credentials.
+
+The rendered `isolated-replay-counters.json` download includes derived totals and
+percentages. One baseline chain precedes the selected counter chain; each chain
+launches MQA then TopK without an intermediate host copy or synchronization.
+Initial cache state is uncontrolled, clock/cache controls are disabled, and each
+profiled native kernel has exactly one pass. Counter-run durations are never
+substituted for original trace durations.
