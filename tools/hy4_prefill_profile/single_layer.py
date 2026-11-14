@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+from html import escape
 from pathlib import Path
 from build import encoded, public_safe, require, union_ns
 
@@ -81,6 +82,40 @@ def select(report, selection):
     public_safe(payload)
     return payload
 
+def ranking_html(payload):
+    """Rank unique operator families using the retained capture, not replay times."""
+    families=[row for group in payload['groups'] for row in group['children']]
+    top=sorted(families,key=lambda row:row['time_ms'],reverse=True)[:15]
+    semantic={}
+    def visit(row):
+        semantic[row['id']]=row
+        for child in row.get('children',[]):visit(child)
+    tree=payload.get('tree')
+    for root in (tree if isinstance(tree,list) else [tree] if tree else []):visit(root)
+    metrics=payload['layer_metrics']
+    total=metrics['summed_residency_ms'];active=metrics['device_union_sum_ms']
+    span=(payload['end_ns']-payload['origin_ns'])/1e6
+    share=100*sum(row['time_ms'] for row in top)/total
+    rows=[]
+    for index,row in enumerate(top,1):
+        classified=semantic.get(row['id'],row)
+        work=classified.get('compute_work',{})
+        flops=work.get('flops_by_precision',row['work']['flops_by_precision'])
+        complete=work.get('complete',row['work_bound'] and flops is not None)
+        mfu=(f"{row['mfu_percent']:.2f}%" if row['mfu_percent'] is not None
+             else 'N/A' if complete and flops=={} else 'Unknown')
+        title=escape(row['title'])
+        if row['count']>1:title+=f" <span class=\"rank-launches\">({row['count']} launches)</span>"
+        if row['id'] in semantic:title=f'<a href="#row-{escape(row["id"],quote=True)}">{title}</a>'
+        rows.append(f'<tr><td>{index}</td><th scope="row">{title}</th><td>{row["time_ms"]:.3f}</td><td>{mfu}</td></tr>')
+    return f'''<p class="lede">The {len(top)} longest operator families account for {share:.1f}% of summed kernel duration in this selected layer invocation. Each recorded kernel is owned once; parent totals are excluded.</p>
+<div class="counter-table-wrap"><table class="counter-table kernel-ranking-table"><thead><tr><th scope="col">Rank</th><th scope="col">Operation</th><th scope="col">Summed kernel<br>ms</th><th scope="col">Compute<br>MFU</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
+<p class="selected-scope">MFU uses useful matrix FLOPs, precision-matched nominal peaks and each operation's active interval union. Scalar work inside fused kernels is excluded from the FLOP numerator. N/A means no matrix work; Unknown means the work scope is unresolved. Neither means 0%.</p>
+<details class="counter-method"><summary>Why kernel durations do not sum to the {span:.3f} ms window</summary>
+<p>The window runs from the first selected kernel start to the last selected kernel finish. Summed durations are {total:.6f} ms; counting same-device overlaps once gives {active:.6f} ms. The window also includes {span-active:.6f} ms with no selected kernel active.</p>
+<div class="launch-equation">{total:.6f} ms sum − {total-active:.6f} ms overlap excess + {span-active:.6f} ms gaps = {span:.6f} ms elapsed span</div>
+<p>These are recorded intervals for one layer invocation, not the full 100k request. Durations can include synchronization waits; neither overlap nor a low MFU proves that time is removable. The model tree describes ownership, not a serialized execution schedule.</p></details>'''
+
 def render(report, selection, output):
     payload=select(report,selection);output.mkdir(parents=True,exist_ok=True)
     payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'metric_completion.py',HERE/'physical_replay.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
@@ -91,7 +126,7 @@ def render(report, selection, output):
     if payload.get('moe_fc_replay'):
         (output/'serialized-moe-fc-counters.json').write_text(json.dumps(payload['moe_fc_replay'],indent=2)+'\n')
     (output/'selected-layer-data.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':'))+'\n')
-    html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload))
+    html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload)).replace('<!--KERNEL_RANKING-->',ranking_html(payload))
     (output/'index.html').write_text(html)
     return payload
 
