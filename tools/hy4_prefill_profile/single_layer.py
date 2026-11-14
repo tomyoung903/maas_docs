@@ -72,13 +72,15 @@ def select(report, selection):
         completion=load_completion(selection)
         if completion is not None:
             apply(payload,completion,report['hardware']['compute_roofs_tflops'],report['hardware']['bandwidth_roof_tb_s'])
-    from physical_replay import load_replay, load_moe_range, load_moe_fc
+    from physical_replay import load_replay, load_moe_range, load_moe_fc, load_sparse
     replay=load_replay(payload,report['hardware']['bandwidth_roof_tb_s'])
     if replay is not None:payload['physical_replay']=replay
     moe_range=load_moe_range(payload)
     if moe_range is not None:payload['moe_range_replay']=moe_range
     moe_fc=load_moe_fc(payload,report['hardware']['bandwidth_roof_tb_s'])
     if moe_fc is not None:payload['moe_fc_replay']=moe_fc
+    sparse=load_sparse(payload,report['hardware']['bandwidth_roof_tb_s'])
+    if sparse is not None:payload['sparse_replay']=sparse
     public_safe(payload)
     return payload
 
@@ -125,6 +127,8 @@ def render(report, selection, output):
         (output/'isolated-moe-range-counters.json').write_text(json.dumps(payload['moe_range_replay'],indent=2)+'\n')
     if payload.get('moe_fc_replay'):
         (output/'serialized-moe-fc-counters.json').write_text(json.dumps(payload['moe_fc_replay'],indent=2)+'\n')
+    if payload.get('sparse_replay'):
+        (output/'isolated-sparse-counters.json').write_text(json.dumps(payload['sparse_replay'],indent=2)+'\n')
     (output/'selected-layer-data.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':'))+'\n')
     html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload)).replace('<!--KERNEL_RANKING-->',ranking_html(payload))
     (output/'index.html').write_text(html)

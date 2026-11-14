@@ -373,3 +373,26 @@ integer counters, separate capture identity and raw artifact hashes.
 ## Serialized FC1/FC2 physical counters
 
 `serialized-moe-fc-counters.json` is a separately checksum-bound real-a2 baseline observation. It uses application replay and matched per-kernel `gpu__time_duration.sum`, distinct from the earlier aggregate app-range wallclock. `physical_replay.derive_moe_fc` recomputes exact totals, decimal TB/s and physical MBU against the declared7.7TB/s roof. The new table never updates original events/tree metrics or either prior counter dataset. It retains raw CSV/report and independent actual audit hashes without private paths. Serial profiling changes native PDL overlap/cache evolution; concurrent native MBU, X and gain remain unknown.
+
+## Isolated sparse-attention physical counters
+
+`isolated-sparse-counters.json` is a separate GPU5 native baseline observation,
+checksum-bound through the representative selection. `physical_replay.derive_sparse`
+compares the symbol and launch resources with the original sparse event, while
+using only the same serialized NCU row's DRAM bytes and `gpu__time_duration.sum`
+for bandwidth and nominal physical MBU. The original trace, tree metrics, kernel
+ranking and previous counter datasets are unchanged. L2 sectors count requested
+32-byte transactions; they do not establish HBM traffic or a cache-hit ratio.
+
+One preparation call and one profiled call each matched the captured output,
+max-logits and LSE exactly, with five inputs unchanged. This is capture/repeat
+agreement, not paired FP64 qualification. Cache and clock controls were disabled;
+the decoded runtime body/order matches sm103a among the two installed candidates
+(3,016 rows and all 304 discriminating PCs) under an audited lossy export
+projection. Exact 128-bit instruction/control-word identity remains unverified;
+`actual_loaded_image` stays null for that scope. Native X, unprofiled latency and
+gains remain unresolved.
+The public summary retains separate input/provider identities and raw report,
+CSV and independent audit hashes. Regenerate only the selected view with
+`single_layer.py` using the existing `report-data.json` and reviewed selection;
+no full-report regeneration or input recapture is required for this addition.

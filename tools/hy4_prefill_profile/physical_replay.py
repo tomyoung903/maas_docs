@@ -127,3 +127,46 @@ def load_moe_fc(payload,nominal_bandwidth):
     require(sha==selection.get('moe_fc_replay_sha256'),'FC summary checksum mismatch')
     out=derive_moe_fc(json.loads(raw),payload,nominal_bandwidth);out['summary_source_sha256']=sha
     return out
+
+def derive_sparse(summary,payload,nominal_bandwidth):
+    """One sparse kernel's serialized counters keep their own duration and origin."""
+    public_safe(summary)
+    require(summary['schema_version']=='hy4-isolated-sparse-counters-v1' and summary['status']=='measured_serialized_per_kernel','unsupported sparse counter scope')
+    selection=payload['selection']
+    require(summary['comparison_source_input_sha256']==payload['full_report_input_sha256'] and summary['comparison_selected_event_ids_sha256']==selection['event_ids_sha256'],'sparse comparison source mismatch')
+    require(summary['comparison_geometry']=={k:selection[k] for k in ('layer','new_tokens','context_before','context_after')},'sparse comparison geometry mismatch')
+    evidence=payload['event_evidence'].get(summary['comparison_event_id']);identity=summary['identity']
+    require(evidence and evidence['family']=='sparse_attention' and evidence['kernel_name']==identity['kernel_name'] and evidence['kernel_symbol_sha256']==identity['kernel_symbol_sha256'],'sparse comparison kernel mismatch')
+    require(hashlib.sha256(identity['kernel_name'].encode()).hexdigest()==identity['kernel_symbol_sha256'],'sparse symbol checksum mismatch')
+    geometry_keys=('gridX','gridY','gridZ','blockX','blockY','blockZ','registersPerThread','staticSharedMemory','dynamicSharedMemory')
+    require(identity['geometry']=={k:evidence['launch_geometry'][k] for k in geometry_keys},'sparse comparison resources mismatch')
+    require(summary['hardware']['physical_gpu_index']==5 and summary['hardware']['nominal_bandwidth_roof_tb_s']==nominal_bandwidth,'sparse hardware/roof mismatch')
+    number(nominal_bandwidth,'nominal bandwidth',positive=True)
+    c=summary['collection'];n=summary['numerical'];b=summary['counters'];t=summary['timing']
+    require(c['replay_mode']=='application' and c['app_replay_mode']=='strict' and c['range']=='HY4_SPARSE_NATIVE_COUNTER','sparse collection identity changed')
+    require(tuple(c[k] for k in ('target_starts','preparation_calls','profiled_calls','profiled_kernel_rows','profiling_passes','profiler_warmup_passes'))==(1,1,1,1,1,0),'sparse collection census changed')
+    require(c['cache_control']==c['clock_control']=='none' and c['initial_cache_state']=='uncontrolled','sparse operating scope changed')
+    require(t['metric']=='gpu__time_duration.sum','sparse duration is not the matching kernel metric')
+    number(t['profiled_duration_ns'],'sparse profiled duration',integer=True,positive=True)
+    for key,value in b.items():number(value,key,integer=True)
+    require(b['dram_total_bytes']==b['dram_read_bytes']+b['dram_write_bytes'],'sparse DRAM total mismatch')
+    require(b['l2_sector_bytes']==32 and b['l2_requested_bytes']==32*b['l2_requested_sectors'],'sparse L2 requested bytes mismatch')
+    require(n['calls']==2 and n['output_elements_per_call']==[268435456,524288,524288] and n['output_bit_mismatches']==n['output_nonfinite']==0 and n['five_input_buffers_exact_at_four_boundaries'] is True and n['original_shapes_strides_alignment_preserved'] is True and n['FP64_qualified'] is False,'sparse native baseline checks differ')
+    require(any(a['label']=='independent sparse counter audit' and len(a['sha256'])==64 for a in summary['artifacts']),'sparse independent audit missing')
+    require(identity['actual_loaded_image'] is None,'sparse device-image attribution remains unresolved')
+    for key in ('unprofiled_native_latency_ms','historical_request_physical_MBU','nativeX','cache_hit_ratio','per_operand_traffic','performance_gain'):
+        require(summary[key] is None,'unsupported sparse inference: '+key)
+    out=copy.deepcopy(summary)
+    out['profiled_duration_ms']=t['profiled_duration_ns']/1e6
+    out['matched_bandwidth_tb_s']=b['dram_total_bytes']/t['profiled_duration_ns']/1000
+    out['matched_physical_mbu_percent']=100*out['matched_bandwidth_tb_s']/nominal_bandwidth
+    return out
+
+def load_sparse(payload,nominal_bandwidth):
+    selection=payload['selection'];name=selection.get('sparse_replay_file')
+    if name is None:return None
+    require(name=='isolated-sparse-counters.json','unsupported sparse summary file')
+    raw=(HERE/name).read_bytes();sha=hashlib.sha256(raw).hexdigest()
+    require(sha==selection.get('sparse_replay_sha256'),'sparse counter checksum mismatch')
+    out=derive_sparse(json.loads(raw),payload,nominal_bandwidth);out['summary_source_sha256']=sha
+    return out

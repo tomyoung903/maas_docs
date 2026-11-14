@@ -59,6 +59,17 @@
     $('moe-fc-validation').textContent=`Both native calls matched all ${num(fc.numerical.values_per_call,0)} BF16 output values bitwise; routes were unchanged. Initial cache was uncontrolled, with cache/clock controls disabled. Routing and finalization are excluded from this table, so it is not a decomposition of the earlier aggregate range. Original tree times, MFU and useful-byte estimates remain unchanged.`;
     for(const note of fc.limitations)$('moe-fc-notes').append(el('li','',note));
   }
+  const sparse=data.sparse_replay;
+  if(sparse){
+    $('physical-memory').hidden=false;$('sparse-physical-memory').hidden=false;
+    const b=sparse.counters,n=sparse.numerical;
+    $('sparse-replay-scope').textContent=`Separate GPU${sparse.hardware.physical_gpu_index} replay of represented captured inputs using the original installed sparse-attention API. One preparation call preceded one selected NCU kernel row, collected in one pass with zero profiler warmups. Its symbol and launch resources match the selected layer's sparse kernel; this is a separate serialized observation.`;
+    const rows=[['DRAM read',`${num(b.dram_read_bytes,0)} B`],['DRAM write',`${num(b.dram_write_bytes,0)} B`],['DRAM total',`${num(b.dram_total_bytes,0)} B`],['L2 requested sectors',`${num(b.l2_requested_sectors,0)} × 32 B = ${num(b.l2_requested_bytes,0)} B`],['Matched profiled kernel duration',`${num(sparse.profiled_duration_ms,6)} ms`],['Matched DRAM bandwidth',`${num(sparse.matched_bandwidth_tb_s,6)} TB/s`],['Matched physical MBU',`${num(sparse.matched_physical_mbu_percent,6)}%`]];
+    for(const [label,value] of rows){const tr=el('tr'),th=el('th','',label);th.scope='row';tr.append(th,el('td','',value));$('sparse-replay-rows').append(tr);}
+    $('sparse-replay-definition').textContent=`Bandwidth uses DRAM read + write bytes divided by this same NCU row's gpu__time_duration.sum. Physical MBU divides that rate by the nominal ${num(sparse.hardware.nominal_bandwidth_roof_tb_s,1)} TB/s HBM roof; TB is decimal. The original trace duration is not used. L2 requested bytes are not HBM traffic and do not establish a cache-hit ratio or bottleneck.`;
+    $('sparse-replay-validation').textContent=`Both calls matched the captured output (${num(n.output_elements_per_call[0],0)} BF16 values), max-logits and LSE (${num(n.output_elements_per_call[1],0)} FP32 values each), with zero bit mismatches or nonfinite values; the profiled call also matched preparation. All five inputs stayed exact. Inputs were reused after preparation and host checks; cache and clock controls were disabled. Provider file/maps identity is bound. The ${num(sparse.identity.decoded_correspondence.instruction_rows,0)} exported decoded instruction rows and all ${num(sparse.identity.decoded_correspondence.discriminating_PCs,0)} discriminating PCs match sm103a among the two installed candidates under the audited export projection; exact 128-bit instruction/control-word identity remains unverified. This is not paired FP64 candidate validation, unprofiled latency, a native X estimate or an optimization gain. Original tree times, MFU and useful-byte estimates remain unchanged.`;
+    for(const note of sparse.limitations)$('sparse-replay-notes').append(el('li','',note));
+  }
   const toggles=[];
   const eventById=new Map(data.events.map(event=>[event.id,event]));
   const semanticEventTitles=new Map();

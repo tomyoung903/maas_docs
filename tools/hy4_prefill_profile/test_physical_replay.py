@@ -109,4 +109,22 @@ class MoEFCReplayTests(unittest.TestCase):
   with self.assertRaises(ValueError):physical_replay.load_moe_fc(self.payload,7.7)
   self.assertIsNone(physical_replay.load_moe_fc({'selection':{}},7.7))
 
+class SparseReplayTests(unittest.TestCase):
+ def test_separate_scope_preserves_trace_and_rejects_other_denominators(self):
+  summary=json.loads((HERE/'isolated-sparse-counters.json').read_text())
+  selection=json.loads((HERE/'representative-selection.json').read_text())
+  payload={'selection':selection,'full_report_input_sha256':selection['source_input_sha256'],
+   'event_evidence':json.loads((HERE/'representative-semantics.json').read_text())['event_evidence'],
+   'tree':{'time_ms':2.450297,'mfu_percent':38,'mbu_percent':None},'events':[{'duration_ns':2450297}],
+   'physical_replay':{'unchanged':True},'moe_range_replay':{'unchanged':True},'moe_fc_replay':{'unchanged':True}}
+  before=copy.deepcopy(payload);source=copy.deepcopy(summary)
+  result=physical_replay.derive_sparse(summary,payload,7.7)
+  self.assertEqual(payload,before);self.assertEqual(summary,source)
+  self.assertEqual(result['profiled_duration_ms'],2.070624)
+  self.assertAlmostEqual(result['matched_physical_mbu_percent'],9.244938874314366)
+  for change in [lambda s:s['timing'].update(metric='original_trace_duration_ns'),
+                 lambda s:s.update(comparison_event_id='sqlite-kernel-9597')]:
+   bad=copy.deepcopy(summary);change(bad)
+   with self.assertRaises(ValueError):physical_replay.derive_sparse(bad,payload,7.7)
+
 if __name__=='__main__':unittest.main()
