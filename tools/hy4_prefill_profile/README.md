@@ -396,3 +396,14 @@ The public summary retains separate input/provider identities and raw report,
 CSV and independent audit hashes. Regenerate only the selected view with
 `single_layer.py` using the existing `report-data.json` and reviewed selection;
 no full-report regeneration or input recapture is required for this addition.
+
+## Later evidence note (15 November 2026)
+
+`later-evidence-note.json` is a public-safe, audit-hashed projection of later
+serialized counter and component/source findings. `single_layer.py` renders it
+as a separate static section using existing page classes. It is not merged into
+selected-layer metrics, tree rows, ranking or timeline. Its six counter samples
+use later a2 inputs; original layer53/forward11 timing denominators are preserved.
+Full native X, original concurrent physical MBU and prefill gain remain unknown.
+Regenerate only the selected page with the `single_layer.py` CLI when the full
+report is unchanged. Prior failed experiments remain retained in the evidence.

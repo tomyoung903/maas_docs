@@ -1,0 +1,540 @@
+{
+  "schema_version": "hy4-later-evidence-note-v1",
+  "as_of_sgt": "2026-11-15T06:05:45+08:00",
+  "title": "Later evidence: replay counters and partial models",
+  "scope": "The tree above remains the original layer 53 / forward 11 capture. These later a2 replays and component studies are separate evidence; matching token geometry does not establish the same capture, execution, cache state or timing denominator. No original Y, MFU, byte estimate or timeline interval is replaced.",
+  "native_X": null,
+  "original_capture_physical_MBU": null,
+  "full_prefill_gain": null,
+  "sections": [
+    {
+      "title": "FC1 / FC2: six fixed serialized counter samples",
+      "paragraphs": [
+        "B is original N192; C selects N128 tactic (128, 1), changing both FC1 and FC2. Three pairs were collected in the fixed order B,C / C,B / B,C. Each sample has one preparation call and one profiled MoE call; FC1 and FC2 each have one NCU pass and zero profiler warmups. PDL arguments are preserved, but application replay serializes the kernel observations. Cache state and clocks were uncontrolled.",
+        "Ranges below contain all three samples per arm, in bytes. They are descriptive ranges, not confidence intervals. Total-traffic differences C − B in pair order are FC1: +1,363,712, +1,304,576, +1,725,184 B; FC2: -1,087,744, -1,387,520, -492,544 B. FC1 read traffic rises while write traffic falls; its total rises in all three pairs. This does not establish a cache mechanism or explain the separate latency result.",
+        "All six samples retained full finite-output and route checks; capture bit agreement is diagnostic, not paired FP64 qualification. No rate here uses a historical tree or U/S duration. A same-row profiler-duration rate describes this serialized protocol only; original concurrent HBM MBU remains unknown.",
+        "A separate 90%-of-nominal compute/HBM partial scenario gives 0.583088–0.583117 ms for B and 0.582268–0.582318 ms for C. Its three paired differences are only 0.770–0.830 µs. These assumed-rate scenarios omit native instruction, synchronization, SwiGLU/scale/quantization, L2/shared/TMEM and placement/cache effects; they are not attainable native X or removable time."
+      ],
+      "headers": [
+        "Kernel / arm",
+        "DRAM read range · B",
+        "DRAM write range · B",
+        "DRAM total range · B"
+      ],
+      "rows": [
+        [
+          "FC1 original N192",
+          "3,825,462,272–3,825,634,304",
+          "97,703,936–97,733,888",
+          "3,923,166,976–3,923,368,192"
+        ],
+        [
+          "FC1 N128 (128, 1)",
+          "3,830,347,008–3,830,683,904",
+          "94,197,760–94,277,632",
+          "3,924,544,768–3,924,892,160"
+        ],
+        [
+          "FC2 original N192",
+          "1,891,315,456–1,891,734,528",
+          "793,720,064–794,324,992",
+          "2,685,035,520–2,686,059,520"
+        ],
+        [
+          "FC2 N128 (128, 1)",
+          "1,890,263,808–1,890,287,616",
+          "794,114,304–794,384,384",
+          "2,684,378,112–2,684,672,000"
+        ]
+      ]
+    },
+    {
+      "title": "Indexer: a qualified carried-FFMA2 component",
+      "paragraphs": [
+        "The independent 147-CTA component has one or eight active warps, 168 registers and 220,160 B dynamic shared memory, with a calculated occupancy capacity of one CTA per SM; simultaneous residency was not measured. An affine full-graph completion model trains on 2,048 and 3,072 repeats and validates at 4,096. The observed slope includes loop/control and the complete component boundary; it is not native indexer arithmetic capacity.",
+        "All six held-out relative errors are 0.002326%–0.008380%; all 108 measured-window clock coverage checks pass, with sampled SM/memory clocks 2,032/3,996 MHz. The component passed 79,380 full-stage and 13,230 fresh paired numerical decisions. Final observations cover the retained terminal arrays, not every internal graph invocation.",
+        "Changing active warps also changes scheduler-partition coverage. The native mixed FFMA2/FADD2/merge chain, tensor/memory dependencies and Top-K are not represented by this component. No native X or gain follows; earlier collapsed-loop, scheduling and observer failures remain retained."
+      ],
+      "headers": [
+        "Active warps per CTA",
+        "Completion slope · ns/repeat",
+        "Warp FFMA2 instructions/repeat"
+      ],
+      "rows": [
+        [
+          "1",
+          "51.177189–51.181477",
+          "4,704"
+        ],
+        [
+          "8",
+          "94.465456–94.490082",
+          "37,632"
+        ]
+      ]
+    },
+    {
+      "title": "Sparse attention: emitted schedule and scenario assumptions",
+      "paragraphs": [
+        "Installed 152-register and rebuilt 147-register executables remain distinct. The audited softmax core has 59/23 instruction sites before/after the prior-SV wait in the installed body, versus 74/8 in the rebuild. The old-output rescale exponential is already moved before that wait in the rebuild. Their O-rescale bodies match after the documented register renaming; this does not prove equal control encoding or isolate whole-executable timing causality.",
+        "Fresh-output paired observations favored the rebuild in 23/24 unprofiled endpoint pairs and all 24 profiled kernel pairs. Both arms passed 72 paired FP64 decisions per mode and covered clock gates. Each mode failed one held-out magnitude-membership check; one unprofiled pair was adverse. Returned output/max/LSE checks on three rows do not qualify hidden QK/probability/SV pre-rounding stages, stress cases or installed-versus-ctypes API equivalence.",
+        "The historical tensor-only partial is 1.050596722 ms at 100% nominal BF16 capacity, or 1.167329692 ms at an assumed 90%. Both use 2,336,462,209,024 FLOPs, 2.25 PFLOP/s, 148 SMs and a finite-placement factor 259/256 (52 SMs × 56 queries, 96 × 55). Only the assumed efficiency differs. All nonmatrix durations are omitted; neither number is a calibrated or attainable native X."
+      ]
+    }
+  ],
+  "retained_limits": [
+    "No full fused-stage FP64 qualification is asserted. The separate FC1 endpoint screen covers only output[9,0].",
+    "Prior N64, copy/hybrid, interleaved-M64 and failed calibration evidence remains distinct; no closed result is overwritten.",
+    "No minimum-gain cutoff applies to these kernels. Prediction-validation tolerances and strict per-case max_abs AND RMSE criteria are separate requirements."
+  ],
+  "counter_rows": [
+    {
+      "sample": 0,
+      "pair": 0,
+      "arm": "B",
+      "role": "FC1",
+      "read_bytes": 3825634304,
+      "write_bytes": 97733888,
+      "total_bytes": 3923368192,
+      "profiled_duration_seconds": "0.00116528000",
+      "geometry": {
+        "gridX": 32,
+        "gridY": 596,
+        "gridZ": 1,
+        "blockX": 896,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 72,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 122520,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "726823eb39cfce5fd4e3df428c1be462ddf77ab13fa33248ca0a03e51ca49571"
+    },
+    {
+      "sample": 0,
+      "pair": 0,
+      "arm": "B",
+      "role": "FC2",
+      "read_bytes": 1891359488,
+      "write_bytes": 794106368,
+      "total_bytes": 2685465856,
+      "profiled_duration_seconds": "0.00062553600",
+      "geometry": {
+        "gridX": 48,
+        "gridY": 596,
+        "gridZ": 1,
+        "blockX": 512,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 128,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 162448,
+        "clusterX": 1,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "726823eb39cfce5fd4e3df428c1be462ddf77ab13fa33248ca0a03e51ca49571"
+    },
+    {
+      "sample": 1,
+      "pair": 0,
+      "arm": "C",
+      "role": "FC1",
+      "read_bytes": 3830454272,
+      "write_bytes": 94277632,
+      "total_bytes": 3924731904,
+      "profiled_duration_seconds": "0.00110310400",
+      "geometry": {
+        "gridX": 32,
+        "gridY": 766,
+        "gridZ": 1,
+        "blockX": 896,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 72,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 193432,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "b8b8c6290571fec7e55e817cfc8777c56d34f2b8a774de2967cdac3c1bb6751d"
+    },
+    {
+      "sample": 1,
+      "pair": 0,
+      "arm": "C",
+      "role": "FC2",
+      "read_bytes": 1890263808,
+      "write_bytes": 794114304,
+      "total_bytes": 2684378112,
+      "profiled_duration_seconds": "0.00052464000",
+      "geometry": {
+        "gridX": 48,
+        "gridY": 766,
+        "gridZ": 1,
+        "blockX": 384,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 168,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 211864,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "b8b8c6290571fec7e55e817cfc8777c56d34f2b8a774de2967cdac3c1bb6751d"
+    },
+    {
+      "sample": 2,
+      "pair": 1,
+      "arm": "C",
+      "role": "FC1",
+      "read_bytes": 3830347008,
+      "write_bytes": 94197760,
+      "total_bytes": 3924544768,
+      "profiled_duration_seconds": "0.00110227200",
+      "geometry": {
+        "gridX": 32,
+        "gridY": 766,
+        "gridZ": 1,
+        "blockX": 896,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 72,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 193432,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "5b0a0030390872244546cfa1ca0c734fcb803ae425be5797c3bc9b2f033fb9f3"
+    },
+    {
+      "sample": 2,
+      "pair": 1,
+      "arm": "C",
+      "role": "FC2",
+      "read_bytes": 1890287616,
+      "write_bytes": 794384384,
+      "total_bytes": 2684672000,
+      "profiled_duration_seconds": "0.00052502400",
+      "geometry": {
+        "gridX": 48,
+        "gridY": 766,
+        "gridZ": 1,
+        "blockX": 384,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 168,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 211864,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "5b0a0030390872244546cfa1ca0c734fcb803ae425be5797c3bc9b2f033fb9f3"
+    },
+    {
+      "sample": 3,
+      "pair": 1,
+      "arm": "B",
+      "role": "FC1",
+      "read_bytes": 3825536256,
+      "write_bytes": 97703936,
+      "total_bytes": 3923240192,
+      "profiled_duration_seconds": "0.00116403200",
+      "geometry": {
+        "gridX": 32,
+        "gridY": 596,
+        "gridZ": 1,
+        "blockX": 896,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 72,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 122520,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "dda17d83d4e0c555ac761a78078a7388d31432dd703724f2af15175522bdf848"
+    },
+    {
+      "sample": 3,
+      "pair": 1,
+      "arm": "B",
+      "role": "FC2",
+      "read_bytes": 1891734528,
+      "write_bytes": 794324992,
+      "total_bytes": 2686059520,
+      "profiled_duration_seconds": "0.00062464000",
+      "geometry": {
+        "gridX": 48,
+        "gridY": 596,
+        "gridZ": 1,
+        "blockX": 512,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 128,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 162448,
+        "clusterX": 1,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "dda17d83d4e0c555ac761a78078a7388d31432dd703724f2af15175522bdf848"
+    },
+    {
+      "sample": 4,
+      "pair": 2,
+      "arm": "B",
+      "role": "FC1",
+      "read_bytes": 3825462272,
+      "write_bytes": 97704704,
+      "total_bytes": 3923166976,
+      "profiled_duration_seconds": "0.00116675200",
+      "geometry": {
+        "gridX": 32,
+        "gridY": 596,
+        "gridZ": 1,
+        "blockX": 896,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 72,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 122520,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "c46667e18f4187b29fd94680716bb1659110071714b0f10690b1d199dffc74bd"
+    },
+    {
+      "sample": 4,
+      "pair": 2,
+      "arm": "B",
+      "role": "FC2",
+      "read_bytes": 1891315456,
+      "write_bytes": 793720064,
+      "total_bytes": 2685035520,
+      "profiled_duration_seconds": "0.00062374400",
+      "geometry": {
+        "gridX": 48,
+        "gridY": 596,
+        "gridZ": 1,
+        "blockX": 512,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 128,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 162448,
+        "clusterX": 1,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "c46667e18f4187b29fd94680716bb1659110071714b0f10690b1d199dffc74bd"
+    },
+    {
+      "sample": 5,
+      "pair": 2,
+      "arm": "C",
+      "role": "FC1",
+      "read_bytes": 3830683904,
+      "write_bytes": 94208256,
+      "total_bytes": 3924892160,
+      "profiled_duration_seconds": "0.00110384000",
+      "geometry": {
+        "gridX": 32,
+        "gridY": 766,
+        "gridZ": 1,
+        "blockX": 896,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 72,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 193432,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "773c8f3e89477b1ed34a3316c8bdab17d9341aa1202dd7a355866474fe5df501"
+    },
+    {
+      "sample": 5,
+      "pair": 2,
+      "arm": "C",
+      "role": "FC2",
+      "read_bytes": 1890264064,
+      "write_bytes": 794278912,
+      "total_bytes": 2684542976,
+      "profiled_duration_seconds": "0.00052454400",
+      "geometry": {
+        "gridX": 48,
+        "gridY": 766,
+        "gridZ": 1,
+        "blockX": 384,
+        "blockY": 1,
+        "blockZ": 1,
+        "registersPerThread": 168,
+        "staticSharedMemory": 0,
+        "dynamicSharedMemory": 211864,
+        "clusterX": 2,
+        "clusterY": 1,
+        "clusterZ": 1
+      },
+      "csv_sha256": "773c8f3e89477b1ed34a3316c8bdab17d9341aa1202dd7a355866474fe5df501"
+    }
+  ],
+  "component_rates": {
+    "scope": "Conditional full147-CTA component slope, includes loop/control. Not native arithmetic capacity.",
+    "conditions": [
+      {
+        "active_warps": 1,
+        "slope_ms_per_repeat_by_block": [
+          5.117718880432104e-05,
+          5.117723643685774e-05,
+          5.1181477220240616e-05
+        ],
+        "FFMA2_warp_instructions_per_repeat": 4704,
+        "represented_FP32_FLOPs_per_repeat": 602112,
+        "equivalent_TFLOP_per_second_by_block": [
+          11.765241781884704,
+          11.765230831541349,
+          11.764255990678679
+        ]
+      },
+      {
+        "active_warps": 8,
+        "slope_ms_per_repeat_by_block": [
+          9.446545598274542e-05,
+          9.448039539468783e-05,
+          9.449008154429418e-05
+        ],
+        "FFMA2_warp_instructions_per_repeat": 37632,
+        "represented_FP32_FLOPs_per_repeat": 4816896,
+        "equivalent_TFLOP_per_second_by_block": [
+          50.991083988202305,
+          50.98302118526941,
+          50.97779493122757
+        ]
+      }
+    ],
+    "rho_b8_over_8b1_by_block": [
+      0.23073135265386396,
+      0.2307676273006099,
+      0.23077216279263238
+    ],
+    "rho_also_changes_scheduler_partition_coverage": true
+  },
+  "tensor_scenario": {
+    "FLOP": 2336462209024,
+    "nominal_BF16_FLOP_per_s": 2250000000000000,
+    "SMs": 148,
+    "placement": "52 SMs x56 queries +96 x55; maximum56",
+    "finite_vs_fluid_ratio": "259/256",
+    "100pct_finite_ms": 1.0505967224604444,
+    "90pct_finite_ms": 1.167329691622716,
+    "ratio_90_to_100": "10/9",
+    "interpretation": "Same work and finite skeleton; only explicit assumed efficiency differs. Both omit all nonmatrix durations and are not native X. Arithmetic verified against retained outputs; no TileSight rerun.",
+    "retained_TileSight_revision": "c73c9fbc5d256276e93a3f8a10d1099e5bc7dc49"
+  },
+  "artifacts": [
+    {
+      "label": "Six-sample counter identity and scope audit",
+      "bytes": 90910,
+      "sha256": "872ae5c428fe9afb06f6e9fe7226e6cbf9775d3d5a9d62da3ccbf9b0ac9e3ac3"
+    },
+    {
+      "label": "Counter role rows",
+      "bytes": 13834,
+      "sha256": "930a9f241a790a2dd04498668e5a2021883b7a1079ec674be5da66de3df1137a"
+    },
+    {
+      "label": "Six counter-informed partial scenarios",
+      "bytes": 7544,
+      "sha256": "ee4c3db10a19e74537c0bbdb32fa27cc082c224aa254db0653d406f00cf61d98"
+    },
+    {
+      "label": "Independent partial-scenario review",
+      "bytes": 28996,
+      "sha256": "0712eb5cb24d746cb91304d9208a1fa49c9756364a058d363873b9ed92f66f95"
+    },
+    {
+      "label": "Indexer component actual analysis",
+      "bytes": 88344,
+      "sha256": "f2fd3a6202ced50cc5a5767b05cedfaa8ac7f897e68073b198670f7ce5eab2e5"
+    },
+    {
+      "label": "Indexer component independent audit",
+      "bytes": 10393,
+      "sha256": "f883617f2c2f63e31b59d0a90f3c57e62d08a77a39f9eba9501bc1a627f8bcfb"
+    },
+    {
+      "label": "Sparse emitted dependency and scenario audit",
+      "bytes": 64468,
+      "sha256": "3c3b7a6039f2f3a474d86ff864e7f5d5ebd03d7953c548260f0b698e0ed1d5c6"
+    },
+    {
+      "label": "Sparse fresh-output independent actual audit",
+      "bytes": 9498,
+      "sha256": "69c8414b7eba6d565c6f1f322ff856ad63a5cf64b6d94687611421aea17b70a3"
+    }
+  ],
+  "sparse_observed_summary": {
+    "U_event": {
+      "B_median_ms": 2.1004480123519897,
+      "C_median_ms": 2.0592799186706543,
+      "median_block_gain_us": 42.84006357192993,
+      "block_gains_us": [
+        42.047977447509766,
+        38.46395015716553,
+        44.1279411315918,
+        39.58404064178467,
+        43.6321496963501,
+        45.66395282745361
+      ],
+      "pair_range_us": [
+        -95.52001953125,
+        189.59999084472656
+      ],
+      "heldout_inside_characterization_range": [
+        true,
+        false
+      ],
+      "adverse_pairs": [
+        {
+          "block": 4,
+          "pair": 3,
+          "gain_us": -95.52001953125
+        }
+      ]
+    },
+    "S_kernel": {
+      "B_median_ms": 2.069044,
+      "C_median_ms": 2.025028,
+      "median_block_gain_us": 44.71274999999997,
+      "block_gains_us": [
+        44.89650000000012,
+        44.640999999999934,
+        42.51249999999995,
+        96.35250000000006,
+        41.968,
+        44.78450000000001
+      ],
+      "pair_range_us": [
+        40.28799999999988,
+        147.13699999999986
+      ],
+      "heldout_inside_characterization_range": [
+        false,
+        true
+      ],
+      "adverse_pairs": []
+    }
+  },
+  "sparse_optimization_accepted": false
+}

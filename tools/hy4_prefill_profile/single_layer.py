@@ -118,9 +118,34 @@ def ranking_html(payload):
 <div class="launch-equation">{total:.6f} ms sum − {total-active:.6f} ms overlap excess + {span-active:.6f} ms gaps = {span:.6f} ms elapsed span</div>
 <p>These are recorded intervals for one layer invocation, not the full 100k request. Durations can include synchronization waits; neither overlap nor a low MFU proves that time is removable. The model tree describes ownership, not a serialized execution schedule.</p></details>'''
 
+def later_evidence_html(note):
+    """Separate later evidence; never add its values to selected-layer metrics."""
+    parts=['<section class="band" id="later-evidence"><h2>'+escape(note['title'])+'</h2>',
+           '<p class="lede">'+escape(note['scope'])+'</p>']
+    for section in note['sections']:
+        parts.append('<div class="moe-range"><h3>'+escape(section['title'])+'</h3>')
+        for paragraph in section['paragraphs']:
+            parts.append('<p class="selected-scope">'+escape(paragraph)+'</p>')
+        if 'rows' in section:
+            parts.append('<div class="counter-table-wrap"><table class="counter-table"><thead><tr>')
+            parts.extend('<th scope="col">'+escape(v)+'</th>' for v in section['headers'])
+            parts.append('</tr></thead><tbody>')
+            for row in section['rows']:
+                parts.append('<tr><th scope="row">'+escape(row[0])+'</th>')
+                parts.extend('<td>'+escape(v)+'</td>' for v in row[1:])
+                parts.append('</tr>')
+            parts.append('</tbody></table></div>')
+        parts.append('</div>')
+    parts.append('<details class="counter-method"><summary>Scope limits and evidence hashes</summary><ul class="notes">')
+    parts.extend('<li>'+escape(v)+'</li>' for v in note['retained_limits'])
+    parts.append('</ul><p><a href="later-evidence-note.json" download>Later evidence summary, exact counter rows and audit hashes</a></p></details></section>')
+    return ''.join(parts)
+
 def render(report, selection, output):
     payload=select(report,selection);output.mkdir(parents=True,exist_ok=True)
-    payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'metric_completion.py',HERE/'physical_replay.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html']]
+    note=json.loads((HERE/'later-evidence-note.json').read_text());public_safe(note)
+    (output/'later-evidence-note.json').write_text(json.dumps(note,indent=2,ensure_ascii=False)+'\n')
+    payload['renderer_sources']=[dict(label=p.name,sha256=hashlib.sha256(p.read_bytes()).hexdigest()) for p in [HERE/'single_layer.py',HERE/'semantic_tree.py',HERE/'metric_completion.py',HERE/'physical_replay.py',HERE/'single-layer-app.js',HERE/'single-layer-style.css',HERE/'single-layer-template.html',HERE/'later-evidence-note.json']]
     if payload.get('physical_replay'):
         (output/'isolated-replay-counters.json').write_text(json.dumps(payload['physical_replay'],indent=2)+'\n')
     if payload.get('moe_range_replay'):
@@ -130,7 +155,7 @@ def render(report, selection, output):
     if payload.get('sparse_replay'):
         (output/'isolated-sparse-counters.json').write_text(json.dumps(payload['sparse_replay'],indent=2)+'\n')
     (output/'selected-layer-data.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':'))+'\n')
-    html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload)).replace('<!--KERNEL_RANKING-->',ranking_html(payload))
+    html=(HERE/'single-layer-template.html').read_text().replace('/*LAYER_STYLE*/',(HERE/'single-layer-style.css').read_text()).replace('/*LAYER_APP*/',(HERE/'single-layer-app.js').read_text()).replace('<!--LAYER_DATA-->',encoded(payload)).replace('<!--KERNEL_RANKING-->',ranking_html(payload)).replace('<!--LATER_EVIDENCE-->',later_evidence_html(note))
     (output/'index.html').write_text(html)
     return payload
 
