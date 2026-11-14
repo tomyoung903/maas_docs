@@ -79,3 +79,51 @@ def load_moe_range(payload):
     require(sha==selection.get('moe_range_replay_sha256'),'MoE summary checksum mismatch')
     out=derive_moe_range(json.loads(raw),payload);out['summary_source_sha256']=sha
     return out
+
+def derive_moe_fc(summary,payload,nominal_bandwidth):
+    """Serialized per-kernel bytes/time remain a separate observation."""
+    public_safe(summary)
+    require(summary['schema_version']=='hy4-serialized-moe-fc-counters-v1' and summary['status']=='measured_serialized_per_kernel','unsupported serialized FC scope')
+    require(summary['comparison_source_input_sha256']==payload['full_report_input_sha256'],'FC comparison source mismatch')
+    require(summary['geometry']=={k:payload['selection'][k] for k in ('layer','new_tokens','context_before','context_after')},'FC comparison geometry mismatch')
+    require(summary['capture']['input_tokens']==100000 and summary['capture']['cached_tokens']==0,'FC capture is not cold100k')
+    require(summary['hardware']['physical_gpu_index']==4 and summary['hardware']['nominal_bandwidth_roof_tb_s']==nominal_bandwidth,'FC hardware/nominal roof mismatch')
+    number(nominal_bandwidth,'nominal bandwidth',positive=True)
+    c=summary['collection'];n=summary['numerical']
+    require(c['replay_mode']=='application' and c['app_replay_mode']=='strict' and c['range']=='HY4_MOE_SERIALIZED_COUNTER','FC replay identity changed')
+    require((c['target_starts'],c['preparation_calls'],c['profiled_calls'],c['selected_kernels'])==(1,1,1,2),'FC collection sequence changed')
+    require(c['observers_restored_before_range'] is True and c['original_pdl_arguments_unchanged'] is True and c['original_native_overlap_preserved'] is False,'FC serialized scope changed')
+    require(c['cache_control']==c['clock_control']=='none' and c['initial_cache_state']=='uncontrolled','FC cache/clock scope changed')
+    require(n['calls']==2 and n['values_per_call']==50331648 and n['bit_mismatches_per_call']==n['nonfinite_per_call']==[0,0] and n['repeat_bit_mismatches']==0 and n['route_ids_and_weights_unchanged'] is True and n['fp64_candidate_validation'] is False,'FC complete baseline qualification failed')
+    require([r['role'] for r in summary['rows']]==['FC1','FC2'],'FC row set/order changed')
+    require(any(a['label']=='independent actual counter audit' and len(a['sha256'])==64 for a in summary['artifacts']),'FC independent audit missing')
+    for key in ('original_concurrent_physical_mbu_percent','native_expected_latency_ms','unprofiled_latency_ms','candidate_speedup'):
+        require(summary[key] is None,'unsupported serialized FC inference: '+key)
+    out=copy.deepcopy(summary)
+    for row in out['rows']:
+        evidence=payload['event_evidence'].get(row['comparison_event_id'])
+        require(evidence and evidence['kernel_name']==row['kernel_name'] and evidence['kernel_symbol_sha256']==row['kernel_symbol_sha256'],'FC comparison symbol mismatch')
+        require(hashlib.sha256(row['kernel_name'].encode()).hexdigest()==row['kernel_symbol_sha256'],'FC symbol checksum mismatch')
+        mapping={'launch__grid_dim_x':'gridX','launch__grid_dim_y':'gridY','launch__grid_dim_z':'gridZ',
+                 'launch__block_dim_x':'blockX','launch__block_dim_y':'blockY','launch__block_dim_z':'blockZ',
+                 'launch__registers_per_thread':'registersPerThread','launch__shared_mem_per_block_static':'staticSharedMemory',
+                 'launch__shared_mem_per_block_dynamic':'dynamicSharedMemory'}
+        require(row['launch_geometry_and_resources']=={k:evidence['launch_geometry'][v] for k,v in mapping.items()},'FC comparison launch geometry mismatch')
+        require(row['cluster_dimensions']==[evidence['launch_geometry'][k] for k in ('clusterX','clusterY','clusterZ')],'FC comparison cluster mismatch')
+        require(row['duration_metric']=='gpu__time_duration.sum','FC kernel duration metric changed')
+        require(row['profiling_passes']==1 and row['ncu_warmup_passes']==0,'FC collection was not one pass')
+        for key in ('read_bytes','write_bytes','profiled_duration_ns'):number(row[key],key,integer=True,positive=key=='profiled_duration_ns')
+        row['total_bytes']=row['read_bytes']+row['write_bytes']
+        row['profiled_duration_ms']=row['profiled_duration_ns']/1e6
+        row['matched_bandwidth_tb_s']=row['total_bytes']/row['profiled_duration_ns']/1000
+        row['matched_physical_mbu_percent']=100*row['matched_bandwidth_tb_s']/nominal_bandwidth
+    return out
+
+def load_moe_fc(payload,nominal_bandwidth):
+    selection=payload['selection'];name=selection.get('moe_fc_replay_file')
+    if name is None:return None
+    require(name=='serialized-moe-fc-counters.json','unsupported FC summary file')
+    raw=(HERE/name).read_bytes();sha=hashlib.sha256(raw).hexdigest()
+    require(sha==selection.get('moe_fc_replay_sha256'),'FC summary checksum mismatch')
+    out=derive_moe_fc(json.loads(raw),payload,nominal_bandwidth);out['summary_source_sha256']=sha
+    return out

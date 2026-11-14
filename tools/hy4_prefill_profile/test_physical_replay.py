@@ -73,4 +73,40 @@ class MoERangeTests(unittest.TestCase):
   self.assertIsNone(physical_replay.load_moe_range({'selection':{}}))
   self.payload['selection']['moe_range_replay_sha256']='0'*64
   with self.assertRaises(ValueError):physical_replay.load_moe_range(self.payload)
+class MoEFCReplayTests(unittest.TestCase):
+ def setUp(self):
+  self.summary=json.loads((HERE/'serialized-moe-fc-counters.json').read_text())
+  self.selection=json.loads((HERE/'representative-selection.json').read_text())
+  semantics=json.loads((HERE/'representative-semantics.json').read_text())
+  self.payload={'selection':self.selection,'full_report_input_sha256':self.selection['source_input_sha256'],
+   'event_evidence':semantics['event_evidence'],'tree':{'time_ms':2.18463,'mfu_percent':17,'mbu_percent':23},
+   'events':[{'duration_ns':2184630}],'physical_replay':{'unchanged':True},'moe_range_replay':{'unchanged':True}}
+ def test_exact_matched_kernel_metrics_preserve_all_other_scopes(self):
+  before=copy.deepcopy(self.payload);original=copy.deepcopy(self.summary)
+  result=physical_replay.derive_moe_fc(self.summary,self.payload,7.7)
+  self.assertEqual(self.payload,before);self.assertEqual(self.summary,original)
+  a,b=result['rows'];self.assertEqual((a['total_bytes'],b['total_bytes']),(3923638016,2685093632))
+  self.assertEqual((a['profiled_duration_ms'],b['profiled_duration_ms']),(1.166176,0.62448))
+  self.assertAlmostEqual(a['matched_physical_mbu_percent'],43.695237999)
+  self.assertAlmostEqual(b['matched_physical_mbu_percent'],55.840612782)
+  for key in ('original_concurrent_physical_mbu_percent','native_expected_latency_ms','unprofiled_latency_ms','candidate_speedup'):self.assertIsNone(result[key])
+ def test_duration_scope_and_qualification_mutations_rejected(self):
+  changes=[lambda s:s['rows'][0].update(duration_metric='gpu__time_duration_measured_wallclock.sum'),
+   lambda s:s['collection'].update(replay_mode='app-range'),lambda s:s['collection'].update(original_native_overlap_preserved=True),
+   lambda s:s['capture'].update(cached_tokens=90112),lambda s:s['rows'][0].update(profiling_passes=2),
+   lambda s:s['numerical'].update(values_per_call=1),lambda s:s.update(native_expected_latency_ms=1),
+   lambda s:s['rows'][0]['launch_geometry_and_resources'].update(launch__grid_dim_y=493),
+   lambda s:s['rows'][1].update(cluster_dimensions=[0,0,0]),
+   lambda s:s.update(artifacts=[a for a in s['artifacts'] if a['label']!='independent actual counter audit'])]
+  for change in changes:
+   item=copy.deepcopy(self.summary);change(item)
+   with self.assertRaises(ValueError):physical_replay.derive_moe_fc(item,self.payload,7.7)
+ def test_roof_private_data_and_checksum(self):
+  with self.assertRaises(ValueError):physical_replay.derive_moe_fc(self.summary,self.payload,8)
+  self.summary['artifacts'].append({'label':'/workspace/private','sha256':'0'*64})
+  with self.assertRaises(ValueError):physical_replay.derive_moe_fc(self.summary,self.payload,7.7)
+  self.payload['selection']['moe_fc_replay_sha256']='0'*64
+  with self.assertRaises(ValueError):physical_replay.load_moe_fc(self.payload,7.7)
+  self.assertIsNone(physical_replay.load_moe_fc({'selection':{}},7.7))
+
 if __name__=='__main__':unittest.main()

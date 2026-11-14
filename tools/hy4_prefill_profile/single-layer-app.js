@@ -46,6 +46,19 @@
     $('moe-range-validation').textContent=`Both native calls matched all ${num(moe.numerical.values_per_call,0)} BF16 output values bitwise against the capture and each other, with no nonfinite values; route IDs and weights were unchanged. Observers were removed before the selected range. One pass, zero profiler warmups, uncontrolled initial cache; cache and clock controls disabled. No optimization gain or FP64 candidate validation is claimed.`;
     for(const note of moe.limitations)$('moe-range-notes').append(el('li','',note));
   }
+  const fc=data.moe_fc_replay;
+  if(fc){
+    $('physical-memory').hidden=false;$('moe-fc-physical-memory').hidden=false;
+    $('moe-fc-scope').textContent=`Separate GPU4 replay of the real cold100k packet at the same layer ${s.layer} and ${num(s.new_tokens,0)}-token chunk geometry. NCU application replay serializes FC1 and FC2. Original PDL arguments were unchanged, but native overlap and cache evolution were not preserved. The raw CSV contains exactly these two kernels, one pass each.`;
+    for(const row of fc.rows){
+      const tr=el('tr'),th=el('th','',row.label);th.scope='row';tr.append(th);
+      for(const value of [num(row.read_bytes,0),num(row.write_bytes,0),num(row.total_bytes,0),num(row.profiled_duration_ms,6),num(row.matched_bandwidth_tb_s,6),`${num(row.matched_physical_mbu_percent,6)}%`])tr.append(el('td','',value));
+      $('moe-fc-rows').append(tr);
+    }
+    $('moe-fc-definition').textContent=`Each denominator is its matching profiled gpu__time_duration.sum, not original trace time or the earlier complete-range wall clock. Physical MBU = total DRAM bytes ÷ (matched kernel duration × ${num(fc.hardware.nominal_bandwidth_roof_tb_s,1)} TB/s nominal HBM roof). TB uses decimal units. Original concurrent physical MBU, native expected time X and gains remain unknown.`;
+    $('moe-fc-validation').textContent=`Both native calls matched all ${num(fc.numerical.values_per_call,0)} BF16 output values bitwise; routes were unchanged. Initial cache was uncontrolled, with cache/clock controls disabled. Routing and finalization are excluded from this table, so it is not a decomposition of the earlier aggregate range. Original tree times, MFU and useful-byte estimates remain unchanged.`;
+    for(const note of fc.limitations)$('moe-fc-notes').append(el('li','',note));
+  }
   const toggles=[];
   const eventById=new Map(data.events.map(event=>[event.id,event]));
   const semanticEventTitles=new Map();

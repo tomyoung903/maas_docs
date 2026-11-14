@@ -1,0 +1,173 @@
+{
+  "schema_version": "hy4-serialized-moe-fc-counters-v1",
+  "status": "measured_serialized_per_kernel",
+  "comparison_source_input_sha256": "7a5f4910df3ac78a77457cdd28210aeb9bcad8127da95efa4c6e58055807b9e7",
+  "geometry": {
+    "layer": 53,
+    "new_tokens": 8192,
+    "context_before": 90112,
+    "context_after": 98304
+  },
+  "capture": {
+    "scope": "Separate real-weight cold 100,000-token request; same layer/chunk geometry as the original tree, not the same execution.",
+    "input_tokens": 100000,
+    "cached_tokens": 0,
+    "packet_manifest_sha256": "ca80359bcff2d4a07856b20eef83e1ae3b1ed52136ec838f093a6f110000b3bf",
+    "qualification_sha256": "657beab427997adadffdeeebe6af55cb45d7443ecf3b8c4d4b646fd6f50f3988"
+  },
+  "observed_sgt": "2026-11-14T10:42:35.222270+08:00",
+  "hardware": {
+    "gpu": "NVIDIA B300",
+    "physical_gpu_index": 4,
+    "nominal_bandwidth_roof_tb_s": 7.7
+  },
+  "collection": {
+    "ncu_version": "2026.2.1.0",
+    "replay_mode": "application",
+    "app_replay_mode": "strict",
+    "range": "HY4_MOE_SERIALIZED_COUNTER",
+    "target_starts": 1,
+    "preparation_calls": 1,
+    "profiled_calls": 1,
+    "selected_kernels": 2,
+    "observers_restored_before_range": true,
+    "original_pdl_arguments_unchanged": true,
+    "original_native_overlap_preserved": false,
+    "cache_control": "none",
+    "clock_control": "none",
+    "initial_cache_state": "uncontrolled"
+  },
+  "rows": [
+    {
+      "role": "FC1",
+      "label": "FC1 \u00b7 gate/up, SwiGLU, quantize",
+      "comparison_event_id": "sqlite-kernel-9617",
+      "kernel_name": "bmm_E2m1_E2m1E2m1_Fp32_Ab16_Bb16_Cb16_t128x192x256u2_s3_et128x64_m256x192x64_c2x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_tma_tmaSf_rgTma_clmp_swiGlu_dynB_sm100f",
+      "kernel_symbol_sha256": "5544dc10c03a45ae4ab5bb5d1624edf4dd574f1b5686c5b811a091ab4c465791",
+      "read_bytes": 3825713408,
+      "write_bytes": 97924608,
+      "profiled_duration_ns": 1166176,
+      "duration_metric": "gpu__time_duration.sum",
+      "profiling_passes": 1,
+      "ncu_warmup_passes": 0,
+      "launch_geometry_and_resources": {
+        "launch__block_dim_x": 896,
+        "launch__block_dim_y": 1,
+        "launch__block_dim_z": 1,
+        "launch__grid_dim_x": 32,
+        "launch__grid_dim_y": 596,
+        "launch__grid_dim_z": 1,
+        "launch__registers_per_thread": 72,
+        "launch__shared_mem_per_block_dynamic": 122520,
+        "launch__shared_mem_per_block_static": 0
+      },
+      "cluster_dimensions": [
+        2,
+        1,
+        1
+      ],
+      "total_bytes": 3923638016,
+      "profiled_duration_ms": 1.166176,
+      "matched_bandwidth_tb_s": 3.36453332601597,
+      "matched_physical_mbu_percent": 43.695238000207404
+    },
+    {
+      "role": "FC2",
+      "label": "FC2 \u00b7 down projection",
+      "comparison_event_id": "sqlite-kernel-9618",
+      "kernel_name": "bmm_Bfloat16_E2m1E2m1_Fp32_Ab16_Bb16_t128x192x256u2_s3_et128x64_m128x192x64_c1x1x1_rM_TN_transOut_schPd2x1x2x3_biasFp32M_bN_rgTma_clmp_dynB_sm100f",
+      "kernel_symbol_sha256": "61f2b78380690a6bc3781c4b566368854b0e4dbd0fcdbdb7753ca6e2bc5889cc",
+      "read_bytes": 1891316736,
+      "write_bytes": 793776896,
+      "profiled_duration_ns": 624480,
+      "duration_metric": "gpu__time_duration.sum",
+      "profiling_passes": 1,
+      "ncu_warmup_passes": 0,
+      "launch_geometry_and_resources": {
+        "launch__block_dim_x": 512,
+        "launch__block_dim_y": 1,
+        "launch__block_dim_z": 1,
+        "launch__grid_dim_x": 48,
+        "launch__grid_dim_y": 596,
+        "launch__grid_dim_z": 1,
+        "launch__registers_per_thread": 128,
+        "launch__shared_mem_per_block_dynamic": 162448,
+        "launch__shared_mem_per_block_static": 0
+      },
+      "cluster_dimensions": [
+        1,
+        1,
+        1
+      ],
+      "total_bytes": 2685093632,
+      "profiled_duration_ms": 0.62448,
+      "matched_bandwidth_tb_s": 4.299727184217269,
+      "matched_physical_mbu_percent": 55.84061278204245
+    }
+  ],
+  "numerical": {
+    "calls": 2,
+    "values_per_call": 50331648,
+    "bit_mismatches_per_call": [
+      0,
+      0
+    ],
+    "nonfinite_per_call": [
+      0,
+      0
+    ],
+    "repeat_bit_mismatches": 0,
+    "route_ids_and_weights_unchanged": true,
+    "fp64_candidate_validation": false
+  },
+  "original_concurrent_physical_mbu_percent": null,
+  "native_expected_latency_ms": null,
+  "unprofiled_latency_ms": null,
+  "candidate_speedup": null,
+  "artifacts": [
+    {
+      "label": "target-start.json",
+      "bytes": 73,
+      "sha256": "fd4c133312c9ec28b26ea11fe53e7bd7fcaff6b73bbaaa659be02df9e9f34d5b"
+    },
+    {
+      "label": "numerical.json",
+      "bytes": 19099,
+      "sha256": "89c0e3b6957f42c312da9367f5a62ca402546feeea0c7bc732c9d9658c1e276c"
+    },
+    {
+      "label": "moe-native-serialized-fc.ncu-rep",
+      "bytes": 865539,
+      "sha256": "067b1cad17f6144b66f5f231655d3d14cfc453279526166f0c41294fafc1aa1a"
+    },
+    {
+      "label": "moe-native-serialized-fc.csv",
+      "bytes": 16999,
+      "sha256": "dd08a8be3dd110b02e44bd7373b384f58fa28ef3583d9a2f3e912af124c50c80"
+    },
+    {
+      "label": "counter qualification receipt",
+      "bytes": 7591,
+      "sha256": "3661a72ff58c76e4ceedd7eedd96533187c8fce1996183cc14bb311c5329c3af"
+    },
+    {
+      "label": "independent actual counter audit",
+      "bytes": 7279,
+      "sha256": "a1a000fe8d4ab33800776bfcd36375df2b6367708f747e62bd6559b930d9b510"
+    },
+    {
+      "label": "acquisition package manifest",
+      "bytes": 4049,
+      "sha256": "c1f3bb7bb577b6417a0090ca7f9d85236145934467db39847db558fdc1e8d64f"
+    }
+  ],
+  "limitations": [
+    "Application replay serializes the selected kernels; unchanged PDL arguments do not preserve native overlap or cache evolution.",
+    "Initial cache was uncontrolled after preparation and full host output/route validation; cache and clock controls were disabled.",
+    "Durations are matching gpu__time_duration.sum values from the two profiled kernel rows, not original trace timings, app-range wallclock or unprofiled latency.",
+    "Routing and finalization are not selected. These two rows are not a decomposition of the earlier aggregate-range counters; the executions and cache conditions differ.",
+    "Physical MBU here uses the matching profiled duration and nominal7.7TB/s roof. Original concurrent physical MBU, calibrated native X and optimization gains remain unknown.",
+    "All50,331,648 BF16 output values matched the real capture and repeat bitwise; routes were unchanged. This is baseline repeatability, not FP64 candidate validation."
+  ],
+  "summary_source_sha256": "f95bcc8262040bca6287086e844e153c9fa8c315c0069c26708670a61002c9fb"
+}

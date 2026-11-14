@@ -369,3 +369,7 @@ profiled-range bandwidth; no native-kernel MBU, per-FC attribution, cache-hit
 ratio, unprofiled latency or speedup is derived. Two full 50,331,648-value
 outputs match the captured baseline exactly. The public download retains
 integer counters, separate capture identity and raw artifact hashes.
+
+## Serialized FC1/FC2 physical counters
+
+`serialized-moe-fc-counters.json` is a separately checksum-bound real-a2 baseline observation. It uses application replay and matched per-kernel `gpu__time_duration.sum`, distinct from the earlier aggregate app-range wallclock. `physical_replay.derive_moe_fc` recomputes exact totals, decimal TB/s and physical MBU against the declared7.7TB/s roof. The new table never updates original events/tree metrics or either prior counter dataset. It retains raw CSV/report and independent actual audit hashes without private paths. Serial profiling changes native PDL overlap/cache evolution; concurrent native MBU, X and gain remain unknown.
