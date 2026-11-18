@@ -2,12 +2,158 @@
   "candidate": "李欣涛",
   "sections": [
     {
-      "title": "简历与项目经历",
-      "subtitle": "待补充",
+      "title": "GPU弹性资源调度（快照恢复与重启）",
+      "subtitle": "阿里控股-智能引擎 · AI infra-大模型推理优化实习生 · 2026.06 - 至今 · 推理引擎（十万卡集群）",
       "excerpts": [
         {
-          "id": "li-resume-pending",
-          "text": "待补充简历中的工作与项目经历原文。"
+          "id": "li-gpu-1",
+          "text": "针对推理服务分时复用 GPU 场景下冷启动代价高的问题，设计并实现基于 NVIDIA cuCheckpointProcess Driver 570+ API 的 GPU 全进程状态冻结/恢复机制：冻结时 Lock 阻塞新 CUDA API 调用并等待 in flight GPU 操作完成，之后Chekpoint 将 GPU 全部状态（模型权重、KV Cache、CUDA Graph、JIT 编译 kernel、CUDA context 与 CUDA stream）整体迁移至 Host RAM 并释放 GPU 占用；恢复时通过 Restor 将 Host RAM 中的 GPU 状态写回 HBM，再通过Unlock 恢复 CUDA API 调用能力，冷启动时间从15~20min 降低至3~5min"
+        },
+        {
+          "id": "li-gpu-2",
+          "text": "针对 GPU 管控平台需求，为 SGLang 推理引擎新增 /suspend、/resume、/is_suspended API；为平台提供分级内存释放能力 L1（KV Cache + CUDA Graph）L2（+ 权重 + 全状态 checkpoint），经 /suspend /resume HTTP 端点暴露给外部编排器，skip_checkpoint 参数支持编排器托管。"
+        },
+        {
+          "id": "li-gpu-3",
+          "text": "针对 NCCL checkpoint 后难以恢复的问题，设计 NCCL 分层销毁方案 checkpoint 后 NCCL communicator 失效 → 只销毁 GPU 端 NCCL group、保留 CPU 端 gloo group 作为 suspend/resume 期间跨 rank barrier 通道，保留GPU 不可用时的同步能力（为后续 checkpoint 的持久化提供技术基础）。"
+        }
+      ]
+    },
+    {
+      "title": "E/PD 分离（视觉推理结果持久化跨节点/请求复用）",
+      "subtitle": "阿里控股-智能引擎 · AI infra-大模型推理优化实习生 · 2026.06 - 至今",
+      "excerpts": [
+        {
+          "id": "li-epd-1",
+          "text": "针对离线推理场景的多模态推理中E编码与PD解码耦合、E推理阶段 CPU bound 严重导致GPU利用率低下、E推理的结果无法多实例复用导致算力浪费的问题 ，设计了 E/PD 分离的解决方案。"
+        },
+        {
+          "id": "li-epd-2",
+          "text": "设计并实现 vision_cache 的计算与命中机制：以 h128(model, url, dtype，tokenizer) 为 key 进行 缓存 fingerprint 计算；E 阶段异步D2H 上传（有界队列背压、幂等重传）；PD 阶段 同步 H2D 下载"
+        },
+        {
+          "id": "li-epd-3",
+          "text": "E 阶段 仅加载视觉部分权重节约显存98%，计算 128 位哈希用于fingerprint，根据 哈希值 向 存储backend 点查是否存在已计算的 vision_cache，如果 缓存命中 则 复用缓存 跳过 URL 下载 与 视觉推理 节约网络IO与算力，接受下一个请求；如果缓存未命中则 依次进行 下载+预处理+视觉推理+向存储的 backend 提交推理结果供多请求复用。"
+        },
+        {
+          "id": "li-epd-4",
+          "text": "PD 阶段 接受与 E 阶段完全相同的请求，计算哈希，cache 命中则复用vision cache，未命中返回错误码保持引擎存活；若命中则复用 cache 存储的 tensor 跳过 URL+预处理+E推理 节约网络 IO 与 算力。"
+        },
+        {
+          "id": "li-epd-5",
+          "text": "针对生产环境的问题持续迭代优化：",
+          "children": [
+            {
+              "id": "li-epd-5-1",
+              "text": "多 TP 场景 选举 rank0 拉取云端 tensor + broadcast 分发，降低通信压力与数据库点查压力"
+            },
+            {
+              "id": "li-epd-5-2",
+              "text": "E阶段 LM 权重拒绝加载、极大降低显存占用，E阶段与PD 阶段完全解耦，提高低算力卡的利用率"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "JIT 编译跨实例复用（MASS 冷启动加速）",
+      "subtitle": "阿里控股-智能引擎 · AI infra-大模型推理优化实习生 · 2026.06 - 至今",
+      "excerpts": [
+        {
+          "id": "li-jit-1",
+          "text": "基于工作1沉淀为平台的工具，针对 MASS服务扩缩容 冷启动重复支付 JIT 编译与 autotune 代价的问题，设计并实现框架无关的分布式编译产物共享引擎 将 torch.compile、tvm_ffi、DeepGEMM、TileLang(MHC prewarm)、FlashInfer autotune、AITER/FlyDSL 的编译与调优结果统一存储在云端，扩容时命中、直接恢复，用 pre-conpile 的方式跳过重复编译；降低冷启动时间"
+        },
+        {
+          "id": "li-jit-2",
+          "text": "设计多层 fingerprint 机制：发布经 直传 + 四层回读校验（SDK CRC64/size → 归档 SHA256 回读 → JSON 相等 → 元数据回读），覆盖去重避免重复发布；拉取端 no-replace 硬链接原子落地、不覆盖本地文件，Cache 异常（损坏/超时/与本地编译器竞争）fall back为本地 JIT 编译"
+        },
+        {
+          "id": "li-jit-3",
+          "text": "在 DeepSeek V4 Flash 305B 模型上端到端冷启动时间下降 42.6%，GLM-5.2, 735B 冷启动时间下降 68.6%"
+        }
+      ]
+    },
+    {
+      "title": "算子开发与优化方向",
+      "subtitle": "阿里云-震旦异构计算 · AI infra-异构计算与性能优化实习生 · 2026.01 - 2026.06",
+      "excerpts": [
+        {
+          "id": "li-ops-1",
+          "text": "调研deepEP的专家并行方案，基于大规模MoE模型训练与推理场景，系统性研究DeepEP在高吞吐 (Normal) 与低延迟(Low-Latency) 两种内核模式下的通信性能特征；"
+        },
+        {
+          "id": "li-ops-2",
+          "text": "基于CUDA在八卡H20上实现 MoE Token 分发（Dispatch）和结果归约（Reduce）模块的 CUDA 实现。",
+          "children": [
+            {
+              "id": "li-ops-2-1",
+              "text": "在Dispatch 阶段使用 atomicAdd 统计每个 rank 上每个 Expert 的 Token 数量，用 CUB BlockScan计算 前缀和 获取起始位置，将数据在显存中聚合成为连续内存，在 Group_gemm 阶段 保证 TMA 保持高效数据搬运；"
+            },
+            {
+              "id": "li-ops-2-2",
+              "text": "在Reduce阶段，使用Shared Memory 暂存映射表和权重，完成 topk 加权归约。相比baseline提高1.42倍"
+            }
+          ]
+        },
+        {
+          "id": "li-ops-3",
+          "text": "基于triton 开发 Linear attention 模块中 的反向传播算子，实际测试中发现反向传播中两部分计算的瓶颈不同，将反向传播设计为两个stage。",
+          "children": [
+            {
+              "id": "li-ops-3-1",
+              "text": "Stage 1计算需要全局归约的梯度 进行 dQ/dH/dZ 的计算，遍历 Q、K 维度，计算局部梯度用 atomic_add 聚合；"
+            },
+            {
+              "id": "li-ops-3-2",
+              "text": "Stage 2 计算 dK/dV 无需全局聚合，但是需要Stage1计算数据的梯度。Stage1采用 autotune 进行自动调优，Stage2使用 Persistent kernel 充分利用多SM资源。相比 pytorch 原生实现的 baseline 提高2倍。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "编译器开发方向",
+      "subtitle": "阿里云-震旦异构计算 · AI infra-异构计算与性能优化实习生 · 2026.01 - 2026.06",
+      "excerpts": [
+        {
+          "id": "li-compiler-1",
+          "text": "针对性调研 Hopper 架构异构 GPU 前沿编译优化技术，重点研读 Flash Fuser 算子融合、PipeThreader 线程流水线调度两大方案，分析编译器在计算访存重叠、指令重排、线程分组调度上的优化逻辑。结合高片上存储需求类算子场景，探究硬件约束下的算子融合策略与编译优化落地思路。"
+        },
+        {
+          "id": "li-compiler-2",
+          "text": "参与基于TLM（张量语言模型） 的深度学习编译器开发，主导张量任务数据构建，搭建并完善代码生成 - 性能评估迭代闭环。深入学习 TVM 全链路工作流程，掌握 Tensor IR 中间表示，理解 AutoTVM、AutoScheduler 自动化调优核心机制，结合大模型张量程序生成思路，探索编译器算子优化与调度加速方案。"
+        }
+      ]
+    },
+    {
+      "title": "L4级端到端智能驾驶",
+      "subtitle": "滴滴 · AI算法实习生 · 2025.11 - 2026.01",
+      "excerpts": [
+        {
+          "id": "li-didi-overview",
+          "text": "参与业务：基于mapTR端到端架构，面向 tile 进行推理，分片建图点云，多 tile 的推理结果（基础语义）基于规则进行聚合，之后进行全局矢量化；针对地图生产，在线与离线模型更新，模型应用于新的地图生产形成闭环。"
+        },
+        {
+          "id": "li-didi-1",
+          "text": "优化地图生产过程中的对于多tile的基础语义的聚合，期间学习了使用KDTree与RTree进行高效的邻域查询。"
+        },
+        {
+          "id": "li-didi-2",
+          "text": "针对地图生产的两个问题进行优化：",
+          "children": [
+            {
+              "id": "li-didi-2-1",
+              "text": "针对crosswalk聚合存在缺失，在pipline中定位问题出现的场景，分析到在点云输入中存在polygon内部点云对聚合形状产生干扰，使用knn近邻算法针对点云输入进行点滤波，在不引入其他问题的基础上解决聚合形状缺失的问题，在广州和上海两个区域召回率分别提高7%与4%；"
+            },
+            {
+              "id": "li-didi-2-2",
+              "text": "针对lanemarking聚合存在误识别，重构原有方法，针对point的点分割加入源数据的索引，利用源数据引导lanemarking聚合，将广州区域lanemarking聚合时产生zigzag概率降低至0%。"
+            }
+          ]
+        },
+        {
+          "id": "li-didi-3",
+          "text": "参与基于mapTR结构的端到端模型架构的的更新训练工作，学习了BEVformer encoder模块在多源数据融合中的应用。"
         }
       ]
     },
