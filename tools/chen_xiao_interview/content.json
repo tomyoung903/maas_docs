@@ -1,0 +1,349 @@
+{
+  "candidate": "陈潇",
+  "sections": [
+    {
+      "title": "跨 DP 动态调度框架 (DyCP)（特性 Owner）",
+      "subtitle": "蚂蚁集团-超级计算部-程序语言与编译器-大模型推理加速 · 2025.06 – 2026.07",
+      "excerpts": [
+        {
+          "id": "cx-dycp-1",
+          "text": "问题与规模效应：MoE 的 dispatch & combine 构成强同步，attn 耗时由最慢的 DP rank 决定；线上观察该不均衡随 DP 度数系统性恶化（长度重尾，而 barrier 取 N 个 rank 的 max）(DyCP RFC)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "RFC vllm#29295 · 本人提交 · 2026-10-29 关闭",
+                "url": "https://github.com/vllm-project/vllm/issues/29295"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cx-dycp-2",
+          "text": "框架与首个应用：引入 Domain 作为中心化调度的作用域（不跨机，EP128 下并行开多个 Domain），域内统一调度算力与各 DP 的剩余 KV 容量，支持同一 step 内并存跨 DP 的 CP 请求与普通 DP 请求，并按 Batch × CP reqs 二维抓图以对齐 CP 集合通信；首个应用为请求粒度动态 CP，把长请求 attn 切到有 slack 的 rank、将 attn 耗时从 max 拉向域内均值。4×H800×8 上 DeepSeek R1 取得 20%∼100% 收益，Kimi K2.5 已在蚂蚁灰度上线并拿到 8% 的 TPOT 收益 (vLLM DyCP(待合入), vLLM-Ascend DyCP(待合入))。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm#44967 · 本人提交 · WIP · 2026-09-16 关闭，未合并",
+                "url": "https://github.com/vllm-project/vllm/pull/44967"
+              },
+              {
+                "label": "vllm-ascend#10225 · 本人提交 · WIP · 未合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/10225"
+              }
+            ],
+            "note": "收益数字未核实"
+          }
+        }
+      ]
+    },
+    {
+      "title": "PD 分离架构核心开发",
+      "subtitle": "蚂蚁集团-超级计算部-程序语言与编译器-大模型推理加速 · 2025.06 – 2026.07",
+      "excerpts": [
+        {
+          "id": "cx-pd-1",
+          "text": "问题：vLLM-Ascend 的 PD 分离仅支持 MLA 格式 KV Cache 的 TP 异构传输，既无法覆盖 GQA 格式模型，也不支持 PD 两侧的 PP 异构。"
+        },
+        {
+          "id": "cx-pd-2",
+          "text": "GQA 支持：设计 GQA 格式 KV Cache 的 reshard 方案，并通过并行化处理使 reshard 几乎无性能损耗，打通 GQA 格式模型的 PD 分离 (PD GQA)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm-ascend#2947 · 他人提交 · 2025-10-13 合并 · 22 个 commit 中 14 个署名为本人",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/2947"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cx-pd-3",
+          "text": "PP 支持：在 PD connector 中实现 PP 的拓扑感知，为 PD 分离引入 PP 与 TP 异构；分析 PP 的性能收益并实现 PP layers 手动划分，使 DeepSeek R1 与 Qwen3-235B 的 Prefill 吞吐分别提升 30% 和 25% (PD PP)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm-ascend#4054 · 他人提交 · 2025-12-10 合并 · 56 个 commit 中 47 个为本人",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/4054"
+              }
+            ],
+            "note": "吞吐数字未核实"
+          }
+        }
+      ]
+    },
+    {
+      "title": "DeepSeek Sparse Attn 分片上下文并行 (Sharded CP)",
+      "subtitle": "蚂蚁集团-超级计算部-程序语言与编译器-大模型推理加速 · 2025.06 – 2026.07",
+      "excerpts": [
+        {
+          "id": "cx-dsa-1",
+          "text": "问题定位：DSA 的 Lightning Indexer 仅含单次矩阵乘 + top-k，且结果是一个向量，需完整激活做全局选择而无法 TP 切分；TP 组内每卡重复执行完整 Indexer，计算量随 seq len 线性增长，冗余随 TP 规模线性增长 (DSA-CP RFC)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "RFC vllm#30055 · 他人提交 · 2026-10-29 关闭",
+                "url": "https://github.com/vllm-project/vllm/issues/30055"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cx-dsa-2",
+          "text": "方案与实现：在 vLLM 实现 Prefill 的 TP→CP→TP 状态转换，attn 与 MoE 阶段转换为 CP，使 Indexer 计算量与稀疏 gather 访存量降至 1/CP。8k 上下文下，DeepSeek V3.2 在昇腾 910C 上 Prefill 吞吐提升 336%、在 H200 上提升 30%；DeepSeek V4 在 H200 上吞吐提升 15%。",
+          "evidence": {
+            "references": [
+              {
+                "label": "RFC 引用的昇腾实现 vllm-ascend#4702 · 他人提交 · 2025-12-06 合并 · commit 与 co-author 中未见本人",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/4702"
+              }
+            ],
+            "note": "未找到本人署名的公开实现；吞吐数字未核实"
+          }
+        }
+      ]
+    },
+    {
+      "title": "细粒度张量并行优化",
+      "subtitle": "蚂蚁集团-超级计算部-程序语言与编译器-大模型推理加速 · 2025.06 – 2026.07",
+      "excerpts": [
+        {
+          "id": "cx-tp-1",
+          "text": "优化思路：Decode 阶段为 memory-bound，纯 DP 下每卡需存放并读取完整权重，显存与访存双重受限；而现代 MoE 模型占权重大头的 Expert 并不受 attn 并行方式约束，DP 域之间存在冗余的权重存储。据此对 o_proj、lm_head、embedding、dense FFN 四个大权重模块启用跨 DP 组的细粒度 TP，用少量通信换取显存与访存收益。"
+        },
+        {
+          "id": "cx-tp-2",
+          "text": "差异化切分方案：按各模块计算特性定制通信模式——o_proj 行切 (All-to-All → GEMM → Reduce-Scatter)，lm_head 列切 (All-Gather → GEMM → All-to-All)，embedding 列切查表 (All-Gather → lookup → Reduce-Scatter)，dense FFN 列切升维 + 行切降维、仅首尾通信 (Embedding PR, Dense FFN PR)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm-ascend#2616 · 他人提交 · 2025-12-12 合并 · 本人为 co-author",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/2616"
+              },
+              {
+                "label": "vllm-ascend#4999 · 他人提交 · 2025-12-18 合并 · 本人为 co-author",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/4999"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cx-tp-3",
+          "text": "收益与取舍：TP=8 下四模块合计单卡节省显存 9.7 GB、TPOT 净优化约 2 ms；其中 o_proj 单层权重仅 117 MB，切分引入的通信开销反使 TPOT 劣化 1.5 ms，故 TPOT 敏感场景仅开启其余三个模块，可换取 3.9 GB 显存与 3.2 ms TPOT 收益。目前正推动该方案向 vLLM 主社区适配（RFC 撰写中）。"
+        }
+      ]
+    },
+    {
+      "title": "DeepSeek V4 性能分析",
+      "subtitle": "蚂蚁集团-超级计算部-程序语言与编译器-大模型推理加速 · 2025.06 – 2026.07",
+      "excerpts": [
+        {
+          "id": "cx-v4-1",
+          "text": "分析 DeepSeek V4 的理论性能与当前实现，结合 profile 定位可优化点：算子融合、compress SP、逆 RoPE 复用 Metadata 等 (逆 RoPE 优化 (待合入), compress SP(待合入))。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm-ascend#12767 · 他人提交 · 唯一的 commit 为本人 · 2026-09-09 关闭，未合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/12767"
+              },
+              {
+                "label": "vllm-ascend#11733 · 他人提交 · 本人为 co-author · 2026-09-23 关闭，未合并",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/11733"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "系统性能优化与方案设计",
+      "subtitle": "蚂蚁集团-超级计算部-程序语言与编译器-大模型推理加速 · 2025.06 – 2026.07",
+      "excerpts": [
+        {
+          "id": "cx-sys-1",
+          "text": "Prefix Cache CPU Offloading：参与设计 CPU Prefix Cache 方案，通过 HBM 与 DRAM 双写、按层异步读取，将 10% CPU Cache 命中率转化为 7.6% 的 QPS 提升。"
+        },
+        {
+          "id": "cx-sys-2",
+          "text": "性能与精度排查：通过 profiling 定位 NPU 算子缺陷，累计推动 CANN 侧修复 N 个算子精度问题（如 MLA 在特定输入长度下的精度错误），保障线上服务稳定。"
+        },
+        {
+          "id": "cx-sys-3",
+          "text": "三级 Prefix Offload 方案：KV Cache 做 layer shard 之后与内存分页管理冲突，长请求的 KV Cache 读取需要跨页；在方案讨论中提出 CPU 融合算子方案并完成草稿实现，该方案最终被采纳，读取提速约 10×。"
+        },
+        {
+          "id": "cx-sys-4",
+          "text": "MoE 卸载实现：重构 vLLM-Ascend 的 MoE offload，实现 NZ 格式权重的 MoE offload，在性能几乎无损的前提下，单卡节省显存 1.3 GB（GLM 5.1）(NZ weight offload PR)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm-ascend#11945 · 他人提交 · 2026-07-20 合并 · 本人为 co-author",
+                "url": "https://github.com/vllm-project/vllm-ascend/pull/11945"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cx-sys-5",
+          "text": "扩展模型上下文窗口：为 Qwen3 Decode 节点实现 Torchair 模式的 YaRN 扩展，将有效上下文长度从 40k 提升至 128k。"
+        },
+        {
+          "id": "cx-sys-6",
+          "text": "参与 Qwen3-235B、QwenCoder-480B、DeepSeek R1/V3.2/V4、Kimi K2/K2.5/K2.6、GLM 4.7∼5.2 等模型的性能调优，推动上线。"
+        }
+      ]
+    },
+    {
+      "title": "训练框架特性开发（TorchTurbo Main Contributor，已开源）",
+      "subtitle": "蚂蚁集团-超级计算部-后训练服务部-大模型后训练优化 · 2026.07 – 至今",
+      "excerpts": [
+        {
+          "id": "cx-train-1",
+          "text": "完成 DeepSeek V4 后训练适配：针对稀疏注意力与压缩 KV 的跨序列依赖，基于 Ulysses SP 实现跨卡 KV 聚合及全局位置/索引计算，打通 SP、EP 与 FSDP2 混合并行，已在昇腾 4,000 卡集群落地。"
+        },
+        {
+          "id": "cx-train-2",
+          "text": "优化 MoE 路由负载均衡：实现并调优 AUX loss 与 router Z loss，前者直接约束专家负载分布，后者惩罚 router logits 的 logsumexp、缓解 bf16 下 logit 饱和造成的路由塌缩，分别将专家负载变异系数（CV）降低 22.7% 与 31.6%。"
+        },
+        {
+          "id": "cx-train-3",
+          "text": "优化 CPU offload 策略：为提升蚂蚁内部训练框架在多机 + CPU offload 场景下的训练速度，将 optimizer 参数卸载至 DRAM，权重与梯度仍保留在 HBM 上。Qwen 3.5 35B / 122B 相比不开 offload 分别节省显存 4.2 GB / 5.8 GB，同时相比全量 offload 训练性能分别提升 15% 与 59%。"
+        },
+        {
+          "id": "cx-train-4",
+          "text": "实现 chunk loss：针对训练中完整 LM head 与 CE 产生的显存尖峰问题，训练时不再执行完整 LM head，而是返回 hidden state、以 chunk 为维度计算，Qwen 3.5 35B 32k SP4 场景下单卡节省显存约 4 GB。"
+        },
+        {
+          "id": "cx-train-5",
+          "text": "支持 AC（Activation Checkpointing）显存优化，Qwen 3.5 35B 单卡显存峰值降低 3.7 GB。"
+        },
+        {
+          "id": "cx-train-6",
+          "text": "实现 VLM 视觉编码器负载均衡：SP 组内各卡重复编码本 DP 分片的图像，且分片间 patch 数差异使视觉阶段负载倾斜；将各 SP 组代表 rank 发布的图像汇聚为全局媒体池，按 patch 数 LPT 打包均衡分配至全部 rank 编码，再经可微 all-to-all 分发回所属组，反向梯度沿同一通信图回传、无需缩放修正；均衡能力可复用并接入引擎与 FSDP2 并行规划 (Vision LB PR)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "TorchTurbo#1 · 本人提交 · 2026-10-16 合并",
+                "url": "https://github.com/inclusionAI/TorchTurbo/pull/1"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cx-train-7",
+          "text": "实现 LoRA DPO：以冻结的共享基座充当 reference，省去独立 reference 模型的显存驻留；reference 前向以 eval 模式执行，避免被计入训练 micro-batch 造成 MFU 统计失真，并兼容 SP 尾部 batch 与断点恢复 (LoRA DPO PR)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "TorchTurbo#64 · 本人提交 · 2026-11-17 合并",
+                "url": "https://github.com/inclusionAI/TorchTurbo/pull/64"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cx-train-8",
+          "text": "实现本地模型 forward 的 logits_to_keep：hidden states 在投影到词表前按需选取，DPO 不再对整条序列（含 prompt）做 vocab 投影，削减 logits 的显存与计算开销；覆盖 Bailing Hybrid、GLM-MoE-DSA、Kimi K2.5、LLaDA2 及 MTP、生成、拒采样场景 (logits_to_keep PR)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "TorchTurbo#70 · 本人提交 · 2026-11-16 合并",
+                "url": "https://github.com/inclusionAI/TorchTurbo/pull/70"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cx-train-9",
+          "text": "支持 Qwen3.8 后训练：新增对话模板，规范化偏好轨迹中的 OpenAI 工具调用，保留历史 thinking 并以工具调用作为 loss 边界 (Qwen3.8 模板 PR)。",
+          "evidence": {
+            "references": [
+              {
+                "label": "TorchTurbo#48 · 本人提交 · 2026-11-05 合并",
+                "url": "https://github.com/inclusionAI/TorchTurbo/pull/48"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "香山开源芯片验证",
+      "subtitle": "北京开源芯片研究院 · 2024.04 – 2024.08",
+      "excerpts": [
+        {
+          "id": "cx-xs-1",
+          "text": "验证工具与框架开发：协助开发 Picker 验证工具和 toffee Python 硬件验证框架，编写入门文档，降低使用门槛。"
+        },
+        {
+          "id": "cx-xs-2",
+          "text": "香山 BPU-RAS 验证：使用 Picker+toffee 对香山处理器昆明湖版本的 BPU-RAS 模块进行验证，设计上百个测试用例实现代码全覆盖，定位 5 个分支预测器缺陷，推动流片进度。"
+        },
+        {
+          "id": "cx-xs-3",
+          "text": "成果：相关工作获中国互联网发展创新与投资大赛二等奖，ASP-DAC 五作。"
+        }
+      ]
+    },
+    {
+      "title": "开源贡献",
+      "subtitle": "简历“开源贡献”一节",
+      "excerpts": [
+        {
+          "id": "cx-oss-1",
+          "text": "vLLM-Ascend 核心贡献者：累计贡献 9 个 PR，代码修改超 3000 行。主导开发的 PD 分离特性、PP 支持，深度参与的细粒度 TP 并行、NZ 格式 MoE 权重 offload 已合入主社区，用于昇腾生产环境；主导的动态 CP 特性已在蚂蚁内部灰度上线，显著提升框架性能与显存效率。",
+          "evidence": {
+            "references": [],
+            "note": "本人账号在 vllm-ascend 下有 1 个 PR（#10225，未合并）；另在 7 个他人提交的 PR 中有 commit 或 co-author 署名，其中 5 个已合并（#2947、#4054、#2616、#4999、#11945）。第 9 个未查到"
+          }
+        },
+        {
+          "id": "cx-oss-2",
+          "text": "TorchTurbo（inclusionAI）Main Contributor：超节点原生后训练引擎，提交仓库首个特性 PR，目前 commits 数居贡献者榜首；主导视觉 token 负载均衡、LoRA DPO、logits_to_keep 等特性开发（详见实习经历）。",
+          "evidence": {
+            "references": [
+              {
+                "label": "inclusionAI/TorchTurbo",
+                "url": "https://github.com/inclusionAI/TorchTurbo"
+              }
+            ],
+            "note": "仓库创建于 2026-10-09；贡献者列表中本人 6 个 commit，居首（第二名 5 个）；本人提交并合并的 PR 有 6 个"
+          }
+        },
+        {
+          "id": "cx-oss-3",
+          "text": "vLLM 社区贡献者：在 vLLM 主仓提出 3 个 RFC、2 个 PR，涵盖动态 CP 调度 (DyCP)、DSA Sharded CP 等分布式并行方案的设计与实现。",
+          "evidence": {
+            "references": [],
+            "note": "本人账号在 vllm 主仓下有 1 个 RFC（#29295）和 2 个 PR（#44967、#33496），均已关闭，未合并；DSA-CP RFC #30055 由他人提交"
+          }
+        },
+        {
+          "id": "cx-oss-4",
+          "text": "社区分享：受邀担任华为昇腾开源软件极客训练营讲师（推理 Meetup 专场），2026。"
+        }
+      ]
+    },
+    {
+      "title": "常问问题",
+      "subtitle": "面试补充问题",
+      "excerpts": [
+        {
+          "id": "cx-kernel-gemm-mnk",
+          "text": "GEMM kernel 的实现与 M、N、K 有什么关系？"
+        },
+        {
+          "id": "cx-kernel-time-estimate",
+          "text": "前一题回答较好时追问：给定任意 kernel 及其输入规模，假设实现合理，你如何粗略估算它的运行时间（kernel time）？"
+        },
+        {
+          "id": "cx-ai-tooling-experience",
+          "text": "请介绍一下你使用 AI 工具的经验。"
+        },
+        {
+          "id": "cx-ai-tooling-best-experience",
+          "text": "请描述一次你使用 AI 工具时最好的经历。"
+        }
+      ]
+    }
+  ]
+}
