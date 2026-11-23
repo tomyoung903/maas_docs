@@ -47,6 +47,51 @@ window.INTERVIEW_QUESTIONS = [
     ]
   },
   {
+    "id": "q11",
+    "anchorId": "cx-pd-2",
+    "title": "PD 分离：传过去的 KV 有多大，要多久？",
+    "question": "PD 分离时，Prefill 节点算完要把 KV cache 传给 Decode 节点。以 Qwen3-235B 为例，请口头估一下：每个 token 的 KV 有多大，一个 8k 的请求一共多大，传过去要多久？",
+    "expected": [
+      "说得出每个 token 的 KV 怎么算：GQA 每层存 K 和 V 两份，各是 KV head 数 × head 维度，再乘每元素字节数和层数。按 Qwen3-235B 的公开配置（94 层、4 个 KV head、head 维度 128、BF16），每层 2,048 字节，合计约 190 KB。",
+      "报得出总量：8k（8,192 个 token）约 1.6 GB。",
+      "传输时间 = 字节数 ÷ 链路带宽，再加固定开销。举例：100 Gb/s 的链路约 12.5 GB/s，1.6 GB 约 0.13 秒。他应该说出实际用的链路和实测值，并和这个请求的 prefill 时间比较。",
+      "知道 MLA 不一样：DeepSeek R1 每层只存一份各 head 共用的压缩隐变量（512 + 64 = 576 维），61 层约 70 KB 每 token，8k 约 0.58 GB。"
+    ],
+    "judgement": "良好：说得出每个 token 的 KV 怎么算，报出总量和传输时间的数量级，知道 GQA 和 MLA 的差别。一般：知道要传 KV，但报不出大小，只说“很快”。较差：说不清 KV cache 里存的是什么。",
+    "followUp": "GQA 的 KV cache 为什么需要 reshard，而 MLA 的不需要？reshard 并行化的是什么，还剩多少毫秒的开销？",
+    "interviewerHint": "优先级：必问。这题替换原来的 kernel 常问题，考的是同一种能力：把自己做的东西算成一个数。PD 分离是他 commit 最多的一项（#2947 的 22 个 commit 中 14 个是他的），应该报得出自己传的数据有多大。参考数字是我按 Hugging Face 上的公开配置算的（DeepSeek R1 按 V3 的配置）；100 Gb/s 只是举例，他们实际的链路我不知道。补充一点：vLLM 上游在 TP 度数不小于 KV head 数时会复制 KV head，所以 TP=8 时各 rank 存的总量是上面的两倍。追问的参考（我的推理，未对照他的代码）：MLA 缓存的是所有 head 共用的压缩隐变量，各 TP rank 上内容相同，两侧 TP 度数不同也能直接用；GQA 缓存的是按 head 切开的 K、V，TP 把 head 分到各 rank，两侧 TP 度数不同就要重新分组。",
+    "sources": [
+      {
+        "label": "PD GQA：vllm-ascend#2947",
+        "url": "https://github.com/vllm-project/vllm-ascend/pull/2947"
+      },
+      {
+        "label": "Qwen3-235B-A22B 公开配置",
+        "url": "https://huggingface.co/Qwen/Qwen3-235B-A22B/blob/main/config.json"
+      },
+      {
+        "label": "DeepSeek-V3 公开配置",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V3/blob/main/config.json"
+      },
+      {
+        "label": "vLLM 上游：KV head 复制与 MLA 缓存维度",
+        "url": "https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/linear.py"
+      }
+    ],
+    "studySources": null,
+    "number": 2,
+    "project": 2,
+    "blockIndex": 1,
+    "projectLabel": "PD 分离架构核心开发",
+    "claim": "GQA 支持：设计 GQA 格式 KV Cache 的 reshard 方案，并通过并行化处理使 reshard 几乎无性能损耗，打通 GQA 格式模型的 PD 分离 (PD GQA)。",
+    "expectedAnswer": [
+      "说得出每个 token 的 KV 怎么算：GQA 每层存 K 和 V 两份，各是 KV head 数 × head 维度，再乘每元素字节数和层数。按 Qwen3-235B 的公开配置（94 层、4 个 KV head、head 维度 128、BF16），每层 2,048 字节，合计约 190 KB。",
+      "报得出总量：8k（8,192 个 token）约 1.6 GB。",
+      "传输时间 = 字节数 ÷ 链路带宽，再加固定开销。举例：100 Gb/s 的链路约 12.5 GB/s，1.6 GB 约 0.13 秒。他应该说出实际用的链路和实测值，并和这个请求的 prefill 时间比较。",
+      "知道 MLA 不一样：DeepSeek R1 每层只存一份各 head 共用的压缩隐变量（512 + 64 = 576 维），61 层约 70 KB 每 token，8k 约 0.58 GB。"
+    ]
+  },
+  {
     "id": "q2",
     "anchorId": "cx-pd-3",
     "title": "PP 为什么能让 Prefill 吞吐提升 30%？",
@@ -58,8 +103,8 @@ window.INTERVIEW_QUESTIONS = [
       "解释手动划分 layers 的依据：各 stage 的耗时要接近，最慢的 stage 决定吞吐；同时要看每张卡的显存。"
     ],
     "judgement": "良好：主动说出“单个 pass 不会变快”，并给出对照组和负载。一般：只说“减少了通信”，给不出配置。较差：认为 PP 让单个请求的计算变快。",
-    "followUp": "GQA 的 KV cache 为什么需要 reshard，而 MLA 的不需要？reshard 的并行化具体并行了什么？",
-    "interviewerHint": "优先级：时间够再问。我们自己测过：HY4 在 PP4 下，一个 pass 装得下的请求同一时刻只用一张卡，N 个 chunk 的请求大约需要 N+3 个 stage 时间。我们还有过一个“重新划分层有收益”的说法，后来被否定并撤回，所以要问清他的划分收益是怎么量的。追问的参考（我的推理，未对照他的代码）：MLA 缓存的是所有 head 共用的压缩隐变量，各 TP rank 上内容相同，两侧 TP 度数不同也能直接用；GQA 缓存的是按 head 切开的 K、V，TP 把 head 分到各 rank，两侧 TP 度数不同就要重新分组。",
+    "followUp": "手动划分 layers：最后每个 stage 各分了多少层？依据是什么？",
+    "interviewerHint": "优先级：时间够再问。我们自己测过：HY4 在 PP4 下，一个 pass 装得下的请求同一时刻只用一张卡，N 个 chunk 的请求大约需要 N+3 个 stage 时间。我们还有过一个“重新划分层有收益”的说法，后来被否定并撤回，所以要问清他的划分收益是怎么量的。追问看他报不报得出各 stage 的层数；依据见第 4 个核对点。",
     "studySources": [
       {
         "title": "已学关联：HY4 prefill，一层的逐步讲解",
@@ -80,7 +125,7 @@ window.INTERVIEW_QUESTIONS = [
         "url": "https://github.com/vllm-project/vllm-ascend/pull/2947"
       }
     ],
-    "number": 2,
+    "number": 3,
     "project": 2,
     "blockIndex": 2,
     "projectLabel": "PD 分离架构核心开发",
@@ -123,7 +168,7 @@ window.INTERVIEW_QUESTIONS = [
         "url": "https://github.com/vllm-project/vllm-ascend/pull/4702"
       }
     ],
-    "number": 3,
+    "number": 4,
     "project": 3,
     "blockIndex": 1,
     "projectLabel": "DeepSeek Sparse Attn 分片上下文并行 (Sharded CP)",
@@ -148,7 +193,7 @@ window.INTERVIEW_QUESTIONS = [
     ],
     "judgement": "良好：用“字节数 ÷ 带宽”对“通信固定延迟”来算，两边都报得出数量级，并知道 batch 变大后结论会变。一般：只说“通信开销大于收益”，不会算。较差：认为切分减少了计算量。",
     "followUp": "省下的 3.9 GB 显存拿去做什么了？换成 KV cache 能多扛多少并发？",
-    "interviewerHint": "优先级：必问。这题和常问题 “GEMM 与 M、N、K” 是同一件事（M 小时，时间由读权重决定），可以连着问。数量级参考（我的估算，带宽按 2 TB/s 假设，他用的芯片我不知道）：117 MB 读一遍约 0.06 ms，TP=8 每层省约 0.05 ms；lm_head 按 DeepSeek V3 的公开配置（词表约 12.9 万 × 7,168 × 2 字节）约 1.9 GB，读一遍约 1 ms。117 MB 恰好等于 7,168 × 16,384 × 1 字节，像是 DeepSeek V3/R1 的 o_proj 在 8 bit 权重下的大小（我的推断）。按 DeepSeek V3 公开配置的 61 层算，1.5 ms 相当于每层净亏约 0.025 ms（我的推算，前提是他切的是每一层的 o_proj）。简历自身的数字可以顺口核对：四个模块合计约 2 ms，去掉 o_proj 后是 3.2 ms，相差 1.2 ms，和他写的 1.5 ms 不完全一致。公开记录：Embedding PR #2616 和 Dense FFN PR #4999 由他人提交并已合并，他是 co-author。",
+    "interviewerHint": "优先级：必问。数量级参考（我的估算，带宽按 2 TB/s 假设，他用的芯片我不知道）：117 MB 读一遍约 0.06 ms，TP=8 每层省约 0.05 ms；lm_head 按 DeepSeek V3 的公开配置（词表约 12.9 万 × 7,168 × 2 字节）约 1.9 GB，读一遍约 1 ms。117 MB 恰好等于 7,168 × 16,384 × 1 字节，像是 DeepSeek V3/R1 的 o_proj 在 8 bit 权重下的大小（我的推断）。按 DeepSeek V3 公开配置的 61 层算，1.5 ms 相当于每层净亏约 0.025 ms（我的推算，前提是他切的是每一层的 o_proj）。简历自身的数字可以顺口核对：四个模块合计约 2 ms，去掉 o_proj 后是 3.2 ms，相差 1.2 ms，和他写的 1.5 ms 不完全一致。公开记录：Embedding PR #2616 和 Dense FFN PR #4999 由他人提交并已合并，他是 co-author。",
     "studySources": [
       {
         "title": "已学关联：B300 DeepGEMM 的分段时间模型",
@@ -169,7 +214,7 @@ window.INTERVIEW_QUESTIONS = [
         "url": "https://github.com/vllm-project/vllm-ascend/pull/4999"
       }
     ],
-    "number": 4,
+    "number": 5,
     "project": 4,
     "blockIndex": 2,
     "projectLabel": "细粒度张量并行优化",
@@ -179,6 +224,34 @@ window.INTERVIEW_QUESTIONS = [
       "代价一侧：每次调用多出两次集合通信，每次都有固定的启动和同步延迟，和权重大小无关。",
       "分界点：省下的读取时间大于新增的通信延迟才划算。o_proj 每层都要付一次通信代价，单层权重又小；lm_head 每个 step 只调用一次，权重是 GB 量级。",
       "指出适用范围：batch 变大后这些层转为受算力限制，读权重不再是主要时间，时间上的收益会消失，只剩显存收益。"
+    ]
+  },
+  {
+    "id": "q12",
+    "anchorId": "cx-sys-1",
+    "title": "10% 的命中率怎么变成 7.6% 的 QPS？",
+    "question": "你写 CPU Prefix Cache 把 10% 的 CPU Cache 命中率转化为 7.6% 的 QPS 提升。请口头讲一下这两个数是怎么联系起来的：命中一次省掉了什么，从 DRAM 读回 KV 又要付出什么？",
+    "expected": [
+      "省的是 prefill 计算：命中的前缀不用重新前向，只算没命中的后缀，省下的时间大致正比于命中的 token 数。",
+      "付的是拷贝：把 KV 从 DRAM 读回 HBM，时间 = 字节数 ÷ 主机到设备的拷贝带宽。读回比重算快得多才划算。按层异步读取的意思是：前向算到第 i 层才需要第 i 层的 KV，所以可以一边算前面的层，一边读后面的层，读取不挡住计算。",
+      "把两个数连起来：QPS 提升 7.6%，相当于平均每个请求的耗时降到原来的约 93%，省了约 7%。他应该说清 10% 的分母是请求数还是 token 数，以及命中的那部分各省了多少。",
+      "说得出双写的代价：KV 同时写 HBM 和 DRAM，多一次设备到主机的拷贝，还要占 DRAM 容量并决定淘汰谁。"
+    ],
+    "judgement": "良好：说清省的是什么、付的是什么，能解释 10% 和 7.6% 的关系（分母是什么，每次命中省多少）。一般：只会说“命中了就不用算”，两个数的关系讲不出来。较差：说不清命中 prefix cache 之后还要做什么。",
+    "followUp": "这个方案里你负责哪一部分？三级 Prefix Offload 里你提的 CPU 融合算子融合了哪几步，10 倍是和什么比？",
+    "interviewerHint": "优先级：时间够再问。这题替换原来的 kernel 常问题，考的是同一种能力：把收益和代价各算成一个数。简历写的是“参与设计”，所以追问先问他负责哪一部分；同一节的“三级 Prefix Offload 方案”写的是他提出方案并完成草稿实现。我的推算（他们的统计口径我不知道）：如果 10% 是按 token 算的，省下约 7% 的时间，说明 prefill 至少占瓶颈时间的约七成，读回的代价最多是重算的约三成。HBM 里原有的 prefix cache 命中率是多少、这 10% 是不是在它之外新增的，也值得问。",
+    "sources": [],
+    "studySources": null,
+    "number": 6,
+    "project": 6,
+    "blockIndex": 0,
+    "projectLabel": "系统性能优化与方案设计",
+    "claim": "Prefix Cache CPU Offloading：参与设计 CPU Prefix Cache 方案，通过 HBM 与 DRAM 双写、按层异步读取，将 10% CPU Cache 命中率转化为 7.6% 的 QPS 提升。",
+    "expectedAnswer": [
+      "省的是 prefill 计算：命中的前缀不用重新前向，只算没命中的后缀，省下的时间大致正比于命中的 token 数。",
+      "付的是拷贝：把 KV 从 DRAM 读回 HBM，时间 = 字节数 ÷ 主机到设备的拷贝带宽。读回比重算快得多才划算。按层异步读取的意思是：前向算到第 i 层才需要第 i 层的 KV，所以可以一边算前面的层，一边读后面的层，读取不挡住计算。",
+      "把两个数连起来：QPS 提升 7.6%，相当于平均每个请求的耗时降到原来的约 93%，省了约 7%。他应该说清 10% 的分母是请求数还是 token 数，以及命中的那部分各省了多少。",
+      "说得出双写的代价：KV 同时写 HBM 和 DRAM，多一次设备到主机的拷贝，还要占 DRAM 容量并决定淘汰谁。"
     ]
   },
   {
@@ -196,7 +269,7 @@ window.INTERVIEW_QUESTIONS = [
     "followUp": "触发问题的输入长度是多少，偏差有多大？如果两个实现都不是逐比特一致，线上该用哪个？你看什么指标来决定？",
     "interviewerHint": "优先级：时间够再问。我们自己的做法：用 FP64 在真实输入上算参考，新旧两个 kernel 都和它比，新的误差不比旧的差才接受；有 Top-K 这类离散决策时，数决策翻转的个数。“CPU 算出来的就是对的”不成立，CPU 的结果同样取决于精度和顺序。",
     "sources": [],
-    "number": 5,
+    "number": 7,
     "project": 6,
     "blockIndex": 1,
     "projectLabel": "系统性能优化与方案设计",
@@ -248,7 +321,7 @@ window.INTERVIEW_QUESTIONS = [
         "url": "https://github.com/vllm-project/vllm/pull/33496"
       }
     ],
-    "number": 6,
+    "number": 8,
     "project": 9,
     "blockIndex": 0,
     "projectLabel": "开源贡献",
@@ -258,76 +331,6 @@ window.INTERVIEW_QUESTIONS = [
       "能复述一次具体的评审往来：谁提了什么问题，他改了哪段代码。",
       "对“深度参与”的几项说得出自己的那一块：Embedding（#2616）、Dense FFN（#4999）、NZ offload（#11945）里他是 co-author，不是主要作者。",
       "对没有合并的几项如实说明状态：DyCP 的 vLLM 主仓 PR、逆 RoPE（#12767）和 compress SP（#11733）都已关闭且未合并，简历写的是“待合入”。"
-    ]
-  },
-  {
-    "id": "q7",
-    "anchorId": "cx-kernel-gemm-mnk",
-    "title": "GEMM 与 M、N、K",
-    "question": "GEMM kernel 的实现与 M、N、K 有什么关系？",
-    "expected": [
-      "计算量是 2MNK。时间的下界是两项里较大的一项：计算量 ÷ 算力，访存字节数 ÷ 带宽。",
-      "分块后，每个块的算术强度正比于 MN/(M+N)（这里的 M、N 是块的边长），和 K 无关。K 只让工作量线性增加。",
-      "M 大（prefill）时受算力限制，时间正比于 MNK。M 小（decode、小 batch）时，读权重矩阵 K×N 占主导，时间近似正比于 K·N，几乎不随 M 变。",
-      "分界点 M* ≈ 算力 × 每元素字节数 ÷ (2 × 带宽)。以 B300 的 BF16 为例，按我们实测的 2,304 TFLOPS 和标称的 8 TB/s 算，M* 约 290。8 TB/s 这个数我没有核实。"
-    ],
-    "judgement": "良好：说出两个下界并取较大者，知道 K 不改变算术强度，知道 M 小时转为受访存限制。讲到分块、L2 复用、流水级数属于超出预期。一般：只说“正比于 MNK”，或只会套整题的 roofline。较差：不分析，转去谈利用率或 profiling。",
-    "followUp": "K 变成两倍，时间怎么变？M 从 8,000 降到 8，时间怎么变？",
-    "interviewerHint": "优先级：必问。可以接在第 4 题（o_proj 117 MB）后面问，那一题是这题在 M 很小时的特例。他的简历偏框架和并行，没有写过 kernel，所以重点看他会不会用“两个下界取较大”的方式想问题，而不是看术语。如果他想写公式或画图，请他直接说结论：时间由哪两项决定，M 很小时时间跟什么成正比。",
-    "studySources": [
-      {
-        "title": "已学关联：B300 DeepGEMM 的分段时间模型",
-        "url": "https://tomyoung903.github.io/maas_docs/b300-deepgemm-timing-model-20261029/"
-      },
-      {
-        "title": "已学关联：H200 上的 CUDA kernel 基础",
-        "url": "https://tomyoung903.github.io/maas_docs/cuda-kernel-basics-h200/"
-      }
-    ],
-    "sources": [],
-    "number": 7,
-    "project": 10,
-    "blockIndex": 0,
-    "projectLabel": "常问问题",
-    "claim": "GEMM kernel 的实现与 M、N、K 有什么关系？",
-    "expectedAnswer": [
-      "计算量是 2MNK。时间的下界是两项里较大的一项：计算量 ÷ 算力，访存字节数 ÷ 带宽。",
-      "分块后，每个块的算术强度正比于 MN/(M+N)（这里的 M、N 是块的边长），和 K 无关。K 只让工作量线性增加。",
-      "M 大（prefill）时受算力限制，时间正比于 MNK。M 小（decode、小 batch）时，读权重矩阵 K×N 占主导，时间近似正比于 K·N，几乎不随 M 变。",
-      "分界点 M* ≈ 算力 × 每元素字节数 ÷ (2 × 带宽)。以 B300 的 BF16 为例，按我们实测的 2,304 TFLOPS 和标称的 8 TB/s 算，M* 约 290。8 TB/s 这个数我没有核实。"
-    ]
-  },
-  {
-    "id": "q8",
-    "anchorId": "cx-kernel-time-estimate",
-    "title": "Kernel 运行时间估算（条件追问）",
-    "question": "前一题回答较好时追问：给定任意 kernel 及其输入规模，假设实现合理，你如何粗略估算它的运行时间（kernel time）？",
-    "expected": [
-      "方法：算两个下界，取较大的一个，再乘一个效率折扣。可以给他一组便于口算的整数：BF16，M = 8,000，K = 16,000，N = 6,000，峰值算力 2,000 TFLOPS，显存带宽 8 TB/s。请他把中间结果和结论说出来。",
-      "计算量：2 × 8,000 × 16,000 × 6,000 ≈ 1.5×10¹² 次浮点运算，÷ 2,000 TFLOPS ≈ 0.77 ms。",
-      "访存：三个矩阵合计约 540 MB（输入 256、权重 192、输出 96），÷ 8 TB/s ≈ 0.07 ms。所以受算力限制，下界约 0.77 ms。",
-      "知道实际会更慢并说得出原因。我们在 B300 上测的是相近的真实形状（8,192×16,384 乘到 6,144 维）：按实测峰值 2,304 TFLOPS 算，下界是 0.72 ms，cuBLAS 是 0.93 ms，约为纯乘法速率的 77%；连续运行时受功耗上限降频，同一个 kernel 是 1.17 ms。"
-    ],
-    "judgement": "良好：两个下界都算，结论是受算力限制，给出合理的效率折扣，并能列出两个以上“实际更慢”的原因。一般：只算了一边，或算对了但说不出为什么实际更慢。较差：没有方法。",
-    "followUp": "实际测出来比你估的慢 30%，你先怀疑什么？",
-    "interviewerHint": "优先级：时间够再问。他简历里写“分析 DeepSeek V4 的理论性能与当前实现”，也可以让他就 V4 里自己分析过的一个算子口头估一次，看他的“理论性能”是怎么算出来的。慢 30% 的可疑项（我们的实测）：操作数从 L2 送进 SM 的速率有上限（全卡约 20 TB/s）；功耗上限导致降频；测量方式本身（冷热 L2、间歇还是连续运行）。",
-    "studySources": [
-      {
-        "title": "已学关联：B300 DeepGEMM 的分段时间模型",
-        "url": "https://tomyoung903.github.io/maas_docs/b300-deepgemm-timing-model-20261029/"
-      }
-    ],
-    "sources": [],
-    "number": 8,
-    "project": 10,
-    "blockIndex": 1,
-    "projectLabel": "常问问题",
-    "claim": "前一题回答较好时追问：给定任意 kernel 及其输入规模，假设实现合理，你如何粗略估算它的运行时间（kernel time）？",
-    "expectedAnswer": [
-      "方法：算两个下界，取较大的一个，再乘一个效率折扣。可以给他一组便于口算的整数：BF16，M = 8,000，K = 16,000，N = 6,000，峰值算力 2,000 TFLOPS，显存带宽 8 TB/s。请他把中间结果和结论说出来。",
-      "计算量：2 × 8,000 × 16,000 × 6,000 ≈ 1.5×10¹² 次浮点运算，÷ 2,000 TFLOPS ≈ 0.77 ms。",
-      "访存：三个矩阵合计约 540 MB（输入 256、权重 192、输出 96），÷ 8 TB/s ≈ 0.07 ms。所以受算力限制，下界约 0.77 ms。",
-      "知道实际会更慢并说得出原因。我们在 B300 上测的是相近的真实形状（8,192×16,384 乘到 6,144 维）：按实测峰值 2,304 TFLOPS 算，下界是 0.72 ms，cuBLAS 是 0.93 ms，约为纯乘法速率的 77%；连续运行时受功耗上限降频，同一个 kernel 是 1.17 ms。"
     ]
   },
   {
@@ -346,7 +349,7 @@ window.INTERVIEW_QUESTIONS = [
     "sources": [],
     "number": 9,
     "project": 10,
-    "blockIndex": 2,
+    "blockIndex": 0,
     "projectLabel": "常问问题",
     "claim": "请介绍一下你使用 AI 工具的经验。",
     "expectedAnswer": [
@@ -370,7 +373,7 @@ window.INTERVIEW_QUESTIONS = [
     "sources": [],
     "number": 10,
     "project": 10,
-    "blockIndex": 3,
+    "blockIndex": 1,
     "projectLabel": "常问问题",
     "claim": "请描述一次你使用 AI 工具时最好的经历。",
     "expectedAnswer": [
