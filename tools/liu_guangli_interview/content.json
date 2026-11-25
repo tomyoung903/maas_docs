@@ -1,0 +1,195 @@
+{
+  "candidate": "刘光立",
+  "sections": [
+    {
+      "title": "MachinePulse｜AI Infra 实习生",
+      "subtitle": "实习经历 · 2026.03 – 2026.08",
+      "excerpts": [
+        {
+          "id": "lg-mp-1",
+          "text": "业务背景：面向 AIOps Agent 的多步、长上下文请求，开展本地模型服务部署、调度优化与训练评测。"
+        },
+        {
+          "id": "lg-mp-2",
+          "text": "部署与评测：在 8×A30 集群部署 Qwen3-32B-AWQ 的 vLLM 服务，搭建请求回放、压测及 GPU 监控链路。"
+        },
+        {
+          "id": "lg-mp-3",
+          "text": "拓扑调优：结合 TP8 / 单 TP4 / 2×TP4 对照与 Nsight 分析通信和计算的权衡；长输入并发压测中，双 TP4 吞吐提升约 48%，平均 TTFT 降低约 37.5%。",
+          "evidence": {
+            "references": [],
+            "note": "吞吐与 TTFT 数字未核实"
+          }
+        },
+        {
+          "id": "lg-mp-4",
+          "text": "vLLM 二次开发：修改 V1 请求准入逻辑，以会话亲和调度与 KV 预算控制改善多步 Agent 的前缀复用；历史单 TP4、c=48 的 RCA 回放相对原生调度器，前缀命中率由 24.3% 提升至 85.5%，完整任务吞吐由 3.42 提升至 9.22 任务/min。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm#51384 · 本人提交的会话亲和调度器 · 2026-10-05 本人关闭，未合并",
+                "url": "https://github.com/vllm-project/vllm/pull/51384"
+              }
+            ],
+            "note": "命中率与吞吐数字未核实"
+          }
+        },
+        {
+          "id": "lg-mp-5",
+          "text": "分布式训练：搭建 Qwen3-32B LoRA / ZeRO-3 多卡微调链路，结合梯度检查点与梯度累积，在 A30 集群跑通训练及适配器导出。"
+        }
+      ]
+    },
+    {
+      "title": "哈啰出行｜基础云平台组 · AI Agent 研发实习生",
+      "subtitle": "实习经历 · 2025.05 – 2025.09",
+      "excerpts": [
+        {
+          "id": "lg-hello-1",
+          "text": "Agent 服务与工程交付：负责面向内部运维的 DBOps Text-to-SQL Agent，完善 SQL 校验、超时与重试控制，完成 Docker / Kubernetes 部署及日志监控；支撑 200+ 用户、日调用 400+，获哈啰 AI 应用大赛三等奖。"
+        }
+      ]
+    },
+    {
+      "title": "开源贡献",
+      "subtitle": "简历“开源贡献”一节",
+      "excerpts": [
+        {
+          "id": "lg-oss-1",
+          "text": "vLLM KV Events 会话标识透传（PR #51381，Merged）：针对 GPU 缓存事件缺少会话关联信息的问题，为 BlockStored 增加可选 session_id，覆盖新块写入、前缀复用及部分块路径；兼容新旧消息格式，保持跨会话缓存共享语义，补充序列化兼容与 Prefix Cache 回归测试。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm#51381 · 本人提交 · 2026-09-04 合并 · 新增 148 行，其中产品代码 10 行",
+                "url": "https://github.com/vllm-project/vllm/pull/51381"
+              }
+            ],
+            "note": "本人账号在 vllm、vllm-omni、sglang 下共提交 22 个 PR：合并 2 个，3 个未关闭，17 个已关闭未合并"
+          }
+        },
+        {
+          "id": "lg-oss-2",
+          "text": "vLLM-Omni 实时路由修复（PR #8279，Merged）：定位旧字段读取无法识别类型化阶段配置、导致 Qwen3-Omni 错误回退通用处理器的问题；改用模型架构与阶段角色字段恢复全双工路由，补充真实 pipeline 配置、WebSocket 握手及异常事件回归测试，相关 45 项 CPU 测试通过。",
+          "evidence": {
+            "references": [
+              {
+                "label": "vllm-omni#8279 · 本人提交 · 2026-09-29 当天合并 · 新增 63 行、删除 10 行",
+                "url": "https://github.com/vllm-project/vllm-omni/pull/8279"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Kaggle · FlagOS 全球挑战赛 S2｜国产 GPU 推理优化",
+      "subtitle": "比赛经历 · 2026.09 – 2026.11 · 个人参赛 · MiniCPM5-2B · 天数 BI-V150 / 沐曦 C500 · 作品已提交，待评审",
+      "excerpts": [
+        {
+          "id": "lg-flag-1",
+          "text": "算子与硬件适配：结合目标 GPU 资源与实际计算形状，修改天数 Attention 的查询分块、线程配置及上下文分段归约，提高 Prefill 的 K/V 片上复用，减少 Decode 空算与合并开销；按矩阵尺寸和布局调整 GEMM 实现，并优化沐曦排序与采样写回。"
+        },
+        {
+          "id": "lg-flag-2",
+          "text": "框架执行与 KV 缓存优化：定位沐曦 Attention 后端逐层重复的长度转换与累计偏移构建，改为批次级一次准备、跨层复用；针对评测跨轮重复输入，调整零引用 KV 页回收优先级，结合生成尾部优先回收、请求族老化及前缀深度管理，减少可复用输入被覆盖和重复 Prefill。"
+        },
+        {
+          "id": "lg-flag-3",
+          "text": "吞吐结果：按官方四轮弃首协议，4K 输入 / 1K 输出、并发 64 下，天数 / 沐曦总 token 吞吐由公开基线 2,028 / 5,090 提升至 5,263 / 14,578 tokens/s（2.60× / 2.86×）；16K 分别达 3.98× / 1.37×。",
+          "evidence": {
+            "references": [
+              {
+                "label": "Kaggle 赛题页",
+                "url": "https://www.kaggle.com/competitions/flag-os-open-computing-global-challenge-track-2"
+              }
+            ],
+            "note": "成绩待评审，未核实"
+          }
+        },
+        {
+          "id": "lg-flag-4",
+          "text": "质量与交付：MATH-500 Level 3 各 105 题，准确率 98.10% / 97.14%；保留原始结果，交付完整源码、技术报告及复现脚本。"
+        }
+      ]
+    },
+    {
+      "title": "vLLM MoE 融合算子开发与性能优化",
+      "subtitle": "项目经历 · 2026.06 – 2026.10",
+      "excerpts": [
+        {
+          "id": "lg-moe-0",
+          "text": "GitHub：https://github.com/xuhuan51/vllm-moe-kernels",
+          "evidence": {
+            "references": [
+              {
+                "label": "xuhuan51/vllm-moe-kernels · 2026-10-04 创建 · 只有 1 个 commit",
+                "url": "https://github.com/xuhuan51/vllm-moe-kernels"
+              }
+            ],
+            "note": "代码、测量记录和正确性记录都在仓库里"
+          }
+        },
+        {
+          "id": "lg-moe-1",
+          "text": "项目背景：针对 Qwen3-30B-A3B BF16 / TP8 的专家计算开销，开发 Triton 融合算子，减少中间张量读写与补齐计算。"
+        },
+        {
+          "id": "lg-moe-2",
+          "text": "热点分析：结合 Nsight 与 vLLM 源码，定位专家投影、SiLU×up 激活间的中间张量读写及 W2 补齐计算开销，确定融合与形状专化方案。"
+        },
+        {
+          "id": "lg-moe-3",
+          "text": "Triton 算子开发：融合 W1 投影与 SiLU×up，减少中间张量写读及一次算子启动；将 W2 的 96 维归约由 64+64 改为 64+32，M=4/8/16/32 时完整局部 MoE 链较原生基线加速约 1.4×。",
+          "evidence": {
+            "references": [
+              {
+                "label": "kernels.py 与描述一致",
+                "url": "https://github.com/xuhuan51/vllm-moe-kernels/blob/main/kernels.py"
+              },
+              {
+                "label": "vllm#61232 · 本人提交给上游 · 草稿，未合并",
+                "url": "https://github.com/vllm-project/vllm/pull/61232"
+              }
+            ],
+            "note": "仓库记录里，相对“原生重调参”对照，M=4 到 32 时是 1.11 到 1.22 倍"
+          }
+        },
+        {
+          "id": "lg-moe-4",
+          "text": "验证与系统接入：保留 BF16 舍入边界，通过 612 项局部一致性检查并接入 vLLM Decode CUDA Graph；8×A30 TP8、32 条请求、输入 1K / 输出 128 token 的离线生成吞吐较原生基线提升 9.7%（5 轮配对中位数），各轮生成序列与基线一致。",
+          "evidence": {
+            "references": [
+              {
+                "label": "仓库的测量记录",
+                "url": "https://github.com/xuhuan51/vllm-moe-kernels/tree/main/results/recorded"
+              }
+            ],
+            "note": "仓库记录的是 32 条请求、输入 128 / 输出 128 token、提升 9.1%；简历写的输入 1K、9.7% 在仓库里没有对应记录。612 项检查与仓库一致"
+          }
+        }
+      ]
+    },
+    {
+      "title": "常问问题",
+      "subtitle": "面试补充问题",
+      "excerpts": [
+        {
+          "id": "lg-kernel-gemm-mnk",
+          "text": "GEMM kernel 的实现与 M、N、K 有什么关系？"
+        },
+        {
+          "id": "lg-kernel-time-estimate",
+          "text": "前一题回答较好时追问：给定任意 kernel 及其输入规模，假设实现合理，你如何粗略估算它的运行时间（kernel time）？"
+        },
+        {
+          "id": "lg-ai-tooling-experience",
+          "text": "请介绍一下你使用 AI 工具的经验。"
+        },
+        {
+          "id": "lg-ai-tooling-best-experience",
+          "text": "请描述一次你使用 AI 工具时最好的经历。"
+        }
+      ]
+    }
+  ]
+}

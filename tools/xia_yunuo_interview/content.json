@@ -1,0 +1,109 @@
+{
+  "candidate": "夏雨诺",
+  "sections": [
+    {
+      "title": "昇腾 910C 大模型推理引擎性能优化｜vLLM-Ascend",
+      "subtitle": "得物 · AI Infra 实习生 · 2026.05 – 2026.08",
+      "excerpts": [
+        {
+          "id": "xy-dewu-stack",
+          "text": "技术栈：Ascend 910C、vLLM-Ascend、PyTorch-NPU、CANN、HCCL、MindStudio、msprof、EvalScope"
+        },
+        {
+          "id": "xy-dewu-overview",
+          "text": "项目概述：负责 Ascend 910C 上 vLLM-Ascend 推理引擎性能优化，面向客服、风控及模型网关等在线推理业务，达到 NVIDIA H20 性能的 85%；Qwen3.5-35B-A3B 在 c=1/4/8 下 TPOT 分别由 14.22/17.55/21.17ms → 5.0/8.8/11.9ms，降幅 ↓ 64.8%/49.9%/43.8%。"
+        },
+        {
+          "id": "xy-dewu-mtp",
+          "text": "MTP 验证与采样链路优化：针对 speculative decoding 验证阶段的 Host-NPU 同步与通信热点，优化 rejection sampler、greedy verify、Graph Capture 等关键路径，减少冗余 H2D 同步与全词表通信；叠加 MTP 及相关优化后，c=1 TPOT 7.8ms → 5.0ms（-35.9%）。"
+        },
+        {
+          "id": "xy-dewu-moe",
+          "text": "MoE 计算通信优化：针对 routed / shared expert 串行执行及集合通信开销，优化多 Stream 并行与权重预取策略，实现 shared expert 计算、通信与 routed expert 计算重叠，缩短 Decode 关键路径。"
+        },
+        {
+          "id": "xy-dewu-static",
+          "text": "Graph / Kernel / Runtime 优化：围绕 Decode 路径优化 Static Kernel、Graph Capture 与算子执行链路，降低动态 Shape 推导、Kernel Launch 与 Host Runtime 开销；Static Kernel 将 c=1 TPOT 11.2ms → 9.1ms（-18.7%）。"
+        },
+        {
+          "id": "xy-dewu-bench",
+          "text": "性能分析和工程验证：建立统一 Benchmark 与 Controlled Ablation 流程，完成 30+ 轮单变量实验，基于真实客服数据完成 Ascend 910C 与 NVIDIA H20 的统一口径性能对比与验证。"
+        }
+      ]
+    },
+    {
+      "title": "NVIDIA L20 大模型推理引擎通信优化｜Two-Batch Overlap（TBO）",
+      "subtitle": "腾讯 · AI 算法工程实习生 · 2026.02 – 2026.05",
+      "excerpts": [
+        {
+          "id": "xy-tbo-stack",
+          "text": "技术栈：PyTorch、vLLM、CUDA、NCCL、Tensor Parallel、PyTorch Profiler、NVIDIA L20"
+        },
+        {
+          "id": "xy-tbo-overview",
+          "text": "项目概述：针对 PCIe 多卡 Tensor Parallel 场景下的 NCCL 通信瓶颈，负责 vLLM 推理执行链路分析与优化，设计 Two-Batch Overlap（TBO）实现跨 Batch 计算通信重叠。"
+        },
+        {
+          "id": "xy-tbo-profile",
+          "text": "性能瓶颈定位：基于 PyTorch Profiler 对 Transformer Forward Timeline 进行算子级分析，定位单次 AllReduce 延迟 2–4ms、NCCL 占比 50%–55% 的核心通信瓶颈，确定 Compute-Communication Overlap 优化方向。"
+        },
+        {
+          "id": "xy-tbo-design",
+          "text": "TBO Pipeline 设计：将原始 Batch 按 Request 维度拆分为两个 Micro-Batch，设计基于 Token 数量的动态负载均衡策略，并通过 Compute / Comm 双 CUDA Stream 实现 Attention / MLP 与 NCCL AllReduce 跨 Layer 流水重叠。"
+        },
+        {
+          "id": "xy-tbo-async",
+          "text": "异步执行与状态管理：基于 CUDA Event、CPU Event 与 Forward Context 重构 vLLM Forward 调度路径，解决双流异步执行中的 Stream 依赖、同步死锁及 KV Cache 一致性问题；根据 Batch Size 动态选择 TBO / 原生 Forward 路径，避免小 Batch 优化反噬。"
+        },
+        {
+          "id": "xy-tbo-result",
+          "text": "性能收益：在 2×L20、8K Context 场景下，吞吐由 0.22 QPS 提升至 0.29 QPS（+31.1%），平均延迟降低 5.4%，P99 延迟降低 2.9%；实验验证 TBO 在长 Context、大 Batch 场景收益更显著。"
+        }
+      ]
+    },
+    {
+      "title": "KubeAI 智能运维与 GPU 资源治理 Agent 平台",
+      "subtitle": "项目经历 · 2026.05 – 2026.07",
+      "excerpts": [
+        {
+          "id": "xy-agent-stack",
+          "text": "技术栈：Python、CloudAI Agent、MCP、Function Calling、Multi-Agent、Skill、Memory、Prometheus、APM、SLS、Kubernetes、Volcano"
+        },
+        {
+          "id": "xy-agent-overview",
+          "text": "项目概述：负责 KubeAI 训练平台智能运维 Agent 体系建设，覆盖 GPU 资源治理、训练故障诊断、平台健康诊断，打通指标、日志、事件及任务上下文，实现从异常发现、证据采集到根因分析与治理建议的自动化闭环。"
+        },
+        {
+          "id": "xy-agent-multi",
+          "text": "Multi-Agent 架构：按 GPU 治理、训练诊断、管控面诊断拆分领域 Agent，设计意图路由与子 Agent 调度机制，降低复杂场景下的上下文干扰与工具误调用。"
+        },
+        {
+          "id": "xy-agent-mcp",
+          "text": "MCP 工具体系：设计并封装 20+ 原子工具，覆盖 GPU 指标、Volcano 调度、Pod 事件、日志及任务上下文等能力，支撑 Agent 自主完成多步数据取证与分析。"
+        },
+        {
+          "id": "xy-agent-context",
+          "text": "上下文工程优化：针对长 Skill 带来的 Prompt 膨胀与工具调用遗漏，将 980 行单体 Skill 重构为分层、按需加载的领域知识体系，Context Token 降低约 50%。"
+        },
+        {
+          "id": "xy-agent-diagnose",
+          "text": "智能诊断与资源治理：融合离线数仓、APM 实时指标及 Kubernetes 多源信息进行根因分析，覆盖 1269 张 GPU，自动识别零 / 低利用率、僵尸任务、Holder 假占用等问题。"
+        }
+      ]
+    },
+    {
+      "title": "常问问题",
+      "subtitle": "面试补充问题",
+      "excerpts": [
+        {
+          "id": "xy-ai-tooling-experience",
+          "text": "请介绍一下你使用 AI 工具的经验。"
+        },
+        {
+          "id": "xy-ai-tooling-best-experience",
+          "text": "请描述一次你使用 AI 工具时最好的经历。"
+        }
+      ]
+    }
+  ]
+}
